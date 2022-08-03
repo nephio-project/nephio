@@ -209,7 +209,9 @@ expected, most common usage model.
 
 To create a GitHub repository, see [the GitHub
 Help](https://docs.github.com/en/get-started/quickstart/create-a-repo). Nephio
-supports public or private repositories in GitHub.
+supports public or private repositories in GitHub. Nephio will need a `main`
+branch, so go ahead and have GitHub create the `README.md` for you, which will
+create that branch.
 
 You will need to create a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 with `repo` scope to use Nephio. You may want to consider creating a separate
