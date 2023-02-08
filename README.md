@@ -6,8 +6,15 @@ Network Functions, and the underlying infrastructure on which those workloads
 depend.
 
 Nephio is very early in its development; there is no release yet. However if you
-wish to experiment with the project, please take a look at the [Nephio
-POC](https://github.com/nephio-project/nephio-poc) repository.
+wish to learn more about the project, please take a look at the resources described
+in [docs#3](https://github.com/nephio-project/docs/issues/3).
+
+If you wish to experiment with the proof-of-concept code, please take a look at the
+[Nephio ONE Sumit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop).
+
+If you wish to participate in building R1, please join our SIG meetings, or reach out to
+us on Slack. You may also want to peruse the [R1 Planning](https://github.com/nephio-project/nephio/issues/6)
+issue.
 
 ## Community
 
@@ -16,7 +23,7 @@ Please see the following resources for more information:
   * Wiki: [wiki.nephio.org](https://wiki.nephio.org)
   * Slack: [nephio.slack.com](https://nephio.slack.com)
   * Proof-of-Concept:
-    [github.com/nephio-project/nephio-poc](https://github.com/nephio-project/nephio-poc)
+    [Nephio ONE Sumit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop)
   * Governance:
     [github.com/nephio-project/governance](https://github.com/nephio-project/governance)
 
