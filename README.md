@@ -7,7 +7,7 @@ depend.
 
 Nephio is very early in its development; there is no release yet. However if you
 wish to learn more about the project, please take a look at the resources described
-in [docs#3](https://github.com/nephio-project/docs/issues/3).
+in the [docs repo](https://github.com/nephio-project/docs).
 
 If you wish to experiment with the proof-of-concept code, please take a look at the
 [Nephio ONE Sumit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop).
