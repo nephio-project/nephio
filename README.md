@@ -10,7 +10,7 @@ wish to learn more about the project, please take a look at the resources descri
 in the [docs repo](https://github.com/nephio-project/docs).
 
 If you wish to experiment with the proof-of-concept code, please take a look at the
-[Nephio ONE Sumit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop).
+[Nephio ONE Summit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop).
 
 If you wish to participate in building R1, please join our SIG meetings, or reach out to
 us on Slack. You may also want to peruse the [R1 Planning](https://github.com/nephio-project/nephio/issues/6)
