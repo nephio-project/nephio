@@ -17,3 +17,16 @@ limitations under the License.
 
 package diff
 
+func removeResourceList(resources fn.KubeObjects, resourceIndex int) fn.KubeObjects {
+	return append(resources[:resourceIndex], resources[resourceIndex+1:]...)
+}
+
+func addResourceList(resources fn.KubeObjects, e *fn.KubeObject) fn.KubeObjects {
+	return append(resources, e)
+}
+
+func updateResourceList(resources fn.KubeObjects, resourceIndex int, e *fn.KubeObject) fn.KubeObjects {
+	resources[resourceIndex] = e;
+	return resources
+}
+
