@@ -18,14 +18,17 @@ limitations under the License.
 package diff
 
 func removeResourceList(resources fn.KubeObjects, resourceIndex int) fn.KubeObjects {
+	//Deleted the respective Condition from KPTFile
 	return append(resources[:resourceIndex], resources[resourceIndex+1:]...)
 }
 
 func addResourceList(resources fn.KubeObjects, e *fn.KubeObject) fn.KubeObjects {
+	//Add the respective Condition to KPTFile
 	return append(resources, e)
 }
 
 func updateResourceList(resources fn.KubeObjects, resourceIndex int, e *fn.KubeObject) fn.KubeObjects {
+	//Update the respective Condition to KPTFile
 	resources[resourceIndex] = e;
 	return resources
 }
