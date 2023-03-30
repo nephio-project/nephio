@@ -124,6 +124,7 @@ func (r *inventory) Diff() (InventoryDiff, error) {
 			}
 			if d := cmp.Diff(existingSpec, newSpec); d != "" {
 				diff.UpdateObjs = append(diff.UpdateObjs, &Object{Ref: ref, Obj: *invCtx.newResource})
+				diff.UpdateConditions = append(diff.UpdateConditions, &Object{Ref: ref})
 			}
 		}
 	}
