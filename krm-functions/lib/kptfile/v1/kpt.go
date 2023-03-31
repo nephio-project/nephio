@@ -112,7 +112,8 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 		}
 	}
 
-	// for each nex condition check if the kind
+	// for each new condition check if the type is already in the slice
+	// if not add it, if not override it.
 	for _, new := range c {
 		exists := false
 		for i, existing := range r.GetKptFile().Status.Conditions {
