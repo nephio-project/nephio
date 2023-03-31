@@ -49,6 +49,8 @@ the following list of CRs will be added to package:
     kind: IPAllocation
     metadata:
       name: n6-ip-abcd
+      annotations:
+        krm-fn.nephio.org/owner: req.nephio.org/v1alpha1/interface/n6
     spec:
       kind: network
       prefixLength: 32
@@ -65,6 +67,8 @@ the following list of CRs will be added to package:
     kind: VLANAllocation
     metadata:
       name: n6-vlan-defg
+      annotations:
+        krm-fn.nephio.org/owner: req.nephio.org/v1alpha1/interface/n6
     spec:
       networkInstanceRef: 
         namespace: default
@@ -104,7 +108,7 @@ The function also adds the following conditions to the `Status` of the `Kptfile`
 Implementation details
 ----------------------
 
-The function ensures that the child resources of an `Interface` are always in sync with the `Spec` of the input resources: the `Interface` and the `ClusterContext`. The function always sets the `ownerReference` field of the child resources it creates to point to the originating `Interface` resource. That way it can easily keep track of previously created resources and update or delete them if the input resources are changed.
+The function ensures that the child resources of an `Interface` are always in sync with the `Spec` of the input resources: the `Interface` and the `ClusterContext`. The function always sets a special "owner reference" annotation (`krm-fn.nephio.org/owner`) of the child resources it creates to point to the originating `Interface` resource. That way it can easily keep track of previously created resources and update or delete them if the input resources are changed.
 
 The process that is described below is executed for each `Interface` objects in the kpt package. In the followings I will use the `IPAllocation` as an example child resource, but the same process will work for the `VLANAllocation`, as well.
 
@@ -115,7 +119,7 @@ If there is no `IPAllocation` exists with an `ownerReference` to the `Interface`
 - check if `ClusterContext` exists in the kpt package, and exit if it isn't
 - add a new `IPAllocation` to the package. 
     - the `name` of the object is generated from the name of the `Interface`. A short hash is appended to the name in order to avoid collisions during later updates/deletes.
-    - the `ownerReference` field is set to point to the `Interface`
+    - the `krm-fn.nephio.org/owner` annotation is set to point to the currently processed `Interface`
     - the `Spec` is filled based on the data found in the input resources (`Interface` and `ClusterContext`)
 
         TODO: explain in detail _how_
@@ -126,16 +130,16 @@ If there is no `IPAllocation` exists with an `ownerReference` to the `Interface`
 
 ### Deleting a child resource, if it is no longer needed
 
-If there is an existing `IPAllocation` with an `ownerReference` to the `Interface`, but it is deemed to be superflous (e.g. `ClusterContext` was deleted), then the following steps should be taken:
-- set the `deletionTimestamp` field of the `IpAllocation` to the current time
-- add a `Condition` to the `Kptfile`'s status inidicating that the `IPAllocation` is not in sync (the same condition that was referred to above).
+If there is an existing `IPAllocation` with an owner reference annotation to the `Interface`, but it is deemed to be superflous (e.g. `ClusterContext` was deleted), then the following steps should be taken:
+- set the `krm-fn.nephio.org/to-be-deleted` annotation of the `IpAllocation` to `true`
+- add a `Condition` to the `Kptfile`'s status inidicating that the `IPAllocation` is not in sync (the same condition that was referred to above: : `ipam-nephio-org-v1alpha1-ipallocation-<name of the IPAllocation>`).
 
 We rely on the `IPAllocation controller` to detect that the already allocated IP range should be deallocated and to actually delete the `IPAllocation` from the package after that happened succesfully.
 
 
 ### Garbage collection
 
-In order to handle the deletion of `Interface` resources properly. The function should also look for `IPAllocation` resources that have an `ownerReference` to a non-existent `Interface`. The deletion process described above should be applied also to these orphaned `IPAllocation`s.
+In order to handle the deletion of `Interface` resources properly. The function should also look for `IPAllocation` resources that have an owner reference to a non-existent `Interface`. The deletion process described above should be applied also to these orphaned `IPAllocation`s.
 
 
 ### Updating an existing child resource
@@ -147,3 +151,7 @@ If there is an existing `IPAllocation` with an `ownerReference` to the `Interfac
 - if there is no difference: exit and do nothing (for this `Interface`)
 - if there is a difference, then delete the old `IPAllocation` by the process described above and create the new one with an empty `Status` (also described above). This is needed for the proper reallocation of the IP addresses in the IPAM system by the `IPAllocation controller`.
 - set the `ipam-nephio-org-v1alpha1-ipallocation-<name of the IPAllocation>` `Condition` to false for both the "to-be deleted" and the brand new `IPAllocation`s
+
+### Rationale behind implementation deceisions
+
+We decided to use the `krm-fn.nephio.org/owner` annotation instead of reusing the existing `metadata/ownerReference` field, and to use the `krm-fn.nephio.org/to-be-deleted` annotation instead of reusing the existing `metadata/deletionTimestamp` field, because we were concerned that if we ended up setting the `ownerReference` or `deletionTimestamp` field of a non-local resource that somehow ends up synched to a Kubernetes cluster by ConfigSync, then it will cause unintended consequences.
