@@ -25,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Inventory interface will refer to all go-functions this library supports
 type Inventory interface {
 	AddExistingCondition(*corev1.ObjectReference, *kptv1.Condition)
 	AddExistingResource(*corev1.ObjectReference, *fn.KubeObject)
@@ -32,6 +33,7 @@ type Inventory interface {
 	Diff() (InventoryDiff, error)
 }
 
+// InventoryDiff struct is the output of Diff go-function implemented in this library
 type InventoryDiff struct {
 	DeleteObjs       []*Object
 	UpdateObjs       []*Object
@@ -41,11 +43,13 @@ type InventoryDiff struct {
 	UpdateConditions []*Object
 }
 
+// Object is used to put the GVKN in context to its respective KubeObject
 type Object struct {
 	Ref corev1.ObjectReference
 	Obj fn.KubeObject
 }
 
+// New creates an Inventory interface to be used by kpt-functions
 func New() Inventory {
 	return &inventory{
 		resources: map[corev1.ObjectReference]*inventoryCtx{},
@@ -62,6 +66,8 @@ type inventoryCtx struct {
 	newResource       *fn.KubeObject
 }
 
+// AddExistingCondition function is to be called for storing all existing conditions as part of KPTFile
+// During the DIFF these conditions are referred to make appropriate decisions
 func (r *inventory) AddExistingCondition(ref *corev1.ObjectReference, c *kptv1.Condition) {
 	if _, ok := r.resources[*ref]; !ok {
 		r.resources[*ref] = &inventoryCtx{}
@@ -70,6 +76,9 @@ func (r *inventory) AddExistingCondition(ref *corev1.ObjectReference, c *kptv1.C
 
 }
 
+// AddExistingResource function is to be called for storing all existing KubeObject resources which are inputed into this function
+// The Key used here would need to have the GVKN
+// During the DIFF these resources are referred to make appropriate decisions
 func (r *inventory) AddExistingResource(ref *corev1.ObjectReference, o *fn.KubeObject) {
 	if _, ok := r.resources[*ref]; !ok {
 		r.resources[*ref] = &inventoryCtx{}
@@ -77,6 +86,9 @@ func (r *inventory) AddExistingResource(ref *corev1.ObjectReference, o *fn.KubeO
 	r.resources[*ref].existingResource = o
 }
 
+// AddNewResource function is to be called for storing all new KubeObject resources which are created via your function logic
+// The Key used here would need to have the GVKN
+// During the DIFF these resources are referred to make appropriate decisions
 func (r *inventory) AddNewResource(ref *corev1.ObjectReference, o *fn.KubeObject) {
 	if _, ok := r.resources[*ref]; !ok {
 		r.resources[*ref] = &inventoryCtx{}
@@ -84,6 +96,11 @@ func (r *inventory) AddNewResource(ref *corev1.ObjectReference, o *fn.KubeObject
 	r.resources[*ref].newResource = o
 }
 
+// Diff function is to be called Only after calling-out appropriate AddExistingCondition, AddExistingResource, AddNewResource fn
+// Diff is done on all existing condition, resources and new-resources
+// Diff will result in creating InventoryDiff struct that will tell the kpt-fn various:
+// resources to Delete, Update and Create
+// conditions to Delete, Update and Create
 func (r *inventory) Diff() (InventoryDiff, error) {
 	diff := InventoryDiff{
 		DeleteObjs:       []*Object{},
@@ -95,18 +112,21 @@ func (r *inventory) Diff() (InventoryDiff, error) {
 	}
 
 	for ref, invCtx := range r.resources {
-		switch {
-		case invCtx.newResource == nil && invCtx.existingCondition != nil:
+		if invCtx.newResource == nil && invCtx.existingCondition != nil {
 			diff.DeleteConditions = append(diff.DeleteConditions, &Object{Ref: ref})
-		case invCtx.newResource != nil && invCtx.existingCondition == nil:
+		}
+		if invCtx.newResource != nil && invCtx.existingCondition == nil {
 			diff.CreateConditions = append(diff.CreateConditions, &Object{Ref: ref})
-		case invCtx.existingResource == nil && invCtx.newResource != nil:
+		}
+		if invCtx.existingResource == nil && invCtx.newResource != nil {
 			// create resource
 			diff.CreateObjs = append(diff.CreateObjs, &Object{Ref: ref, Obj: *invCtx.newResource})
-		case invCtx.existingResource != nil && invCtx.newResource == nil:
+		}
+		if invCtx.existingResource != nil && invCtx.newResource == nil {
 			// delete resource
 			diff.DeleteObjs = append(diff.DeleteObjs, &Object{Ref: ref, Obj: *invCtx.existingResource})
-		case invCtx.existingResource != nil && invCtx.newResource != nil:
+		}
+		if invCtx.existingResource != nil && invCtx.newResource != nil {
 			// check diff
 			existingSpec, ok, err := invCtx.existingResource.NestedStringMap("spec")
 			if err != nil {

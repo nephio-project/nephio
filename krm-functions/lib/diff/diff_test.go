@@ -77,13 +77,13 @@ func TestDiffWithSameSpec(t *testing.T) {
 	}
 	diffList, _ := inventory.Diff()
 	if len(diffList.CreateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.CreateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.CreateObjs))
 	}
 	if len(diffList.DeleteObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.DeleteObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.DeleteObjs))
 	}
 	if len(diffList.UpdateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.UpdateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.UpdateObjs))
 	}
 }
 
@@ -106,6 +106,16 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 				kind:       "b",
 				name:       "c",
 				dummy:      "samsung",
+				spec:       "test1",
+			},
+		},
+		{
+			input: object{
+				apiVersion: "d",
+				kind:       "e",
+				name:       "f",
+				spec:       "test2",
+				dummy:      "samsung",
 			},
 		},
 	}
@@ -127,7 +137,7 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 				Name: tt.input.name,
 			},
 			Spec: nadv1.NetworkAttachmentDefinitionSpec{
-				Config: "type1",
+				Config: tt.input.spec,
 			},
 		}
 		byteStream, _ := yaml.Marshal(ipa)
@@ -152,13 +162,13 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 	}
 	diffList, _ := inventory.Diff()
 	if len(diffList.CreateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.CreateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.CreateObjs))
 	}
-	if len(diffList.DeleteObjs) != 1 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.DeleteObjs)
+	if len(diffList.DeleteObjs) != 2 {
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.DeleteObjs))
 	}
 	if len(diffList.UpdateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.UpdateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.UpdateObjs))
 	}
 }
 
@@ -182,6 +192,16 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 				kind:       "b",
 				name:       "c",
 				dummy:      "samsung",
+				spec:       "test1",
+			},
+		},
+		{
+			input: object{
+				apiVersion: "d",
+				kind:       "e",
+				name:       "f",
+				spec:       "test2",
+				dummy:      "samsung",
 			},
 		},
 	}
@@ -203,7 +223,7 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 				Name: tt.input.name,
 			},
 			Spec: nadv1.NetworkAttachmentDefinitionSpec{
-				Config: "type1",
+				Config: tt.input.spec,
 			},
 		}
 		byteStream, _ := yaml.Marshal(ipa)
@@ -227,14 +247,14 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 		inventory.AddNewResource(currentGVKN, kubeObjectMade)
 	}
 	diffList, _ := inventory.Diff()
-	if len(diffList.CreateObjs) != 1 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.CreateObjs)
+	if len(diffList.CreateObjs) != 2 {
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.CreateObjs))
 	}
 	if len(diffList.DeleteObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.DeleteObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.DeleteObjs))
 	}
 	if len(diffList.UpdateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.UpdateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.UpdateObjs))
 	}
 }
 
@@ -345,12 +365,12 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 	}
 	diffList, _ := inventory.Diff()
 	if len(diffList.CreateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.CreateObjs)
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.CreateObjs))
 	}
-	if len(diffList.DeleteObjs) != 2 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.DeleteObjs)
+	if len(diffList.DeleteObjs) != 0 {
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.DeleteObjs))
 	}
-	if len(diffList.UpdateObjs) != 0 {
-		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", diffList.UpdateObjs)
+	if len(diffList.UpdateObjs) != 2 {
+		t.Errorf("TestGetCondition: -want nothing, +got:\n%v", len(diffList.UpdateObjs))
 	}
 }
