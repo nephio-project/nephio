@@ -117,6 +117,8 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 	for _, new := range c {
 		exists := false
 		for i, existing := range r.GetKptFile().Status.Conditions {
+			// if the condition exists we update the conditions in the kpt file
+			// to the new condition
 			if existing.Type != new.Type {
 				continue
 			}
@@ -128,6 +130,7 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 		}
 	}
 }
+
 
 // DeleteCondition deletes the condition equal to the conditionType if it exists
 func (r *kptFile) DeleteCondition(ct string) {
