@@ -8,27 +8,17 @@ presubmits:
         command:
         - make
         args:
-        - test
-  - name: presubmit-nephio-go-fmt
+        - unit
+  - name: presubmit-nephio-gosec
     decorate: true
     run_if_changed: "(\\.go)$"
     spec:
       containers:
-      - image: golang:1.20.2
+      - image: securego/gosec:2.15.0
         command:
         - make
         args:
-        - fmt
-  - name: presubmit-nephio-go-vet
-    decorate: true
-    run_if_changed: "(\\.go)$"
-    spec:
-      containers:
-      - image: golang:1.20.2
-        command:
-        - make
-        args:
-        - vet
+        - gosec
   - name: presubmit-nephio-golangci-lint
     decorate: true
     run_if_changed: "(\\.go)$"
