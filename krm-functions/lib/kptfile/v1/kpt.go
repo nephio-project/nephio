@@ -110,6 +110,13 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 		r.GetKptFile().Status = &kptv1.Status{
 			Conditions: []kptv1.Condition{},
 		}
+	} else {
+		// initialize conditions if not initialized
+		if r.GetKptFile().Status.Conditions == nil {
+			r.GetKptFile().Status = &kptv1.Status{
+				Conditions: []kptv1.Condition{},
+			}
+		}
 	}
 
 	// for each new condition check if the type is already in the slice
