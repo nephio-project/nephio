@@ -18,6 +18,7 @@ package v1
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
@@ -58,6 +59,7 @@ func NewMutator(b string) KptFile {
 }
 
 type kptFile struct {
+	m       sync.RWMutex
 	raw     []byte
 	kptfile *kptv1.KptFile
 }
@@ -105,6 +107,8 @@ func (r *kptFile) GetKptFile() *kptv1.KptFile {
 // SetConditions sets the conditions in the kptfile. It either updates the entry if it exists
 // or appends the entry if it does not exist.
 func (r *kptFile) SetConditions(c ...kptv1.Condition) {
+	r.m.Lock()
+	defer r.m.Unlock()
 	// validate is the status is set, if not initialize the condition slice
 	if r.GetKptFile().Status == nil {
 		r.GetKptFile().Status = &kptv1.Status{
@@ -140,6 +144,8 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 
 // DeleteCondition deletes the condition equal to the conditionType if it exists
 func (r *kptFile) DeleteCondition(ct string) {
+	r.m.Lock()
+	defer r.m.Unlock()
 	if r.GetKptFile().Status == nil || len(r.GetKptFile().Status.Conditions) == 0 {
 		return
 	}
@@ -154,6 +160,8 @@ func (r *kptFile) DeleteCondition(ct string) {
 // GetCondition returns the condition for the given ConditionType if it exists,
 // otherwise returns nil
 func (r *kptFile) GetCondition(ct string) *kptv1.Condition {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	if r.GetKptFile().Status == nil || len(r.GetKptFile().Status.Conditions) == 0 {
 		return nil
 	}
@@ -169,6 +177,8 @@ func (r *kptFile) GetCondition(ct string) *kptv1.Condition {
 // GetConditions returns all the conditions in the kptfile. if not initialized it
 // returns an emoty slice
 func (r *kptFile) GetConditions() []kptv1.Condition {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	if r.GetKptFile().Status == nil || len(r.GetKptFile().Status.Conditions) == 0 {
 		return []kptv1.Condition{}
 	}
