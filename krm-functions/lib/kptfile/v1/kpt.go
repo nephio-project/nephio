@@ -61,7 +61,6 @@ func New(b string) (KptFile, error) {
 
 type kptFile struct {
 	m       sync.RWMutex
-	raw     []byte
 	kptfile *kptv1.KptFile
 }
 
@@ -71,12 +70,7 @@ func (r *kptFile) Marshal() ([]byte, error) {
 	if r.kptfile == nil {
 		return nil, errors.New("cannot marshal unitialized kptfile")
 	}
-	b, err := yaml.Marshal(r.kptfile)
-	if err != nil {
-		return nil, err
-	}
-	r.raw = b
-	return b, err
+	return yaml.Marshal(r.kptfile)
 }
 
 // ParseKubeObject returns a fn sdk KubeObject; if something failed an error
