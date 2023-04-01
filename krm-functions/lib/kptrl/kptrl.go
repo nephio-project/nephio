@@ -18,16 +18,12 @@ package kptrl
 
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
 )
 
 type ResourceList interface {
 	AddResult(err error, obj *fn.KubeObject)
 	GetObjects() fn.KubeObjects
 	SetObject(obj *fn.KubeObject)
-	SetObjectWithDeleteTimestamp(obj *fn.KubeObject)
 	AddObject(obj *fn.KubeObject)
 	DeleteObject(obj *fn.KubeObject)
 }
@@ -61,20 +57,6 @@ func (r *resourceList) SetObject(obj *fn.KubeObject) {
 	}
 	if !exists {
 		r.AddObject(obj)
-	}
-}
-
-func (r *resourceList) SetObjectWithDeleteTimestamp(obj *fn.KubeObject) {
-	for idx, o := range r.rl.Items {
-		if IsGVKN(o, obj) {
-			u := &unstructured.Unstructured{}
-			yaml.Unmarshal([]byte(obj.String()), u)
-			t := metav1.Now()
-			u.SetDeletionTimestamp(&t)
-
-			r.rl.Items[idx] = obj
-			break
-		}
 	}
 }
 
