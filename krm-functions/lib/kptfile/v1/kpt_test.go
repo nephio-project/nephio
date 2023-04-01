@@ -23,16 +23,90 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestParseObject(t *testing.T) {
+	f := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+`
+
+	kf, err := New(f)
+	if err != nil {
+		t.Errorf("cannot unmarshal file: %s", err.Error())
+	}
+
+	cases := map[string]struct {
+		wantKind string
+		wantName string
+	}{
+		"ParseObject": {
+			wantKind: "Kptfile",
+			wantName: "xxx",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			o, err := kf.ParseKubeObject()
+			if err != nil {
+				t.Errorf("cannot parse object: %s", err.Error())
+			}
+
+			if diff := cmp.Diff(tc.wantKind, o.GetKind()); diff != "" {
+				t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
+			}
+			if diff := cmp.Diff(tc.wantName, o.GetName()); diff != "" {
+				t.Errorf("TestParseObjectName: -want, +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMarshal(t *testing.T) {
+	f := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+`
+
+	kf, err := New(f)
+	if err != nil {
+		t.Errorf("cannot unmarshal file: %s", err.Error())
+	}
+
+	cases := map[string]struct {
+	}{
+		"Marshal": {},
+	}
+
+	for name := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := kf.Marshal()
+			if err != nil {
+				t.Errorf("cannot parse object: %s", err.Error())
+			}
+		})
+	}
+}
+
 func TestGetCondition(t *testing.T) {
 
 	f := `apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
-  name: pkg-upf
+  name: xxx
   annotations:
     config.kubernetes.io/local-config: "true"
 info:
-  description: upf package example
+  description: xxx
 `
 
 	kf, err := New(f)
@@ -95,11 +169,11 @@ func TestSetConditions(t *testing.T) {
 	f := `apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
-  name: pkg-upf
+  name: xxx
   annotations:
     config.kubernetes.io/local-config: "true"
 info:
-  description: upf package example
+  description: xxx
 `
 
 	cases := map[string]struct {
@@ -174,14 +248,82 @@ info:
 				t.Errorf("TestSetConditions: got: %v, want: %v", gots, tc.want)
 			} else {
 				for idx, got := range gots {
-					// no need to validate length as this was already done
-					/*
-						if idx > len(tc.want)-1 {
-							t.Errorf("TestSetConditions: got: %v, want: %v", gots, tc.want)
-						}
-					*/
 					if diff := cmp.Diff(tc.want[idx], got); diff != "" {
-						t.Errorf("TestGetCondition: -want, +got:\n%s", diff)
+						t.Errorf("TestSetCondition: -want, +got:\n%s", diff)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteCondition(t *testing.T) {
+
+	f := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+status:
+  conditions:
+  - type: a
+    status: "False"
+    reason: a
+    message: a
+  - type: b
+    status: "False"
+    reason: b
+    message: b
+`
+
+	cases := map[string]struct {
+		t    []string
+		want []kptv1.Condition
+	}{
+		"DeleteConditionFirst": {
+			t: []string{"a"},
+			want: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+			},
+		},
+		"DeleteConditionLast": {
+			t: []string{"b"},
+			want: []kptv1.Condition{
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+		},
+		"DeleteConditionAll": {
+			t:    []string{"b", "a"},
+			want: []kptv1.Condition{},
+		},
+		"DeleteConditionUnknown": {
+			t: []string{"c"},
+			want: []kptv1.Condition{
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			kf, err := New(f)
+			if err != nil {
+				t.Errorf("cannot unmarshal file: %s", err.Error())
+			}
+			for _, t := range tc.t {
+				kf.DeleteCondition(t)
+			}
+			gots := kf.GetConditions()
+			if len(gots) != len(tc.want) {
+				t.Errorf("TestDeleteCondition: got: %v, want: %v", gots, tc.want)
+			} else {
+				for idx, got := range gots {
+					if diff := cmp.Diff(tc.want[idx], got); diff != "" {
+						t.Errorf("TestDeleteCondition: -want, +got:\n%s", diff)
 					}
 				}
 			}
