@@ -18,9 +18,6 @@ import (
 )
 
 type Parser interface {
-	// Marshal serializes the value provided into a YAML document based on "sigs.k8s.io/yaml".
-	// The structure of the generated document will reflect the structure of the value itself.
-	Marshal() ([]byte, error)
 	// ParseKubeObject returns a fn sdk KubeObject; if something failed an error
 	// is returned
 	ParseKubeObject() (*fn.KubeObject, error)
