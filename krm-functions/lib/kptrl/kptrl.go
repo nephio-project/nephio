@@ -12,7 +12,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- */
+*/
 
 package kptrl
 
@@ -53,7 +53,7 @@ func (r *resourceList) GetObjects() fn.KubeObjects {
 func (r *resourceList) SetObject(obj *fn.KubeObject) {
 	exists := false
 	for idx, o := range r.rl.Items {
-		if o.GetAPIVersion() == obj.GetAPIVersion() && o.GetKind() == obj.GetKind() && o.GetName() == obj.GetName() {
+		if IsGVKN(o, obj) {
 			r.rl.Items[idx] = obj
 			exists = true
 			break
@@ -66,7 +66,7 @@ func (r *resourceList) SetObject(obj *fn.KubeObject) {
 
 func (r *resourceList) SetObjectWithDeleteTimestamp(obj *fn.KubeObject) {
 	for idx, o := range r.rl.Items {
-		if o.GetAPIVersion() == obj.GetAPIVersion() && o.GetKind() == obj.GetKind() && o.GetName() == obj.GetName() {
+		if IsGVKN(o, obj) {
 			u := &unstructured.Unstructured{}
 			yaml.Unmarshal([]byte(obj.String()), u)
 			t := metav1.Now()
@@ -84,8 +84,15 @@ func (r *resourceList) AddObject(obj *fn.KubeObject) {
 
 func (r *resourceList) DeleteObject(obj *fn.KubeObject) {
 	for idx, o := range r.rl.Items {
-		if o.GetAPIVersion() == obj.GetAPIVersion() && o.GetKind() == obj.GetKind() && o.GetName() == obj.GetName() {
+		if IsGVKN(o, obj) {
 			r.rl.Items = append(r.rl.Items[:idx], r.rl.Items[idx+1:]...)
 		}
 	}
+}
+
+func IsGVKN(co, no *fn.KubeObject) bool {
+	if co.GetAPIVersion() == no.GetAPIVersion() && co.GetKind() == no.GetKind() && co.GetName() == no.GetName() {
+		return true
+	}
+	return false
 }
