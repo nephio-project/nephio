@@ -30,54 +30,56 @@ func TestGetConditionType(t *testing.T) {
 		dummy      string
 	}
 
-	tests := []struct {
+	tests := map[string]struct {
 		input object
 		want  string
 	}{
-		{
+		"GetConditionType": {
 			input: object{
-				apiVersion: "a.a.a",
+				apiVersion: "a.a/a",
 				kind:       "b",
 				name:       "c",
 			},
-			want: "a.b.c",
+			want: "a.a/a.b.c",
 		},
-		{
+		"GetConditionTypeNoAPIVersion": {
 			input: object{
 				kind: "b",
 				name: "c",
 			},
 			want: "b.c",
 		},
-		{
+		"GetConditionTypeWrongAPIVersion": {
 			input: object{
 				apiVersion: "a.a",
 				kind:       "b",
 				name:       "c",
 			},
-			want: "b.c",
+			want: "a.a.b.c",
 		},
-		{
+		"GetConditionTypeOnlyName": {
 			input: object{
 				name: "c",
 			},
 			want: "c",
 		},
-		{
+		"GetConditionTypeEmpty": {
 			input: object{},
 			want:  "",
 		},
 	}
 
-	for _, tt := range tests {
-		got := GetConditionType(&corev1.ObjectReference{
-			APIVersion: tt.input.apiVersion,
-			Kind:       tt.input.kind,
-			Name:       tt.input.name,
-			Namespace:  tt.input.dummy,
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := GetConditionType(&corev1.ObjectReference{
+				APIVersion: tt.input.apiVersion,
+				Kind:       tt.input.kind,
+				Name:       tt.input.name,
+				Namespace:  tt.input.dummy,
+			})
+			if got != tt.want {
+				t.Errorf("got %s want %s", got, tt.want)
+			}
 		})
-		if got != tt.want {
-			t.Errorf("got %s want %s", got, tt.want)
-		}
 	}
 }

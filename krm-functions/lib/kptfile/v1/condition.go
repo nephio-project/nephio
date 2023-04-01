@@ -27,9 +27,9 @@ func GetConditionType(o *corev1.ObjectReference) string {
 	var sb strings.Builder
 	sb.Reset()
 	if o.APIVersion != "" {
-		gvk, _ := schema.ParseKindArg(o.APIVersion)
-		if gvk != nil {
-			sb.WriteString(gvk.Group)
+		gv, err := schema.ParseGroupVersion(o.APIVersion)
+		if err == nil {
+			sb.WriteString(gv.String())
 		}
 	}
 	if o.Kind != "" {
