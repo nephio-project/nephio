@@ -17,27 +17,145 @@
 package kptrl
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func TestGetObjects(t *testing.T) {
-	f := []byte(`
+var resList = []byte(`
 apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: a.a/v1
   kind: A
   metadata:
-    name: example
+    name: a
 - apiVersion: b.b/v1
   kind: B
   metadata:
     name: b
 `)
 
-	rl, err := fn.ParseResourceList(f)
+var objA = []byte(`
+apiVersion: a.a/v1
+kind: A
+metadata:
+  name: a
+  labels:
+    a: a
+`)
+
+var objB = []byte(`
+apiVersion: b.b/v1
+kind: B
+metadata:
+  name: b
+  labels:
+    b: b
+`)
+
+var objC = []byte(`
+apiVersion: c.c/v1
+kind: C
+metadata:
+  name: c
+  labels:
+    c: c
+`)
+
+func TestAddResults(t *testing.T) {
+	rl, err := fn.ParseResourceList(resList)
+	if err != nil {
+		t.Errorf("cannot parse resourceList: %s", err.Error())
+	}
+	r := New(rl)
+
+	cases := map[string]struct {
+	}{
+		"AddResult": {},
+	}
+
+	for name := range cases {
+		t.Run(name, func(t *testing.T) {
+			tObj, err := fn.ParseKubeObject(objA)
+			if err != nil {
+				t.Errorf("cannot parse test obj: %s", err.Error())
+			}
+
+			r.AddResult(errors.New("dummy error"), tObj)
+			results := r.GetResults()
+			found := false
+			for _, result := range results {
+				if strings.Contains(result.Error(), "dummy error") {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("TestAddResults: result not found:\n")
+			}
+
+		})
+	}
+}
+
+func TestGetObject(t *testing.T) {
+	rl, err := fn.ParseResourceList(resList)
+	if err != nil {
+		t.Errorf("cannot parse resourceList: %s", err.Error())
+	}
+	r := New(rl)
+
+	cases := map[string]struct {
+		t    []byte
+		want *corev1.ObjectReference
+	}{
+		"GetObjectExist": {
+			t: objA,
+			want: &corev1.ObjectReference{
+				APIVersion: "a.a/v1",
+				Kind:       "A",
+				Name:       "a",
+			},
+		},
+		"GetObjectNotExist": {
+			t:    objC,
+			want: nil,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			tObj, err := fn.ParseKubeObject(tc.t)
+			if err != nil {
+				t.Errorf("cannot parse test obj: %s", err.Error())
+			}
+			got := r.GetObject(tObj)
+
+			if got == nil {
+				if tc.want != nil {
+					t.Errorf("TestGetObject: -want: %v, +got:%v\n", tc.want, got)
+				}
+			} else {
+				objRef := &corev1.ObjectReference{
+					APIVersion: got.GetAPIVersion(),
+					Kind:       got.GetKind(),
+					Name:       got.GetName(),
+				}
+				if diff := cmp.Diff(tc.want, objRef); diff != "" {
+					t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
+				}
+			}
+
+		})
+	}
+}
+
+func TestGetObjects(t *testing.T) {
+	rl, err := fn.ParseResourceList(resList)
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
@@ -60,18 +178,91 @@ items:
 		t.Run(name, func(t *testing.T) {
 			objs := r.GetObjects()
 
-			if len(objs) == tc.wantLen {
+			if len(objs) != tc.wantLen {
 				t.Errorf("TestGetObjects: -want %d, +got: %d\n", tc.wantLen, len(objs))
 			}
 
-			/*
-				if diff := cmp.Diff(tc.wantKind, o.GetKind()); diff != "" {
+			for i, o := range objs {
+				if o.GetAPIVersion() != tc.wantAPIVersions[i] {
+					t.Errorf("TestGetObjects: -want %s, +got: %s\n", o.GetAPIVersion(), tc.wantAPIVersions[i])
+				}
+			}
+		})
+	}
+}
+
+func TestSetObject(t *testing.T) {
+	rl, err := fn.ParseResourceList(resList)
+	if err != nil {
+		t.Errorf("cannot parse resourceList: %s", err.Error())
+	}
+	r := New(rl)
+
+	cases := map[string]struct {
+		t    []byte
+		want *corev1.ObjectReference
+	}{
+		"SetObjectNew": {
+			t: objC,
+		},
+		"SetObjectOverwrite": {
+			t: objA,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			tObj, err := fn.ParseKubeObject(tc.t)
+			if err != nil {
+				t.Errorf("cannot parse test obj: %s", err.Error())
+			}
+
+			r.SetObject(tObj)
+			got := r.GetObject(tObj)
+
+			if got == nil {
+				t.Errorf("TestGetObject: -want: %v, +got:%v\n", tObj, got)
+			} else {
+				if diff := cmp.Diff(tObj.GetLabels(), got.GetLabels()); diff != "" {
 					t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
 				}
-				if diff := cmp.Diff(tc.wantName, o.GetName()); diff != "" {
-					t.Errorf("TestParseObjectName: -want, +got:\n%s", diff)
-				}
-			*/
+			}
+		})
+	}
+}
+
+func TestDeleteObject(t *testing.T) {
+	rl, err := fn.ParseResourceList(resList)
+	if err != nil {
+		t.Errorf("cannot parse resourceList: %s", err.Error())
+	}
+	r := New(rl)
+
+	cases := map[string]struct {
+		t    []byte
+		want *corev1.ObjectReference
+	}{
+		"DeleteObj": {
+			t: objB,
+		},
+		"DeleteNonExistingObject": {
+			t: objC,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			tObj, err := fn.ParseKubeObject(tc.t)
+			if err != nil {
+				t.Errorf("cannot parse test obj: %s", err.Error())
+			}
+
+			r.DeleteObject(tObj)
+			got := r.GetObject(tObj)
+
+			if got != nil {
+				t.Errorf("TestDeleteObject: -want: nil, +got:%v\n", got)
+			}
 		})
 	}
 }

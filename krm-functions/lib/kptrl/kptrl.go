@@ -17,14 +17,17 @@
 package kptrl
 
 import (
+	"sync"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 )
 
 type ResourceList interface {
 	AddResult(err error, obj *fn.KubeObject)
+	GetResults() fn.Results
+	GetObject(obj *fn.KubeObject) *fn.KubeObject
 	GetObjects() fn.KubeObjects
 	SetObject(obj *fn.KubeObject)
-	AddObject(obj *fn.KubeObject)
 	DeleteObject(obj *fn.KubeObject)
 }
 
@@ -35,45 +38,72 @@ func New(rl *fn.ResourceList) ResourceList {
 }
 
 type resourceList struct {
+	m  sync.RWMutex
 	rl *fn.ResourceList
 }
 
 func (r *resourceList) AddResult(err error, obj *fn.KubeObject) {
+	r.m.Lock()
+	defer r.m.Unlock()
 	r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, obj))
 }
 
+func (r *resourceList) GetResults() fn.Results {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	return r.rl.Results
+}
+
+func (r *resourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	for _, o := range r.rl.Items {
+		if isGVKNEqual(o, obj) {
+			return o
+		}
+	}
+	return nil
+}
+
 func (r *resourceList) GetObjects() fn.KubeObjects {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	return r.rl.Items
 }
 
 func (r *resourceList) SetObject(obj *fn.KubeObject) {
+	r.m.Lock()
+	defer r.m.Unlock()
 	exists := false
 	for idx, o := range r.rl.Items {
-		if IsGVKN(o, obj) {
+		if isGVKNEqual(o, obj) {
 			r.rl.Items[idx] = obj
 			exists = true
 			break
 		}
 	}
 	if !exists {
-		r.AddObject(obj)
+		r.addObject(obj)
 	}
 }
 
-func (r *resourceList) AddObject(obj *fn.KubeObject) {
+func (r *resourceList) addObject(obj *fn.KubeObject) {
 	r.rl.Items = append(r.rl.Items, obj)
 }
 
 func (r *resourceList) DeleteObject(obj *fn.KubeObject) {
+	r.m.Lock()
+	defer r.m.Unlock()
 	for idx, o := range r.rl.Items {
-		if IsGVKN(o, obj) {
+		if isGVKNEqual(o, obj) {
 			r.rl.Items = append(r.rl.Items[:idx], r.rl.Items[idx+1:]...)
 		}
 	}
 }
 
-func IsGVKN(co, no *fn.KubeObject) bool {
-	if co.GetAPIVersion() == no.GetAPIVersion() && co.GetKind() == no.GetKind() && co.GetName() == no.GetName() {
+// isGVKNEqual validates if the APIVersion, Kind and Name of both fn.KubeObject are equal
+func isGVKNEqual(curobj, newobj *fn.KubeObject) bool {
+	if curobj.GetAPIVersion() == newobj.GetAPIVersion() && curobj.GetKind() == newobj.GetKind() && curobj.GetName() == newobj.GetName() {
 		return true
 	}
 	return false

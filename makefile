@@ -1,14 +1,11 @@
-.PHONY: all
-all: test
-
 .PHONY: fmt
 fmt: ## Run go fmt against code.
-  go fmt ./...
+	go fmt ./...
 
 .PHONY: vet
 vet: ## Run go vet against code.
-  go vet ./...
+	go vet ./...
 
-HONY: test
+.PHONY: test
 test: fmt vet ## Run tests.
-  go test ./... -coverprofile cover.out
+	go test ./... -coverprofile cover.out
