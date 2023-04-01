@@ -131,7 +131,6 @@ func (r *kptFile) SetConditions(c ...kptv1.Condition) {
 	}
 }
 
-
 // DeleteCondition deletes the condition equal to the conditionType if it exists
 func (r *kptFile) DeleteCondition(ct string) {
 	if r.GetKptFile().Status == nil || len(r.GetKptFile().Status.Conditions) == 0 {

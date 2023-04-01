@@ -63,6 +63,10 @@ func TestGetConditionType(t *testing.T) {
 			},
 			want: "c",
 		},
+		{
+			input: object{},
+			want:  "",
+		},
 	}
 
 	for _, tt := range tests {
