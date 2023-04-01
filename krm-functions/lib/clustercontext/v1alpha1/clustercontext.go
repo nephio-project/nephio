@@ -12,7 +12,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- */
+*/
 
 package v1alpha1
 
@@ -25,42 +25,32 @@ import (
 )
 
 type ClusterContext interface {
-	// Unmarshal decodes the raw document within the in byte slice and assigns decoded values into the out value.
-	// it leverages the  "sigs.k8s.io/yaml" library
-	UnMarshal() (*infrav1alpha1.ClusterContext, error)
-	// Marshal serializes the value provided into a YAML document based on "sigs.k8s.io/yaml".
-	// The structure of the generated document will reflect the structure of the value itself.
-	Marshal() ([]byte, error)
 	// ParseKubeObject returns a fn sdk KubeObject; if something failed an error
 	// is returned
 	ParseKubeObject() (*fn.KubeObject, error)
+	// GetClusterContext returns the ClusterContext as a go struct
+	GetClusterContext() *infrav1alpha1.ClusterContext
 }
 
 // NewMutator creates a new mutator for the ClusterContext
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewMutator(b string) ClusterContext {
-	return &clusterContext{
-		raw: []byte(b),
+func New(b string) (ClusterContext, error) {
+	c := &infrav1alpha1.ClusterContext{}
+	if err := yaml.Unmarshal([]byte(b), c); err != nil {
+		return nil, err
 	}
+	return &clusterContext{
+		cluster: c,
+	}, nil
 }
 
 type clusterContext struct {
-	raw     []byte
 	cluster *infrav1alpha1.ClusterContext
-}
-
-func (r *clusterContext) UnMarshal() (*infrav1alpha1.ClusterContext, error) {
-	c := &infrav1alpha1.ClusterContext{}
-	if err := yaml.Unmarshal(r.raw, c); err != nil {
-		return nil, err
-	}
-	r.cluster = c
-	return c, nil
 }
 
 // Marshal serializes the value provided into a YAML document based on "sigs.k8s.io/yaml".
 // The structure of the generated document will reflect the structure of the value itself.
-func (r *clusterContext) Marshal() ([]byte, error) {
+func (r *clusterContext) marshal() ([]byte, error) {
 	if r.cluster == nil {
 		return nil, errors.New("cannot marshal unitialized cluster")
 	}
@@ -68,16 +58,20 @@ func (r *clusterContext) Marshal() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.raw = b
 	return b, err
 }
 
 // ParseKubeObject returns a fn sdk KubeObject; if something failed an error
 // is returned
 func (r *clusterContext) ParseKubeObject() (*fn.KubeObject, error) {
-	b, err := r.Marshal()
+	b, err := r.marshal()
 	if err != nil {
 		return nil, err
 	}
 	return fn.ParseKubeObject(b)
+}
+
+// GetClusterContext returns the ClusterContext as a go struct
+func (r *clusterContext) GetClusterContext() *infrav1alpha1.ClusterContext {
+	return r.cluster
 }

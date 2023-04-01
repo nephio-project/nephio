@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
+	github.com/google/go-cmp v0.5.9
 	github.com/nephio-project/nephio-controller-poc v0.0.2
 	sigs.k8s.io/yaml v1.3.0
 )
