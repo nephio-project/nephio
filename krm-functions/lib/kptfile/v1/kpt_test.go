@@ -35,8 +35,8 @@ info:
   description: upf package example
 `
 
-	kf := NewMutator(f)
-	if _, err := kf.UnMarshal(); err != nil {
+	kf, err := New(f)
+	if err != nil {
 		t.Errorf("cannot unmarshal file: %s", err.Error())
 	}
 
@@ -158,8 +158,8 @@ info:
 	}
 
 	for name, tc := range cases {
-		kf := NewMutator(f)
-		if _, err := kf.UnMarshal(); err != nil {
+		kf, err := New(f)
+		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
 		t.Run(name, func(t *testing.T) {

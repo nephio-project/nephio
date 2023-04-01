@@ -26,9 +26,6 @@ import (
 )
 
 type KptFile interface {
-	// Unmarshal decodes the raw document within the in byte slice and assigns decoded values into the out value.
-	// it leverages the  "sigs.k8s.io/yaml" library
-	UnMarshal() (*kptv1.KptFile, error)
 	// Marshal serializes the value provided into a YAML document based on "sigs.k8s.io/yaml".
 	// The structure of the generated document will reflect the structure of the value itself.
 	Marshal() ([]byte, error)
@@ -50,12 +47,14 @@ type KptFile interface {
 	GetConditions() []kptv1.Condition
 }
 
-// NewMutator creates a new mutator for the kptfile
+// New creates a new mutator for the kptfile
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewMutator(b string) KptFile {
-	return &kptFile{
+func New(b string) (KptFile, error) {
+	r := &kptFile{
 		raw: []byte(b),
 	}
+	_, err := r.unMarshal()
+	return r, err
 }
 
 type kptFile struct {
@@ -64,9 +63,9 @@ type kptFile struct {
 	kptfile *kptv1.KptFile
 }
 
-// Unmarshal decodes the raw document within the in byte slice and assigns decoded values into the out value.
+// unmarshal decodes the raw document within the in byte slice and assigns decoded values into the out value.
 // it leverages the  "sigs.k8s.io/yaml" library
-func (r *kptFile) UnMarshal() (*kptv1.KptFile, error) {
+func (r *kptFile) unMarshal() (*kptv1.KptFile, error) {
 	k := &kptv1.KptFile{}
 	if err := yaml.Unmarshal(r.raw, k); err != nil {
 		return nil, err
