@@ -1,0 +1,31 @@
+presubmits:
+  - name: nephio-go-test
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: golang:1.20.2
+        command:
+        - make
+        args:
+        - test
+  - name: nephio-fmt-test
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: golang:1.20.2
+        command:
+        - make
+        args:
+        - fmt
+  - name: nephio-vet-test
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: golang:1.20.2
+        command:
+        - make
+        args:
+        - vet
