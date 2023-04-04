@@ -87,8 +87,6 @@ func (r *kptFile) ParseKubeObject() (*fn.KubeObject, error) {
 
 // GetKptFile returns the Kptfile as a go struct
 func (r *kptFile) GetKptFile() *kptv1.KptFile {
-	r.m.RLock()
-	defer r.m.RUnlock()
 	return r.kptfile
 }
 
