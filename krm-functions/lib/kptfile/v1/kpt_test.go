@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestParseObject(t *testing.T) {
+func TestParseKubeObject(t *testing.T) {
 	f := `apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
