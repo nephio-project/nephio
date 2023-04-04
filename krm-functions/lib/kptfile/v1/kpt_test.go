@@ -21,7 +21,60 @@ import (
 
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestNew(t *testing.T) {
+	f1 := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+`
+	f2 := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+    name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+`
+
+	cases := map[string]struct {
+		testInput        []byte
+		errExpected      bool
+		kptfileGenerated bool
+	}{
+		"NewSucceeds": {
+			[]byte(f1), false, true,
+		},
+		"NewFails": {
+			[]byte(f2), true, false,
+		},
+		"NewNil": {
+			nil, false, true,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			kf, err := New(string(tc.testInput))
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			if tc.kptfileGenerated {
+				assert.NotNil(t, kf)
+			} else {
+				assert.Nil(t, kf)
+			}
+		})
+	}
+}
 
 func TestParseKubeObject(t *testing.T) {
 	f := `apiVersion: kpt.dev/v1
