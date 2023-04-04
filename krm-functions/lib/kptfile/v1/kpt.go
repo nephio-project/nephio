@@ -76,6 +76,8 @@ func (r *kptFile) Marshal() ([]byte, error) {
 // ParseKubeObject returns a fn sdk KubeObject; if something failed an error
 // is returned
 func (r *kptFile) ParseKubeObject() (*fn.KubeObject, error) {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	b, err := r.Marshal()
 	if err != nil {
 		return nil, err
@@ -85,6 +87,8 @@ func (r *kptFile) ParseKubeObject() (*fn.KubeObject, error) {
 
 // GetKptFile returns the Kptfile as a go struct
 func (r *kptFile) GetKptFile() *kptv1.KptFile {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	return r.kptfile
 }
 
