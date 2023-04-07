@@ -23,7 +23,7 @@ Please see the following resources for more information:
   * Wiki: [wiki.nephio.org](https://wiki.nephio.org)
   * Slack: [nephio.slack.com](https://nephio.slack.com)
   * Proof-of-Concept:
-    [Nephio ONE Sumit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop)
+    [Nephio ONE Summit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop)
   * Governance:
     [github.com/nephio-project/governance](https://github.com/nephio-project/governance)
 
