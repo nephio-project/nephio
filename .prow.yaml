@@ -16,9 +16,9 @@ presubmits:
       containers:
       - image: securego/gosec:2.15.0
         command:
-        - make
-        args:
         - gosec
+        args:
+        - ./...
   - name: presubmit-nephio-golangci-lint
     decorate: true
     run_if_changed: "(\\.go)$"
