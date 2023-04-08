@@ -7,7 +7,7 @@ The `NAD` KRM function is designed to be a part of the pipeline of a Nephio NF k
 
 Its primary purpose is to find all `Network Function Deployments` custom resources and the `IP allocations` in the package and expand it to a set of network attachement definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus. 
 
-The function is also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
+The function is also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions and controllers acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
 
 Child resources generated for an `NAD` resource
 -------------------------------------------------------
