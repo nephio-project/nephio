@@ -1,0 +1,17 @@
+apiVersion: ipam.nephio.org/v1alpha1
+kind: IPAllocation
+metadata:
+  creationTimestamp: null
+  labels:
+    nephio.org/interface: n6
+  name: upf-us-central1-n6
+  namespace: upf
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/network-instance: sample-vpc
+      nephio.org/network-name: sample-n6-net
+status:
+  prefix: 12.0.0.6/24
+  gateway: "12.0.0.1"

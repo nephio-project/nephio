@@ -1,0 +1,9 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  creationTimestamp: null
+  name: upf-us-central1-n3
+  namespace: upf
+spec:
+  config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true,"mac":false},"master":"\"bond0\"","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.3/24","gateway":"\"10.0.0.1\""}]}},{"type":"sriov","capabilities":{"ips":false,"mac":true},"master":"","mode":"","ipam":{"type":"","addresses":null}}]}'
+  

@@ -1,0 +1,39 @@
+apiVersion: nf.nephio.org/v1alpha1
+kind: UPFDeployment
+metadata:
+  creationTimestamp: null
+  name: upf-us-central1
+spec:
+  capacity:
+    downlinkThroughput: 10G
+    uplinkThroughput: 1G
+  n3Interfaces:
+  - gatewayIPs:
+    - ""
+    ips:
+    - ""
+    name: n3
+  n4Interfaces:
+  - gatewayIPs:
+    - ""
+    ips:
+    - ""
+    name: n4
+  n6Interfaces:
+  - dnn: ""
+    interface:
+      gatewayIPs:
+      - ""
+      ips:
+      - ""
+      name: n6
+    ueIPPool: ""
+  n9Interfaces:
+  - gatewayIPs:
+    - ""
+    ips:
+    - ""
+    name: n9
+status:
+  computeuptime: null
+  operationuptime: null

@@ -1,0 +1,11 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Interface
+metadata:
+  name: n4
+  annotations:
+    config.kubernetes.io/local-config: "true"
+spec:
+  networkInstance:
+    name: vpc-internal
+  cniType: sriov
+  attachmentType: vlan
