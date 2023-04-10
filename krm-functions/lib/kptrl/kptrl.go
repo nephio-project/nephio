@@ -23,6 +23,7 @@ import (
 )
 
 type ResourceList interface {
+	//fn.ResourceList
 	// AddResult adds a result with error and corresponding kubeObject by
 	// appending a result to the result slice in the resourceList
 	AddResult(err error, obj *fn.KubeObject)
@@ -49,7 +50,7 @@ func New(rl *fn.ResourceList) ResourceList {
 	}
 }
 
-// Typically in functions there is no concurrency, but this library may be used in specializers 
+// Typically in functions there is no concurrency, but this library may be used in specializers
 // running concurrently in the same binary, and may share the same resourceList".
 type resourceList struct {
 	m  sync.RWMutex
@@ -71,13 +72,13 @@ func (r *resourceList) GetResults() fn.Results {
 	return r.rl.Results
 }
 
-// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind and Name
+// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
 // if the object is found the corresponding obj is returned, if not nil is returned
 func (r *resourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	for _, o := range r.rl.Items {
-		if isGVKNEqual(o, obj) {
+		if isGVKNNEqual(o, obj) {
 			return o
 		}
 	}
@@ -93,13 +94,13 @@ func (r *resourceList) GetObjects() fn.KubeObjects {
 
 // SetObject sets the object in the resourceList items. It either updates/overrides
 // the entry if it exists or appends the entry if it does not exist in the resourceList
-// It uses APIVersion, Kind and Name to check the object uniqueness
+// It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
 func (r *resourceList) SetObject(obj *fn.KubeObject) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	exists := false
 	for idx, o := range r.rl.Items {
-		if isGVKNEqual(o, obj) {
+		if isGVKNNEqual(o, obj) {
 			r.rl.Items[idx] = obj
 			exists = true
 			break
@@ -120,15 +121,18 @@ func (r *resourceList) DeleteObject(obj *fn.KubeObject) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	for idx, o := range r.rl.Items {
-		if isGVKNEqual(o, obj) {
+		if isGVKNNEqual(o, obj) {
 			r.rl.Items = append(r.rl.Items[:idx], r.rl.Items[idx+1:]...)
 		}
 	}
 }
 
-// isGVKNEqual validates if the APIVersion, Kind and Name of both fn.KubeObject are equal
-func isGVKNEqual(curobj, newobj *fn.KubeObject) bool {
-	if curobj.GetAPIVersion() == newobj.GetAPIVersion() && curobj.GetKind() == newobj.GetKind() && curobj.GetName() == newobj.GetName() {
+// isGVKNEqual validates if the APIVersion, Kind, Name and Namespace of both fn.KubeObject are equal
+func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
+	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
+		curobj.GetKind() == newobj.GetKind() &&
+		curobj.GetName() == newobj.GetName() &&
+		curobj.GetNamespace() == newobj.GetNamespace() {
 		return true
 	}
 	return false
