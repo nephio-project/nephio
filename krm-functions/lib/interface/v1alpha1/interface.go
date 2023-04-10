@@ -17,57 +17,145 @@
 package v1alpha1
 
 import (
-    "errors"
+	"fmt"
 
-    "github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-    nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-    "sigs.k8s.io/yaml"
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 )
 
 type Interface interface {
-    // ParseKubeObject returns a fn sdk KubeObject; if something failed an error
-    // is returned
-    ParseKubeObject() (*fn.KubeObject, error)
-    // GetInterface returns the interface as a go struct
-    GetInterface() *nephioreqv1alpha1.Interface
+	// GetKubeObject returns the present kubeObject
+	GetKubeObject() *fn.KubeObject
+	// GetAttachmentType returns the attachmentType from the spec
+	// if an error occurs or the attribute is not present an empty string is returned
+	GetAttachmentType() string
+	// GetCNIType returns the cniType from the spec
+	// if an error occurs or the attribute is not present an empty string is returned
+	GetCNIType() string
+	// GetNetworkInstanceName returns the name of the networkInstance from the spec
+	// if an error occurs or the attribute is not present an empty string is returned
+	GetNetworkInstanceName() string
+	// SetAttachmentType sets the attachmentType in the spec
+	// returns an error if the value is an unknown type or when the
+	// set fails
+	SetAttachmentType(s string) error
+	// SetCNIType sets the cniType in the spec
+	// returns an error if the value is an unknown type or when the
+	// set fails
+	SetCNIType(s string) error
+	// SetNetworkInstanceName sets the name of the networkInstance in the spec
+	// returns an error when the set fails
+	SetNetworkInstanceName(s string) error
+
+	SetInterfaceSpec(*nephioreqv1alpha1.InterfaceSpec) error
 }
 
 // New creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
 func New(b []byte) (Interface, error) {
-    i := &nephioreqv1alpha1.Interface{}
-    if err := yaml.Unmarshal(b, i); err != nil {
-        return nil, err
-    }
-    return &itfce{
-        itfce: i,
-    }, nil
+	o, err := fn.ParseKubeObject(b)
+	return &itfce{
+		o: o,
+	}, err
 }
 
 type itfce struct {
-    itfce *nephioreqv1alpha1.Interface
+	o *fn.KubeObject
 }
 
-// Marshal serializes the value provided into a YAML document based on "sigs.k8s.io/yaml".
-// The structure of the generated document will reflect the structure of the value itself.
-func (r *itfce) marshal() ([]byte, error) {
-    if r.itfce == nil {
-        return nil, errors.New("cannot marshal unitialized interface")
-    }
-    return yaml.Marshal(r.itfce)
+// GetKubeObject returns the present kubeObject
+func (r *itfce) GetKubeObject() *fn.KubeObject {
+	return r.o
 }
 
-// ParseKubeObject returns a fn sdk KubeObject; if something failed an error
-// is returned
-func (r *itfce) ParseKubeObject() (*fn.KubeObject, error) {
-    b, err := r.marshal()
-    if err != nil {
-        return nil, err
-    }
-    return fn.ParseKubeObject(b)
+func (r *itfce) GetAttachmentType() string {
+	s, ok, err := r.o.NestedString("spec", "attachmentType")
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
 }
 
-// GetInterface returns the interface as a go struct
-func (r *itfce) GetInterface() *nephioreqv1alpha1.Interface {
-    return r.itfce
+func (r *itfce) GetCNIType() string {
+	s, ok, err := r.o.NestedString("spec", "cniType")
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func (r *itfce) GetNetworkInstanceName() string {
+	s, ok, err := r.o.NestedString("spec", "networkInstance", "name")
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func (r *itfce) SetAttachmentType(s string) error {
+	// validation -> should be part of the interface api repo
+	switch s {
+	case string(nephioreqv1alpha1.AttachmentTypeNone):
+	case string(nephioreqv1alpha1.AttachmentTypeVLAN):
+	default:
+		return fmt.Errorf("unknown attachmentType")
+	}
+
+	if err := r.o.SetNestedField(s, "spec", "attachmentType"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *itfce) SetCNIType(s string) error {
+	// validation -> should be part of the interface api repo
+	switch s {
+	case string(nephioreqv1alpha1.CNITypeIPVLAN):
+	case string(nephioreqv1alpha1.CNITypeSRIOV):
+	case string(nephioreqv1alpha1.CNITypeMACVLAN):
+	default:
+		return fmt.Errorf("unknown cniType")
+	}
+
+	if err := r.o.SetNestedField(s, "spec", "cniType"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *itfce) SetNetworkInstanceName(s string) error {
+	if err := r.o.SetNestedField(s, "spec", "networkInstance", "name"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *itfce) SetInterfaceSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
+	if spec != nil {
+		if spec.AttachmentType != "" {
+			if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
+				return err
+			}
+		}
+		if spec.CNIType != "" {
+			if err := r.SetCNIType(string(spec.CNIType)); err != nil {
+				return err
+			}
+		}
+		if spec.NetworkInstance != nil {
+			if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
