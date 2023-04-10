@@ -19,6 +19,7 @@ package kptrl
 import (
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -65,6 +66,24 @@ metadata:
   name: c
   labels:
     c: c
+`)
+
+var objD = []byte(`
+apiVersion: d.d/v1
+kind: D
+metadata:
+  name: d
+  labels:
+    d: d
+`)
+
+var objE = []byte(`
+apiVersion: e.e/v1
+kind: E
+metadata:
+  name: e
+  labels:
+    e: e
 `)
 
 func TestAddResults(t *testing.T) {
@@ -264,5 +283,47 @@ func TestDeleteObject(t *testing.T) {
 				t.Errorf("TestDeleteObject: -want: nil, +got:%v\n", got)
 			}
 		})
+	}
+}
+
+func TestConurrency(t *testing.T) {
+
+	rl, err := fn.ParseResourceList(resList)
+	if err != nil {
+		t.Errorf("cannot parse resourceList: %s", err.Error())
+	}
+	r := New(rl)
+
+	objs := [][]byte{objA, objB, objC, objD, objE}
+
+	var wg sync.WaitGroup
+	for _, obj := range objs {
+		tObj, err := fn.ParseKubeObject(obj)
+		if err != nil {
+			t.Errorf("cannot parse test obj: %s", err.Error())
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := r.SetObject(tObj); err != nil {
+				t.Errorf("cannot set test obj: %s", err.Error())
+			}
+		}()
+	}
+	wg.Wait()
+
+	for _, obj := range objs {
+		tObj, err := fn.ParseKubeObject(obj)
+		if err != nil {
+			t.Errorf("cannot parse test obj: %s", err.Error())
+		}
+		got := r.GetObject(tObj)
+		if got == nil {
+			t.Errorf("TestGetObject: -want: %v, +got:%v\n", tObj, got)
+		} else {
+			if diff := cmp.Diff(tObj.GetLabels(), got.GetLabels()); diff != "" {
+				t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
+			}
+		}
 	}
 }

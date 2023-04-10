@@ -23,7 +23,6 @@ import (
 )
 
 type ResourceList interface {
-	//fn.ResourceList
 	// AddResult adds a result with error and corresponding kubeObject by
 	// appending a result to the result slice in the resourceList
 	AddResult(err error, obj *fn.KubeObject)
