@@ -321,7 +321,7 @@ func TestSetNetworkInstanceName(t *testing.T) {
 	}
 }
 
-func TestSetInterfaceSpec(t *testing.T) {
+func TestSetSpec(t *testing.T) {
 	cases := map[string]struct {
 		file                  string
 		spec                  *nephioreqv1alpha1.InterfaceSpec
@@ -373,7 +373,7 @@ func TestSetInterfaceSpec(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			err := i.SetInterfaceSpec(tc.spec)
+			err := i.SetSpec(tc.spec)
 			if tc.errExpected {
 				assert.Error(t, err)
 			} else {

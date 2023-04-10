@@ -21,11 +21,14 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
+	"sigs.k8s.io/yaml"
 )
 
 type Interface interface {
 	// GetKubeObject returns the present kubeObject
 	GetKubeObject() *fn.KubeObject
+	//
+	GetGoStruct() (*nephioreqv1alpha1.Interface, error)
 	// GetAttachmentType returns the attachmentType from the spec
 	// if an error occurs or the attribute is not present an empty string is returned
 	GetAttachmentType() string
@@ -46,13 +49,25 @@ type Interface interface {
 	// SetNetworkInstanceName sets the name of the networkInstance in the spec
 	// returns an error when the set fails
 	SetNetworkInstanceName(s string) error
-	// SetInterfaceSpec sets the spec attributes in the kubeobject
-	SetInterfaceSpec(*nephioreqv1alpha1.InterfaceSpec) error
+	// SetSpec sets the spec attributes in the kubeobject
+	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
 }
 
 // New creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func New(b []byte) (Interface, error) {
+func New(x any) (Interface, error) {
+	var err error
+	b := []byte{}
+	switch v := x.(type) {
+	case nephioreqv1alpha1.Interface:
+		b, err = yaml.Marshal(x)
+		if err != nil {
+			return nil, err
+		}
+	case []byte:
+		b = v
+	}
+
 	o, err := fn.ParseKubeObject(b)
 	return &itfce{
 		o: o,
@@ -66,6 +81,14 @@ type itfce struct {
 // GetKubeObject returns the present kubeObject
 func (r *itfce) GetKubeObject() *fn.KubeObject {
 	return r.o
+}
+
+func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
+	x := &nephioreqv1alpha1.Interface{}
+	if err := yaml.Unmarshal([]byte(r.o.String()), x); err != nil {
+        return nil, err
+    }
+    return x, nil
 }
 
 func (r *itfce) GetAttachmentType() string {
@@ -157,8 +180,8 @@ func (r *itfce) SetNetworkInstanceName(s string) error {
 	return nil
 }
 
-// SetInterfaceSpec sets the spec attributes in the kubeobject
-func (r *itfce) SetInterfaceSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
+// SetSpec sets the spec attributes in the kubeObject
+func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	if spec != nil {
 		if spec.AttachmentType != "" {
 			if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
