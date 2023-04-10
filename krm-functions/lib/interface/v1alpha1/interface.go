@@ -217,7 +217,7 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 				return err
 			}
 		} else {
-			if err := r.DeleteAttachmentType(); err != nil {
+			if err := r.DeleteCNIType(); err != nil {
 				return err
 			}
 		}

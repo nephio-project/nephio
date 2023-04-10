@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -344,8 +345,8 @@ func TestSetSpec(t *testing.T) {
 		},
 		"SetInterfaceSpecDefault": {
 			file:                  itface,
-			defaultCNIType:        "sriov",
-			defaultAttachmentType: "vlan",
+			defaultCNIType:        "",
+			defaultAttachmentType: "",
 			spec: &nephioreqv1alpha1.InterfaceSpec{
 				NetworkInstance: &corev1.ObjectReference{
 					Name: "test",
@@ -407,6 +408,33 @@ func TestSetSpec(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+func TestDeleteCNIType(t *testing.T) {
+	cases := map[string]struct {
+		file string
+	}{
+		"DeleteCNIType": {
+			file: itface,
+		},
+		"DeleteCNITypeEmpty": {
+			file: itfaceEmpty,
+		},
+	}
+
+	for name, tc := range cases {
+		i, err := New([]byte(tc.file))
+		if err != nil {
+			t.Errorf("cannot unmarshal file: %s", err.Error())
+		}
+
+		t.Run(name, func(t *testing.T) {
+			err := i.DeleteCNIType()
+			assert.NoError(t, err)
+
+			fmt.Println(i.GetKubeObject().String())
 		})
 	}
 }
