@@ -29,15 +29,15 @@ type ResourceList interface {
 	AddResult(err error, obj *fn.KubeObject)
 	// GetResults gets the results slice from the resourceList
 	GetResults() fn.Results
-	// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind and Name
+	// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
 	// if the object is found the corresponding obj is returned, if not nil is returned
 	GetObject(obj *fn.KubeObject) *fn.KubeObject
 	// GetObjects returns all items from the resourceList
 	GetObjects() fn.KubeObjects
 	// SetObject sets the object in the resourceList items. It either updates/overrides
 	// the entry if it exists or appends the entry if it does not exist in the resourceList
-	// It uses APIVersion, Kind and Name to check the object uniqueness
-	SetObject(obj *fn.KubeObject)
+	// It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
+	SetObject(obj *fn.KubeObject) error
 	// DeleteObject deletes the object from the resourceList if it exists.
 	DeleteObject(obj *fn.KubeObject)
 }
@@ -95,25 +95,14 @@ func (r *resourceList) GetObjects() fn.KubeObjects {
 // SetObject sets the object in the resourceList items. It either updates/overrides
 // the entry if it exists or appends the entry if it does not exist in the resourceList
 // It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
-func (r *resourceList) SetObject(obj *fn.KubeObject) {
+func (r *resourceList) SetObject(obj *fn.KubeObject) error {
 	r.m.Lock()
 	defer r.m.Unlock()
-	exists := false
-	for idx, o := range r.rl.Items {
-		if isGVKNNEqual(o, obj) {
-			r.rl.Items[idx] = obj
-			exists = true
-			break
-		}
-	}
-	if !exists {
-		r.addObject(obj)
-	}
-}
 
-// addObject is a helper function to append an object to the resourceList
-func (r *resourceList) addObject(obj *fn.KubeObject) {
-	r.rl.Items = append(r.rl.Items, obj)
+	if err := r.rl.UpsertObjectToItems(obj, nil, true); err != nil {
+		return err
+	}
+	return nil
 }
 
 // DeleteObject deletes the object from the resourceList if it exists.
