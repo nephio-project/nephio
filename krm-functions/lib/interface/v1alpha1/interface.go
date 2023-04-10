@@ -46,7 +46,7 @@ type Interface interface {
 	// SetNetworkInstanceName sets the name of the networkInstance in the spec
 	// returns an error when the set fails
 	SetNetworkInstanceName(s string) error
-
+    // SetInterfaceSpec sets the spec attributes in the kubeobject
 	SetInterfaceSpec(*nephioreqv1alpha1.InterfaceSpec) error
 }
 
@@ -157,6 +157,7 @@ func (r *itfce) SetNetworkInstanceName(s string) error {
 	return nil
 }
 
+// SetInterfaceSpec sets the spec attributes in the kubeobject
 func (r *itfce) SetInterfaceSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	if spec != nil {
 		if spec.AttachmentType != "" {

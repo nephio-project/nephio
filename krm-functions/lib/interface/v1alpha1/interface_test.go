@@ -46,6 +46,34 @@ metadata:
     config.kubernetes.io/local-config: "true"
 `
 
+func TestNew(t *testing.T) {
+	cases := map[string]struct {
+		input       []byte
+		errExpected bool
+	}{
+		"TestNewNormal": {
+			input:       []byte(itface),
+			errExpected: false,
+		},
+		"TestNewNil": {
+			input:       nil,
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := New(tc.input)
+
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestGetKubeObject(t *testing.T) {
 	i, err := New([]byte(itface))
 	if err != nil {
@@ -302,9 +330,9 @@ func TestSetInterfaceSpec(t *testing.T) {
 		defaultAttachmentType string
 	}{
 		"SetInterfaceSpecNormal": {
-			file: itface,
-            defaultCNIType:        "sriov",
-		    defaultAttachmentType: "vlan",
+			file:                  itface,
+			defaultCNIType:        "sriov",
+			defaultAttachmentType: "vlan",
 			spec: &nephioreqv1alpha1.InterfaceSpec{
 				NetworkInstance: &corev1.ObjectReference{
 					Name: "test",
@@ -315,9 +343,9 @@ func TestSetInterfaceSpec(t *testing.T) {
 			errExpected: false,
 		},
 		"SetInterfaceSpecDefault": {
-			file: itface,
-            defaultCNIType:        "sriov",
-		    defaultAttachmentType: "vlan",
+			file:                  itface,
+			defaultCNIType:        "sriov",
+			defaultAttachmentType: "vlan",
 			spec: &nephioreqv1alpha1.InterfaceSpec{
 				NetworkInstance: &corev1.ObjectReference{
 					Name: "test",
@@ -326,9 +354,9 @@ func TestSetInterfaceSpec(t *testing.T) {
 			errExpected: false,
 		},
 		"SetInterfaceSpecEmpty": {
-			file: itfaceEmpty,
-            defaultCNIType:        "",
-		    defaultAttachmentType: "",
+			file:                  itfaceEmpty,
+			defaultCNIType:        "",
+			defaultAttachmentType: "",
 			spec: &nephioreqv1alpha1.InterfaceSpec{
 				NetworkInstance: &corev1.ObjectReference{
 					Name: "test",
