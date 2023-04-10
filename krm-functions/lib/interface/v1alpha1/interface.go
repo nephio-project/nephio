@@ -206,7 +206,7 @@ func (r *itfce) SetNetworkInstanceName(s string) error {
 
 // SetSpec sets the spec attributes in the kubeObject
 func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
-	if spec != nil {
+	if spec == nil {
 		return nil
 	}
 	if spec.AttachmentType != "" {
