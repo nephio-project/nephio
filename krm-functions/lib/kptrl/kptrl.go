@@ -49,6 +49,8 @@ func New(rl *fn.ResourceList) ResourceList {
 	}
 }
 
+// Typically in functions there is no concurrency, but this library may be used in specializers 
+// running concurrently in the same binary, and may share the same resource list".
 type resourceList struct {
 	m  sync.RWMutex
 	rl *fn.ResourceList
