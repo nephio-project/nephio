@@ -23,21 +23,21 @@ import (
 )
 
 type ResourceList interface {
-	// AddResult add a result with error and corresponding kubeObject by
-	// appending a result to the result slice in the resourcelist
+	// AddResult adds a result with error and corresponding kubeObject by
+	// appending a result to the result slice in the resourceList
 	AddResult(err error, obj *fn.KubeObject)
-	// GetResults gets the results slice from the resourcelist
+	// GetResults gets the results slice from the resourceList
 	GetResults() fn.Results
 	// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind and Name
 	// if the object is found the corresponding obj is returned, if not nil is returned
 	GetObject(obj *fn.KubeObject) *fn.KubeObject
-	// GetObjects returns all items from the resourcelist
+	// GetObjects returns all items from the resourceList
 	GetObjects() fn.KubeObjects
-	// SetObject sets the object in the resourcelist items. It either updates/overrides
-	// the entry if it exists or appends the entry if it does not exist in the resourcelist
+	// SetObject sets the object in the resourceList items. It either updates/overrides
+	// the entry if it exists or appends the entry if it does not exist in the resourceList
 	// It uses APIVersion, Kind and Name to check the object uniqueness
 	SetObject(obj *fn.KubeObject)
-	// DeleteObject deletes the object from the resourcelist if it exists.
+	// DeleteObject deletes the object from the resourceList if it exists.
 	DeleteObject(obj *fn.KubeObject)
 }
 
@@ -50,21 +50,21 @@ func New(rl *fn.ResourceList) ResourceList {
 }
 
 // Typically in functions there is no concurrency, but this library may be used in specializers 
-// running concurrently in the same binary, and may share the same resource list".
+// running concurrently in the same binary, and may share the same resourceList".
 type resourceList struct {
 	m  sync.RWMutex
 	rl *fn.ResourceList
 }
 
-// AddResult add a result with error and corresponding kubeObject by
-// appending a result to the result slice in the resourcelist
+// AddResult adds a result with error and corresponding KubeObject by
+// appending a result to the result slice in the resourceList
 func (r *resourceList) AddResult(err error, obj *fn.KubeObject) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, obj))
 }
 
-// GetResults gets the results slice from the resourcelist
+// GetResults gets the results slice from the resourceList
 func (r *resourceList) GetResults() fn.Results {
 	r.m.RLock()
 	defer r.m.RUnlock()
@@ -84,15 +84,15 @@ func (r *resourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
 	return nil
 }
 
-// GetObjects returns all items from the resourcelist
+// GetObjects returns all items from the resourceList
 func (r *resourceList) GetObjects() fn.KubeObjects {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return r.rl.Items
 }
 
-// SetObject sets the object in the resourcelist items. It either updates/overrides
-// the entry if it exists or appends the entry if it does not exist in the resourcelist
+// SetObject sets the object in the resourceList items. It either updates/overrides
+// the entry if it exists or appends the entry if it does not exist in the resourceList
 // It uses APIVersion, Kind and Name to check the object uniqueness
 func (r *resourceList) SetObject(obj *fn.KubeObject) {
 	r.m.Lock()
@@ -110,12 +110,12 @@ func (r *resourceList) SetObject(obj *fn.KubeObject) {
 	}
 }
 
-// addObject is a helper function to append an object to the resourcelist
+// addObject is a helper function to append an object to the resourceList
 func (r *resourceList) addObject(obj *fn.KubeObject) {
 	r.rl.Items = append(r.rl.Items, obj)
 }
 
-// DeleteObject deletes the object from the resourcelist if it exists.
+// DeleteObject deletes the object from the resourceList if it exists.
 func (r *resourceList) DeleteObject(obj *fn.KubeObject) {
 	r.m.Lock()
 	defer r.m.Unlock()
