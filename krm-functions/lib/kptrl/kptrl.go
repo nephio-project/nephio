@@ -42,7 +42,7 @@ type ResourceList interface {
 }
 
 // New creates a new ResourceList interface
-// concurrency is handles in the methids
+// concurrency is handles in the methods
 func New(rl *fn.ResourceList) ResourceList {
 	return &resourceList{
 		rl: rl,
