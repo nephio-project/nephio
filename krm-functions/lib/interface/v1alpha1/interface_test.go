@@ -64,7 +64,7 @@ func TestNew(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := New(tc.input)
+			_, err := NewFromYAML(tc.input)
 
 			if tc.errExpected {
 				assert.Error(t, err)
@@ -76,7 +76,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetKubeObject(t *testing.T) {
-	i, err := New([]byte(itface))
+	i, err := NewFromYAML([]byte(itface))
 	if err != nil {
 		t.Errorf("cannot unmarshal file: %s", err.Error())
 	}
@@ -120,7 +120,7 @@ func TestGetAttachmentType(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -150,7 +150,7 @@ func TestGetCNIType(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -180,7 +180,7 @@ func TestGetNetworkInstanceName(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -218,7 +218,7 @@ func TestSetAttachmentType(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -263,7 +263,7 @@ func TestSetCNIType(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -302,7 +302,7 @@ func TestSetNetworkInstanceName(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -368,7 +368,7 @@ func TestSetSpec(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
@@ -425,7 +425,7 @@ func TestDeleteCNIType(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		i, err := New([]byte(tc.file))
+		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}

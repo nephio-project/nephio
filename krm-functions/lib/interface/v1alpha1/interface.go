@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
@@ -58,27 +57,23 @@ type Interface interface {
 	DeleteCNIType() error
 }
 
-// New creates a new parser interface
+// NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func New(x any) (Interface, error) {
-	var err error
-	var b []byte
-	switch v := x.(type) {
-	case *nephioreqv1alpha1.Interface:
-		b, err = yaml.Marshal(x)
-		if err != nil {
-			return nil, err
-		}
-	case []byte:
-		b = v
-	default:
-		return nil, fmt.Errorf("unexpected type: supports []byte and *nephioreqv1alpha1.Interface, got: %v", reflect.TypeOf(x))
-	}
-
+func NewFromYAML(b []byte) (Interface, error) {
 	o, err := fn.ParseKubeObject(b)
 	return &itfce{
 		o: o,
 	}, err
+}
+
+// NewFromGoStruct creates a new parser interface
+// It expects a interface go struct
+func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (Interface, error) {
+	b, err := yaml.Marshal(x)
+	if err != nil {
+		return nil, err
+	}
+	return NewFromYAML(b)
 }
 
 type itfce struct {
@@ -212,31 +207,32 @@ func (r *itfce) SetNetworkInstanceName(s string) error {
 // SetSpec sets the spec attributes in the kubeObject
 func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	if spec != nil {
-		if spec.AttachmentType != "" {
-			if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
-				return err
-			}
-		} else {
-			if err := r.DeleteAttachmentType(); err != nil {
-				return err
-			}
+		return nil
+	}
+	if spec.AttachmentType != "" {
+		if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
+			return err
 		}
-		if spec.CNIType != "" {
-			if err := r.SetCNIType(string(spec.CNIType)); err != nil {
-				return err
-			}
-		} else {
-			if err := r.DeleteCNIType(); err != nil {
-				return err
-			}
+	} else {
+		if err := r.DeleteAttachmentType(); err != nil {
+			return err
 		}
-		if spec.NetworkInstance != nil {
-			if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("networkInstance is required")
+	}
+	if spec.CNIType != "" {
+		if err := r.SetCNIType(string(spec.CNIType)); err != nil {
+			return err
 		}
+	} else {
+		if err := r.DeleteCNIType(); err != nil {
+			return err
+		}
+	}
+	if spec.NetworkInstance != nil {
+		if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("networkInstance is required")
 	}
 	return nil
 }
