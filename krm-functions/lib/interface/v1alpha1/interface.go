@@ -159,7 +159,10 @@ func (r *itfce) DeleteAttachmentType() error {
 	if r.o == nil {
 		return fmt.Errorf("KubeObject not initialized")
 	}
-	r.o.RemoveNestedField("spec", "attachmentType")
+	_, err := r.o.RemoveNestedField("spec", "attachmentType")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -186,7 +189,10 @@ func (r *itfce) DeleteCNIType() error {
 	if r.o == nil {
 		return fmt.Errorf("KubeObject not initialized")
 	}
-	r.o.RemoveNestedField("spec", "cniType")
+	_, err := r.o.RemoveNestedField("spec", "cniType")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
