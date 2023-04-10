@@ -46,7 +46,7 @@ type Interface interface {
 	// SetNetworkInstanceName sets the name of the networkInstance in the spec
 	// returns an error when the set fails
 	SetNetworkInstanceName(s string) error
-    // SetInterfaceSpec sets the spec attributes in the kubeobject
+	// SetInterfaceSpec sets the spec attributes in the kubeobject
 	SetInterfaceSpec(*nephioreqv1alpha1.InterfaceSpec) error
 }
 
@@ -70,9 +70,9 @@ func (r *itfce) GetKubeObject() *fn.KubeObject {
 
 func (r *itfce) GetAttachmentType() string {
 	if r.o == nil {
-        return ""
-    }
-    s, ok, err := r.o.NestedString("spec", "attachmentType")
+		return ""
+	}
+	s, ok, err := r.o.NestedString("spec", "attachmentType")
 	if err != nil {
 		return ""
 	}
@@ -84,9 +84,9 @@ func (r *itfce) GetAttachmentType() string {
 
 func (r *itfce) GetCNIType() string {
 	if r.o == nil {
-        return ""
-    }
-    s, ok, err := r.o.NestedString("spec", "cniType")
+		return ""
+	}
+	s, ok, err := r.o.NestedString("spec", "cniType")
 	if err != nil {
 		return ""
 	}
@@ -98,9 +98,9 @@ func (r *itfce) GetCNIType() string {
 
 func (r *itfce) GetNetworkInstanceName() string {
 	if r.o == nil {
-        return ""
-    }
-    s, ok, err := r.o.NestedString("spec", "networkInstance", "name")
+		return ""
+	}
+	s, ok, err := r.o.NestedString("spec", "networkInstance", "name")
 	if err != nil {
 		return ""
 	}
@@ -112,9 +112,9 @@ func (r *itfce) GetNetworkInstanceName() string {
 
 func (r *itfce) SetAttachmentType(s string) error {
 	if r.o == nil {
-        return fmt.Errorf("KubeObject not initialized")
-    }
-    // validation -> should be part of the interface api repo
+		return fmt.Errorf("KubeObject not initialized")
+	}
+	// validation -> should be part of the interface api repo
 	switch s {
 	case string(nephioreqv1alpha1.AttachmentTypeNone):
 	case string(nephioreqv1alpha1.AttachmentTypeVLAN):
@@ -130,9 +130,9 @@ func (r *itfce) SetAttachmentType(s string) error {
 
 func (r *itfce) SetCNIType(s string) error {
 	if r.o == nil {
-        return fmt.Errorf("KubeObject not initialized")
-    }
-    // validation -> should be part of the interface api repo
+		return fmt.Errorf("KubeObject not initialized")
+	}
+	// validation -> should be part of the interface api repo
 	switch s {
 	case string(nephioreqv1alpha1.CNITypeIPVLAN):
 	case string(nephioreqv1alpha1.CNITypeSRIOV):
@@ -148,9 +148,9 @@ func (r *itfce) SetCNIType(s string) error {
 }
 
 func (r *itfce) SetNetworkInstanceName(s string) error {
-    if r.o == nil {
-        return fmt.Errorf("KubeObject not initialized")
-    }
+	if r.o == nil {
+		return fmt.Errorf("KubeObject not initialized")
+	}
 	if err := r.o.SetNestedField(s, "spec", "networkInstance", "name"); err != nil {
 		return err
 	}
