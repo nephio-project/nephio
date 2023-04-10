@@ -51,6 +51,10 @@ type Interface interface {
 	SetNetworkInstanceName(s string) error
 	// SetSpec sets the spec attributes in the kubeobject
 	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
+
+    DeleteAttachmentType() error
+
+    DeleteCNIType() error
 }
 
 // New creates a new parser interface
@@ -151,6 +155,14 @@ func (r *itfce) SetAttachmentType(s string) error {
 	return nil
 }
 
+func (r *itfce) DeleteAttachmentType() error {
+    if r.o == nil {
+        return fmt.Errorf("KubeObject not initialized")
+    }
+    r.o.RemoveNestedField("spec", "attachmentType")
+    return nil
+}
+
 func (r *itfce) SetCNIType(s string) error {
 	if r.o == nil {
 		return fmt.Errorf("KubeObject not initialized")
@@ -170,6 +182,14 @@ func (r *itfce) SetCNIType(s string) error {
 	return nil
 }
 
+func (r *itfce) DeleteCNIType() error {
+    if r.o == nil {
+        return fmt.Errorf("KubeObject not initialized")
+    }
+    r.o.RemoveNestedField("spec", "cniType")
+    return nil
+}
+
 func (r *itfce) SetNetworkInstanceName(s string) error {
 	if r.o == nil {
 		return fmt.Errorf("KubeObject not initialized")
@@ -187,17 +207,27 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 			if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
 				return err
 			}
-		}
+		} else {
+            if err := r.DeleteAttachmentType(); err != nil {
+                return err
+            }
+        }
 		if spec.CNIType != "" {
 			if err := r.SetCNIType(string(spec.CNIType)); err != nil {
 				return err
 			}
-		}
+		} else {
+            if err := r.DeleteAttachmentType(); err != nil {
+                return err
+            }
+        }
 		if spec.NetworkInstance != nil {
 			if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
 				return err
 			}
-		}
+		} else {
+            return fmt.Errorf("networkInstance is required")
+        }
 	}
 	return nil
 }
