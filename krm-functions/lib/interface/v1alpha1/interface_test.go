@@ -37,7 +37,7 @@ spec:
 `
 
 func TestParseObject(t *testing.T) {
-    kf, err := New(itface)
+    kf, err := New([]byte(itface))
     if err != nil {
         t.Errorf("cannot unmarshal file: %s", err.Error())
     }
@@ -70,7 +70,7 @@ func TestParseObject(t *testing.T) {
 }
 
 func TestInterface(t *testing.T) {
-    x, err := New(itface)
+    x, err := New([]byte(itface))
     if err != nil {
         t.Errorf("cannot unmarshal file: %s", err.Error())
     }

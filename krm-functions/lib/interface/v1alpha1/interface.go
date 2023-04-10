@@ -34,9 +34,9 @@ type Interface interface {
 
 // New creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func New(b string) (Interface, error) {
+func New(b []byte) (Interface, error) {
     i := &nephioreqv1alpha1.Interface{}
-    if err := yaml.Unmarshal([]byte(b), i); err != nil {
+    if err := yaml.Unmarshal(b, i); err != nil {
         return nil, err
     }
     return &itfce{
