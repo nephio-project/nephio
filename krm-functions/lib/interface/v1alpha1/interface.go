@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
@@ -61,15 +62,17 @@ type Interface interface {
 // It expects a raw byte slice as input representing the serialized yaml file
 func New(x any) (Interface, error) {
 	var err error
-	b := []byte{}
+	var b []byte
 	switch v := x.(type) {
-	case nephioreqv1alpha1.Interface:
+	case *nephioreqv1alpha1.Interface:
 		b, err = yaml.Marshal(x)
 		if err != nil {
 			return nil, err
 		}
 	case []byte:
 		b = v
+	default:
+		return nil, fmt.Errorf("unexpected type: supports []byte and *nephioreqv1alpha1.Interface, got: %v", reflect.TypeOf(x))
 	}
 
 	o, err := fn.ParseKubeObject(b)
