@@ -562,13 +562,25 @@ func TestYamlComments(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			i.SetCNIType("ipvlan")
-			i.SetAttachmentType("none")
-			i.SetNetworkInstanceName("new")
+			if err := i.SetCNIType("ipvlan"); err != nil {
+				assert.NoError(t, err)
+			}
+			if err := i.SetAttachmentType("none"); err != nil {
+				assert.NoError(t, err)
+			}
+			if err := i.SetNetworkInstanceName("new"); err != nil {
+				assert.NoError(t, err)
+			}
 
-			i.SetCNIType("sriov")
-			i.SetAttachmentType("vlan")
-			i.SetNetworkInstanceName("vpc-ran")
+			if err := i.SetCNIType("sriov"); err != nil {
+				assert.NoError(t, err)
+			}
+			if err := i.SetAttachmentType("vlan"); err != nil {
+				assert.NoError(t, err)
+			}
+			if err := i.SetNetworkInstanceName("vpc-ran"); err != nil {
+				assert.NoError(t, err)
+			}
 
 			o := i.GetKubeObject()
 
