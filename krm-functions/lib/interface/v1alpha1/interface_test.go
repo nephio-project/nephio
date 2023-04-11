@@ -17,7 +17,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,15 +28,18 @@ import (
 
 var itface = `apiVersion: req.nephio.org/v1alpha1
 kind: Interface
+# test comment a
 metadata:
   name: n3
   annotations:
     config.kubernetes.io/local-config: "true"
 spec:
+  # test comment b
   networkInstance:
-    name: vpc-ran
-  cniType: sriov
-  attachmentType: vlan
+    name: vpc-ran # test comment c
+  # test comment d
+  cniType: sriov # test comment e
+  attachmentType: vlan # test comment f
 `
 
 var itfaceEmpty = `apiVersion: req.nephio.org/v1alpha1
@@ -87,21 +89,21 @@ func TestNewFromGoStruct(t *testing.T) {
 					APIVersion: nephioreqv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
 					Kind:       nephioreqv1alpha1.InterfaceKind,
 				},
-                ObjectMeta: metav1.ObjectMeta{
-                    Name: "a",
-                },
-                Spec: nephioreqv1alpha1.InterfaceSpec{
-                    AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
-                    CNIType: nephioreqv1alpha1.CNITypeSRIOV,
-                    NetworkInstance: &corev1.ObjectReference{
-                        Name: "x",
-                    },
-                },
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "a",
+				},
+				Spec: nephioreqv1alpha1.InterfaceSpec{
+					AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
+					CNIType:        nephioreqv1alpha1.CNITypeSRIOV,
+					NetworkInstance: &corev1.ObjectReference{
+						Name: "x",
+					},
+				},
 			},
 			errExpected: false,
 		},
-        "TestNewFromGoStructNil": {
-			input: nil,
+		"TestNewFromGoStructNil": {
+			input:       nil,
 			errExpected: true,
 		},
 	}
@@ -149,11 +151,11 @@ func TestGetKubeObject(t *testing.T) {
 }
 
 func TestGetGoStruct(t *testing.T) {
-    cases := map[string]struct {
+	cases := map[string]struct {
 		file string
 		want string
 	}{
-        "TestGetGoStructNormal": {
+		"TestGetGoStructNormal": {
 			file: itface,
 			want: "vlan",
 		},
@@ -161,9 +163,9 @@ func TestGetGoStruct(t *testing.T) {
 			file: itfaceEmpty,
 			want: "",
 		},
-    }
+	}
 
-    for name, tc := range cases {
+	for name, tc := range cases {
 		i, err := NewFromYAML([]byte(tc.file))
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
@@ -171,8 +173,8 @@ func TestGetGoStruct(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			g, err := i.GetGoStruct()
-            assert.NoError(t, err)
-            got := g.Spec.AttachmentType
+			assert.NoError(t, err)
+			got := g.Spec.AttachmentType
 			if diff := cmp.Diff(tc.want, string(got)); diff != "" {
 				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
@@ -510,7 +512,43 @@ func TestDeleteCNIType(t *testing.T) {
 			err := i.DeleteCNIType()
 			assert.NoError(t, err)
 
-			fmt.Println(i.GetKubeObject().String())
+		})
+	}
+}
+
+func TestYamlComments(t *testing.T) {
+	cases := map[string]struct {
+		input       []byte
+		errExpected bool
+	}{
+		"TestNewFromYAMLNormal": {
+			input:       []byte(itface),
+			errExpected: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			i, err := NewFromYAML(tc.input)
+
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			i.SetCNIType("ipvlan")
+			i.SetAttachmentType("none")
+			i.SetNetworkInstanceName("new")
+
+			i.SetCNIType("sriov")
+			i.SetAttachmentType("vlan")
+			i.SetNetworkInstanceName("vpc-ran")
+
+			o := i.GetKubeObject()
+
+			if o.String() != string(tc.input) {
+				t.Errorf("expected output to be %q, but got %q", string(tc.input), o.String())
+			}
 		})
 	}
 }
