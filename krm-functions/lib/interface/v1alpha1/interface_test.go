@@ -24,6 +24,7 @@ import (
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var itface = `apiVersion: req.nephio.org/v1alpha1
@@ -47,16 +48,16 @@ metadata:
     config.kubernetes.io/local-config: "true"
 `
 
-func TestNew(t *testing.T) {
+func TestNewFromYAML(t *testing.T) {
 	cases := map[string]struct {
 		input       []byte
 		errExpected bool
 	}{
-		"TestNewNormal": {
+		"TestNewFromYAMLNormal": {
 			input:       []byte(itface),
 			errExpected: false,
 		},
-		"TestNewNil": {
+		"TestNewFromYAMLNil": {
 			input:       nil,
 			errExpected: true,
 		},
@@ -65,6 +66,49 @@ func TestNew(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			_, err := NewFromYAML(tc.input)
+
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestNewFromGoStruct(t *testing.T) {
+	cases := map[string]struct {
+		input       *nephioreqv1alpha1.Interface
+		errExpected bool
+	}{
+		"TestNewFromGoStructNormal": {
+			input: &nephioreqv1alpha1.Interface{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: nephioreqv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
+					Kind:       nephioreqv1alpha1.InterfaceKind,
+				},
+                ObjectMeta: metav1.ObjectMeta{
+                    Name: "a",
+                },
+                Spec: nephioreqv1alpha1.InterfaceSpec{
+                    AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
+                    CNIType: nephioreqv1alpha1.CNITypeSRIOV,
+                    NetworkInstance: &corev1.ObjectReference{
+                        Name: "x",
+                    },
+                },
+			},
+			errExpected: false,
+		},
+        "TestNewFromGoStructNil": {
+			input: nil,
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := NewFromGoStruct(tc.input)
 
 			if tc.errExpected {
 				assert.Error(t, err)
@@ -99,6 +143,38 @@ func TestGetKubeObject(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.wantName, i.GetKubeObject().GetName()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetGoStruct(t *testing.T) {
+    cases := map[string]struct {
+		file string
+		want string
+	}{
+        "TestGetGoStructNormal": {
+			file: itface,
+			want: "vlan",
+		},
+		"TestGetGoStructEmpty": {
+			file: itfaceEmpty,
+			want: "",
+		},
+    }
+
+    for name, tc := range cases {
+		i, err := NewFromYAML([]byte(tc.file))
+		if err != nil {
+			t.Errorf("cannot unmarshal file: %s", err.Error())
+		}
+
+		t.Run(name, func(t *testing.T) {
+			g, err := i.GetGoStruct()
+            assert.NoError(t, err)
+            got := g.Spec.AttachmentType
+			if diff := cmp.Diff(tc.want, string(got)); diff != "" {
+				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
 		})
 	}

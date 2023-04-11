@@ -27,7 +27,7 @@ import (
 type Interface interface {
 	// GetKubeObject returns the present kubeObject
 	GetKubeObject() *fn.KubeObject
-	//
+	// GetGoStruct returns a go struct representing the present KRM resource
 	GetGoStruct() (*nephioreqv1alpha1.Interface, error)
 	// GetAttachmentType returns the attachmentType from the spec
 	// if an error occurs or the attribute is not present an empty string is returned
@@ -67,7 +67,7 @@ func NewFromYAML(b []byte) (Interface, error) {
 }
 
 // NewFromGoStruct creates a new parser interface
-// It expects a interface go struct
+// It expects a go struct representing the interface krm resource
 func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (Interface, error) {
 	b, err := yaml.Marshal(x)
 	if err != nil {
