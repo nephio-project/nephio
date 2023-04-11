@@ -61,9 +61,12 @@ type Interface interface {
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (Interface, error) {
 	o, err := fn.ParseKubeObject(b)
+	if err != nil {
+		return nil, err
+	}
 	return &itfce{
 		o: o,
-	}, err
+	}, nil
 }
 
 // NewFromGoStruct creates a new parser interface
@@ -94,51 +97,19 @@ func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
 }
 
 func (r *itfce) GetAttachmentType() string {
-	if r.o == nil {
-		return ""
-	}
-	s, ok, err := r.o.NestedString("spec", "attachmentType")
-	if err != nil {
-		return ""
-	}
-	if !ok {
-		return ""
-	}
-	return s
+	return r.getStringValue("spec", "attachmentType")
 }
 
 func (r *itfce) GetCNIType() string {
-	if r.o == nil {
-		return ""
-	}
-	s, ok, err := r.o.NestedString("spec", "cniType")
-	if err != nil {
-		return ""
-	}
-	if !ok {
-		return ""
-	}
-	return s
+	return r.getStringValue("spec", "cniType")
 }
 
 func (r *itfce) GetNetworkInstanceName() string {
-	if r.o == nil {
-		return ""
-	}
-	s, ok, err := r.o.NestedString("spec", "networkInstance", "name")
-	if err != nil {
-		return ""
-	}
-	if !ok {
-		return ""
-	}
-	return s
+	return r.getStringValue("spec", "networkInstance", "name")
 }
 
 func (r *itfce) SetAttachmentType(s string) error {
-	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
-	}
+
 	// validation -> should be part of the interface api repo
 	switch s {
 	case string(nephioreqv1alpha1.AttachmentTypeNone):
@@ -147,27 +118,15 @@ func (r *itfce) SetAttachmentType(s string) error {
 		return fmt.Errorf("unknown attachmentType")
 	}
 
-	if err := r.o.SetNestedField(s, "spec", "attachmentType"); err != nil {
-		return err
-	}
-	return nil
+	return r.setNestedField(s, "spec", "attachmentType")
 }
 
 func (r *itfce) DeleteAttachmentType() error {
-	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
-	}
-	_, err := r.o.RemoveNestedField("spec", "attachmentType")
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.deleteNestedField("spec", "attachmentType")
 }
 
 func (r *itfce) SetCNIType(s string) error {
-	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
-	}
+
 	// validation -> should be part of the interface api repo
 	switch s {
 	case string(nephioreqv1alpha1.CNITypeIPVLAN):
@@ -177,31 +136,15 @@ func (r *itfce) SetCNIType(s string) error {
 		return fmt.Errorf("unknown cniType")
 	}
 
-	if err := r.o.SetNestedField(s, "spec", "cniType"); err != nil {
-		return err
-	}
-	return nil
+	return r.setNestedField(s, "spec", "cniType")
 }
 
 func (r *itfce) DeleteCNIType() error {
-	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
-	}
-	_, err := r.o.RemoveNestedField("spec", "cniType")
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.deleteNestedField("spec", "cniType")
 }
 
 func (r *itfce) SetNetworkInstanceName(s string) error {
-	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
-	}
-	if err := r.o.SetNestedField(s, "spec", "networkInstance", "name"); err != nil {
-		return err
-	}
-	return nil
+	return r.setNestedField(s, "spec", "networkInstance", "name")
 }
 
 // SetSpec sets the spec attributes in the kubeObject
@@ -233,6 +176,41 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 		}
 	} else {
 		return fmt.Errorf("networkInstance is required")
+	}
+	return nil
+}
+
+func (r *itfce) getStringValue(fields ...string) string {
+	if r.o == nil {
+		return ""
+	}
+	s, ok, err := r.o.NestedString(fields...)
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func (r *itfce) setNestedField(s string, fields ...string) error {
+	if r.o == nil {
+		return fmt.Errorf("KubeObject not initialized")
+	}
+	if err := r.o.SetNestedField(s, fields...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *itfce) deleteNestedField(fields ...string) error {
+	if r.o == nil {
+		return fmt.Errorf("KubeObject not initialized")
+	}
+	_, err := r.o.RemoveNestedField(fields...)
+	if err != nil {
+		return err
 	}
 	return nil
 }
