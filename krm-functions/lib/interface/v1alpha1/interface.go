@@ -57,9 +57,9 @@ type Interface interface {
 	SetNetworkInstanceName(s string) error
 	// SetSpec sets the spec attributes in the kubeobject according the go struct
 	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
-    // DeleteAttachmentType deletes the attachmentType from the spec
+	// DeleteAttachmentType deletes the attachmentType from the spec
 	DeleteAttachmentType() error
-    // DeleteAttachmentType deletes the attachmentType from the spec
+	// DeleteAttachmentType deletes the attachmentType from the spec
 	DeleteCNIType() error
 }
 
@@ -104,19 +104,19 @@ func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
 }
 
 // GetAttachmentType returns the attachmentType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
+// if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetAttachmentType() string {
 	return r.getStringValue(attachmentType...)
 }
 
 // GetCNIType returns the cniType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
+// if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetCNIType() string {
 	return r.getStringValue(cniType...)
 }
 
 // GetNetworkInstanceName returns the name of the networkInstance from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
+// if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetNetworkInstanceName() string {
 	return r.getStringValue(networkInstanceName...)
 }
@@ -198,7 +198,7 @@ func (r *itfce) DeleteCNIType() error {
 	return r.deleteNestedField(cniType...)
 }
 
-// getStringValue is a generic utility function that returns a string from 
+// getStringValue is a generic utility function that returns a string from
 // a string slice representing the path in the yaml doc
 func (r *itfce) getStringValue(fields ...string) string {
 	if r.o == nil {
@@ -214,7 +214,7 @@ func (r *itfce) getStringValue(fields ...string) string {
 	return s
 }
 
-// setNestedField is a generic utility function that sets a string on 
+// setNestedField is a generic utility function that sets a string on
 // a string slice representing the path in the yaml doc
 func (r *itfce) setNestedField(s string, fields ...string) error {
 	if r.o == nil {
@@ -226,7 +226,7 @@ func (r *itfce) setNestedField(s string, fields ...string) error {
 	return nil
 }
 
-// deleteNestedField is a generic utility function that deletes  
+// deleteNestedField is a generic utility function that deletes
 // a string slice representing the path from the yaml doc
 func (r *itfce) deleteNestedField(fields ...string) error {
 	if r.o == nil {
