@@ -24,6 +24,17 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	// errors
+	errKubeObjectNotInitialized = "KubeObject not initialized"
+)
+
+var (
+	attachmentType      = []string{"spec", "attachmentType"}
+	cniType             = []string{"spec", "cniType"}
+	networkInstanceName = []string{"spec", "networkInstance", "name"}
+)
+
 type Interface interface {
 	// GetKubeObject returns the present kubeObject
 	GetKubeObject() *fn.KubeObject
@@ -39,21 +50,16 @@ type Interface interface {
 	// if an error occurs or the attribute is not present an empty string is returned
 	GetNetworkInstanceName() string
 	// SetAttachmentType sets the attachmentType in the spec
-	// returns an error if the value is an unknown type or when the
-	// set fails
 	SetAttachmentType(s string) error
 	// SetCNIType sets the cniType in the spec
-	// returns an error if the value is an unknown type or when the
-	// set fails
 	SetCNIType(s string) error
 	// SetNetworkInstanceName sets the name of the networkInstance in the spec
-	// returns an error when the set fails
 	SetNetworkInstanceName(s string) error
-	// SetSpec sets the spec attributes in the kubeobject
+	// SetSpec sets the spec attributes in the kubeobject according the go struct
 	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
-
+    // DeleteAttachmentType deletes the attachmentType from the spec
 	DeleteAttachmentType() error
-
+    // DeleteAttachmentType deletes the attachmentType from the spec
 	DeleteCNIType() error
 }
 
@@ -97,15 +103,15 @@ func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
 }
 
 func (r *itfce) GetAttachmentType() string {
-	return r.getStringValue("spec", "attachmentType")
+	return r.getStringValue(attachmentType...)
 }
 
 func (r *itfce) GetCNIType() string {
-	return r.getStringValue("spec", "cniType")
+	return r.getStringValue(cniType...)
 }
 
 func (r *itfce) GetNetworkInstanceName() string {
-	return r.getStringValue("spec", "networkInstance", "name")
+	return r.getStringValue(networkInstanceName...)
 }
 
 func (r *itfce) SetAttachmentType(s string) error {
@@ -118,11 +124,11 @@ func (r *itfce) SetAttachmentType(s string) error {
 		return fmt.Errorf("unknown attachmentType")
 	}
 
-	return r.setNestedField(s, "spec", "attachmentType")
+	return r.setNestedField(s, attachmentType...)
 }
 
 func (r *itfce) DeleteAttachmentType() error {
-	return r.deleteNestedField("spec", "attachmentType")
+	return r.deleteNestedField(attachmentType...)
 }
 
 func (r *itfce) SetCNIType(s string) error {
@@ -136,15 +142,15 @@ func (r *itfce) SetCNIType(s string) error {
 		return fmt.Errorf("unknown cniType")
 	}
 
-	return r.setNestedField(s, "spec", "cniType")
+	return r.setNestedField(s, cniType...)
 }
 
 func (r *itfce) DeleteCNIType() error {
-	return r.deleteNestedField("spec", "cniType")
+	return r.deleteNestedField(cniType...)
 }
 
 func (r *itfce) SetNetworkInstanceName(s string) error {
-	return r.setNestedField(s, "spec", "networkInstance", "name")
+	return r.setNestedField(s, networkInstanceName...)
 }
 
 // SetSpec sets the spec attributes in the kubeObject
@@ -196,7 +202,7 @@ func (r *itfce) getStringValue(fields ...string) string {
 
 func (r *itfce) setNestedField(s string, fields ...string) error {
 	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
+		return fmt.Errorf(errKubeObjectNotInitialized)
 	}
 	if err := r.o.SetNestedField(s, fields...); err != nil {
 		return err
@@ -206,7 +212,7 @@ func (r *itfce) setNestedField(s string, fields ...string) error {
 
 func (r *itfce) deleteNestedField(fields ...string) error {
 	if r.o == nil {
-		return fmt.Errorf("KubeObject not initialized")
+		return fmt.Errorf(errKubeObjectNotInitialized)
 	}
 	_, err := r.o.RemoveNestedField(fields...)
 	if err != nil {
