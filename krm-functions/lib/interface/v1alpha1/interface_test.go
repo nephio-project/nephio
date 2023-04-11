@@ -516,6 +516,32 @@ func TestDeleteCNIType(t *testing.T) {
 	}
 }
 
+func TestDeleteAttachmentType(t *testing.T) {
+	cases := map[string]struct {
+		file string
+	}{
+		"TestDeleteAttachmentType": {
+			file: itface,
+		},
+		"TestDeleteAttachmentTypeEmpty": {
+			file: itfaceEmpty,
+		},
+	}
+
+	for name, tc := range cases {
+		i, err := NewFromYAML([]byte(tc.file))
+		if err != nil {
+			t.Errorf("cannot unmarshal file: %s", err.Error())
+		}
+
+		t.Run(name, func(t *testing.T) {
+			err := i.DeleteAttachmentType()
+			assert.NoError(t, err)
+
+		})
+	}
+}
+
 func TestYamlComments(t *testing.T) {
 	cases := map[string]struct {
 		input       []byte
