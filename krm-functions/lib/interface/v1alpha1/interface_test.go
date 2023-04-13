@@ -443,13 +443,12 @@ func TestSetSpec(t *testing.T) {
 			},
 			errExpected: false,
 		},
-        "SetInterfaceSpecNetworkInstanceEmpty": {
+		"SetInterfaceSpecNetworkInstanceEmpty": {
 			file:                  itfaceEmpty,
 			defaultCNIType:        "",
 			defaultAttachmentType: "",
-			spec: &nephioreqv1alpha1.InterfaceSpec{
-			},
-			errExpected: true,
+			spec:                  &nephioreqv1alpha1.InterfaceSpec{},
+			errExpected:           true,
 		},
 	}
 
@@ -598,5 +597,3 @@ func TestYamlComments(t *testing.T) {
 		})
 	}
 }
-
-

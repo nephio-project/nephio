@@ -109,7 +109,7 @@ func (r *itfce) GetAttachmentType() string {
 	if r.o == nil {
 		return ""
 	}
-    return r.getStringValue(attachmentType...)
+	return r.getStringValue(attachmentType...)
 }
 
 // GetCNIType returns the cniType from the spec
@@ -118,7 +118,7 @@ func (r *itfce) GetCNIType() string {
 	if r.o == nil {
 		return ""
 	}
-    return r.getStringValue(cniType...)
+	return r.getStringValue(cniType...)
 }
 
 // GetNetworkInstanceName returns the name of the networkInstance from the spec
@@ -127,7 +127,7 @@ func (r *itfce) GetNetworkInstanceName() string {
 	if r.o == nil {
 		return ""
 	}
-    return r.getStringValue(networkInstanceName...)
+	return r.getStringValue(networkInstanceName...)
 }
 
 // SetAttachmentType sets the attachmentType in the spec
@@ -173,8 +173,8 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 		return err
 	}
 
-    // set or delete the values in the spec based on the information
-    fmt.Println("spec.AttachmentType", spec.AttachmentType)
+	// set or delete the values in the spec based on the information
+	fmt.Println("spec.AttachmentType", spec.AttachmentType)
 	if spec.AttachmentType != "" {
 		if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
 			return err
@@ -197,7 +197,7 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 		if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
 			return err
 		}
-	} 
+	}
 	return nil
 }
 
