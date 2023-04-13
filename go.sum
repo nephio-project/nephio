@@ -102,6 +102,8 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
 github.com/nephio-project/api v0.0.0-20230404174821-1fa5d1c78b70 h1:6dZbXoJlfXdwNofMSwRtF5C/x71qc/BDe+hxDmYL700=
 github.com/nephio-project/api v0.0.0-20230404174821-1fa5d1c78b70/go.mod h1:k+rJj4IDALyBzb8KBpehkUlByz8hLrqm+gdiM7DNtYs=
+github.com/nephio-project/api v0.0.0-20230413172718-21afbeeb1a54 h1:3WJyRzoUSWdZxPKf4w2zHkIhDaQcuaZKBAzM6UcIw50=
+github.com/nephio-project/api v0.0.0-20230413172718-21afbeeb1a54/go.mod h1:bnSvfnwZqYSnaxfxztf4KVKuyyZK2VY4gKQp2yYt2Mo=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/onsi/ginkgo/v2 v2.6.0 h1:9t9b9vRUbFq3C4qKFCGkVuq/fIHji802N1nrtkh1mNc=
 github.com/onsi/gomega v1.24.1 h1:KORJXNNTzJXzu4ScJWssJfJMnJ+2QJqhoQSRwNlze9E=

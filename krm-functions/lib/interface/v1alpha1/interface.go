@@ -106,53 +106,60 @@ func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
 // GetAttachmentType returns the attachmentType from the spec
 // if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetAttachmentType() string {
-	return r.getStringValue(attachmentType...)
+	if r.o == nil {
+		return ""
+	}
+    return r.getStringValue(attachmentType...)
 }
 
 // GetCNIType returns the cniType from the spec
 // if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetCNIType() string {
-	return r.getStringValue(cniType...)
+	if r.o == nil {
+		return ""
+	}
+    return r.getStringValue(cniType...)
 }
 
 // GetNetworkInstanceName returns the name of the networkInstance from the spec
 // if an error occurs or the attribute is not present an empty string is returned
 func (r *itfce) GetNetworkInstanceName() string {
-	return r.getStringValue(networkInstanceName...)
+	if r.o == nil {
+		return ""
+	}
+    return r.getStringValue(networkInstanceName...)
 }
 
 // SetAttachmentType sets the attachmentType in the spec
 func (r *itfce) SetAttachmentType(s string) error {
-
-	// validation -> should be part of the interface api repo
-	switch s {
-	case string(nephioreqv1alpha1.AttachmentTypeNone):
-	case string(nephioreqv1alpha1.AttachmentTypeVLAN):
-	default:
+	if r.o == nil {
+		return fmt.Errorf(errKubeObjectNotInitialized)
+	}
+	if !nephioreqv1alpha1.IsAttachmentTypeSupported(s) {
 		return fmt.Errorf("unknown attachmentType")
 	}
 
-	return r.setNestedField(s, attachmentType...)
+	return r.o.SetNestedField(s, attachmentType...)
 }
 
 // SetCNIType sets the cniType in the spec
 func (r *itfce) SetCNIType(s string) error {
-
-	// validation -> should be part of the interface api repo
-	switch s {
-	case string(nephioreqv1alpha1.CNITypeIPVLAN):
-	case string(nephioreqv1alpha1.CNITypeSRIOV):
-	case string(nephioreqv1alpha1.CNITypeMACVLAN):
-	default:
+	if r.o == nil {
+		return fmt.Errorf(errKubeObjectNotInitialized)
+	}
+	if !nephioreqv1alpha1.IsCNITypeSupported(s) {
 		return fmt.Errorf("unknown cniType")
 	}
 
-	return r.setNestedField(s, cniType...)
+	return r.o.SetNestedField(s, cniType...)
 }
 
 // SetNetworkInstanceName sets the name of the networkInstance in the spec
 func (r *itfce) SetNetworkInstanceName(s string) error {
-	return r.setNestedField(s, networkInstanceName...)
+	if r.o == nil {
+		return fmt.Errorf(errKubeObjectNotInitialized)
+	}
+	return r.o.SetNestedField(s, networkInstanceName...)
 }
 
 // SetSpec sets the spec attributes in the kubeobject according the go struct
@@ -160,6 +167,14 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	if spec == nil {
 		return nil
 	}
+
+	// validate the spec
+	if err := nephioreqv1alpha1.ValidateInterfaceSpec(spec); err != nil {
+		return err
+	}
+
+    // set or delete the values in the spec based on the information
+    fmt.Println("spec.AttachmentType", spec.AttachmentType)
 	if spec.AttachmentType != "" {
 		if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
 			return err
@@ -182,28 +197,31 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 		if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
 			return err
 		}
-	} else {
-		return fmt.Errorf("networkInstance is required")
-	}
+	} 
 	return nil
 }
 
 // DeleteAttachmentType deletes the attachmentType from the spec
 func (r *itfce) DeleteAttachmentType() error {
-	return r.deleteNestedField(attachmentType...)
+	if r.o == nil {
+		return fmt.Errorf(errKubeObjectNotInitialized)
+	}
+	_, err := r.o.RemoveNestedField(cniType...)
+	return err
 }
 
 // DeleteAttachmentType deletes the attachmentType from the spec
 func (r *itfce) DeleteCNIType() error {
-	return r.deleteNestedField(cniType...)
+	if r.o == nil {
+		return fmt.Errorf(errKubeObjectNotInitialized)
+	}
+	_, err := r.o.RemoveNestedField(attachmentType...)
+	return err
 }
 
 // getStringValue is a generic utility function that returns a string from
 // a string slice representing the path in the yaml doc
 func (r *itfce) getStringValue(fields ...string) string {
-	if r.o == nil {
-		return ""
-	}
 	s, ok, err := r.o.NestedString(fields...)
 	if err != nil {
 		return ""
@@ -216,6 +234,7 @@ func (r *itfce) getStringValue(fields ...string) string {
 
 // setNestedField is a generic utility function that sets a string on
 // a string slice representing the path in the yaml doc
+/*
 func (r *itfce) setNestedField(s string, fields ...string) error {
 	if r.o == nil {
 		return fmt.Errorf(errKubeObjectNotInitialized)
@@ -225,9 +244,11 @@ func (r *itfce) setNestedField(s string, fields ...string) error {
 	}
 	return nil
 }
+*/
 
 // deleteNestedField is a generic utility function that deletes
 // a string slice representing the path from the yaml doc
+/*
 func (r *itfce) deleteNestedField(fields ...string) error {
 	if r.o == nil {
 		return fmt.Errorf(errKubeObjectNotInitialized)
@@ -238,3 +259,4 @@ func (r *itfce) deleteNestedField(fields ...string) error {
 	}
 	return nil
 }
+*/
