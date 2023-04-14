@@ -126,7 +126,6 @@ func (r *itfce) SetAttachmentType(s string) error {
 	if !nephioreqv1alpha1.IsAttachmentTypeSupported(s) {
 		return fmt.Errorf("unknown attachmentType")
 	}
-
 	return r.setNestedField(s, attachmentType...)
 }
 
@@ -135,7 +134,6 @@ func (r *itfce) SetCNIType(s string) error {
 	if !nephioreqv1alpha1.IsCNITypeSupported(s) {
 		return fmt.Errorf("unknown cniType")
 	}
-
 	return r.setNestedField(s, cniType...)
 }
 
@@ -187,7 +185,7 @@ func (r *itfce) DeleteAttachmentType() error {
 	return r.deleteNestedField(cniType...)
 }
 
-// DeleteAttachmentType deletes the attachmentType from the spec
+// DeleteCNIType deletes the cniType from the spec
 func (r *itfce) DeleteCNIType() error {
 	return r.deleteNestedField(attachmentType...)
 }
