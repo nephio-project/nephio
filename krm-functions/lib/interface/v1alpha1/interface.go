@@ -174,7 +174,6 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	}
 
 	// set or delete the values in the spec based on the information
-	fmt.Println("spec.AttachmentType", spec.AttachmentType)
 	if spec.AttachmentType != "" {
 		if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
 			return err
