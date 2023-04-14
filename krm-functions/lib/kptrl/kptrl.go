@@ -21,30 +21,24 @@ import (
 )
 
 type ResourceList struct {
-	rl *fn.ResourceList
-}
-
-func New(rl *fn.ResourceList) *ResourceList {
-	return &ResourceList{
-		rl: rl,
-	}
+	fn.ResourceList
 }
 
 // AddResult adds a result with error and corresponding KubeObject by
 // appending a result to the result slice in the resourceList
 func (r *ResourceList) AddResult(err error, obj *fn.KubeObject) {
-	r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, obj))
+	r.Results = append(r.Results, fn.ErrorConfigObjectResult(err, obj))
 }
 
 // GetResults gets the results slice from the resourceList
 func (r *ResourceList) GetResults() fn.Results {
-	return r.rl.Results
+	return r.Results
 }
 
 // GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
 // if the object is found the corresponding obj is returned, if not nil is returned
 func (r *ResourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
-	for _, o := range r.rl.Items {
+	for _, o := range r.Items {
 		if isGVKNNEqual(o, obj) {
 			return o
 		}
@@ -54,14 +48,14 @@ func (r *ResourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
 
 // GetObjects returns all items from the resourceList
 func (r *ResourceList) GetObjects() fn.KubeObjects {
-	return r.rl.Items
+	return r.Items
 }
 
 // SetObject sets the object in the resourceList items. It either updates/overrides
 // the entry if it exists or appends the entry if it does not exist in the resourceList
 // It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
 func (r *ResourceList) SetObject(obj *fn.KubeObject) error {
-	if err := r.rl.UpsertObjectToItems(obj, nil, true); err != nil {
+	if err := r.UpsertObjectToItems(obj, nil, true); err != nil {
 		return err
 	}
 	return nil
@@ -69,9 +63,9 @@ func (r *ResourceList) SetObject(obj *fn.KubeObject) error {
 
 // DeleteObject deletes the object from the resourceList if it exists.
 func (r *ResourceList) DeleteObject(obj *fn.KubeObject) {
-	for idx, o := range r.rl.Items {
+	for idx, o := range r.Items {
 		if isGVKNNEqual(o, obj) {
-			r.rl.Items = append(r.rl.Items[:idx], r.rl.Items[idx+1:]...)
+			r.Items = append(r.Items[:idx], r.Items[idx+1:]...)
 		}
 	}
 }

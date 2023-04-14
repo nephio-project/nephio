@@ -87,11 +87,14 @@ metadata:
 `)
 
 func TestAddResults(t *testing.T) {
+
 	rl, err := fn.ParseResourceList(resList)
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	cases := map[string]struct {
 	}{
@@ -126,7 +129,9 @@ func TestGetObject(t *testing.T) {
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	cases := map[string]struct {
 		t    []byte
@@ -178,7 +183,9 @@ func TestGetObjects(t *testing.T) {
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	cases := map[string]struct {
 		wantLen         int
@@ -215,7 +222,9 @@ func TestSetObject(t *testing.T) {
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	cases := map[string]struct {
 		t    []byte
@@ -255,7 +264,9 @@ func TestDeleteObject(t *testing.T) {
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	cases := map[string]struct {
 		t    []byte
@@ -292,7 +303,9 @@ func TestConurrency(t *testing.T) {
 	if err != nil {
 		t.Errorf("cannot parse resourceList: %s", err.Error())
 	}
-	r := New(rl)
+	r := &ResourceList{
+		*rl,
+	}
 
 	objs := [][]byte{objA, objB, objC, objD, objE}
 
