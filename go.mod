@@ -6,9 +6,10 @@ require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
 	github.com/google/go-cmp v0.5.9
+	github.com/nephio-project/api v0.0.0-20230404174821-1fa5d1c78b70
 	github.com/stretchr/testify v1.8.1
-	k8s.io/api v0.25.3
-	k8s.io/apimachinery v0.25.4
+	k8s.io/api v0.26.1
+	k8s.io/apimachinery v0.26.3
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -41,8 +42,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
-	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2 // indirect
+	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
+	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
+	sigs.k8s.io/controller-runtime v0.14.5 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
