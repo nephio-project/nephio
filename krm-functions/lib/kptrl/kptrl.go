@@ -35,19 +35,14 @@ func (r *ResourceList) GetResults() fn.Results {
 	return r.Results
 }
 
-// GetObject return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
+// GetObjects return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
 // if the object is found the corresponding obj is returned, if not nil is returned
-func (r *ResourceList) GetObject(obj *fn.KubeObject) *fn.KubeObject {
-	for _, o := range r.Items {
-		if isGVKNNEqual(o, obj) {
-			return o
-		}
-	}
-	return nil
+func (r *ResourceList) GetObjects(obj *fn.KubeObject) fn.KubeObjects {
+	return r.Items.Where(func(ko *fn.KubeObject) bool { return isGVKNNEqual(ko, obj) })
 }
 
 // GetObjects returns all items from the resourceList
-func (r *ResourceList) GetObjects() fn.KubeObjects {
+func (r *ResourceList) GetAllObjects() fn.KubeObjects {
 	return r.Items
 }
 

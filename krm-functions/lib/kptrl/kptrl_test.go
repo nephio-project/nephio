@@ -157,7 +157,7 @@ func TestGetObject(t *testing.T) {
 			if err != nil {
 				t.Errorf("cannot parse test obj: %s", err.Error())
 			}
-			got := r.GetObject(tObj)
+			got := r.GetObjects(tObj)
 
 			if got == nil {
 				if tc.want != nil {
@@ -165,9 +165,9 @@ func TestGetObject(t *testing.T) {
 				}
 			} else {
 				objRef := &corev1.ObjectReference{
-					APIVersion: got.GetAPIVersion(),
-					Kind:       got.GetKind(),
-					Name:       got.GetName(),
+					APIVersion: got[0].GetAPIVersion(),
+					Kind:       got[0].GetKind(),
+					Name:       got[0].GetName(),
 				}
 				if diff := cmp.Diff(tc.want, objRef); diff != "" {
 					t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
@@ -202,7 +202,7 @@ func TestGetObjects(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			objs := r.GetObjects()
+			objs := r.GetAllObjects()
 
 			if len(objs) != tc.wantLen {
 				t.Errorf("TestGetObjects: -want %d, +got: %d\n", tc.wantLen, len(objs))
@@ -246,12 +246,12 @@ func TestSetObject(t *testing.T) {
 			}
 
 			r.SetObject(tObj)
-			got := r.GetObject(tObj)
+			got := r.GetObjects(tObj)
 
 			if got == nil {
 				t.Errorf("TestGetObject: -want: %v, +got:%v\n", tObj, got)
 			} else {
-				if diff := cmp.Diff(tObj.GetLabels(), got.GetLabels()); diff != "" {
+				if diff := cmp.Diff(tObj.GetLabels(), got[0].GetLabels()); diff != "" {
 					t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
 				}
 			}
@@ -288,7 +288,7 @@ func TestDeleteObject(t *testing.T) {
 			}
 
 			r.DeleteObject(tObj)
-			got := r.GetObject(tObj)
+			got := r.GetObjects(tObj)
 
 			if got != nil {
 				t.Errorf("TestDeleteObject: -want: nil, +got:%v\n", got)
@@ -330,11 +330,11 @@ func TestConurrency(t *testing.T) {
 		if err != nil {
 			t.Errorf("cannot parse test obj: %s", err.Error())
 		}
-		got := r.GetObject(tObj)
+		got := r.GetObjects(tObj)
 		if got == nil {
 			t.Errorf("TestGetObject: -want: %v, +got:%v\n", tObj, got)
 		} else {
-			if diff := cmp.Diff(tObj.GetLabels(), got.GetLabels()); diff != "" {
+			if diff := cmp.Diff(tObj.GetLabels(), got[0].GetLabels()); diff != "" {
 				t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
 			}
 		}
