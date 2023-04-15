@@ -519,6 +519,11 @@ func TestDeleteCNIType(t *testing.T) {
 			err := i.DeleteCNIType()
 			assert.NoError(t, err)
 
+			got := i.GetCNIType()
+			if got != "" {
+				t.Errorf("unexpected output: got %s, wanted empty string", got)
+			}
+
 		})
 	}
 }
@@ -526,6 +531,7 @@ func TestDeleteCNIType(t *testing.T) {
 func TestDeleteAttachmentType(t *testing.T) {
 	cases := map[string]struct {
 		file string
+		v    string
 	}{
 		"TestDeleteAttachmentType": {
 			file: itface,
@@ -545,6 +551,10 @@ func TestDeleteAttachmentType(t *testing.T) {
 			err := i.DeleteAttachmentType()
 			assert.NoError(t, err)
 
+			got := i.GetAttachmentType()
+			if got != "" {
+				t.Errorf("unexpected output: got %s, wanted empty string", got)
+			}
 		})
 	}
 }

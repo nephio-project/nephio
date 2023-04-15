@@ -182,12 +182,12 @@ func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 
 // DeleteAttachmentType deletes the attachmentType from the spec
 func (r *itfce) DeleteAttachmentType() error {
-	return r.deleteNestedField(cniType...)
+	return r.deleteNestedField(attachmentType...)
 }
 
 // DeleteCNIType deletes the cniType from the spec
 func (r *itfce) DeleteCNIType() error {
-	return r.deleteNestedField(attachmentType...)
+	return r.deleteNestedField(cniType...)
 }
 
 // getStringValue is a generic utility function that returns a string from
