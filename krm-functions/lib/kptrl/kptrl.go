@@ -50,10 +50,7 @@ func (r *ResourceList) GetAllObjects() fn.KubeObjects {
 // the entry if it exists or appends the entry if it does not exist in the resourceList
 // It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
 func (r *ResourceList) SetObject(obj *fn.KubeObject) error {
-	if err := r.UpsertObjectToItems(obj, nil, true); err != nil {
-		return err
-	}
-	return nil
+	return r.UpsertObjectToItems(obj, nil, true)
 }
 
 // DeleteObject deletes the object from the resourceList if it exists.
