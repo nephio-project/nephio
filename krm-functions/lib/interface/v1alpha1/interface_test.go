@@ -275,7 +275,7 @@ func TestGetNetworkInstanceName(t *testing.T) {
 func TestSetAttachmentType(t *testing.T) {
 	cases := map[string]struct {
 		file        string
-		value       string
+		value       nephioreqv1alpha1.AttachmentType
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
@@ -287,11 +287,6 @@ func TestSetAttachmentType(t *testing.T) {
 			file:        itfaceEmpty,
 			value:       "vlan",
 			errExpected: false,
-		},
-		"SetAttachmentTypeUnknown": {
-			file:        itfaceEmpty,
-			value:       "a",
-			errExpected: true,
 		},
 	}
 
@@ -308,7 +303,7 @@ func TestSetAttachmentType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				got := i.GetAttachmentType()
-				if diff := cmp.Diff(tc.value, got); diff != "" {
+				if diff := cmp.Diff(tc.value, nephioreqv1alpha1.AttachmentType(got)); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
 			}
@@ -320,7 +315,7 @@ func TestSetAttachmentType(t *testing.T) {
 func TestSetCNIType(t *testing.T) {
 	cases := map[string]struct {
 		file        string
-		value       string
+		value       nephioreqv1alpha1.CNIType
 		errExpected bool
 	}{
 		"SetCNITypeNormal": {
@@ -332,11 +327,6 @@ func TestSetCNIType(t *testing.T) {
 			file:        itfaceEmpty,
 			value:       "sriov",
 			errExpected: false,
-		},
-		"SetCNITypeUnknown": {
-			file:        itfaceEmpty,
-			value:       "a",
-			errExpected: true,
 		},
 	}
 
@@ -353,7 +343,7 @@ func TestSetCNIType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				got := i.GetCNIType()
-				if diff := cmp.Diff(tc.value, got); diff != "" {
+				if diff := cmp.Diff(tc.value, nephioreqv1alpha1.CNIType(got)); diff != "" {
 					t.Errorf("TestSetCNIType: -want, +got:\n%s", diff)
 				}
 			}
