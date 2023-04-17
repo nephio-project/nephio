@@ -4,7 +4,7 @@ presubmits:
     run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: nephio/gotests:2
+      - image: nephio/gotests:4
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: nephio/gotests:2
+      - image: nephio/gotests:4
         command:
         - make
         args:
@@ -24,8 +24,16 @@ presubmits:
     run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: nephio/gotests:2
+      - image: nephio/gotests:4
         command:
         - make
         args:
         - lint
+  - name: presubmit-nephio-license-header-check
+    decorate: true
+    run_if_changed: "^.*.go$"
+    spec:
+      containers:
+      - image: nephio/gotests:4
+        command:
+        - "/usr/local/bin/checklicense.sh"
