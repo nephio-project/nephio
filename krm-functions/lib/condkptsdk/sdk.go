@@ -33,10 +33,12 @@ type KptCondSDK interface {
 type ResourceKind string
 
 const (
-	// ResourceKindNone defines a GVK resource for which only conditions need to be created
-	ResourceKindNone ResourceKind = "none"
-	// ResourceKindFull defines a GVK resource for which conditions and resources need to be created
-	ResourceKindFull ResourceKind = "full"
+	// ChildRemoteCondition defines a GVK resource for which only conditions need to be created
+	ChildRemoteCondition ResourceKind = "remoteCondition"
+	// ChildRemote defines a GVK resource for which conditions and resources need to be created
+	ChildRemote ResourceKind = "remote"
+	// ChildLocal defines a GVK resource for which no conditions need to be created
+	ChildLocal ResourceKind = "local"
 )
 
 type Config struct {

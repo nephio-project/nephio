@@ -38,7 +38,7 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReferenc
 	if ignoreOwnKind {
 		r.setObjectInResourceList(kind, refs, obj)
 	} else {
-		if obj.ownKind == ResourceKindFull {
+		if obj.ownKind == ChildRemote {
 			r.setObjectInResourceList(kind, refs, obj)
 		}
 	}
