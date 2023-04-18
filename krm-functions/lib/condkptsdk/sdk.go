@@ -53,6 +53,8 @@ type PopulateOwnResourcesFn func(*fn.KubeObject) ([]*fn.KubeObject, error)
 
 // the list of objects contains the owns and the specific watches
 type GenerateResourceFn func(*fn.KubeObject, []*fn.KubeObject) (*fn.KubeObject, error)
+func  GenerateResourceFnNop(*fn.KubeObject, []*fn.KubeObject) (*fn.KubeObject, error) {return nil, nil}
+
 type WatchCallbackFn func(*fn.KubeObject) error
 
 func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {

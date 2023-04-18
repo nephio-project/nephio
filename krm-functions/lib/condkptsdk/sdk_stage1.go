@@ -37,14 +37,14 @@ func (r *sdk) populateChildren() {
 		if r.cfg.PopulateOwnResourcesFn != nil && forObj != nil {
 			res, err := r.cfg.PopulateOwnResourcesFn(forObj)
 			if err != nil {
-				fn.Log("error populating new resource: %v", err.Error())
+				fn.Logf("error populating new resource: %v\n", err.Error())
 				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, forObj))
 			} else {
 				for _, newObj := range res {
 					objRef := corev1.ObjectReference{APIVersion: newObj.GetAPIVersion(), Kind: newObj.GetKind(), Name: newObj.GetName()}
 					kc, ok := r.inv.isGVKMatch(&objRef)
 					if !ok {
-						fn.Logf("populate new resource: forRef %v objRef %v cannot find resource in gvkmap\n", forRef, objRef, kc)
+						fn.Logf("populate new resource: forRef %v objRef %v cannot find resource in gvkmap\n", forRef, objRef)
 					} else {
 						fn.Logf("populate new resource: forRef %v objRef %v kc: %v\n", forRef, objRef, kc)
 						// set owner reference on the new resource

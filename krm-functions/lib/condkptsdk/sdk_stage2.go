@@ -83,7 +83,7 @@ func (r *sdk) generateResource() {
 func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, objs []*fn.KubeObject) {
 	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
 	if err != nil {
-		fn.Log("error generating new resource: %v", err.Error())
+		fn.Logf("error generating new resource: %v\n", err.Error())
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
 		return
 	}

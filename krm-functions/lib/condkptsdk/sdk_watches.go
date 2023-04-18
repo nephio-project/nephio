@@ -26,7 +26,7 @@ func (r *sdk) callGlobalWatches() {
 		fn.Logf("run watch: %v\n", resCtx.existingResource)
 		if resCtx.gvkKindCtx.callbackFn != nil {
 			if err := resCtx.gvkKindCtx.callbackFn(resCtx.existingResource); err != nil {
-				fn.Log("populatechildren not ready: watch callback failed: %v\n", err.Error())
+				fn.Logf("populatechildren not ready: watch callback failed: %v\n", err.Error())
 				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, resCtx.existingResource))
 				r.ready = false
 			}

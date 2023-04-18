@@ -17,6 +17,7 @@ limitations under the License.
 package condkptsdk
 
 import (
+	"fmt"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +57,7 @@ func newInventory(cfg *Config) (Inventory, error) {
 }
 
 type inventory struct {
-	m      sync.RWMutex
+	m sync.RWMutex
 	//hasOwn bool
 	// gvkResource contain the gvk based resource from config
 	// they dont contain the names but allow for faster lookups
@@ -74,3 +75,61 @@ const (
 	actionDelete action = "delete"
 	actionUpdate action = "update"
 )
+
+// initializeGVKInventory initializes the GVK with the generic GVK
+// resources as specified in the SDKConfig
+// used to provide faster loopup if the GVK is relevant for the fn/controller
+// and to provide context if there is a match
+func (r *inventory) initializeGVKInventory(cfg *Config) error {
+	if err := validateGVKRef(cfg.For); err != nil {
+		return err
+	}
+	if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: forGVKKind}, cfg.For); err != nil {
+		return err
+	}
+	for ref, ok := range cfg.Owns {
+		if err := validateGVKRef(ref); err != nil {
+			return err
+		}
+		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: ownGVKKind, ownKind: ok}, ref); err != nil {
+			return err
+		}
+	}
+	for ref, cb := range cfg.Watch {
+		if err := validateGVKRef(ref); err != nil {
+			return err
+		}
+		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: watchGVKKind, callbackFn: cb}, ref); err != nil {
+			return err
+		}
+	}
+	if cfg.GenerateResourceFn == nil {
+		return fmt.Errorf("a function always needs a GenerateResource function")
+	}
+	return nil
+}
+
+func (r *inventory) addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectReference) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+
+	// validates if we GVK(s) were added to the same context
+	if resCtx, ok := r.gvkResources[corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}]; ok {
+		return fmt.Errorf("another resource with a different kind %s already exists", resCtx.gvkKind)
+	}
+	r.gvkResources[corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}] = kc
+	return nil
+}
+
+func (r *inventory) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	if ref == nil {
+		return nil, false
+	}
+	kindCtx, ok := r.gvkResources[corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}]
+	if !ok {
+		return nil, false
+	}
+	return kindCtx, true
+}

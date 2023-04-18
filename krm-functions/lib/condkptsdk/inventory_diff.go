@@ -111,12 +111,12 @@ func (r *inventory) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 					// check diff
 					existingSpec, err := getSpec(resCtx.existingResource)
 					if err != nil {
-						fn.Log("cannot get spec from exisiting obj, err: %v", err)
+						fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
 						continue
 					}
 					newSpec, err := getSpec(resCtx.newResource)
 					if err != nil {
-						fn.Log("cannot get spec from exisiting obj, err: %v", err)
+						fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
 						continue
 					}
 
