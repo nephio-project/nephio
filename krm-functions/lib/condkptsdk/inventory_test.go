@@ -41,6 +41,31 @@ func TestNewInventory(t *testing.T) {
 			},
 			errExpected: false,
 		},
+        "NoFor": {
+			input: &Config{
+                GenerateResourceFn: GenerateResourceFnNop,
+            },
+			errExpected: true,
+		},
+        "GenerateResourceFn": {
+			input: &Config{
+                For: corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+            },
+			errExpected: true,
+		},
+        "DuplicateGVK1": {
+			input: &Config{
+				For: corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+				Owns: map[corev1.ObjectReference]ResourceKind{
+					{APIVersion: "b", Kind: "b"}: ChildRemote,
+				},
+				Watch: map[corev1.ObjectReference]WatchCallbackFn{
+					{APIVersion: "b", Kind: "b"}: nil,
+				},
+				GenerateResourceFn: GenerateResourceFnNop,
+			},
+			errExpected: true,
+		},
 	}
 
 	for name, tc := range cases {
