@@ -172,7 +172,7 @@ func (r *obj[T1]) GetStringMap(fields ...string) map[string]string {
 	return m
 }
 
-// SetNestedField is a generic utility function that sets a string on
+// SetNestedString is a generic utility function that sets a string on
 // a string slice representing the path in the yaml doc
 func (r *obj[T1]) SetNestedString(s string, fields ...string) error {
 	if r.o == nil {
