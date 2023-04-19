@@ -1,0 +1,13 @@
+apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
+metadata:
+  name: internet-pool1
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+spec:
+  kind: pool
+  selector:
+    matchLabels:
+      nephio.org/site: edge1
+  networkInstance: {}
+  prefixLength: 8

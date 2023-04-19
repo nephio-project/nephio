@@ -1,0 +1,6 @@
+- message: siteCode is missing
+  resourceRef:
+    name: cluster-context
+    apiVersion: infra.nephio.org/v1alpha1
+    kind: ClusterContext
+  severity: error

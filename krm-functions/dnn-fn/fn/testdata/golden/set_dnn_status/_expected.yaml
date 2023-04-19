@@ -1,0 +1,75 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: ClusterContext
+  metadata:
+    name: cluster-context
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    cniConfig:
+      cniType: macvlan
+      masterInterface: eth1
+    siteCode: edge1
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: internet-pool1
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+  spec:
+    kind: pool
+    selector:
+      matchLabels:
+        nephio.org/site: edge1
+    networkInstance:
+      name: vpc-internet
+    prefixLength: 8
+  status:
+    prefix: "1.1.1.1/24"
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: allocated
+      reason: req.nephio.org/v1alpha1.DataNetwork.internet
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+    - message: update done
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Capacity
+  metadata:
+    name: dataplane
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    maxUplinkThroughput: 10G
+    maxDownlinkThroughput: 10G
+- apiVersion: req.nephio.org/v1alpha1
+  kind: DataNetwork
+  metadata:
+    name: internet
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      prefix: 10.0.0.0/8
+  spec:
+    networkInstance:
+      name: vpc-internet
+    pools:
+    - name: pool1
+      prefixLength: 8
+  status:
+    pools:
+    - name: pool1
+      ipAllocation:
+        prefix: 1.1.1.1/24

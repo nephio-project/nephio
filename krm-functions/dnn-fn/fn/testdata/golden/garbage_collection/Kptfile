@@ -1,0 +1,12 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+# comment A
+metadata:
+  name: pkg-upf
+  #commentB
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: upf package example
+pipeline: {}
+
