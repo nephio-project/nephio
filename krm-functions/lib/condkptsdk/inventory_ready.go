@@ -71,7 +71,7 @@ func (r *inventory) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 			watches: map[corev1.ObjectReference]fn.KubeObject{},
 			forObj:  resCtx.existingResource,
 		}
-		for ref, resCtx := range r.get(ownGVKKind, &forRef) {
+		for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 			if resCtx.existingCondition == nil ||
 				resCtx.existingCondition.Status == kptv1.ConditionStatus(corev1.ConditionFalse) {
 				readyMap[forRef].ready = false
@@ -80,7 +80,7 @@ func (r *inventory) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 				readyMap[forRef].owns[ref] = *resCtx.existingResource
 			}
 		}
-		for ref, resCtx := range r.get(watchGVKKind, &forRef) {
+		for ref, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{forRef, {}}) {
 			// TBD we need to look at some watches that we want to check the condition for and others not
 			fn.Logf("getReadyMap: ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
 			if resCtx.existingCondition == nil || resCtx.existingCondition.Status == kptv1.ConditionStatus(corev1.ConditionFalse) {

@@ -34,7 +34,7 @@ type Inventory interface {
 	// runtime crud operations on the inventory
 	set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error
 	delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error
-	get(k gvkKind, ref *corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx
+	get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx
 	list() [][]sdkObjectReference
 	// readiness
 	isReady() bool
@@ -74,6 +74,7 @@ const (
 	actionCreate action = "create"
 	actionDelete action = "delete"
 	actionUpdate action = "update"
+	actionGet    action = "get"
 )
 
 // initializeGVKInventory initializes the GVK with the generic GVK

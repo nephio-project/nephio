@@ -16,13 +16,16 @@ limitations under the License.
 
 package condkptsdk
 
-import "github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+import (
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	corev1 "k8s.io/api/core/v1"
+)
 
 // call the global watch callbacks to provide info to the fns in a generic way
 // so they dont have to parse the complete resourcelist
 // Also it provide readiness feedback when an error is returned
 func (r *sdk) callGlobalWatches() {
-	for _, resCtx := range r.inv.get(watchGVKKind, nil) {
+	for _, resCtx := range r.inv.get(watchGVKKind, []corev1.ObjectReference{}) {
 		fn.Logf("run watch: %v\n", resCtx.existingResource)
 		if resCtx.gvkKindCtx.callbackFn != nil {
 			if err := resCtx.gvkKindCtx.callbackFn(resCtx.existingResource); err != nil {

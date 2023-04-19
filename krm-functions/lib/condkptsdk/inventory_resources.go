@@ -64,8 +64,12 @@ func (r *inventory) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, ne
 	defer r.m.Unlock()
 
 	fn.Logf("set: kc: %v, refs: %v, resource: %v, new: %t\n", kc, refs, x, new)
-
-	return r.resources.set(kc, refs, x, new)
+	sdkRefs, err := getSdkRefs(kc.gvkKind, refs)
+	if err != nil {
+		return err
+	}
+	return r.resources.set2(sdkRefs, kc, x, new)
+	//return r.resources.set(kc, refs, x, new)
 }
 
 func (r *inventory) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
@@ -74,16 +78,30 @@ func (r *inventory) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error 
 
 	fn.Logf("delete: kc: %v, refs: %v\n", kc, refs)
 
-	return r.resources.delete(kc, refs)
+	sdkRefs, err := getSdkRefs(kc.gvkKind, refs)
+	if err != nil {
+		return err
+	}
+
+	return r.resources.delete2(sdkRefs)
+	//return r.resources.delete(kc, refs)
 }
 
-func (r *inventory) get(k gvkKind, ref *corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx {
+func (r *inventory) get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx {
 	r.m.RLock()
 	defer r.m.RUnlock()
 
-	fn.Logf("get: kind: %v, ref: %v\n", k, ref)
+	fn.Logf("get: kind: %v, refs: %v\n", k, refs)
 
-	return r.resources.get(k, ref, map[corev1.ObjectReference]*resourceCtx{})
+	sdkRefs, err := getSdkRefs(k, refs)
+	if err != nil {
+		fn.Logf("cannot get sdkrefs :%v\n", err)
+		return map[corev1.ObjectReference]*resourceCtx{}
+	}
+
+	return r.resources.get2(sdkRefs)
+
+	//return r.resources.get(k, refs, map[corev1.ObjectReference]*resourceCtx{})
 }
 
 func (r *inventory) list() [][]sdkObjectReference {
@@ -104,6 +122,7 @@ func (r *resources) list() [][]sdkObjectReference {
 	return entries
 }
 
+/*
 func (r *resources) get(k gvkKind, ref *corev1.ObjectReference, resCtxs map[corev1.ObjectReference]*resourceCtx) map[corev1.ObjectReference]*resourceCtx {
 	if ref != nil {
 		// when ref is not nil we need to do another lookup in the forResourceMap
@@ -147,7 +166,7 @@ func (r *resources) get(k gvkKind, ref *corev1.ObjectReference, resCtxs map[core
 }
 
 func (r *resources) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error {
-	if err := validateWalk(kc, refs); err != nil {
+	if err := validateWalk(kc.gvkKind, refs); err != nil {
 		fn.Logf("cannot set -> walk validation failed :%v\n", err)
 		return err
 	}
@@ -155,7 +174,7 @@ func (r *resources) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, ne
 }
 
 func (r *resources) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
-	if err := validateWalk(kc, refs); err != nil {
+	if err := validateWalk(kc.gvkKind, refs); err != nil {
 		fn.Logf("cannot get -> walk validation failed :%v\n", err)
 		return err
 	}
@@ -166,6 +185,7 @@ func (r *resources) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error 
 func (r *resources) walk(a action, kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error {
 	//fn.Logf("entry tree action: %s, kind: kc: %v refs: %v\n", a, kc, refs)
 	if len(refs) > 1 {
+		// continue walk
 		sdkRef := sdkObjectReference{gvkKind: forGVKKind, ref: refs[0]}
 		// continue with the walk
 		// check if the reference is initialized
@@ -181,38 +201,51 @@ func (r *resources) walk(a action, kc *gvkKindCtx, refs []corev1.ObjectReference
 		}
 		return r.resources[sdkRef].walk(a, kc, refs[1:], x, new)
 	}
-	sdkRef := sdkObjectReference{gvkKind: kc.gvkKind, ref: refs[0]}
+	// act on the reference
+	var sdkRef *sdkObjectReference
+	if len(refs) == 0 {
+		sdkRef = &sdkObjectReference{gvkKind: kc.gvkKind, ref: refs[0]}
+	}
 	// perform action
-	fn.Logf("tree action: %s, sdkref: %v\n", a, sdkRef)
-	if a == actionCreate {
-		if !r.isInitialized(sdkRef) {
-			r.init(sdkRef)
-		}
-		switch d := x.(type) {
-		case *kptv1.Condition:
-			fn.Logf("add existing condition: %v\n", sdkRef)
-			x := *d
-			r.resources[sdkRef].resourceCtx.existingCondition = &x
-		case *fn.KubeObject:
-			r.resources[sdkRef].gvkKindCtx = *kc
-			if new {
-				x := *d
-				r.resources[sdkRef].resourceCtx.newResource = &x
-			} else {
-				x := *d
-				r.resources[sdkRef].resourceCtx.existingResource = &x
+	fn.Logf("walk action: %s, sdkref: %v\n", a, sdkRef)
+
+	switch a {
+	case actionCreate, actionUpdate:
+		if sdkRef != nil {
+			if !r.isInitialized(*sdkRef) {
+				r.init(*sdkRef)
 			}
-		default:
-			return fmt.Errorf("cannot insert unsupported object: %v", x)
+			switch d := x.(type) {
+			case *kptv1.Condition:
+				fn.Logf("add existing condition: %v\n", sdkRef)
+				x := *d
+				r.resources[*sdkRef].resourceCtx.existingCondition = &x
+			case *fn.KubeObject:
+				r.resources[*sdkRef].gvkKindCtx = *kc
+				if new {
+					x := *d
+					r.resources[*sdkRef].resourceCtx.newResource = &x
+				} else {
+					x := *d
+					r.resources[*sdkRef].resourceCtx.existingResource = &x
+				}
+			default:
+				return fmt.Errorf("cannot insert unsupported object: %v", x)
+			}
 		}
-	} else {
-		if r.isInitialized(sdkRef) {
-			// right now we only have action delete for the exisitng Condition
-			r.resources[sdkRef].resourceCtx.existingCondition = nil
+	case actionDelete:
+		if sdkRef != nil {
+			if r.isInitialized(*sdkRef) {
+				// right now we only have action delete for the exisitng Condition
+				r.resources[*sdkRef].resourceCtx.existingCondition = nil
+			}
 		}
+	case actionGet:
+
 	}
 	return nil
 }
+*/
 
 // isInitialized checks if the resources are initialized
 func (r *resources) isInitialized(sdkRef sdkObjectReference) bool {
@@ -229,22 +262,23 @@ func (r *resources) init(sdkRef sdkObjectReference) {
 	}
 }
 
+/*
 // validateWalk checks if the attributes of the walk are valid. if not an error is returned
-func validateWalk(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
+func validateWalk(k gvkKind, refs []corev1.ObjectReference) error {
 	switch len(refs) {
 	case 0:
 		return fmt.Errorf("cannot walk resource tree with empty ref")
 	case 1:
-		if kc.gvkKind == ownGVKKind {
-			return fmt.Errorf("cannot walk resource tree with depth %d other than using for or watch, got: %s", len(refs), kc.gvkKind)
+		if k == ownGVKKind {
+			return fmt.Errorf("cannot walk resource tree with depth %d other than using for or watch, got: %s", len(refs), k)
 		}
 		if err := validateGVKNRef(refs[0]); err != nil {
 			return fmt.Errorf("cannot walk resource tree with depth %d, nil reference, got: %v", len(refs), refs)
 		}
 		return nil
 	case 2:
-		if kc.gvkKind == forGVKKind {
-			return fmt.Errorf("cannot walk resource tree with depth %d other than own or watch, got: %s", len(refs), kc.gvkKind)
+		if k == forGVKKind {
+			return fmt.Errorf("cannot walk resource tree with depth %d other than own or watch, got: %s", len(refs), k)
 		}
 		if validateGVKNRef(refs[0]) != nil && validateGVKNRef(refs[1]) != nil {
 			return fmt.Errorf("cannot walk resource tree with depth %d, nil reference, got: %v", len(refs), refs)
@@ -252,5 +286,120 @@ func validateWalk(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
 		return nil
 	default:
 		return fmt.Errorf("cannot walk resource tree with depth > 2, got %d", len(refs))
+	}
+}
+*/
+
+func getSdkRefs(k gvkKind, refs []corev1.ObjectReference) ([]sdkObjectReference, error) {
+	switch len(refs) {
+	case 0:
+		return nil, fmt.Errorf("cannot walk resource tree with empty ref")
+	case 1:
+		if k != forGVKKind && k != watchGVKKind {
+			return nil, fmt.Errorf("refs with len 1 only allowed for for/watch")
+		}
+		return []sdkObjectReference{{gvkKind: k, ref: refs[0]}}, nil
+	case 2:
+		if k == forGVKKind {
+			return nil, fmt.Errorf("refs with len 2 only allowed for own/watch")
+		}
+		return []sdkObjectReference{{gvkKind: forGVKKind, ref: refs[0]}, {gvkKind: k, ref: refs[1]}}, nil
+	default:
+		return nil, fmt.Errorf("refs with len > 2, got %d", len(refs))
+	}
+
+}
+
+func (r *resources) set2(refs []sdkObjectReference, kc *gvkKindCtx, x any, new newResource) error {
+	if len(refs) == 0 {
+		switch d := x.(type) {
+		case *kptv1.Condition:
+			fn.Logf("add existing condition: %v\n", x)
+			x := *d
+			r.resourceCtx.existingCondition = &x
+			return nil
+		case *fn.KubeObject:
+			fn.Logf("add existing resource: %v\n", x)
+			r.gvkKindCtx = *kc
+			if new {
+				x := *d
+				r.resourceCtx.newResource = &x
+			} else {
+				x := *d
+				r.resourceCtx.existingResource = &x
+			}
+			return nil
+		default:
+			return fmt.Errorf("unsupported object: %v", x)
+		}
+
+	}
+	// check if resource exists
+	if !r.isInitialized(refs[0]) {
+		r.init(refs[0])
+	}
+	return r.resources[refs[0]].set2(refs[1:], kc, x, new)
+}
+
+func (r *resources) delete2(refs []sdkObjectReference) error {
+	if len(refs) == 0 {
+		r.resourceCtx.existingCondition = nil
+		return nil
+	}
+	// check if resource exists
+	if !r.isInitialized(refs[0]) {
+		return fmt.Errorf("not found")
+	}
+	return r.resources[refs[0]].delete2(refs[1:])
+
+}
+
+func (r *resources) get2(refs []sdkObjectReference) map[corev1.ObjectReference]*resourceCtx {
+	if len(refs) == 0 {
+		resCtxs := map[corev1.ObjectReference]*resourceCtx{}
+		if len(r.resources) == 0 {
+			// specific get
+			resCtxs[corev1.ObjectReference{}] = r.resourceCtx.Deepcopy()
+		} else {
+			// wildcard get
+			for sdkRef, resCtx := range r.resources {
+				resCtxs[sdkRef.ref] = resCtx.Deepcopy()
+			}
+		}
+		return resCtxs
+	}
+	// check if resource exists
+	if _, ok := r.resources[refs[0]]; !ok {
+		fn.Logf("ref not found")
+		return map[corev1.ObjectReference]*resourceCtx{}
+	}
+	return r.resources[refs[0]].get2(refs[1:])
+}
+
+func (in *resourceCtx) Deepcopy() *resourceCtx {
+	if in == nil {
+		return nil
+	}
+	out := new(resourceCtx)
+	in.DeepCopyInto(out)
+	return out
+}
+
+func (in *resourceCtx) DeepCopyInto(out *resourceCtx) {
+	*out = *in
+	if in.existingCondition != nil {
+		in, out := &in.existingCondition, &out.existingCondition
+		*out = new(kptv1.Condition)
+		**out = **in
+	}
+	if in.existingResource != nil {
+		in, out := &in.existingResource, &out.existingResource
+		*out = new(fn.KubeObject)
+		**out = **in
+	}
+	if in.newResource != nil {
+		in, out := &in.newResource, &out.newResource
+		*out = new(fn.KubeObject)
+		**out = **in
 	}
 }

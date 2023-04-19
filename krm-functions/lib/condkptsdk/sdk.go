@@ -90,7 +90,7 @@ func (r *sdk) Run() {
 	r.kptf, err = kptfilelibv1.New(r.rl.Items.GetRootKptfile().String())
 	if err != nil {
 		fn.Log("error unmarshal kptfile")
-		r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, r.rl.Items.GetRootKptfile()))
+		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 		return
 	}
 

@@ -17,6 +17,7 @@
 package condkptsdk
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -40,11 +41,66 @@ func TestSet(t *testing.T) {
 			x:           fn.NewEmptyKubeObject(),
 			errExpected: false,
 		},
-		"ForErrorRefs": {
+		"ForErrorRefDepth": {
 			kc: &gvkKindCtx{gvkKind: forGVKKind},
 			refs: []corev1.ObjectReference{
 				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: true,
+		},
+		"WatchGlobalNormal": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
 				{APIVersion: "a", Kind: "a", Name: "a"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+		"WatchSpecificNormal": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+		"WatchErrorDepth": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+				{APIVersion: "c", Kind: "c", Name: "c"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: true,
+		},
+
+		"OwnSpecificNormal": {
+			kc: &gvkKindCtx{gvkKind: ownGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+		"OwnErrorDepthTooSmall": {
+			kc: &gvkKindCtx{gvkKind: ownGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: true,
+		},
+		"OwnErrorDepth": {
+			kc: &gvkKindCtx{gvkKind: ownGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+				{APIVersion: "c", Kind: "c", Name: "c"},
 			},
 			x:           fn.NewEmptyKubeObject(),
 			errExpected: true,
@@ -53,7 +109,7 @@ func TestSet(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			i, err := newInventory(&Config{
+			inv, err := newInventory(&Config{
 				For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
 				GenerateResourceFn: GenerateResourceFnNop,
 			})
@@ -61,11 +117,163 @@ func TestSet(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = i.set(tc.kc, tc.refs, tc.x, tc.new)
+			err = inv.set(tc.kc, tc.refs, tc.x, tc.new)
 			if tc.errExpected {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+
+				x := inv.get(tc.kc.gvkKind, tc.refs)
+				fmt.Printf("get %s: %v, len: %d\n", name, x, len(x))
+				if len(x) != 1 {
+					t.Errorf("expecting %v, got %v", tc.refs[0], x)
+				}
+			}
+		})
+	}
+}
+
+func TestDelete(t *testing.T) {
+	cases := map[string]struct {
+		kc          *gvkKindCtx
+		refs        []corev1.ObjectReference
+		deleteRefs  []corev1.ObjectReference
+		x           any
+		new         newResource
+		errExpected bool
+	}{
+		"DeleteNormal": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+		"DeleteNotFound": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+				{APIVersion: "b", Kind: "b", Name: "b"},
+			},
+			deleteRefs: []corev1.ObjectReference{
+				{APIVersion: "b", Kind: "b", Name: "b"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			inv, err := newInventory(&Config{
+				For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+				GenerateResourceFn: GenerateResourceFnNop,
+			})
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			err = inv.set(tc.kc, tc.refs, tc.x, tc.new)
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			deleteRefs := tc.refs
+			if tc.deleteRefs != nil {
+				deleteRefs = tc.deleteRefs
+			}
+			err = inv.delete(tc.kc, deleteRefs)
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGet(t *testing.T) {
+	cases := map[string]struct {
+		kc          *gvkKindCtx
+		refs        []corev1.ObjectReference
+		x           any
+		new         newResource
+		errExpected bool
+	}{
+		"GetEmpty": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			inv, err := newInventory(&Config{
+				For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+				GenerateResourceFn: GenerateResourceFnNop,
+			})
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			x := inv.get(tc.kc.gvkKind, tc.refs)
+			if len(x) != 0 {
+				t.Errorf("expecting len 0, got %v", x)
+			}
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	cases := map[string]struct {
+		kc          *gvkKindCtx
+		refs        [][]corev1.ObjectReference
+		x           any
+		new         newResource
+		errExpected bool
+	}{
+		"List": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			refs: [][]corev1.ObjectReference{
+				{
+					{APIVersion: "a", Kind: "a", Name: "a"},
+				},
+				{
+					{APIVersion: "b1", Kind: "b1", Name: "b1"},
+					{APIVersion: "b11", Kind: "b11", Name: "b11"},
+				},
+				{
+					{APIVersion: "b1", Kind: "b1", Name: "b1"},
+					{APIVersion: "b12", Kind: "b12", Name: "b12"},
+				},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			inv, err := newInventory(&Config{
+				For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+				GenerateResourceFn: GenerateResourceFnNop,
+			})
+			if err != nil {
+				assert.NoError(t, err)
+			}
+
+			for _, ref := range tc.refs {
+				inv.set(tc.kc, ref, tc.x, tc.new)
+			}
+
+			x := inv.list()
+			if len(x) != 4 {
+				t.Errorf("expecting len 4, got len: %d, data %v", len(tc.refs), x)
 			}
 		})
 	}
