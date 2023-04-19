@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,7 +106,6 @@ func TestNewFromKubeObject(t *testing.T) {
 		deploymentKubeObjectParserObject := &objParser{
 			p: deploymentKubeObjectParser,
 		}
-		fmt.Println(deploymentKubeObjectParserObject.p.GetKubeObject().String())
 		if deploymentKubeObjectParser.GetKubeObject() != deploymentKubeObjectParserObject.p.GetKubeObject() {
 			t.Errorf("TestNewFromKubeObject: -want%s, +got:\n%s", deploymentKubeObjectParserObject.p.GetKubeObject(), deploymentKubeObjectParser.GetKubeObject())
 		}
@@ -269,7 +267,6 @@ func TestNewFromYaml(t *testing.T) {
 		deploymentKubeObjectParserObject := &objParser{
 			p: deploymentKubeObjectParser,
 		}
-		fmt.Println(deploymentKubeObjectParserObject.p.GetKubeObject().String())
 		if deploymentKubeObjectParser.GetKubeObject() != deploymentKubeObjectParserObject.p.GetKubeObject() {
 			t.Errorf("TestNewFromKubeObject: -want%s, +got:\n%s", deploymentKubeObjectParserObject.p.GetKubeObject(), deploymentKubeObjectParser.GetKubeObject())
 		}
@@ -423,7 +420,6 @@ func TestNewFromGoStruct(t *testing.T) {
 		deploymentKubeObjectParserObject := &objParser{
 			p: deploymentKubeObjectParser,
 		}
-		fmt.Println(deploymentKubeObjectParserObject.p.GetKubeObject().String())
 		if deploymentKubeObjectParser.GetKubeObject() != deploymentKubeObjectParserObject.p.GetKubeObject() {
 			t.Errorf("TestNewFromKubeObject: -want%s, +got:\n%s", deploymentKubeObjectParserObject.p.GetKubeObject(), deploymentKubeObjectParser.GetKubeObject())
 		}
