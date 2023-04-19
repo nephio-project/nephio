@@ -108,7 +108,7 @@ func (r *sdk) updateChildren() {
 			}
 			for _, obj := range diff.deleteObjs {
 				fn.Logf("diff action -> delete obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
-				r.handleUpdate(actionDelete, ownGVKKind,[]*corev1.ObjectReference{&forRef, &obj.ref}, obj, kptv1.ConditionFalse, "resource", true)
+				r.handleUpdate(actionDelete, ownGVKKind, []*corev1.ObjectReference{&forRef, &obj.ref}, obj, kptv1.ConditionFalse, "resource", true)
 			}
 			// this is a corner case, in case for object gets deleted and recreated
 			// if the delete annotation is set, we need to cleanup the

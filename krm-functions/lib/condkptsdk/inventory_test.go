@@ -41,19 +41,19 @@ func TestNewInventory(t *testing.T) {
 			},
 			errExpected: false,
 		},
-        "NoFor": {
+		"NoFor": {
 			input: &Config{
-                GenerateResourceFn: GenerateResourceFnNop,
-            },
+				GenerateResourceFn: GenerateResourceFnNop,
+			},
 			errExpected: true,
 		},
-        "GenerateResourceFn": {
+		"GenerateResourceFn": {
 			input: &Config{
-                For: corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-            },
+				For: corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+			},
 			errExpected: true,
 		},
-        "DuplicateGVK1": {
+		"DuplicateGVK1": {
 			input: &Config{
 				For: corev1.ObjectReference{APIVersion: "a", Kind: "a"},
 				Owns: map[corev1.ObjectReference]ResourceKind{

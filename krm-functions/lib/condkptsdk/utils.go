@@ -22,17 +22,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// validateGVKRef returns an error if the ApiVersion or Kind 
-// contain an empty string 
+// validateGVKRef returns an error if the ApiVersion or Kind
+// contain an empty string
 func validateGVKRef(ref corev1.ObjectReference) error {
-	if ref.APIVersion == "" || ref.Kind == ""  {
+	if ref.APIVersion == "" || ref.Kind == "" {
 		return fmt.Errorf("gvk not initialized, got: %v", ref)
 	}
 	return nil
 }
 
 // validateGVKNRef returns an error if the ApiVersion or Kind or Name
-// contain an empty string 
+// contain an empty string
 func validateGVKNRef(ref corev1.ObjectReference) error {
 	if ref.APIVersion == "" || ref.Kind == "" || ref.Name == "" {
 		return fmt.Errorf("gvk or name not initialized, got: %v", ref)
