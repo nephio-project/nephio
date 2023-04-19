@@ -121,7 +121,10 @@ func (r *sdk) updateKptFile() {
 		fn.Log(err)
 		r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, r.rl.Items.GetRootKptfile()))
 	}
-	r.rl.UpsertObjectToItems(kptfile, nil, true)
+	if err := r.rl.UpsertObjectToItems(kptfile, nil, true); err != nil {
+		fn.Log(err)
+		r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, r.rl.Items.GetRootKptfile()))
+	}
 }
 
 func (r *sdk) deleteObjFromResourceList(obj *fn.KubeObject) {

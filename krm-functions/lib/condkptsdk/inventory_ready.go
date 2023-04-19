@@ -39,7 +39,7 @@ func (r *inventory) isReady() bool {
 	// check readiness, we start positive
 	ready := true
 	// the readiness is determined by the global watch resources
-	for watchRef, resCtx := range r.get(watchGVKKind, nil) {
+	for watchRef, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{}) {
 		fn.Logf("isReady: watchRef: %v, resCtx: %v\n", watchRef, resCtx)
 		// if global watched resource does not exist we fail readiness
 		// if the condition is present and the status is False something is pending, so we
@@ -64,7 +64,7 @@ func (r *inventory) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 	defer r.m.RUnlock()
 
 	readyMap := map[corev1.ObjectReference]*readyCtx{}
-	for forRef, resCtx := range r.get(forGVKKind, nil) {
+	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{}) {
 		readyMap[forRef] = &readyCtx{
 			ready:   true,
 			owns:    map[corev1.ObjectReference]fn.KubeObject{},
