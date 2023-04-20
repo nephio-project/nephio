@@ -53,13 +53,19 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectRefere
 		// delete condition
 		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(forRef))
 		// update the status back in the inventory
-		r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef})
+		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}); err != nil {
+			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	} else {
 		objRef := refs[1]
 		// delete condition
 		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(objRef))
 		// update the status back in the inventory
-		r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef})
+		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}); err != nil {
+			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	}
 }
 
@@ -85,7 +91,10 @@ func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.Objec
 		}
 		r.kptf.SetConditions(c)
 		// update the condition status back in the inventory
-		r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &c, false)
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &c, false); err != nil {
+			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	}
 }
 
@@ -98,13 +107,19 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReferen
 		//r.rl.SetObject(&obj.obj)
 		r.rl.UpsertObjectToItems(&obj.obj, nil, true)
 		// update the resource status back in the inventory
-		r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}, &obj.obj, false)
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}, &obj.obj, false); err != nil {
+			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	} else {
 		objRef := refs[1]
 		//r.rl.SetObject(&obj.obj)
 		r.rl.UpsertObjectToItems(&obj.obj, nil, true)
 		// update the resource status back in the inventory
-		r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &obj.obj, false)
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &obj.obj, false); err != nil {
+			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	}
 }
 

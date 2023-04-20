@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
+	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -321,11 +322,10 @@ func (r *resources) set2(refs []sdkObjectReference, kc *gvkKindCtx, x any, new n
 		case *fn.KubeObject:
 			fn.Logf("add existing resource: %v\n", x)
 			r.gvkKindCtx = *kc
+			x := *d
 			if new {
-				x := *d
 				r.resourceCtx.newResource = &x
 			} else {
-				x := *d
 				r.resourceCtx.existingResource = &x
 			}
 			return nil
@@ -362,15 +362,26 @@ func (r *resources) get2(refs []sdkObjectReference) map[corev1.ObjectReference]*
 			resCtxs[corev1.ObjectReference{}] = r.resourceCtx.Deepcopy()
 		} else {
 			// wildcard get
-			for sdkRef, resCtx := range r.resources {
-				resCtxs[sdkRef.ref] = resCtx.Deepcopy()
+			for sdkRef, res := range r.resources {
+				resCtxs[sdkRef.ref] = res.resourceCtx.Deepcopy()
 			}
 		}
 		return resCtxs
 	}
 	// check if resource exists
+	fn.Logf("get2 objectRef refs: %v, empty: %v\n", refs[0].ref, corev1.ObjectReference{})
+	if cmp.Equal(refs[0].ref, corev1.ObjectReference{}) {
+		fn.Log("empty objectReference")
+		resCtxs := map[corev1.ObjectReference]*resourceCtx{}
+		for sdkRef, res := range r.resources {
+			if sdkRef.gvkKind == refs[0].gvkKind {
+				resCtxs[sdkRef.ref] = res.resourceCtx.Deepcopy()
+			}
+		}
+		return resCtxs
+	}
 	if _, ok := r.resources[refs[0]]; !ok {
-		fn.Logf("ref not found")
+		fn.Log("ref not found")
 		return map[corev1.ObjectReference]*resourceCtx{}
 	}
 	return r.resources[refs[0]].get2(refs[1:])

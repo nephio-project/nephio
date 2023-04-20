@@ -196,18 +196,61 @@ func TestDelete(t *testing.T) {
 func TestGet(t *testing.T) {
 	cases := map[string]struct {
 		kc          *gvkKindCtx
-		refs        []corev1.ObjectReference
+		setRefs     [][]corev1.ObjectReference
+		getRefs     []corev1.ObjectReference
 		x           any
 		new         newResource
 		errExpected bool
+		len         int
 	}{
 		"GetEmpty": {
 			kc: &gvkKindCtx{gvkKind: watchGVKKind},
-			refs: []corev1.ObjectReference{
+			getRefs: []corev1.ObjectReference{
 				{APIVersion: "a", Kind: "a", Name: "a"},
 			},
 			x:           fn.NewEmptyKubeObject(),
 			errExpected: false,
+			len:         0,
+		},
+		"WildcardWatch": {
+			kc: &gvkKindCtx{gvkKind: watchGVKKind},
+			setRefs: [][]corev1.ObjectReference{
+				{{APIVersion: "a", Kind: "a", Name: "a"}},
+				{{APIVersion: "b", Kind: "b", Name: "b"}},
+			},
+			getRefs: []corev1.ObjectReference{
+				{},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+			len:         2,
+		},
+		"WildcardFor": {
+			kc: &gvkKindCtx{gvkKind: forGVKKind},
+			setRefs: [][]corev1.ObjectReference{
+				{{APIVersion: "a", Kind: "a", Name: "a"}},
+				{{APIVersion: "b", Kind: "b", Name: "b"}},
+			},
+			getRefs: []corev1.ObjectReference{
+				{},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+			len:         2,
+		},
+		"WildCardOwn": {
+			kc: &gvkKindCtx{gvkKind: ownGVKKind},
+			setRefs: [][]corev1.ObjectReference{
+				{{APIVersion: "a", Kind: "a", Name: "a"}, {APIVersion: "x", Kind: "x", Name: "x"}},
+				{{APIVersion: "a", Kind: "a", Name: "a"}, {APIVersion: "y", Kind: "y", Name: "y"}},
+				{{APIVersion: "a", Kind: "a", Name: "a"}, {APIVersion: "z", Kind: "z", Name: "z"}},
+			},
+			getRefs: []corev1.ObjectReference{
+				{APIVersion: "a", Kind: "a", Name: "a"}, {},
+			},
+			x:           fn.NewEmptyKubeObject(),
+			errExpected: false,
+			len:         3,
 		},
 	}
 
@@ -221,9 +264,13 @@ func TestGet(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			x := inv.get(tc.kc.gvkKind, tc.refs)
-			if len(x) != 0 {
-				t.Errorf("expecting len 0, got %v", x)
+			for _, refs := range tc.setRefs {
+				inv.set(tc.kc, refs, tc.x, tc.new)
+			}
+
+			x := inv.get(tc.kc.gvkKind, tc.getRefs)
+			if len(x) != tc.len {
+				t.Errorf("expecting len %d, got %v", tc.len, x)
 			}
 		})
 	}

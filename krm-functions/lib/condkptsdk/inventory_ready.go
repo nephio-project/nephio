@@ -39,16 +39,27 @@ func (r *inventory) isReady() bool {
 	// check readiness, we start positive
 	ready := true
 	// the readiness is determined by the global watch resources
-	for watchRef, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{}) {
-		fn.Logf("isReady: watchRef: %v, resCtx: %v\n", watchRef, resCtx)
+	for watchRef, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{{}}) {
+		fn.Logf("isReady: watchRef: %v, resCtx: %#v\n", watchRef, *resCtx)
+		if resCtx.existingCondition != nil {
+			fn.Logf("isReady: watchRef: %v, condition: %#v\n", watchRef, resCtx.existingCondition)
+		}
 		// if global watched resource does not exist we fail readiness
 		// if the condition is present and the status is False something is pending, so we
 		// fail readiness
-		if resCtx.existingResource == nil ||
-			(resCtx.existingCondition != nil &&
-				resCtx.existingCondition.Status == kptv1.ConditionStatus(corev1.ConditionFalse)) {
-			ready = false
-			break
+		if resCtx.existingResource == nil {
+			if resCtx.existingCondition == nil {
+				return false
+			}
+			if resCtx.existingCondition != nil &&
+				resCtx.existingCondition.Status == kptv1.ConditionFalse {
+				return false
+			}
+		} else {
+			if resCtx.existingCondition != nil &&
+				resCtx.existingCondition.Status == kptv1.ConditionFalse {
+				return false
+			}
 		}
 	}
 	return ready
