@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 package kubeobject
 
 import (
@@ -221,7 +220,7 @@ func TestNewFromYaml(t *testing.T) {
 			t.Errorf("YAML Marshal error: %s", err)
 		}
 		deploymentKubeObjectParser, _ := NewFromYaml[v1.Deployment](b)
-		
+
 		if deploymentKubeObjectParser.String() != string(b) {
 			t.Errorf("-want%s, +got:\n%s", string(b), deploymentKubeObjectParser.String())
 		}
@@ -322,7 +321,7 @@ func TestNewFromGoStruct(t *testing.T) {
 			},
 		}
 		deploymentKubeObjectParser, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
-		
+
 		s, _, err := deploymentKubeObjectParser.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
 			t.Errorf("unexpected error: %v\n", err)
