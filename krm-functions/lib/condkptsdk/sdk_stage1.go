@@ -50,12 +50,12 @@ func (r *sdk) populateChildren() {
 						// set owner reference on the new resource
 						if err := newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
 							fn.Logf("error setting new annotation: %v\n", err.Error())
-							r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+							r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 						}
 						// add the resource to the existing list as a new resource
 						if err := r.inv.set(kc, []corev1.ObjectReference{forRef, objRef}, newObj, true); err != nil {
 							fn.Logf("error setting new resource to the inventory: %v\n", err.Error())
-							r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+							r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 						}
 					}
 				}

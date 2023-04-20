@@ -49,12 +49,12 @@ type Config struct {
 	GenerateResourceFn     GenerateResourceFn
 }
 
-type PopulateOwnResourcesFn func(*fn.KubeObject) ([]*fn.KubeObject, error)
+type PopulateOwnResourcesFn func(*fn.KubeObject) ([]fn.KubeObject, error)
 
 // the list of objects contains the owns and the specific watches
-type GenerateResourceFn func(*fn.KubeObject, []*fn.KubeObject) (*fn.KubeObject, error)
+type GenerateResourceFn func(*fn.KubeObject, []fn.KubeObject) (*fn.KubeObject, error)
 
-func GenerateResourceFnNop(*fn.KubeObject, []*fn.KubeObject) (*fn.KubeObject, error) { return nil, nil }
+func GenerateResourceFnNop(*fn.KubeObject, []fn.KubeObject) (*fn.KubeObject, error) { return nil, nil }
 
 type WatchCallbackFn func(*fn.KubeObject) error
 
