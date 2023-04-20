@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package parser
+package kubeobject
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"sigs.k8s.io/yaml"
 )
 
-type KubeObject[T1 any] struct {
+type KubeObjectExt[T1 any] struct {
 	fn.KubeObject
 }
 
-func (r *KubeObject[T1]) GetGoStruct() (T1, error) {
+func (r *KubeObjectExt[T1]) GetGoStruct() (T1, error) {
 	var x T1
 	if err := yaml.Unmarshal([]byte(r.String()), &x); err != nil {
 		return x, err
@@ -33,25 +35,28 @@ func (r *KubeObject[T1]) GetGoStruct() (T1, error) {
 	return x, nil
 }
 
-// NewFromKubeObject returns a KubeObject struct
+// NewFromKubeObject returns a KubeObjectExt struct
 // It expects a fn.KubeObject as input representing the serialized yaml file
-func NewFromKubeObject[T1 any](o fn.KubeObject) *KubeObject[T1] {
-	return &KubeObject[T1]{o}
+func NewFromKubeObject[T1 any](o *fn.KubeObject) (*KubeObjectExt[T1], error) {
+	if o == nil {
+		return nil, fmt.Errorf("cannot initialize with a nil object")
+	}
+	return &KubeObjectExt[T1]{*o}, nil
 }
 
-// NewFromYaml returns a KubeObject struct
+// NewFromYaml returns a KubeObjectExt struct
 // It expects raw byte slice as input representing the serialized yaml file
-func NewFromYaml[T1 any](b []byte) (*KubeObject[T1], error) {
+func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 	o, err := fn.ParseKubeObject(b)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromKubeObject[T1](*o), nil
+	return NewFromKubeObject[T1](o)
 }
 
-// NewFromGoStruct returns a KubeObject struct
+// NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct[T1 any](x any) (*KubeObject[T1], error) {
+func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
 	b, err := yaml.Marshal(x)
 	if err != nil {
 		return nil, err
