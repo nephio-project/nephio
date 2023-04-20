@@ -1,33 +1,31 @@
 presubmits:
   - name: presubmit-nephio-go-test
     decorate: true
-    run_if_changed: "(\\.go|^Makefile)$"
+    run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: golang:1.20.2
+      - image: nephio/gotests:2
         command:
         - make
         args:
         - unit
   - name: presubmit-nephio-gosec
     decorate: true
-    run_if_changed: "(\\.go)$"
+    run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: securego/gosec:2.15.0
+      - image: nephio/gotests:2
         command:
-        - gosec
+        - make
         args:
-        - ./...
+        - gosec
   - name: presubmit-nephio-golangci-lint
     decorate: true
-    run_if_changed: "(\\.go)$"
+    run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: golang:1.20.2
+      - image: nephio/gotests:2
         command:
-        - "/bin/sh"
-        - "-c"
-        - |
-          wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.52.2
-          bin/golangci-lint run -v
+        - make
+        args:
+        - lint
