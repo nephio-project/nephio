@@ -32,7 +32,10 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReferenc
 	r.setConditionInKptFile(a, kind, refs, status, msg)
 	// update resource
 	if a == actionDelete {
-		obj.obj.SetAnnotation(FnRuntimeDelete, "true")
+		if err := obj.obj.SetAnnotation(FnRuntimeDelete, "true"); err != nil {
+			fn.Logf("error setting annotation: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 	}
 	// set resource
 	if ignoreOwnKind {
@@ -104,8 +107,10 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReferen
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
-		//r.rl.SetObject(&obj.obj)
-		r.rl.UpsertObjectToItems(&obj.obj, nil, true)
+		if err := r.rl.UpsertObjectToItems(&obj.obj, nil, true); err != nil {
+			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 		// update the resource status back in the inventory
 		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
@@ -114,7 +119,10 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReferen
 	} else {
 		objRef := refs[1]
 		//r.rl.SetObject(&obj.obj)
-		r.rl.UpsertObjectToItems(&obj.obj, nil, true)
+		if err := r.rl.UpsertObjectToItems(&obj.obj, nil, true); err != nil {
+			fn.Logf("error updating stage1 resource: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		}
 		// update the resource status back in the inventory
 		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())

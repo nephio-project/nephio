@@ -95,7 +95,10 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	// set owner reference on the new resource if not having owns
 	// as you ste it to yourself
 	if len(r.cfg.Owns) == 0 {
-		newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef))
+		if err := newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
+			fn.Logf("error setting new annotation: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+		}
 	}
 	// add the resource to the kptfile and updates the resource in the resourcelist
 	r.handleUpdate(actionUpdate, forGVKKind, []*corev1.ObjectReference{&forRef}, &object{obj: *newObj}, kptv1.ConditionTrue, "done", true)

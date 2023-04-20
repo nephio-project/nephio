@@ -48,7 +48,10 @@ func (r *sdk) populateChildren() {
 					} else {
 						fn.Logf("populate new resource: forRef %v objRef %v kc: %v\n", forRef, objRef, kc)
 						// set owner reference on the new resource
-						newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef))
+						if err := newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
+							fn.Logf("error setting new annotation: %v\n", err.Error())
+							r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+						}
 						// add the resource to the existing list as a new resource
 						if err := r.inv.set(kc, []corev1.ObjectReference{forRef, objRef}, newObj, true); err != nil {
 							fn.Logf("error setting new resource to the inventory: %v\n", err.Error())
