@@ -62,7 +62,8 @@ func (r *sdk) populateInventory() {
 	for _, c := range r.kptf.GetConditions() {
 		ref := kptfilelibv1.GetGVKNFromConditionType(c.Type)
 		ownerRef := kptfilelibv1.GetGVKNFromConditionType(c.Reason)
-		r.populate(forOwnerRef, ref, ownerRef, &c, r.rl.Items.GetRootKptfile())
+		x := c
+		r.populate(forOwnerRef, ref, ownerRef, &x, r.rl.Items.GetRootKptfile())
 	}
 	for _, o := range r.rl.Items {
 		ref := &corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind(), Name: o.GetName()}
