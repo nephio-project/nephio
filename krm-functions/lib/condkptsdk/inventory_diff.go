@@ -54,7 +54,7 @@ func (r *inventory) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 	defer r.m.RUnlock()
 	diffMap := map[corev1.ObjectReference]*inventoryDiff{}
 
-	for forRef, resCtx := range r.get(forGVKKind, nil) {
+	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		diffMap[forRef] = &inventoryDiff{
 			deleteObjs:              []*object{},
 			updateObjs:              []*object{},
