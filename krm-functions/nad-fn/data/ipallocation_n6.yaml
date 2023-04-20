@@ -1,13 +1,13 @@
-apiVersion: ipam.nephio.org/v1alpha1
+apiVersion: "ipam.nephio.org/v1alpha1"
 kind: IPAllocation
 metadata:
   labels:
-    nephio.org/interface: n3
+    nephio.org/interface: n6
   annotations:
     config.kubernetes.io/local-config: "true"
     fnruntime.nephio.org/owner: req.nephio.org/v1alpha1.Interface
   creationTimestamp: null
-  name: n6
+  name: ipalloc-n6
 spec:
   kind: network
   networkInstance: vpc-internet

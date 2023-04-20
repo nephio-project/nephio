@@ -1,4 +1,4 @@
-apiVersion: nf.nephio.org/v1alpha1
+apiVersion: "nf.nephio.org/v1alpha1"
 kind: UPFDeployment
 metadata:
   creationTimestamp: null

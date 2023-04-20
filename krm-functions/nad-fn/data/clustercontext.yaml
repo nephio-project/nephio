@@ -1,4 +1,4 @@
-apiVersion: infra.nephio.org/v1alpha1
+apiVersion: "infra.nephio.org/v1alpha1"
 kind: ClusterContext
 metadata:
   name: cluster-context-1
@@ -6,3 +6,4 @@ spec:
   cniConfig:
     cniType: sriov
     masterInterface: "bond0"
+

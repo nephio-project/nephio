@@ -1,4 +1,4 @@
-apiVersion: req.nephio.org/v1alpha1
+apiVersion: "req.nephio.org/v1alpha1"
 kind: Interface
 metadata:
   name: n4
