@@ -82,8 +82,8 @@ The sdk defines different types of own resources:
 - childRemote: 
     - the current/parent fn/controller defines the spec attributes of the child resource, but another child function/controller takes care of the actuation that are related to this KRM resource. Like updating the status and are deriving other child resources acting as a parent.
     - A remote function will act upon this KRM through a `for` filter and will update the status. 
-    - The deletion is take care of by the remote resource by acting on the delete annotiation set by the sdk
-    - An example use case is e.g. the interface-fn that needs an IP. The interface-fn is the parent that creates an IPAllocation on which a downstream function/controller acts and fills out the
+    - The deletion is taken care of by the remote resource by acting on the delete annotiation set by the sdk.
+    - An example use case is e.g. the interface-fn that needs an IP. The interface-fn is the parent that creates an IPAllocation on which a downstream function/controller acts and fills out the IP Allocation
 - childRemoteCondition: 
     - the current/parent fn/controller defines the KRM header attributes of the child resource, but another function/controller takes care of the spec and or status that are related to this KRM resource. 
     - A remote function will act upon this KRM through a `for` filter and will update the status
