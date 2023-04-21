@@ -86,9 +86,15 @@ func (r *sdk) Run() {
 		return
 	}
 	// get the kptfile first as we need it in various places
-	// we assume the kpt file is always resource idx 0 in the resourcelist
+	kptfile := r.rl.Items.GetRootKptfile()
+	if kptfile == nil {
+		fn.Log("Mandatory Kptfile is missing from the package")
+		r.rl.Results.Errorf("Mandatory Kptfile is missing from the package")
+		return
+	}
+
 	var err error
-	r.kptf, err = kptfilelibv1.New(r.rl.Items.GetRootKptfile().String())
+	r.kptf, err = kptfilelibv1.New(kptfile.String())
 	if err != nil {
 		fn.Log("error unmarshal kptfile")
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
