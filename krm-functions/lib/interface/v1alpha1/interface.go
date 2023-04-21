@@ -75,7 +75,6 @@ func (r *Interface) GetNestedString(fields ...string) string {
 	return s
 }
 
-
 // GetAttachmentType returns the attachmentType from the spec
 // if an error occurs or the attribute is not present an empty string is returned
 func (r *Interface) GetAttachmentType() string {
