@@ -79,7 +79,7 @@ const (
 
 // initializeGVKInventory initializes the GVK with the generic GVK
 // resources as specified in the SDKConfig
-// used to provide faster loopup if the GVK is relevant for the fn/controller
+// used to provide faster lookup if the GVK is relevant for the fn/controller
 // and to provide context if there is a match
 func (r *inventory) initializeGVKInventory(cfg *Config) error {
 	if err := validateGVKRef(cfg.For); err != nil {
