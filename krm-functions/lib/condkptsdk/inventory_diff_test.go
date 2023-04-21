@@ -212,9 +212,14 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 	}
 }
 
-/*
 func TestDiffWithSpecToAdd(t *testing.T) {
-	inventory := New()
+	inv, err := newInventory(&Config{
+		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		GenerateResourceFn: GenerateResourceFnNop,
+	})
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	type object struct {
 		apiVersion string
 		kind       string
@@ -246,14 +251,6 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 		},
 	}
 	for _, tt := range test1 {
-		currentGVKN := &corev1.ObjectReference{
-			APIVersion:      tt.input.apiVersion,
-			Kind:            tt.input.kind,
-			Name:            tt.input.name,
-			Namespace:       tt.input.dummy,
-			FieldPath:       tt.input.dummy,
-			ResourceVersion: tt.input.apiVersion,
-		}
 		ipa := &nadv1.NetworkAttachmentDefinition{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: tt.input.apiVersion,
@@ -268,37 +265,44 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-
-		ipa = &nadv1.NetworkAttachmentDefinition{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: tt.input.apiVersion,
-				Kind:       tt.input.kind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: tt.input.name,
-			},
-			Spec: nadv1.NetworkAttachmentDefinitionSpec{
-				Config: "type2",
-			},
-		}
+		// set for exisiting resource
+		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
+			{APIVersion: "a", Kind: "a", Name: "a"},
+		}, kubeObjectMade, false)
+		// set own exisiting resource
 		byteStream, _ = yaml.Marshal(ipa)
 		kubeObjectMade, _ = fn.ParseKubeObject(byteStream)
-		inventory.AddNewResource(currentGVKN, kubeObjectMade)
+		// set own new resource
+		inv.set(&gvkKindCtx{gvkKind: ownGVKKind}, []corev1.ObjectReference{
+			{APIVersion: "a", Kind: "a", Name: "a"},
+			{APIVersion: tt.input.apiVersion, Kind: tt.input.kind, Name: tt.input.name},
+		}, kubeObjectMade, true)
 	}
-	diffList, _ := inventory.Diff()
-	if len(diffList.CreateObjs) != 2 {
-		t.Errorf("TestDiffWithSpecToAdd: -want 2, +got:\n%v", len(diffList.CreateObjs))
+	diffList, _ := inv.diff()
+	if len(diffList) == 0 {
+		t.Error("expected a diff")
 	}
-	if len(diffList.DeleteObjs) != 0 {
-		t.Errorf("TestDiffWithSpecToAdd: -want 0, +got:\n%v", len(diffList.DeleteObjs))
-	}
-	if len(diffList.UpdateObjs) != 0 {
-		t.Errorf("TestDiffWithSpecToAdd: -want 0, +got:\n%v", len(diffList.UpdateObjs))
+	for _, diff := range diffList {
+		if len(diff.createObjs) != 2 {
+			t.Errorf("TestDiffWithSpecToDelete: -want 2, +got:\n%v", len(diff.createObjs))
+		}
+		if len(diff.deleteObjs) != 0 {
+			t.Errorf("TestDiffWithSpecToDelete: -want 0, +got:\n%v", len(diff.deleteObjs))
+		}
+		if len(diff.updateObjs) != 0 {
+			t.Errorf("TestDiffWithSpecToUpdate: -want 0, +got:\n%v", len(diff.updateObjs))
+		}
 	}
 }
 
-func TestDiffWithSpecToUpdate(t *testing.T) {
-	inventory := New()
+func TestDiffWithSpecToDelete(t *testing.T) {
+	inv, err := newInventory(&Config{
+		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		GenerateResourceFn: GenerateResourceFnNop,
+	})
+	if err != nil {
+		assert.NoError(t, err)
+	}
 	type object struct {
 		apiVersion string
 		kind       string
@@ -315,8 +319,8 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 				apiVersion: "a",
 				kind:       "b",
 				name:       "c",
-				spec:       "test1",
 				dummy:      "sample",
+				spec:       "test1",
 			},
 		},
 		{
@@ -325,28 +329,6 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 				kind:       "e",
 				name:       "f",
 				spec:       "test2",
-				dummy:      "sample",
-			},
-		},
-	}
-	test2 := []struct {
-		input object
-	}{
-		{
-			input: object{
-				apiVersion: "a",
-				kind:       "b",
-				name:       "c",
-				spec:       "test3",
-				dummy:      "sample",
-			},
-		},
-		{
-			input: object{
-				apiVersion: "d",
-				kind:       "e",
-				name:       "f",
-				spec:       "test4",
 				dummy:      "sample",
 			},
 		},
@@ -366,56 +348,37 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-
-		inventory.AddNewResource(&corev1.ObjectReference{
-			APIVersion:      tt.input.apiVersion,
-			Kind:            tt.input.kind,
-			Name:            tt.input.name,
-			Namespace:       tt.input.dummy,
-			FieldPath:       tt.input.dummy,
-			ResourceVersion: tt.input.apiVersion,
-		}, kubeObjectMade)
+		// set for exisiting resource
+		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
+			{APIVersion: "a", Kind: "a", Name: "a"},
+		}, kubeObjectMade, false)
+		byteStream, _ = yaml.Marshal(ipa)
+		kubeObjectMade, _ = fn.ParseKubeObject(byteStream)
+		// set own new resource
+		inv.set(&gvkKindCtx{gvkKind: ownGVKKind}, []corev1.ObjectReference{
+			{APIVersion: "a", Kind: "a", Name: "a"},
+			{APIVersion: tt.input.apiVersion, Kind: tt.input.kind, Name: tt.input.name},
+		}, kubeObjectMade, false)
 	}
-	for _, tt := range test2 {
-		ipa := &nadv1.NetworkAttachmentDefinition{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: tt.input.apiVersion,
-				Kind:       tt.input.kind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: tt.input.name,
-			},
-			Spec: nadv1.NetworkAttachmentDefinitionSpec{
-				Config: tt.input.spec,
-			},
+	diffList, _ := inv.diff()
+	if len(diffList) == 0 {
+		t.Error("expected a diff")
+	}
+	for _, diff := range diffList {
+		if len(diff.createObjs) != 0 {
+			t.Errorf("TestDiffWithSpecToDelete: -want 0, +got:\n%v", len(diff.createObjs))
 		}
-		byteStream, _ := yaml.Marshal(ipa)
-		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-
-		inventory.AddExistingResource(&corev1.ObjectReference{
-			APIVersion:      tt.input.apiVersion,
-			Kind:            tt.input.kind,
-			Name:            tt.input.name,
-			Namespace:       tt.input.dummy,
-			FieldPath:       tt.input.dummy,
-			ResourceVersion: tt.input.apiVersion,
-		}, kubeObjectMade)
-	}
-	diffList, _ := inventory.Diff()
-	if len(diffList.CreateObjs) != 0 {
-		t.Errorf("TestDiffWithSpecToUpdate: -want 0, +got:\n%v", len(diffList.CreateObjs))
-	}
-	if len(diffList.DeleteObjs) != 0 {
-		t.Errorf("TestDiffWithSpecToUpdate: -want 0, +got:\n%v", len(diffList.DeleteObjs))
-	}
-	if len(diffList.UpdateObjs) != 2 {
-		t.Errorf("TestDiffWithSpecToUpdate: -want 2, +got:\n%v", len(diffList.UpdateObjs))
-	}
-	if len(diffList.UpdateConditions) != 2 {
-		t.Errorf("TestDiffWithSpecToUpdate: -want 2, +got:\n%v", len(diffList.UpdateConditions))
+		if len(diff.deleteObjs) != 2 {
+			t.Errorf("TestDiffWithSpecToDelete: -want 2, +got:\n%v", len(diff.deleteObjs))
+		}
+		if len(diff.updateObjs) != 0 {
+			t.Errorf("TestDiffWithSpecToUpdate: -want 0, +got:\n%v", len(diff.updateObjs))
+		}
 	}
 }
 
+
+/*
 func TestDiffWithSpecToAddCondition(t *testing.T) {
 	inventory := New()
 	type object struct {
