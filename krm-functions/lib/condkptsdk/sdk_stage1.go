@@ -31,7 +31,7 @@ func (r *sdk) populateChildren() {
 	}
 
 	fn.Log("populate children: ready:", r.ready)
-	for forRef, resCtx := range r.inv.get(forGVKKind, nil) {
+	for forRef, resCtx := range r.inv.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		forObj := resCtx.existingResource
 		fn.Log("PopulateOwnResourcesFn", forObj)
 		if r.cfg.PopulateOwnResourcesFn != nil && forObj != nil {

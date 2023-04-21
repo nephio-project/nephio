@@ -25,7 +25,7 @@ import (
 // so they dont have to parse the complete resourcelist
 // Also it provide readiness feedback when an error is returned
 func (r *sdk) callGlobalWatches() {
-	for _, resCtx := range r.inv.get(watchGVKKind, []corev1.ObjectReference{}) {
+	for _, resCtx := range r.inv.get(watchGVKKind, []corev1.ObjectReference{{}}) {
 		fn.Logf("run watch: %v\n", resCtx.existingResource)
 		if resCtx.gvkKindCtx.callbackFn != nil {
 			if err := resCtx.gvkKindCtx.callbackFn(resCtx.existingResource); err != nil {

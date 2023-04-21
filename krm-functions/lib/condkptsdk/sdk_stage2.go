@@ -66,10 +66,12 @@ func (r *sdk) generateResource() {
 		if r.cfg.GenerateResourceFn != nil {
 			objs := fn.KubeObjects{}
 			for _, o := range readyCtx.owns {
-				objs = append(objs, &o)
+				x := o
+				objs = append(objs, &x)
 			}
 			for _, o := range readyCtx.watches {
-				objs = append(objs, &o)
+				x := o
+				objs = append(objs, &x)
 			}
 			r.handleGenerateUpdate(forRef, readyCtx.forObj, objs)
 		}
