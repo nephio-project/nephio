@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"sigs.k8s.io/yaml"
 )
 
 type KubeObjectExt[T1 any] struct {
@@ -29,10 +28,8 @@ type KubeObjectExt[T1 any] struct {
 
 func (r *KubeObjectExt[T1]) GetGoStruct() (T1, error) {
 	var x T1
-	if err := yaml.Unmarshal([]byte(r.String()), &x); err != nil {
-		return x, err
-	}
-	return x, nil
+	err := r.KubeObject.As(&x)
+	return x, err
 }
 
 // NewFromKubeObject returns a KubeObjectExt struct
@@ -57,9 +54,9 @@ func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 // NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
 func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
-	b, err := yaml.Marshal(x)
+	o, err := fn.NewFromTypedObject(x)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromYaml[T1](b)
+	return NewFromKubeObject[T1](o)
 }
