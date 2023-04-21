@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-	"github.com/nephio-project/nephio/krm-functions/lib/parser"
+	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 )
 
 var (
@@ -30,148 +30,87 @@ var (
 	networkInstanceName = []string{"spec", "networkInstance", "name"}
 )
 
-type Interface interface {
-	parser.Parser[*nephioreqv1alpha1.Interface]
-	// GetAttachmentType returns the attachmentType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetAttachmentType() string
-	// GetCNIType returns the cniType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetCNIType() string
-	// GetNetworkInstanceName returns the name of the networkInstance from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetNetworkInstanceName() string
-	// SetAttachmentType sets the attachmentType in the spec
-	SetAttachmentType(s nephioreqv1alpha1.AttachmentType) error
-	// SetCNIType sets the cniType in the spec
-	SetCNIType(s nephioreqv1alpha1.CNIType) error
-	// SetNetworkInstanceName sets the name of the networkInstance in the spec
-	SetNetworkInstanceName(s string) error
-	// SetSpec sets the spec attributes in the kubeobject according the go struct
-	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
-	// DeleteAttachmentType deletes the attachmentType from the spec
-	DeleteAttachmentType() error
-	// DeleteAttachmentType deletes the attachmentType from the spec
-	DeleteCNIType() error
+type Interface struct {
+	kubeobject.KubeObjectExt[*nephioreqv1alpha1.Interface]
 }
 
 // NewFromKubeObject creates a new parser interface
 // It expects a *fn.KubeObject as input representing the serialized yaml file
-func NewFromKubeObject(o *fn.KubeObject) Interface {
-	return &obj{
-		p: parser.NewFromKubeObject[*nephioreqv1alpha1.Interface](o),
+func NewFromKubeObject(o *fn.KubeObject) (*Interface, error) {
+	r, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
+	if err != nil {
+		return nil, err
 	}
+	return &Interface{*r}, nil
 }
 
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewFromYAML(b []byte) (Interface, error) {
-	p, err := parser.NewFromYaml[*nephioreqv1alpha1.Interface](b)
+func NewFromYAML(b []byte) (*Interface, error) {
+	r, err := kubeobject.NewFromYaml[*nephioreqv1alpha1.Interface](b)
 	if err != nil {
 		return nil, err
 	}
-	return &obj{
-		p: p,
-	}, nil
+	return &Interface{*r}, nil
 }
 
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (Interface, error) {
-	p, err := parser.NewFromGoStruct[*nephioreqv1alpha1.Interface](x)
+func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
+	r, err := kubeobject.NewFromGoStruct[*nephioreqv1alpha1.Interface](x)
 	if err != nil {
 		return nil, err
 	}
-	return &obj{
-		p: p,
-	}, nil
+	return &Interface{*r}, nil
 }
 
-type obj struct {
-	p parser.Parser[*nephioreqv1alpha1.Interface]
+func (r *Interface) GetNestedString(fields ...string) string {
+	s, ok, err := r.NestedString(fields...)
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
 }
 
-// GetKubeObject returns the present kubeObject
-func (r *obj) GetKubeObject() *fn.KubeObject {
-	return r.p.GetKubeObject()
-}
-
-// GetGoStruct returns a go struct representing the present KRM resource
-func (r *obj) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
-	return r.p.GetGoStruct()
-}
-
-func (r *obj) GetStringValue(fields ...string) string {
-	return r.p.GetStringValue()
-}
-
-func (r *obj) GetBoolValue(fields ...string) bool {
-	return r.p.GetBoolValue()
-}
-
-func (r *obj) GetIntValue(fields ...string) int {
-	return r.p.GetIntValue()
-}
-
-func (r *obj) GetStringMap(fields ...string) map[string]string {
-	return r.p.GetStringMap()
-}
-
-func (r *obj) SetNestedString(s string, fields ...string) error {
-	return r.p.SetNestedString(s, fields...)
-}
-
-func (r *obj) SetNestedInt(s int, fields ...string) error {
-	return r.p.SetNestedInt(s, fields...)
-}
-
-func (r *obj) SetNestedBool(s bool, fields ...string) error {
-	return r.p.SetNestedBool(s, fields...)
-}
-
-func (r *obj) SetNestedMap(s map[string]string, fields ...string) error {
-	return r.p.SetNestedMap(s, fields...)
-}
-
-func (r *obj) DeleteNestedField(fields ...string) error {
-	return r.p.DeleteNestedField(fields...)
-}
 
 // GetAttachmentType returns the attachmentType from the spec
 // if an error occurs or the attribute is not present an empty string is returned
-func (r *obj) GetAttachmentType() string {
-	return r.p.GetStringValue(attachmentType...)
+func (r *Interface) GetAttachmentType() string {
+	return r.GetNestedString(attachmentType...)
 }
 
 // GetCNIType returns the cniType from the spec
 // if an error occurs or the attribute is not present an empty string is returned
-func (r *obj) GetCNIType() string {
-	return r.p.GetStringValue(cniType...)
+func (r *Interface) GetCNIType() string {
+	return r.GetNestedString(cniType...)
 }
 
 // GetNetworkInstanceName returns the name of the networkInstance from the spec
 // if an error occurs or the attribute is not present an empty string is returned
-func (r *obj) GetNetworkInstanceName() string {
-	return r.p.GetStringValue(networkInstanceName...)
+func (r *Interface) GetNetworkInstanceName() string {
+	return r.GetNestedString(networkInstanceName...)
 }
 
 // SetAttachmentType sets the attachmentType in the spec
-func (r *obj) SetAttachmentType(s nephioreqv1alpha1.AttachmentType) error {
-	return r.p.SetNestedString(string(s), attachmentType...)
+func (r *Interface) SetAttachmentType(s nephioreqv1alpha1.AttachmentType) error {
+	return r.SetNestedString(string(s), attachmentType...)
 }
 
 // SetCNIType sets the cniType in the spec
-func (r *obj) SetCNIType(s nephioreqv1alpha1.CNIType) error {
-	return r.p.SetNestedString(string(s), cniType...)
+func (r *Interface) SetCNIType(s nephioreqv1alpha1.CNIType) error {
+	return r.SetNestedString(string(s), cniType...)
 }
 
 // SetNetworkInstanceName sets the name of the networkInstance in the spec
-func (r *obj) SetNetworkInstanceName(s string) error {
-	return r.p.SetNestedString(s, networkInstanceName...)
+func (r *Interface) SetNetworkInstanceName(s string) error {
+	return r.SetNestedString(s, networkInstanceName...)
 }
 
 // SetSpec sets the spec attributes in the kubeobject according the go struct
-func (r *obj) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
+func (r *Interface) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 	if spec == nil {
 		return nil
 	}
@@ -180,7 +119,7 @@ func (r *obj) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 			return err
 		}
 	} else {
-		if err := r.DeleteAttachmentType(); err != nil {
+		if _, err := r.DeleteAttachmentType(); err != nil {
 			return err
 		}
 	}
@@ -189,7 +128,7 @@ func (r *obj) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 			return err
 		}
 	} else {
-		if err := r.DeleteCNIType(); err != nil {
+		if _, err := r.DeleteCNIType(); err != nil {
 			return err
 		}
 	}
@@ -204,11 +143,11 @@ func (r *obj) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
 }
 
 // DeleteAttachmentType deletes the attachmentType from the spec
-func (r *obj) DeleteAttachmentType() error {
-	return r.p.DeleteNestedField(attachmentType...)
+func (r *Interface) DeleteAttachmentType() (bool, error) {
+	return r.RemoveNestedField(attachmentType...)
 }
 
 // DeleteAttachmentType deletes the attachmentType from the spec
-func (r *obj) DeleteCNIType() error {
-	return r.p.DeleteNestedField(cniType...)
+func (r *Interface) DeleteCNIType() (bool, error) {
+	return r.RemoveNestedField(cniType...)
 }
