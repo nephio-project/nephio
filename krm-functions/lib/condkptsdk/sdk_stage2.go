@@ -48,7 +48,7 @@ func (r *sdk) generateResource() {
 	readyMap := r.inv.getReadyMap()
 	if len(readyMap) == 0 {
 		// this is when the global resource is not found
-		r.handleGenerateUpdate(corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name}, nil, []fn.KubeObject{})
+		r.handleGenerateUpdate(corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name}, nil, fn.KubeObjects{})
 	}
 	for forRef, readyCtx := range readyMap {
 		fn.Logf("generateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
@@ -64,12 +64,12 @@ func (r *sdk) generateResource() {
 			continue
 		}
 		if r.cfg.GenerateResourceFn != nil {
-			objs := []fn.KubeObject{}
+			objs := fn.KubeObjects{}
 			for _, o := range readyCtx.owns {
-				objs = append(objs, o)
+				objs = append(objs, &o)
 			}
 			for _, o := range readyCtx.watches {
-				objs = append(objs, o)
+				objs = append(objs, &o)
 			}
 			r.handleGenerateUpdate(forRef, readyCtx.forObj, objs)
 		}
@@ -80,7 +80,7 @@ func (r *sdk) generateResource() {
 
 // handleGenerateUpdate performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
-func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, objs []fn.KubeObject) {
+func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, objs fn.KubeObjects) {
 	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
 	if err != nil {
 		fn.Logf("error generating new resource: %v\n", err.Error())
