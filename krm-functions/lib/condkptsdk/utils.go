@@ -36,6 +36,7 @@ func validateGVKRef(ref corev1.ObjectReference) error {
 // contain an empty string
 func validateGVKNRef(ref corev1.ObjectReference) error {
 	if ref.APIVersion == "" || ref.Kind == "" || ref.Name == "" {
+		fn.Logf("gvk or name not initialized, got: %v\n", ref)
 		return fmt.Errorf("gvk or name not initialized, got: %v", ref)
 	}
 	return nil
@@ -46,8 +47,12 @@ func getGVKRefFromGVKNref(ref *corev1.ObjectReference) *corev1.ObjectReference {
 	return &corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}
 }
 
-func IsRefsValid(refs []*corev1.ObjectReference) bool {
-	if len(refs) == 0 || (len(refs) == 1 && refs[0] == nil) || (len(refs) == 2 && refs[0] == nil && refs[1] == nil) {
+// isRefsValid validates if the references are initialized
+func isRefsValid(refs []corev1.ObjectReference) bool {
+	if len(refs) == 0 ||
+		(len(refs) == 1 && validateGVKNRef(refs[0]) != nil) ||
+		(len(refs) == 2 && (validateGVKNRef(refs[0]) != nil || validateGVKNRef(refs[1]) != nil)) ||
+		len(refs) > 2 {
 		return false
 	}
 	return true

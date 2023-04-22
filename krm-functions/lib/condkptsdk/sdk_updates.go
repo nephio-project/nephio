@@ -27,7 +27,7 @@ import (
 // handleUpdate sets the condition and resource based on the action
 // action: create/update/delete
 // kind: own/for/watch
-func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
+func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
 	// set the condition
 	r.setConditionInKptFile(a, kind, refs, status, msg)
 	// update resource
@@ -49,16 +49,16 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReferenc
 	return nil
 }
 
-func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectReference) error {
-	if !IsRefsValid(refs) {
+func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []corev1.ObjectReference) error {
+	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
 		// delete condition
-		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(forRef))
+		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(&forRef))
 		// update the status back in the inventory
-		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}); err != nil {
+		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef}); err != nil {
 			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err
@@ -66,9 +66,9 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectRefere
 	} else {
 		objRef := refs[1]
 		// delete condition
-		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(objRef))
+		r.kptf.DeleteCondition(kptfilelibv1.GetConditionType(&objRef))
 		// update the status back in the inventory
-		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}); err != nil {
+		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef, objRef}); err != nil {
 			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err
@@ -77,14 +77,14 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectRefere
 	return nil
 }
 
-func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.ObjectReference, status kptv1.ConditionStatus, msg string) error {
-	if !IsRefsValid(refs) {
+func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []corev1.ObjectReference, status kptv1.ConditionStatus, msg string) error {
+	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
 		c := kptv1.Condition{
-			Type:    kptfilelibv1.GetConditionType(forRef),
+			Type:    kptfilelibv1.GetConditionType(&forRef),
 			Status:  status,
 			Message: fmt.Sprintf("%s %s", a, msg),
 		}
@@ -92,14 +92,14 @@ func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.Objec
 	} else {
 		objRef := refs[1]
 		c := kptv1.Condition{
-			Type:    kptfilelibv1.GetConditionType(objRef),
+			Type:    kptfilelibv1.GetConditionType(&objRef),
 			Status:  status,
 			Reason:  fmt.Sprintf("%s.%s", kptfilelibv1.GetConditionType(&r.cfg.For), forRef.Name),
 			Message: fmt.Sprintf("%s %s", a, msg),
 		}
 		r.kptf.SetConditions(c)
 		// update the condition status back in the inventory
-		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &c, false); err != nil {
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef, objRef}, &c, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err
@@ -108,8 +108,8 @@ func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.Objec
 	return nil
 }
 
-func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReference, obj *object) error {
-	if !IsRefsValid(refs) {
+func (r *sdk) setObjectInResourceList(kind gvkKind, refs []corev1.ObjectReference, obj *object) error {
+	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
@@ -120,7 +120,7 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReferen
 			return err
 		}
 		// update the resource status back in the inventory
-		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}, &obj.obj, false); err != nil {
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err
@@ -133,7 +133,7 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReferen
 			return err
 		}
 		// update the resource status back in the inventory
-		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &obj.obj, false); err != nil {
+		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef, objRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err
