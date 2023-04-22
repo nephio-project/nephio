@@ -60,7 +60,7 @@ type resources struct {
 	resources map[sdkObjectReference]*resources
 }
 
-func (r *inventory) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error {
+func (r *inv) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -73,7 +73,7 @@ func (r *inventory) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, ne
 	//return r.resources.set(kc, refs, x, new)
 }
 
-func (r *inventory) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
+func (r *inv) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -88,7 +88,7 @@ func (r *inventory) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error 
 	//return r.resources.delete(kc, refs)
 }
 
-func (r *inventory) get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx {
+func (r *inv) get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx {
 	r.m.RLock()
 	defer r.m.RUnlock()
 
@@ -103,7 +103,7 @@ func (r *inventory) get(k gvkKind, refs []corev1.ObjectReference) map[corev1.Obj
 	return r.resources.get(sdkRefs)
 }
 
-func (r *inventory) list() [][]sdkObjectReference {
+func (r *inv) list() [][]sdkObjectReference {
 	r.m.RLock()
 	defer r.m.RUnlock()
 

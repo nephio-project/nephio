@@ -33,7 +33,7 @@ type readyCtx struct {
 // watch resource. Used in stage1 and stage2
 // if the global watched resource(s) dont exist we are not ready
 // if the global watched resource(s) have a False condition status we are not ready
-func (r *inventory) isReady() bool {
+func (r *inv) isReady() bool {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	// check readiness, we start positive
@@ -70,7 +70,7 @@ func (r *inventory) isReady() bool {
 // Both own and watches that are dependent on the forResource are validated for
 // readiness
 // The readyMap is used only in stage 2 of the sdk
-func (r *inventory) getReadyMap() map[corev1.ObjectReference]*readyCtx {
+func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 	r.m.RLock()
 	defer r.m.RUnlock()
 

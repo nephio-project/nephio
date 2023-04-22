@@ -28,7 +28,7 @@ const FnRuntimeOwner = "fnruntime.nephio.org/owner"
 const FnRuntimeDelete = "fnruntime.nephio.org/delete"
 
 type KptCondSDK interface {
-	Run()
+	Run() (bool, error)
 }
 type ResourceKind string
 
@@ -74,35 +74,37 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 
 type sdk struct {
 	cfg   *Config
-	inv   Inventory
+	inv   inventory
 	rl    *fn.ResourceList
 	kptf  kptfilelibv1.KptFile
 	ready bool
 }
 
-func (r *sdk) Run() {
+func (r *sdk) Run() (bool, error) {
 	if r.rl.Items.Len() == 0 {
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("no resources present in the resourcelist")))
-		return
+		return false, fmt.Errorf("no resources present in the resourcelist")
 	}
 	// get the kptfile first as we need it in various places
 	kptfile := r.rl.Items.GetRootKptfile()
 	if kptfile == nil {
-		fn.Log("Mandatory Kptfile is missing from the package")
-		r.rl.Results.Errorf("Mandatory Kptfile is missing from the package")
-		return
+		fn.Log("mandatory Kptfile is missing from the package")
+		r.rl.Results.Errorf("mandatory Kptfile is missing from the package")
+		return false, fmt.Errorf("mandatory Kptfile is missing from the package")
 	}
 
 	var err error
 	r.kptf, err = kptfilelibv1.New(kptfile.String())
 	if err != nil {
-		fn.Log("error unmarshal kptfile")
+		fn.Logf("cannot unmarshal kptfile, err: %v\n", err)
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
-		return
+		return false, err
 	}
 
 	// initialize inventory
-	r.populateInventory()
+	if err := r.populateInventory(); err != nil {
+		return false, err
+	}
 	// list the result of inventory -> used for debug only
 	r.listInventory()
 	// call the global watches is used to inform the fn/controller
@@ -116,4 +118,6 @@ func (r *sdk) Run() {
 	r.updateChildren()
 	// stage 2 of the sdk pipeline
 	r.generateResource()
+
+	return true, nil
 }

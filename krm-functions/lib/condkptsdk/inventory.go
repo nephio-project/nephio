@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type Inventory interface {
+type inventory interface {
 	// initializeGVKInventory initializes the GVK with the generic GVK
 	// resources as specified in the SDKConfig
 	// used to provide faster loopup if the GVK is relevant for the fn/controller
@@ -43,8 +43,8 @@ type Inventory interface {
 	diff() (map[corev1.ObjectReference]*inventoryDiff, error)
 }
 
-func newInventory(cfg *Config) (Inventory, error) {
-	r := &inventory{
+func newInventory(cfg *Config) (inventory, error) {
+	r := &inv{
 		gvkResources: map[corev1.ObjectReference]*gvkKindCtx{},
 		resources: &resources{
 			resources: map[sdkObjectReference]*resources{},
@@ -56,7 +56,7 @@ func newInventory(cfg *Config) (Inventory, error) {
 	return r, nil
 }
 
-type inventory struct {
+type inv struct {
 	m sync.RWMutex
 	//hasOwn bool
 	// gvkResource contain the gvk based resource from config
@@ -81,7 +81,7 @@ const (
 // resources as specified in the SDKConfig
 // used to provide faster lookup if the GVK is relevant for the fn/controller
 // and to provide context if there is a match
-func (r *inventory) initializeGVKInventory(cfg *Config) error {
+func (r *inv) initializeGVKInventory(cfg *Config) error {
 	if err := validateGVKRef(cfg.For); err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (r *inventory) initializeGVKInventory(cfg *Config) error {
 	return nil
 }
 
-func (r *inventory) addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectReference) error {
+func (r *inv) addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectReference) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -122,7 +122,7 @@ func (r *inventory) addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectRefer
 	return nil
 }
 
-func (r *inventory) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
+func (r *inv) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	if ref == nil {

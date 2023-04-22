@@ -49,7 +49,7 @@ type object struct {
 // the diff compares the eixisiting resource/condition inventory
 // against the new resource/condition inventory and provide CRUD operation
 // based on that comparisons.
-func (r *inventory) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
+func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	diffMap := map[corev1.ObjectReference]*inventoryDiff{}
