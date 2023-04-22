@@ -75,7 +75,7 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 	defer r.m.RUnlock()
 
 	readyMap := map[corev1.ObjectReference]*readyCtx{}
-	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{}) {
+	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		readyMap[forRef] = &readyCtx{
 			ready:   true,
 			owns:    map[corev1.ObjectReference]fn.KubeObject{},
