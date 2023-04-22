@@ -377,7 +377,6 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 	}
 }
 
-
 /*
 func TestDiffWithSpecToAddCondition(t *testing.T) {
 	inventory := New()
