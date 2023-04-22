@@ -19,6 +19,7 @@ package condkptsdk
 import (
 	"fmt"
 
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -43,4 +44,22 @@ func validateGVKNRef(ref corev1.ObjectReference) error {
 // getGVKRefFromGVKNref return a new objectReference with only APIVersion and Kind
 func getGVKRefFromGVKNref(ref *corev1.ObjectReference) *corev1.ObjectReference {
 	return &corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}
+}
+
+func IsRefsValid(refs []*corev1.ObjectReference) bool {
+	if len(refs) == 0 || (len(refs) == 1 && refs[0] == nil) || (len(refs) == 2 && refs[0] == nil && refs[1] == nil) {
+		return false
+	}
+	return true
+}
+
+// isGVKNEqual validates if the APIVersion, Kind, Name and Namespace of both fn.KubeObject are equal
+func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
+	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
+		curobj.GetKind() == newobj.GetKind() &&
+		curobj.GetName() == newobj.GetName() &&
+		curobj.GetNamespace() == newobj.GetNamespace() {
+		return true
+	}
+	return false
 }

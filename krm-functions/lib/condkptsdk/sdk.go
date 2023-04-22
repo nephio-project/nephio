@@ -113,11 +113,17 @@ func (r *sdk) Run() (bool, error) {
 	r.callGlobalWatches()
 	// stage 1 of the sdk pipeline
 	// populate the child resources as if nothing existed
-	r.populateChildren()
+	if err := r.populateChildren(); err != nil {
+		return false, err
+	}
 	// update the children based on the diff between existing and new resources/conditions
-	r.updateChildren()
+	if err := r.updateChildren(); err != nil {
+		return false, err
+	}
 	// stage 2 of the sdk pipeline
-	r.generateResource()
+	if err := r.generateResource(); err != nil {
+		return false, err
+	}
 
 	return true, nil
 }

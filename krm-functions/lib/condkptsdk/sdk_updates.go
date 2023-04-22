@@ -27,7 +27,7 @@ import (
 // handleUpdate sets the condition and resource based on the action
 // action: create/update/delete
 // kind: own/for/watch
-func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) {
+func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
 	// set the condition
 	r.setConditionInKptFile(a, kind, refs, status, msg)
 	// update resource
@@ -35,6 +35,7 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReferenc
 		if err := obj.obj.SetAnnotation(FnRuntimeDelete, "true"); err != nil {
 			fn.Logf("error setting annotation: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	}
 	// set resource
@@ -45,11 +46,12 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []*corev1.ObjectReferenc
 			r.setObjectInResourceList(kind, refs, obj)
 		}
 	}
+	return nil
 }
 
-func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectReference) {
+func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectReference) error {
 	if !IsRefsValid(refs) {
-		return
+		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
@@ -59,6 +61,7 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectRefere
 		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}); err != nil {
 			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	} else {
 		objRef := refs[1]
@@ -68,13 +71,15 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []*corev1.ObjectRefere
 		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}); err != nil {
 			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	}
+	return nil
 }
 
-func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.ObjectReference, status kptv1.ConditionStatus, msg string) {
+func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.ObjectReference, status kptv1.ConditionStatus, msg string) error {
 	if !IsRefsValid(refs) {
-		return
+		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
@@ -97,57 +102,59 @@ func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []*corev1.Objec
 		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &c, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	}
+	return nil
 }
 
-func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReference, obj *object) {
+func (r *sdk) setObjectInResourceList(kind gvkKind, refs []*corev1.ObjectReference, obj *object) error {
 	if !IsRefsValid(refs) {
-		return
+		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {
 		if err := r.rl.UpsertObjectToItems(&obj.obj, nil, true); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 		// update the resource status back in the inventory
 		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	} else {
 		objRef := refs[1]
-		//r.rl.SetObject(&obj.obj)
 		if err := r.rl.UpsertObjectToItems(&obj.obj, nil, true); err != nil {
 			fn.Logf("error updating stage1 resource: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 		// update the resource status back in the inventory
 		if err := r.inv.set(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{*forRef, *objRef}, &obj.obj, false); err != nil {
 			fn.Logf("error updating stage1 resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
 		}
 	}
+	return nil
 }
 
-func IsRefsValid(refs []*corev1.ObjectReference) bool {
-	if len(refs) == 0 || (len(refs) == 1 && refs[0] == nil) || (len(refs) == 2 && refs[0] == nil && refs[1] == nil) {
-		return false
-	}
-	return true
-}
-
-func (r *sdk) updateKptFile() {
+func (r *sdk) updateKptFile() error {
 	kptfile, err := r.kptf.ParseKubeObject()
 	if err != nil {
 		fn.Log(err)
 		r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, r.rl.Items.GetRootKptfile()))
+		return err
 	}
 	if err := r.rl.UpsertObjectToItems(kptfile, nil, true); err != nil {
 		fn.Log(err)
 		r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, r.rl.Items.GetRootKptfile()))
+		return err
 	}
+	return nil
 }
 
 func (r *sdk) deleteObjFromResourceList(obj *fn.KubeObject) {
@@ -156,15 +163,4 @@ func (r *sdk) deleteObjFromResourceList(obj *fn.KubeObject) {
 			r.rl.Items = append(r.rl.Items[:idx], r.rl.Items[idx+1:]...)
 		}
 	}
-}
-
-// isGVKNEqual validates if the APIVersion, Kind, Name and Namespace of both fn.KubeObject are equal
-func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
-	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
-		curobj.GetKind() == newobj.GetKind() &&
-		curobj.GetName() == newobj.GetName() &&
-		curobj.GetNamespace() == newobj.GetNamespace() {
-		return true
-	}
-	return false
 }
