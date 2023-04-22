@@ -29,7 +29,11 @@ import (
 // kind: own/for/watch
 func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
 	// set the condition
-	r.setConditionInKptFile(a, kind, refs, status, msg)
+	if err := r.setConditionInKptFile(a, kind, refs, status, msg); err != nil {
+		fn.Logf("error setting condition in kptfile: %v\n", err.Error())
+		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+		return err
+	}
 	// update resource
 	if a == actionDelete {
 		if err := obj.obj.SetAnnotation(FnRuntimeDelete, "true"); err != nil {
@@ -40,10 +44,18 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference
 	}
 	// set resource
 	if ignoreOwnKind {
-		r.setObjectInResourceList(kind, refs, obj)
+		if err := r.setObjectInResourceList(kind, refs, obj); err != nil {
+			fn.Logf("error setting resource in resourceList: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			return err
+		}
 	} else {
 		if obj.ownKind == ChildRemote {
-			r.setObjectInResourceList(kind, refs, obj)
+			if err := r.setObjectInResourceList(kind, refs, obj); err != nil {
+				fn.Logf("error setting resource in resourceList: %v\n", err.Error())
+				r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+				return err
+			}
 		}
 	}
 	return nil
