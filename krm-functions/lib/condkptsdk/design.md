@@ -170,6 +170,229 @@ Each function/controller has to implement `GenerateResourceFn`. Only the functio
 
 Right now the kpt pipeline is used to execute the conditional dance
 
+### example
+
+#### example with owns
+
+```golang
+func Run(rl *fn.ResourceList) (bool, error) {
+	m := mutatorCtx{}
+	var err error
+	m.fnCondSdk, err = condkptsdk.New(
+		rl,
+		&condkptsdk.Config{
+			For: corev1.ObjectReference{
+				APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+				Kind:       nephioreqv1alpha1.InterfaceKind,
+			},
+			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
+				{
+					APIVersion: nadv1.SchemeGroupVersion.Identifier(),
+					Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+				}: condkptsdk.ChildRemoteCondition,
+				{
+					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
+					Kind:       ipamv1alpha1.IPAllocationKind,
+				}: condkptsdk.ChildRemote,
+			},
+			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
+				{
+					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
+					Kind:       reflect.TypeOf(infrav1alpha1.ClusterContext{}).Name(),
+				}: m.ClusterContextCallbackFn,
+			},
+			PopulateOwnResourcesFn: m.populateFn,
+			GenerateResourceFn:     m.generateFn,
+		},
+	)
+	if err != nil {
+		rl.Results = append(rl.Results, fn.ErrorResult(err))
+		return false, err
+	}
+	return m.fnCondSdk.Run()
+}
+
+func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
+	clusterContext := clusterctxtlibv1alpha1.NewMutator(o.String())
+	cluster, err := clusterContext.UnMarshal()
+	if err != nil {
+		return err
+	}
+	r.siteCode = *cluster.Spec.SiteCode
+	r.masterInterface = cluster.Spec.CNIConfig.MasterInterface
+	r.cniType = cluster.Spec.CNIConfig.CNIType
+	return nil
+}
+
+func (r *mutatorCtx) populateFn(o *fn.KubeObject) (fn.KubeObjects, error) {
+	resources := fn.KubeObjects{}
+
+	itfce, err := interfacelibv1alpha1.NewFromKubeObject(o)
+	if err != nil {
+		return nil, err
+	}
+
+	// we assume right now that if the CNITYpe is not set this is a loopback interface
+	if itfce.GetCNIType() != "" {
+		// generate network IPAllocation
+		o, err := fn.NewFromTypedObject(alloc)
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, o)
+
+		// generate empty nad
+		o, err = fn.NewFromTypedObject(nad)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, o)
+
+	} else {
+		// generate loopback IPAllocation
+		o, err := fn.NewFromTypedObject(alloc)
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, o)
+
+	}
+	return resources, nil
+}
+
+func (r *mutatorCtx) generateFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+    // a for obj is expected
+	if forObj == nil {
+		return nil, fmt.Errorf("expected a for object but got nil")
+	}
+    // get the interface object
+	itfce, err := interfacelibv1alpha1.NewFromKubeObject(forObj)
+	if err != nil {
+		return nil, err
+	}
+
+    // based on the ip allocation fill out the status
+	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+	for _, ipalloc := range ipallocs {
+		if ipalloc.GetName() == forObj.GetName() {
+			alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipalloc)
+			if err != nil {
+				return nil, err
+			}
+			allocGoStruct, err := alloc.GetGoStruct()
+			if err != nil {
+				return nil, err
+			}
+			if err := itfce.SetIPAllocationStatus(&allocGoStruct.Status); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return &itfce.KubeObject, nil
+}
+
+```
+
+### example without owns
+
+```golang
+func Run(rl *fn.ResourceList) (bool, error) {
+	m := mutatorCtx{}
+	var err error
+	m.fnCondSdk, err = condkptsdk.New(
+		rl,
+		&condkptsdk.Config{
+			For: corev1.ObjectReference{
+				APIVersion: nadv1.SchemeGroupVersion.Identifier(),
+				Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+			},
+			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
+				{
+					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
+					Kind:       reflect.TypeOf(infrav1alpha1.ClusterContext{}).Name(),
+				}: m.ClusterContextCallbackFn,
+				{
+					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
+					Kind:       ipamv1alpha1.IPAllocationKind,
+				}: nil,
+			},
+			PopulateOwnResourcesFn: nil,
+			GenerateResourceFn:     m.generateResourceFn,
+		},
+	)
+	if err != nil {
+		rl.Results = append(rl.Results, fn.ErrorResult(err))
+	}
+	return m.fnCondSdk.Run()
+}
+
+func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
+	clusterContext := clusterctxtlibv1alpha1.NewMutator(o.String())
+	cluster, err := clusterContext.UnMarshal()
+	if err != nil {
+		return err
+	}
+	if cluster.Spec.CNIConfig.MasterInterface == "" {
+		return fmt.Errorf("MasterInterface on ClusterContext cannot be empty")
+	} else {
+		r.masterInterface = cluster.Spec.CNIConfig.MasterInterface
+	}
+	if cluster.Spec.CNIConfig.CNIType == "" {
+		return fmt.Errorf("CNIType on ClusterContext cannot be empty")
+	} else {
+		r.cniType = cluster.Spec.CNIConfig.CNIType
+	}
+	if cluster.Spec.SiteCode == nil {
+		return fmt.Errorf("SiteCode on ClusterContext cannot be empty")
+	} else {
+		r.siteCode = *cluster.Spec.SiteCode
+	}
+	return nil
+}
+
+func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+	if len(objs) == 0 {
+		return nil, fmt.Errorf("expecting sone object to generate the nad")
+	}
+	// generate an empty nad struct
+	meta := metav1.ObjectMeta{Name: objs[0].GetName()}
+	nad, err := nadlibv1.NewFromGoStruct(nadlibv1.BuildNetworkAttachementDefinition(
+		meta,
+		nadv1.NetworkAttachmentDefinitionSpec{
+			Config: "",
+		},
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	fn.Logf("cniType: %s, masterInterface: %s\n", r.cniType, r.masterInterface)
+	nad.SetCNIType(r.cniType) // cniType should come from interface
+	nad.SetNadMaster(r.masterInterface)
+
+	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+	for _, ipalloc := range ipallocs {
+
+		alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipalloc)
+		if err != nil {
+			return nil, err
+		}
+		allocGoStruct, err := alloc.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		nad.SetIpamAddress([]nadlibv1.Addresses{{
+			Address: allocGoStruct.Status.AllocatedPrefix,
+			Gateway: allocGoStruct.Status.Gateway,
+		}})
+	}
+
+	return &nad.KubeObject, nil
+}
+```
+
 ## see also
 
 - [golang](https://go.dev)
