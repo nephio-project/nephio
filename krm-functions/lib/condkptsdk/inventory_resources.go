@@ -165,12 +165,14 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new ne
 			r.resourceCtx.existingCondition = &x
 			return nil
 		case *fn.KubeObject:
-			fn.Logf("add existing resource: %v\n", x)
+
 			r.gvkKindCtx = *kc
 			x := *d
 			if new {
+				fn.Logf("add new resource: %v\n", x)
 				r.resourceCtx.newResource = &x
 			} else {
+				fn.Logf("add existing resource: %v\n", x)
 				r.resourceCtx.existingResource = &x
 			}
 			return nil

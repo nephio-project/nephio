@@ -116,6 +116,8 @@ func (r *sdk) Run() (bool, error) {
 	if err := r.populateChildren(); err != nil {
 		return false, err
 	}
+	// list the result of inventory -> used for debug only
+	r.listInventory()
 	// update the children based on the diff between existing and new resources/conditions
 	if err := r.updateChildren(); err != nil {
 		return false, err

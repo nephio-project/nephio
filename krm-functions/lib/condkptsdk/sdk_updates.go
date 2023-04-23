@@ -27,9 +27,9 @@ import (
 // handleUpdate sets the condition and resource based on the action
 // action: create/update/delete
 // kind: own/for/watch
-func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference, obj *object, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
+func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference, obj *object, c *kptv1.Condition, status kptv1.ConditionStatus, msg string, ignoreOwnKind bool) error {
 	// set the condition
-	if err := r.setConditionInKptFile(a, kind, refs, status, msg); err != nil {
+	if err := r.setConditionInKptFile(a, kind, refs, c, status, msg); err != nil {
 		fn.Logf("error setting condition in kptfile: %v\n", err.Error())
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 		return err
@@ -89,9 +89,15 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []corev1.ObjectReferen
 	return nil
 }
 
-func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []corev1.ObjectReference, status kptv1.ConditionStatus, msg string) error {
+func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []corev1.ObjectReference, c *kptv1.Condition, status kptv1.ConditionStatus, msg string) error {
 	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
+	}
+	if c != nil {
+		c.Message = fmt.Sprintf("%s %s", a, msg)
+		c.Status = status
+		r.kptf.SetConditions(*c)
+		return nil
 	}
 	forRef := refs[0]
 	if len(refs) == 1 {

@@ -108,31 +108,35 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				// if both exisiting/new resource exists check the differences of the spec
 				// dependening on the outcome update the resource with the new information
 				case resCtx.existingResource != nil && resCtx.newResource != nil:
-					// check diff
-					existingSpec, err := getSpec(resCtx.existingResource)
-					if err != nil {
-						fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
-						continue
-					}
-					newSpec, err := getSpec(resCtx.newResource)
-					if err != nil {
-						fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
-						continue
-					}
+					// for childremote consition a diff is not needed since the object
+					// is created remotely
+					if resCtx.ownKind != ChildRemoteCondition {
+						// check diff
+						existingSpec, err := getSpec(resCtx.existingResource)
+						if err != nil {
+							fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
+							continue
+						}
+						newSpec, err := getSpec(resCtx.newResource)
+						if err != nil {
+							fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
+							continue
+						}
 
-					if d := cmp.Diff(existingSpec, newSpec); d != "" {
-						diffMap[forRef].updateForCondition = true
-						diffMap[forRef].updateObjs = append(diffMap[forRef].updateObjs, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
-					}
-					// this is a corner case, in case for object gets deleted and recreated
-					// if the delete annotation is set, we need to cleanup the
-					// delete annotation and set the condition to update
-					a := resCtx.existingResource.GetAnnotations()
-					if _, ok := a[FnRuntimeDelete]; ok {
-						fn.Logf("delete annotation: %v\n", a)
-						if _, ok := a[FnRuntimeDelete]; ok {
+						if d := cmp.Diff(existingSpec, newSpec); d != "" {
 							diffMap[forRef].updateForCondition = true
-							diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+							diffMap[forRef].updateObjs = append(diffMap[forRef].updateObjs, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+						}
+						// this is a corner case, in case for object gets deleted and recreated
+						// if the delete annotation is set, we need to cleanup the
+						// delete annotation and set the condition to update
+						a := resCtx.existingResource.GetAnnotations()
+						if _, ok := a[FnRuntimeDelete]; ok {
+							fn.Logf("delete annotation: %v\n", a)
+							if _, ok := a[FnRuntimeDelete]; ok {
+								diffMap[forRef].updateForCondition = true
+								diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+							}
 						}
 					}
 				}

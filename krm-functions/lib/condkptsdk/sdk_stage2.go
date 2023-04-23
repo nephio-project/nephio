@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
-	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -48,7 +47,11 @@ func (r *sdk) generateResource() error {
 	readyMap := r.inv.getReadyMap()
 	if len(readyMap) == 0 {
 		// this is when the global resource is not found
-		if err := r.handleGenerateUpdate(corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name}, nil, fn.KubeObjects{}); err != nil {
+		if err := r.handleGenerateUpdate(
+			corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
+			nil,
+			nil,
+			fn.KubeObjects{}); err != nil {
 			return err
 		}
 	}
@@ -75,7 +78,11 @@ func (r *sdk) generateResource() error {
 				x := o
 				objs = append(objs, &x)
 			}
-			if err := r.handleGenerateUpdate(forRef, readyCtx.forObj, objs); err != nil {
+			if err := r.handleGenerateUpdate(
+				forRef,
+				readyCtx.forObj,
+				readyCtx.forCondition,
+				objs); err != nil {
 				return err
 			}
 		}
@@ -86,7 +93,7 @@ func (r *sdk) generateResource() error {
 
 // handleGenerateUpdate performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
-func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, objs fn.KubeObjects) error {
+func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) error {
 	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
 	if err != nil {
 		fn.Logf("error generating new resource: %v\n", err.Error())
@@ -98,15 +105,19 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
 		return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
 	}
-	// set owner reference on the new resource if not having owns
-	// as you ste it to yourself
-	if len(r.cfg.Owns) == 0 {
-		if err := newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
-			fn.Logf("error setting new annotation: %v\n", err.Error())
-			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
-			return err
+	// if forCondition was set 
+	if forCondition != nil {
+		// set annotation based on forCOndition reason if present
+		if forCondition.Reason != "" {
+			if err := newObj.SetAnnotation(FnRuntimeOwner, forCondition.Reason); err != nil {
+				fn.Logf("error setting new annotation: %v\n", err.Error())
+				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+				return err
+			}
 		}
 	}
+	//}
 	// add the resource to the kptfile and updates the resource in the resourcelist
-	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, &object{obj: *newObj}, kptv1.ConditionTrue, "done", true)
+	
+	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, &object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
 }

@@ -98,7 +98,7 @@ func (r *sdk) updateChildren() error {
 			// delete all child resources by setting the annotation and set the condition to false
 			for _, obj := range diff.deleteObjs {
 				fn.Logf("diff action ->  delete set condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
-				if err := r.handleUpdate(actionDelete, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, kptv1.ConditionFalse, "not ready", true); err != nil {
+				if err := r.handleUpdate(actionDelete, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "not ready", true); err != nil {
 					return err
 				}
 			}
@@ -109,13 +109,13 @@ func (r *sdk) updateChildren() error {
 			// update conditions
 			if diff.updateForCondition {
 				fn.Logf("diff action ->  update for condition: %s\n", kptfilelibv1.GetConditionType(&forRef))
-				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef}, kptv1.ConditionFalse, "for condition"); err != nil {
+				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef}, nil, kptv1.ConditionFalse, "for condition"); err != nil {
 					return err
 				}
 			}
 			for _, obj := range diff.createConditions {
 				fn.Logf("diff action ->  create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
-				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, kptv1.ConditionFalse, "condition again as it was deleted"); err != nil {
+				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, nil, kptv1.ConditionFalse, "condition again as it was deleted"); err != nil {
 					return err
 				}
 			}
@@ -128,19 +128,19 @@ func (r *sdk) updateChildren() error {
 			// update resources
 			for _, obj := range diff.createObjs {
 				fn.Logf("diff action -> create obj: ref: %s, ownkind: %s\n", kptfilelibv1.GetConditionType(&obj.ref), obj.ownKind)
-				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, kptv1.ConditionFalse, "resource", false); err != nil {
+				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "resource", false); err != nil {
 					return err
 				}
 			}
 			for _, obj := range diff.updateObjs {
 				fn.Logf("diff action -> update obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
-				if err := r.handleUpdate(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, kptv1.ConditionFalse, "resource", false); err != nil {
+				if err := r.handleUpdate(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "resource", false); err != nil {
 					return err
 				}
 			}
 			for _, obj := range diff.deleteObjs {
 				fn.Logf("diff action -> delete obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
-				if err := r.handleUpdate(actionDelete, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, kptv1.ConditionFalse, "resource", true); err != nil {
+				if err := r.handleUpdate(actionDelete, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "resource", true); err != nil {
 					return err
 				}
 			}
@@ -149,7 +149,7 @@ func (r *sdk) updateChildren() error {
 			// delete annotation and set the condition to update
 			for _, obj := range diff.updateDeleteAnnotations {
 				fn.Log("diff action -> update delete annotation")
-				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, kptv1.ConditionFalse, "resource", true); err != nil {
+				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "resource", true); err != nil {
 					return err
 				}
 			}
