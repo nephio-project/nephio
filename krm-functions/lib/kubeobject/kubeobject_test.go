@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -328,6 +329,282 @@ func TestNewFromGoStruct(t *testing.T) {
 		}
 		if deploymentReceived.Name != s {
 			t.Errorf("-want%s, +got:\n%s", deploymentReceived.Name, s)
+		}
+	}
+}
+
+func TestGetNestedString(t *testing.T) {
+	type object struct {
+		namespace            string
+		overwrittenNamespace string
+		config               string
+		name                 string
+		gv                   string
+		kind                 string
+		replicas             int32
+		overwrittenReplicas  int32
+		paused               bool
+		overwrittenPaused    bool
+		selector             map[string]string
+		overwrittenSelector  map[string]string
+	}
+	data := object{
+		gv:                   "apps/v1",
+		kind:                 "Deployment",
+		name:                 "a",
+		overwrittenNamespace: "new",
+		config:               "c",
+		replicas:             3,
+		overwrittenReplicas:  10,
+		paused:               true,
+		overwrittenPaused:    false,
+		selector:             map[string]string{"install": "output"},
+		overwrittenSelector:  map[string]string{"install": "large", "network": "CONF"},
+	}
+	testItems := []struct {
+		path []string
+		want string
+	}{
+		{
+			path: []string{"metadata", "name"},
+			want: "a",
+		},
+		{
+			path: []string{"metadata", "namespace"},
+			want: "",
+		},
+		{
+			path: []string{"x", "y"},
+			want: "",
+		},
+	}
+	for _, tt := range testItems {
+		deploymentReceived := v1.Deployment{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: data.gv,
+				Kind:       data.kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      data.name,
+				Namespace: data.namespace,
+			},
+			Spec: v1.DeploymentSpec{
+				Replicas: &data.replicas,
+				Paused:   data.paused,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: data.selector,
+				},
+			},
+		}
+		x, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+
+		got := x.GetNestedString(tt.path...)
+		if tt.want != got {
+			t.Errorf("want: %v, got: %v", tt.want, got)
+		}
+	}
+}
+
+func TestGetNestedInt(t *testing.T) {
+	type object struct {
+		namespace            string
+		overwrittenNamespace string
+		config               string
+		name                 string
+		gv                   string
+		kind                 string
+		replicas             int32
+		overwrittenReplicas  int32
+		paused               bool
+		overwrittenPaused    bool
+		selector             map[string]string
+		overwrittenSelector  map[string]string
+	}
+	data := object{
+		gv:                   "apps/v1",
+		kind:                 "Deployment",
+		name:                 "a",
+		overwrittenNamespace: "new",
+		config:               "c",
+		replicas:             3,
+		overwrittenReplicas:  10,
+		paused:               true,
+		overwrittenPaused:    false,
+		selector:             map[string]string{"install": "output"},
+		overwrittenSelector:  map[string]string{"install": "large", "network": "CONF"},
+	}
+	testItems := []struct {
+		path []string
+		want int
+	}{
+		{
+			path: []string{"spec", "replicas"},
+			want: 3,
+		},
+		{
+			path: []string{"x", "y"},
+			want: 0,
+		},
+	}
+	for _, tt := range testItems {
+		deploymentReceived := v1.Deployment{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: data.gv,
+				Kind:       data.kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      data.name,
+				Namespace: data.namespace,
+			},
+			Spec: v1.DeploymentSpec{
+				Replicas: &data.replicas,
+				Paused:   data.paused,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: data.selector,
+				},
+			},
+		}
+		x, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+
+		got := x.GetNestedInt(tt.path...)
+		if tt.want != got {
+			t.Errorf("want: %v, got: %v", tt.want, got)
+		}
+	}
+}
+
+func TestGetNestedBool(t *testing.T) {
+	type object struct {
+		namespace            string
+		overwrittenNamespace string
+		config               string
+		name                 string
+		gv                   string
+		kind                 string
+		replicas             int32
+		overwrittenReplicas  int32
+		paused               bool
+		overwrittenPaused    bool
+		selector             map[string]string
+		overwrittenSelector  map[string]string
+	}
+	data := object{
+		gv:                   "apps/v1",
+		kind:                 "Deployment",
+		name:                 "a",
+		overwrittenNamespace: "new",
+		config:               "c",
+		replicas:             3,
+		overwrittenReplicas:  10,
+		paused:               true,
+		overwrittenPaused:    false,
+		selector:             map[string]string{"install": "output"},
+		overwrittenSelector:  map[string]string{"install": "large", "network": "CONF"},
+	}
+	testItems := []struct {
+		path []string
+		want bool
+	}{
+		{
+			path: []string{"spec", "paused"},
+			want: true,
+		},
+		{
+			path: []string{"x", "y"},
+			want: false,
+		},
+	}
+	for _, tt := range testItems {
+		deploymentReceived := v1.Deployment{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: data.gv,
+				Kind:       data.kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      data.name,
+				Namespace: data.namespace,
+			},
+			Spec: v1.DeploymentSpec{
+				Replicas: &data.replicas,
+				Paused:   data.paused,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: data.selector,
+				},
+			},
+		}
+		x, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+
+		got := x.GetNestedBool(tt.path...)
+		if tt.want != got {
+			t.Errorf("want: %v, got: %v", tt.want, got)
+		}
+	}
+}
+
+func TestGetNestedStringMap(t *testing.T) {
+	type object struct {
+		namespace            string
+		overwrittenNamespace string
+		config               string
+		name                 string
+		gv                   string
+		kind                 string
+		replicas             int32
+		overwrittenReplicas  int32
+		paused               bool
+		overwrittenPaused    bool
+		selector             map[string]string
+		overwrittenSelector  map[string]string
+	}
+	data := object{
+		gv:                   "apps/v1",
+		kind:                 "Deployment",
+		name:                 "a",
+		overwrittenNamespace: "new",
+		config:               "c",
+		replicas:             3,
+		overwrittenReplicas:  10,
+		paused:               true,
+		overwrittenPaused:    false,
+		selector:             map[string]string{"install": "output"},
+		overwrittenSelector:  map[string]string{"install": "large", "network": "CONF"},
+	}
+	testItems := []struct {
+		path []string
+		want map[string]string
+	}{
+		{
+			path: []string{"spec", "selector", "matchLabels"},
+			want: map[string]string{"install": "output"},
+		},
+		{
+			path: []string{"x", "y"},
+			want: map[string]string{},
+		},
+	}
+	for _, tt := range testItems {
+		deploymentReceived := v1.Deployment{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: data.gv,
+				Kind:       data.kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      data.name,
+				Namespace: data.namespace,
+			},
+			Spec: v1.DeploymentSpec{
+				Replicas: &data.replicas,
+				Paused:   data.paused,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: data.selector,
+				},
+			},
+		}
+		x, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+
+		got := x.GetNestedStringMap(tt.path...)
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("TestGetNestedStringMap: -want, +got:\n%s", diff)
 		}
 	}
 }
