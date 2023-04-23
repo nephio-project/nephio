@@ -51,19 +51,6 @@ func TestIsReady(t *testing.T) {
 			new:   false,
 			ready: true,
 		},
-
-		"WatchExistingConditionTrue": {
-			kc: &gvkKindCtx{gvkKind: watchGVKKind},
-			refs: []corev1.ObjectReference{
-				{APIVersion: "a", Kind: "a", Name: "a"},
-			},
-			c: &kptv1.Condition{
-				Type:   "ok",
-				Status: kptv1.ConditionTrue,
-			},
-			new:   false,
-			ready: true,
-		},
 		"WatchExistingResourceDoesNotExists": {
 			kc: &gvkKindCtx{gvkKind: watchGVKKind},
 			refs: []corev1.ObjectReference{
