@@ -105,7 +105,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
 		return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
 	}
-	// if forCondition was set 
+	// if forCondition was set
 	if forCondition != nil {
 		// set annotation based on forCOndition reason if present
 		if forCondition.Reason != "" {
@@ -118,6 +118,6 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	}
 	//}
 	// add the resource to the kptfile and updates the resource in the resourcelist
-	
+
 	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, &object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
 }
