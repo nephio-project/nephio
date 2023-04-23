@@ -102,7 +102,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		if !ok || ownerKindCtx.gvkKind != forGVKKind {
 			// this means the resource was added from a different kind
 			// we dont need to add this to the inventory
-			fn.Logf("populate ownkind different owner, ownerRef %v, ownKind: %s ref: %v \n", ownerRef, ownerKindCtx, ref)
+			fn.Logf("populate ownkind different owner, ownerRef %v, ownKind: %v ref: %v \n", ownerRef, ownerKindCtx, ref)
 			return nil
 		}
 		fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
