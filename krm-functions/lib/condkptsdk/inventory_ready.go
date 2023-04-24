@@ -19,6 +19,7 @@ package condkptsdk
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
+	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -70,13 +71,13 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 	defer r.m.RUnlock()
 
 	readyMap := map[corev1.ObjectReference]*readyCtx{}
-	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
+	for forRef, forResCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		readyMap[forRef] = &readyCtx{
 			ready:        true,
 			owns:         map[corev1.ObjectReference]fn.KubeObject{},
 			watches:      map[corev1.ObjectReference]fn.KubeObject{},
-			forObj:       resCtx.existingResource,
-			forCondition: resCtx.existingCondition,
+			forObj:       forResCtx.existingResource,
+			forCondition: forResCtx.existingCondition,
 		}
 		for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 			fn.Logf("getReadyMap: own ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
@@ -92,7 +93,11 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 			// TBD we need to look at some watches that we want to check the condition for and others not
 			fn.Logf("getReadyMap: watch ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
 			if resCtx.existingCondition == nil || resCtx.existingCondition.Status == kptv1.ConditionFalse {
-				readyMap[forRef].ready = false
+				// ignore validating consition if the the owner reference is equal to the watch resource
+				// e.g. interface watch in case of nad forFilter
+				if kptfilelibv1.GetConditionType(&ref) != forResCtx.existingCondition.Reason {
+					readyMap[forRef].ready = false
+				}
 			}
 			if _, ok := readyMap[forRef].watches[ref]; !ok {
 				readyMap[forRef].watches[ref] = *resCtx.existingResource
