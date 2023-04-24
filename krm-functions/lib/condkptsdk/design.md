@@ -130,7 +130,7 @@ The sdk will handle from here on the lifecycle of the child resources based on t
 signature of the populateOwnResourcesFn:
 
 ```golang
-type PopulateOwnResourcesFn func(*fn.KubeObject) ([]*fn.KubeObject, error)
+type PopulateOwnResourcesFn func(*fn.KubeObject) (fn.KubeObjects, error)
 ```
 
 Any fn/controller that has own resources MUST implement the `PopulateOwnResourcesFn`.
@@ -146,7 +146,7 @@ The `GenerateResourceFn` function either updates the status or generates spec/(s
 signature of the generateResourceFn:
 
 ```golang
-type GenerateResourceFn func(*fn.KubeObject, []*fn.KubeObject) (*fn.KubeObject, error)
+type GenerateResourceFn func(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error)
 ```
 
 Any fn/controller MUST implement the `GenerateResourceFn`.
