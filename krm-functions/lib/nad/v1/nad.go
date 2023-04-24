@@ -38,21 +38,21 @@ var (
 
 type NadConfig struct {
 	CniVersion string          `json:"cniVersion"`
-	Vlan       int             `json:"vlan"`
-	Plugins    []PluginCniType `json:"plugins"`
+	Vlan       int             `json:"vlan,omitempty"`
+	Plugins    []PluginCniType `json:"plugins,omitempty"`
 }
 
 type PluginCniType struct {
 	Type         string       `json:"type"`
-	Capabilities Capabilities `json:"capabilities"`
+	Capabilities Capabilities `json:"capabilities,omitempty"`
 	Master       string       `json:"master"`
 	Mode         string       `json:"mode"`
 	Ipam         Ipam         `json:"ipam"`
 }
 
 type Capabilities struct {
-	Ips bool `json:"ips"`
-	Mac bool `json:"mac"`
+	Ips bool `json:"ips,omitempty"`
+	Mac bool `json:"mac,omitempty"`
 }
 
 type Ipam struct {
@@ -285,15 +285,19 @@ func (r *nadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) e
 
 func (r *nadStruct) GetNadConfig() NadConfig {
 	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+	configSpec := r.GetStringValue(ConfigType...)
+	if configSpec == "" {
+		configSpec = "{}"
+	}
+	if err := json.Unmarshal([]byte(configSpec), &nadConfigStruct); err != nil {
 		panic(err)
 	}
 	if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 		nadConfigStruct.Plugins = []PluginCniType{
-			{Capabilities: Capabilities{
-				Ips: true,
-				Mac: true,
-			},
+			{
+				Capabilities: Capabilities{
+					Ips: true,
+				},
 				Mode: NadMode,
 				Ipam: Ipam{
 					Type: NadType,
