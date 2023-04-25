@@ -44,7 +44,7 @@ const (
 
 type Config struct {
 	For                    corev1.ObjectReference
-	Owns                   map[corev1.ObjectReference]ResourceKind    // ResourceKind distinguishes ResourceKindNone and ResourceKindFull
+	Owns                   map[corev1.ObjectReference]ResourceKind    // ResourceKind distinguishes different types of child resources.
 	Watch                  map[corev1.ObjectReference]WatchCallbackFn // Used for watches to non specific resources
 	PopulateOwnResourcesFn PopulateOwnResourcesFn
 	GenerateResourceFn     GenerateResourceFn
