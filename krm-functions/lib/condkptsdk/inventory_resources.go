@@ -64,36 +64,32 @@ func (r *inv) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newR
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	fn.Logf("set: kc: %v, refs: %v, resource: %v, new: %t\n", kc, refs, x, new)
+	//fn.Logf("set: kc: %v, refs: %v, resource: %v, new: %t\n", kc, refs, x, new)
 	sdkRefs, err := getSdkRefs(kc.gvkKind, refs)
 	if err != nil {
 		return err
 	}
 	return r.resources.set(sdkRefs, kc, x, new)
-	//return r.resources.set(kc, refs, x, new)
 }
 
 func (r *inv) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	fn.Logf("delete: kc: %v, refs: %v\n", kc, refs)
-
+	//fn.Logf("delete: kc: %v, refs: %v\n", kc, refs)
 	sdkRefs, err := getSdkRefs(kc.gvkKind, refs)
 	if err != nil {
 		return err
 	}
 
 	return r.resources.delete(sdkRefs)
-	//return r.resources.delete(kc, refs)
 }
 
 func (r *inv) get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx {
 	r.m.RLock()
 	defer r.m.RUnlock()
 
-	fn.Logf("get: kind: %v, refs: %v\n", k, refs)
-
+	//fn.Logf("get: kind: %v, refs: %v\n", k, refs)
 	sdkRefs, err := getSdkRefs(k, refs)
 	if err != nil {
 		fn.Logf("cannot get sdkrefs :%v\n", err)
@@ -160,7 +156,7 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new ne
 	if len(refs) == 0 {
 		switch d := x.(type) {
 		case *kptv1.Condition:
-			fn.Logf("add existing condition: %v\n", x)
+			//fn.Logf("add existing condition: %v\n", x)
 			x := *d
 			r.resourceCtx.existingCondition = &x
 			return nil
@@ -169,10 +165,10 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new ne
 			r.gvkKindCtx = *kc
 			x := *d
 			if new {
-				fn.Logf("add new resource: %v\n", x)
+				//fn.Logf("add new resource: %v\n", x)
 				r.resourceCtx.newResource = &x
 			} else {
-				fn.Logf("add existing resource: %v\n", x)
+				//fn.Logf("add existing resource: %v\n", x)
 				r.resourceCtx.existingResource = &x
 			}
 			return nil
@@ -216,9 +212,9 @@ func (r *resources) get(refs []sdkObjectReference) map[corev1.ObjectReference]*r
 		return resCtxs
 	}
 	// check if resource exists
-	fn.Logf("get2 objectRef refs: %v, empty: %v\n", refs[0].ref, corev1.ObjectReference{})
+	//fn.Logf("get2 objectRef refs: %v, empty: %v\n", refs[0].ref, corev1.ObjectReference{})
 	if cmp.Equal(refs[0].ref, corev1.ObjectReference{}) {
-		fn.Log("empty objectReference")
+		//fn.Log("empty objectReference")
 		resCtxs := map[corev1.ObjectReference]*resourceCtx{}
 		for sdkRef, res := range r.resources {
 			if sdkRef.gvkKind == refs[0].gvkKind {
@@ -228,7 +224,7 @@ func (r *resources) get(refs []sdkObjectReference) map[corev1.ObjectReference]*r
 		return resCtxs
 	}
 	if _, ok := r.resources[refs[0]]; !ok {
-		fn.Log("ref not found")
+		//fn.Log("ref not found")
 		return map[corev1.ObjectReference]*resourceCtx{}
 	}
 	return r.resources[refs[0]].get(refs[1:])

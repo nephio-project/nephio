@@ -85,15 +85,16 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 	if !ok {
 		// it can be that a resource in the kpt package is not relevant for this fn/controller
 		// As such we return
-		fn.Logf("populate no match, ref: %v \n", ref)
+		if r.debug {
+			fn.Logf("populate no match, ref: %v \n", ref)
+		}
 		return nil
 	}
 
 	switch gvkKindCtx.gvkKind {
 	case forGVKKind:
-		fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
-		if o.GetAnnotation(SpecializerDebug) == "true" {
-			r.debug = true
+		if r.debug {
+			fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
 		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
 			fn.Logf("error setting exisiting object in the inventory: %v\n", err.Error())
@@ -105,10 +106,14 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		if !ok || ownerKindCtx.gvkKind != forGVKKind {
 			// this means the resource was added from a different kind
 			// we dont need to add this to the inventory
-			fn.Logf("populate ownkind different owner, ownerRef %v, ownKind: %v ref: %v \n", ownerRef, ownerKindCtx, ref)
+			if r.debug {
+				fn.Logf("populate ownkind different owner, ownerRef %v, ownKind: %v ref: %v \n", ownerRef, ownerKindCtx, ref)
+			}
 			return nil
 		}
-		fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
+		if r.debug {
+			fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
+		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ownerRef, *ref}, x, false); err != nil {
 			fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
@@ -124,7 +129,9 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			// this is a specific watch
 			forRef := &corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: ref.Name}
 
-			fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
+			if r.debug {
+				fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
+			}
 			if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*forRef, *ref}, x, false); err != nil {
 				fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
 				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
@@ -136,7 +143,9 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			// we dont add the object to the inventory
 			if validateGVKNRef(*ownerRef) != nil { // this mean onwerref is empty
 				// this is a global watch
-				fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
+				if r.debug {
+					fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
+				}
 				if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
 					fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
 					r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))

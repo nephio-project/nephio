@@ -29,7 +29,9 @@ import (
 // - global readiness: when key resources are missing
 // - per instance readiness: when certain parts of an instance readiness is missing
 func (r *sdk) generateResource() error {
-	fn.Logf("generateResource isReady: %t\n", r.inv.isReady())
+	if r.debug {
+		fn.Logf("generateResource isReady: %t\n", r.inv.isReady())
+	}
 	if !r.ready || !r.inv.isReady() {
 		// when the overal status is not ready delete all resources
 		// TBD if we need to check the delete annotation
@@ -56,7 +58,9 @@ func (r *sdk) generateResource() error {
 		}
 	}
 	for forRef, readyCtx := range readyMap {
-		fn.Logf("generateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
+		if r.debug {
+			fn.Logf("generateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
+		}
 		// if the for is not ready delete the object
 		if !readyCtx.ready {
 			if readyCtx.forObj != nil {

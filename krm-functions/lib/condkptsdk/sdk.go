@@ -103,6 +103,15 @@ func (r *sdk) Run() (bool, error) {
 		return false, err
 	}
 
+	// check if debug needs to be enabled.
+	// Debugging can be enabled by setting the SpecializerDebug annotation on the for resource
+	forObjs := r.rl.Items.Where(fn.IsGroupVersionKind(r.cfg.For.GroupVersionKind()))
+	for _, forObj := range forObjs {
+		if forObj.GetAnnotation(SpecializerDebug) != "" {
+			r.debug = true
+		}
+	}
+
 	// initialize inventory
 	if err := r.populateInventory(); err != nil {
 		return false, err
