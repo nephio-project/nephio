@@ -83,7 +83,7 @@ type sdk struct {
 func (r *sdk) Run() (bool, error) {
 	if r.rl.Items.Len() == 0 {
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("no resources present in the resourcelist")))
-		return false, fmt.Errorf("no resources present in the resourcelist")
+		return true, nil
 	}
 	// get the kptfile first as we need it in various places
 	kptfile := r.rl.Items.GetRootKptfile()

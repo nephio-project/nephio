@@ -155,7 +155,7 @@ Any fn/controller MUST implement the `GenerateResourceFn`.
 
 The SDK operates in phases when being executed within a fn/controller
 - firstly the sdk builds up an inventory based on the filters
-- Secondly the global watch callbacks are called. The fn/controller implenmting these callback use the data for 2 things:
+- Secondly the global watch callbacks are called. The fn/controller implementing these callback use the data for 2 things:
     1. uses attributes of the KRM for further processing later on
     2. provide feedback on readiness through the error
 - Afterwards if the readiness gate is true the `PopulateOwnResourcesFn` is called if defined by the fn/controller.
