@@ -17,10 +17,15 @@ limitations under the License.
 package kubeobject
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	v1 "k8s.io/api/apps/v1"
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	testlib "github.com/nephio-project/nephio/krm-functions/lib/test"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -93,7 +98,7 @@ func TestNewFromKubeObject(t *testing.T) {
 		},
 	}
 	for _, tt := range testItems {
-		deploymentReceived := v1.Deployment{
+		deploymentReceived := appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: tt.input.gv,
 				Kind:       tt.input.kind,
@@ -102,7 +107,7 @@ func TestNewFromKubeObject(t *testing.T) {
 				Name:      tt.input.name,
 				Namespace: tt.input.namespace,
 			},
-			Spec: v1.DeploymentSpec{
+			Spec: appsv1.DeploymentSpec{
 				Replicas: &tt.input.replicas,
 				Paused:   tt.input.paused,
 				Selector: &metav1.LabelSelector{
@@ -115,7 +120,7 @@ func TestNewFromKubeObject(t *testing.T) {
 			t.Errorf("YAML Marshal error: %s", err)
 		}
 		deploymentKubeObject, _ := fn.ParseKubeObject(b)
-		deploymentKubeObjectParser, _ := NewFromKubeObject[v1.Deployment](deploymentKubeObject)
+		deploymentKubeObjectParser, _ := NewFromKubeObject[appsv1.Deployment](deploymentKubeObject)
 		if deploymentKubeObjectParser.SubObject != deploymentKubeObject.SubObject {
 			t.Errorf("-want%s, +got:\n%s", deploymentKubeObjectParser.String(), deploymentKubeObject.String())
 		}
@@ -198,7 +203,7 @@ func TestNewFromYaml(t *testing.T) {
 		},
 	}
 	for _, tt := range testItems {
-		deploymentReceived := v1.Deployment{
+		deploymentReceived := appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: tt.input.gv,
 				Kind:       tt.input.kind,
@@ -207,7 +212,7 @@ func TestNewFromYaml(t *testing.T) {
 				Name:      tt.input.name,
 				Namespace: tt.input.namespace,
 			},
-			Spec: v1.DeploymentSpec{
+			Spec: appsv1.DeploymentSpec{
 				Replicas: &tt.input.replicas,
 				Paused:   tt.input.paused,
 				Selector: &metav1.LabelSelector{
@@ -219,7 +224,7 @@ func TestNewFromYaml(t *testing.T) {
 		if err != nil {
 			t.Errorf("YAML Marshal error: %s", err)
 		}
-		deploymentKubeObjectParser, _ := NewFromYaml[v1.Deployment](b)
+		deploymentKubeObjectParser, _ := NewFromYaml[appsv1.Deployment](b)
 
 		if deploymentKubeObjectParser.String() != string(b) {
 			t.Errorf("-want%s, +got:\n%s", string(b), deploymentKubeObjectParser.String())
@@ -303,7 +308,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		},
 	}
 	for _, tt := range testItems {
-		deploymentReceived := v1.Deployment{
+		deploymentReceived := appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: tt.input.gv,
 				Kind:       tt.input.kind,
@@ -312,7 +317,7 @@ func TestNewFromGoStruct(t *testing.T) {
 				Name:      tt.input.name,
 				Namespace: tt.input.namespace,
 			},
-			Spec: v1.DeploymentSpec{
+			Spec: appsv1.DeploymentSpec{
 				Replicas: &tt.input.replicas,
 				Paused:   tt.input.paused,
 				Selector: &metav1.LabelSelector{
@@ -320,7 +325,7 @@ func TestNewFromGoStruct(t *testing.T) {
 				},
 			},
 		}
-		deploymentKubeObject, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+		deploymentKubeObject, _ := NewFromGoStruct[appsv1.Deployment](deploymentReceived)
 
 		s, _, err := deploymentKubeObject.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
@@ -335,5 +340,90 @@ func TestNewFromGoStruct(t *testing.T) {
 	_, err := NewFromGoStruct[v1.Deployment](nil)
 	if err == nil {
 		t.Errorf("NewFromGoStruct(nil) doesn't return with an error")
+	}
+}
+
+func compareKubeObjectWithExpectedYaml(t *testing.T, obj *fn.KubeObject, inputFile string) {
+	actualYAML := strings.TrimSpace(obj.String())
+	expectedFile := testlib.InsertBeforeExtension(inputFile, "_expected")
+	expectedYAML := strings.TrimSpace(string(testhelpers.MustReadFile(t, expectedFile)))
+
+	if actualYAML != expectedYAML {
+		t.Errorf(`mismatch in expected and actual KubeObject YAML:
+--- want: -----
+%v
+--- got: ----
+%v
+----------------`, expectedYAML, actualYAML)
+		os.WriteFile(testlib.InsertBeforeExtension(inputFile, "_actual"), []byte(actualYAML), 0666)
+	}
+
+}
+
+func TestSetNestedFieldKeepFormatting(t *testing.T) {
+	testfiles := []string{"testdata/comments.yaml"}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			deploy, err := ToStruct[appsv1.Deployment](obj)
+			if err != nil {
+				t.Errorf("unexpected error in ToStruct[v1.Deployment]: %v", err)
+			}
+			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
+			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
+			err = SetNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
+			if err != nil {
+				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
+	}
+}
+
+func TestSetSpec(t *testing.T) {
+	testfiles := []string{"testdata/comments.yaml"}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			spec, err := GetSpec[appsv1.DeploymentSpec](obj)
+			if err != nil {
+				t.Errorf("unexpected error in GetSpec: %v", err)
+			}
+			spec.Replicas = nil                                              // delete Replicas field if present
+			spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
+			err = SetSpec(obj, spec)
+			if err != nil {
+				t.Errorf("unexpected error in SetSpec: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
+	}
+}
+
+func TestSetStatus(t *testing.T) {
+	testfiles := []string{
+		"testdata/status_comments.yaml",
+		"testdata/empty_status.yaml",
+	}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			status, err := GetStatus[appsv1.DeploymentStatus](obj)
+			if err != nil {
+				t.Errorf("unexpected error in GetStatus: %v", err)
+			}
+			status.AvailableReplicas = 0
+			err = SetStatus(obj, status)
+			if err != nil {
+				t.Errorf("unexpected error in SetStatus: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
 	}
 }

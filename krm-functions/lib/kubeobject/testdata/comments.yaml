@@ -1,0 +1,51 @@
+# comment 
+# comment 
+# comment 
+
+
+apiVersion: apps/v1 # comment 
+kind: Deployment # comment 
+metadata: # comment 
+  name: nginx-deployment # comment 
+  labels: # comment 
+    app: nginx # comment 
+# comment 
+spec: # comment
+# comment before deleted field
+  replicas: 3 # comment next to deleted field
+  
+  # comment
+  selector: # comment
+  # comment
+  # comment
+    matchLabels: # comment
+    # comment
+
+
+
+    # comment
+
+
+
+    # comment
+      app: nginx # comment
+      # comment
+  template: # comment
+  # comment
+    metadata: # comment
+
+      labels: # comment
+      # comment
+        app: nginx # comment
+
+        
+    spec: # comment
+      containers: # comment
+      - name: nginx # comment
+        image: nginx:1.14.2 # comment
+        ports: # comment
+        - containerPort: 80 # comment
+
+      # comment before updated field
+      restartPolicy: Always  # comment next to updated field
+      # comment after updated field
