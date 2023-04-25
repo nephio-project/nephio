@@ -104,7 +104,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				case resCtx.existingResource != nil && resCtx.newResource == nil:
 					// delete resource
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, &object{ref: ownRef, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, &object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
 				// if both exisiting/new resource exists check the differences of the spec
 				// dependening on the outcome update the resource with the new information
 				case resCtx.existingResource != nil && resCtx.newResource != nil:
