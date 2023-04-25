@@ -33,10 +33,6 @@ func (r *sdk) populateInventory() error {
 	// forInventory context. If no match was found to the forOwnerRef the watchedResource is associated
 	// to the global context
 	var forOwnerRef *corev1.ObjectReference
-	// we assume the kpt file is always resource idx 0 in the resourcelist, the object is used
-	// as a reference to errors when we encounter issues with the condition processing
-	// since conditions are stored in the kptFile
-	//o := r.rl.Items.GetRootKptfile()
 
 	// We first run through the conditions to check if an ownRef is associated
 	// to the for resource objects. We call this the forOwnerRef
@@ -62,8 +58,12 @@ func (r *sdk) populateInventory() error {
 	for _, c := range r.kptf.GetConditions() {
 		ref := kptfilelibv1.GetGVKNFromConditionType(c.Type)
 		ownerRef := kptfilelibv1.GetGVKNFromConditionType(c.Reason)
+		o, err := r.kptf.ParseKubeObject()
+		if err != nil {
+			return err
+		}
 		x := c
-		if err := r.populate(forOwnerRef, ref, ownerRef, &x, r.rl.Items.GetRootKptfile()); err != nil {
+		if err := r.populate(forOwnerRef, ref, ownerRef, &x, o); err != nil {
 			return err
 		}
 	}
