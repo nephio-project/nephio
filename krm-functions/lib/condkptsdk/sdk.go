@@ -26,6 +26,7 @@ import (
 
 const SpecializerOwner = "specializer.nephio.org/owner"
 const SpecializerDelete = "specializer.nephio.org/delete"
+const SpecializerDebug = "specializer.nephio.org/debug"
 
 type KptCondSDK interface {
 	Run() (bool, error)
@@ -77,7 +78,8 @@ type sdk struct {
 	inv   inventory
 	rl    *fn.ResourceList
 	kptf  kptfilelibv1.KptFile
-	ready bool
+	ready bool // tracks the overall ready state
+	debug bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
@@ -106,7 +108,9 @@ func (r *sdk) Run() (bool, error) {
 		return false, err
 	}
 	// list the result of inventory -> used for debug only
-	r.listInventory()
+	if r.debug {
+		r.listInventory()
+	}
 	// call the global watches is used to inform the fn/controller
 	// of global watch data. The fn/controller can use it to parse the data
 	// and/or return an error is certain info is missing
@@ -117,7 +121,9 @@ func (r *sdk) Run() (bool, error) {
 		return false, err
 	}
 	// list the result of inventory -> used for debug only
-	r.listInventory()
+	if r.debug {
+		r.listInventory()
+	}
 	// update the children based on the diff between existing and new resources/conditions
 	if err := r.updateChildren(); err != nil {
 		return false, err

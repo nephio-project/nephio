@@ -92,6 +92,9 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 	switch gvkKindCtx.gvkKind {
 	case forGVKKind:
 		fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
+		if o.GetAnnotation(SpecializerDebug) == "true" {
+			r.debug = true
+		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
 			fn.Logf("error setting exisiting object in the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
