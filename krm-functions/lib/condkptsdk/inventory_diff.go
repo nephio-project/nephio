@@ -27,13 +27,13 @@ import (
 type inventoryDiff struct {
 	deleteForCondition bool
 	updateForCondition bool
-	deleteObjs         []*object
-	updateObjs         []*object
-	createObjs         []*object
-	deleteConditions   []*object
-	createConditions   []*object
+	deleteObjs         []object
+	updateObjs         []object
+	createObjs         []object
+	deleteConditions   []object
+	createConditions   []object
 	//updateConditions []*object
-	updateDeleteAnnotations []*object
+	updateDeleteAnnotations []object
 }
 
 type object struct {
@@ -56,12 +56,12 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 
 	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		diffMap[forRef] = &inventoryDiff{
-			deleteObjs:              []*object{},
-			updateObjs:              []*object{},
-			createObjs:              []*object{},
-			deleteConditions:        []*object{},
-			createConditions:        []*object{},
-			updateDeleteAnnotations: []*object{},
+			deleteObjs:              []object{},
+			updateObjs:              []object{},
+			createObjs:              []object{},
+			deleteConditions:        []object{},
+			createConditions:        []object{},
+			updateDeleteAnnotations: []object{},
 		}
 		// if the existing for resource is not present we need to cleanup
 		// all child resources and conditions
@@ -71,10 +71,10 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				fn.Logf("delete resource and conditions: forRef: %v, ownRef: %v\n", forRef, ref)
 				diffMap[forRef].deleteForCondition = true
 				if resCtx.existingCondition != nil {
-					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, &object{ref: ref, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ref, ownKind: resCtx.ownKind})
 				}
 				if resCtx.existingResource != nil {
-					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, &object{ref: ref, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ref, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
 				}
 			}
 		} else {
@@ -85,12 +85,12 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				// if there is no new resource, but we have a condition for that resource we should delete the condition
 				case resCtx.newResource == nil && resCtx.existingCondition != nil:
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, &object{ref: ownRef, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				// if there is a new resource, but we have no condition for that resource someone deleted it
 				// and we have to recreate that condition
 				case resCtx.newResource != nil && resCtx.existingCondition == nil:
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 				}
 
 				// resource diff handling
@@ -99,12 +99,12 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				case resCtx.existingResource == nil && resCtx.newResource != nil:
 					// create resource
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].createObjs = append(diffMap[forRef].createObjs, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+					diffMap[forRef].createObjs = append(diffMap[forRef].createObjs, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 				// if the new resource does not exist and but the resource exist we have to delete the exisiting resource
 				case resCtx.existingResource != nil && resCtx.newResource == nil:
 					// delete resource
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, &object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
 				// if both exisiting/new resource exists check the differences of the spec
 				// dependening on the outcome update the resource with the new information
 				case resCtx.existingResource != nil && resCtx.newResource != nil:
@@ -125,7 +125,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 
 						if d := cmp.Diff(existingSpec, newSpec); d != "" {
 							diffMap[forRef].updateForCondition = true
-							diffMap[forRef].updateObjs = append(diffMap[forRef].updateObjs, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+							diffMap[forRef].updateObjs = append(diffMap[forRef].updateObjs, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 						}
 						// this is a corner case, in case for object gets deleted and recreated
 						// if the delete annotation is set, we need to cleanup the
@@ -135,7 +135,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 							//fn.Logf("delete annotation: %v\n", a)
 							if _, ok := a[SpecializerDelete]; ok {
 								diffMap[forRef].updateForCondition = true
-								diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
+								diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 							}
 						}
 					}
