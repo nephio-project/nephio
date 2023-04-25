@@ -36,7 +36,7 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference
 	}
 	// update resource
 	if a == actionDelete {
-		if err := obj.obj.SetAnnotation(FnRuntimeDelete, "true"); err != nil {
+		if err := obj.obj.SetAnnotation(SpecializerDelete, "true"); err != nil {
 			fn.Logf("error setting annotation: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 			return err

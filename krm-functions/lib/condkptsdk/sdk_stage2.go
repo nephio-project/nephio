@@ -109,7 +109,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	if forCondition != nil {
 		// set annotation based on forCOndition reason if present
 		if forCondition.Reason != "" {
-			if err := newObj.SetAnnotation(FnRuntimeOwner, forCondition.Reason); err != nil {
+			if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
 				fn.Logf("error setting new annotation: %v\n", err.Error())
 				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
 				return err

@@ -24,8 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const FnRuntimeOwner = "fnruntime.nephio.org/owner"
-const FnRuntimeDelete = "fnruntime.nephio.org/delete"
+const SpecializerOwner = "specializer.nephio.org/owner"
+const SpecializerDelete = "specializer.nephio.org/delete"
 
 type KptCondSDK interface {
 	Run() (bool, error)

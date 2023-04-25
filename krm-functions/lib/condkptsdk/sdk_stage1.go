@@ -57,7 +57,7 @@ func (r *sdk) populateChildren() error {
 					}
 					fn.Logf("populate new resource: forRef %v objRef %v kc: %v\n", forRef, objRef, kc)
 					// set owner reference on the new resource
-					if err := newObj.SetAnnotation(FnRuntimeOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
+					if err := newObj.SetAnnotation(SpecializerOwner, kptfilelibv1.GetConditionType(&forRef)); err != nil {
 						fn.Logf("error setting new annotation: %v\n", err.Error())
 						r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 						return err

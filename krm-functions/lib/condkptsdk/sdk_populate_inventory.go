@@ -69,7 +69,7 @@ func (r *sdk) populateInventory() error {
 	}
 	for _, o := range r.rl.Items {
 		ref := &corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind(), Name: o.GetName()}
-		ownerRef := kptfilelibv1.GetGVKNFromConditionType(o.GetAnnotation(FnRuntimeOwner))
+		ownerRef := kptfilelibv1.GetGVKNFromConditionType(o.GetAnnotation(SpecializerOwner))
 		if err := r.populate(forOwnerRef, ref, ownerRef, o, o); err != nil {
 			return err
 		}

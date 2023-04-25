@@ -131,9 +131,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 						// if the delete annotation is set, we need to cleanup the
 						// delete annotation and set the condition to update
 						a := resCtx.existingResource.GetAnnotations()
-						if _, ok := a[FnRuntimeDelete]; ok {
+						if _, ok := a[SpecializerDelete]; ok {
 							fn.Logf("delete annotation: %v\n", a)
-							if _, ok := a[FnRuntimeDelete]; ok {
+							if _, ok := a[SpecializerDelete]; ok {
 								diffMap[forRef].updateForCondition = true
 								diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, &object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 							}
