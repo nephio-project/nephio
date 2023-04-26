@@ -67,6 +67,28 @@ func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
 	return NewFromKubeObject[T1](o)
 }
 
+// SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
+// while trying to keep as much formatting as possible
+func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
+	return SetSpec(&o.KubeObject, newSpec)
+}
+
+// SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
+// while trying to keep as much formatting as possible
+func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
+	return SetStatus(&o.KubeObject, newStatus)
+}
+
+// SetNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
+// comments and the order of fields in the YAML wherever it is possible.
+//
+// NOTE: This functionality should be solved in the upstream SDK.
+// Merging the code below to the upstream SDK is in progress and tracked in this issue:
+// https://github.com/GoogleContainerTools/kpt/issues/3923
+func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, field string) error {
+	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, value, field)
+}
+
 // NOTE: the following functions are considered as "methods" of KubeObject,
 // and thus nill checking of `obj` was omitted intentionally:
 // the caller is responsible for ensuring that `obj` is not nil`

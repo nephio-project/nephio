@@ -427,3 +427,86 @@ func TestSetStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestKubeObjectExtSetNestedFieldKeepFormatting(t *testing.T) {
+	testfiles := []string{"testdata/comments.yaml"}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			koe, err := NewFromKubeObject[appsv1.Deployment](obj)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			deploy, err := koe.GetGoStruct()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
+			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
+			err = koe.SetNestedFieldKeepFormatting(deploy.Spec, "spec")
+			if err != nil {
+				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
+	}
+}
+
+func TestKubeObjectExtSetSpec(t *testing.T) {
+	testfiles := []string{"testdata/comments.yaml"}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			koe, err := NewFromKubeObject[appsv1.Deployment](obj)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			deploy, err := koe.GetGoStruct()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
+			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
+			err = koe.SetSpec(&deploy.Spec)
+			if err != nil {
+				t.Errorf("unexpected error in SetSpec: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
+	}
+}
+
+func TestKubeObjectExtSetStatus(t *testing.T) {
+	testfiles := []string{
+		"testdata/status_comments.yaml",
+		"testdata/empty_status.yaml",
+	}
+	for _, inputFile := range testfiles {
+		t.Run(inputFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, inputFile)
+
+			koe, err := NewFromKubeObject[appsv1.Deployment](obj)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			deploy, err := koe.GetGoStruct()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			deploy.Status.AvailableReplicas = 0
+			err = koe.SetStatus(deploy.Status)
+			if err != nil {
+				t.Errorf("unexpected error in SetStatus: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+		})
+	}
+}
