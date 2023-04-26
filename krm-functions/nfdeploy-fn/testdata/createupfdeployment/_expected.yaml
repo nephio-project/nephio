@@ -90,8 +90,8 @@ items:
   kind: UPFDeployment
   spec:
     capacity:
-      maxDownlinkThroughput: "0"
-      maxUplinkThroughput: "0"
+      maxDownlinkThroughput: 10G
+      maxUplinkThroughput: 10G
     interfaces:
     - name: n3
       ipv4:

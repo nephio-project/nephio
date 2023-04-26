@@ -30,7 +30,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 					Kind:       reflect.TypeOf(infrav1alpha1.ClusterContext{}).Name(),
 				}: nfDeployFn.ClusterContextCallBackFn,
 				{
-					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
+					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
 					Kind:       reflect.TypeOf(nephioreqv1alpha1.Capacity{}).Name(),
 				}: nfDeployFn.CapacityContextCallBackFn,
 				{
