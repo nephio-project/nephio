@@ -83,6 +83,10 @@ func (h *NfDeployFn) InterfaceCallBackFn(o *fn.KubeObject) error {
 		return err
 	}
 
+	if itfce.Status.IPAllocationStatus == nil || itfce.Status.VLANAllocationStatus == nil {
+		return nil
+	}
+
 	itfcIPAllocStatus := itfce.Status.IPAllocationStatus
 	itfcVlanAllocStatus := itfce.Status.VLANAllocationStatus
 
@@ -106,8 +110,13 @@ func (h *NfDeployFn) DnnCallBackFn(o *fn.KubeObject) error {
 		return err
 	}
 
+	if dnnReq.Status.IPAllocationStatus == nil {
+		return nil
+	}
+
 	var pools []nephiodeployv1alpha1.Pool
 	// TODO: DNN Status API schema needs change. This should be fixed later.
+
 	pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: dnnReq.Status.IPAllocationStatus.AllocatedPrefix})
 	dnn := nephiodeployv1alpha1.DataNetwork{
 		Name: &dnnReq.Spec.NetworkInstance.Name,
