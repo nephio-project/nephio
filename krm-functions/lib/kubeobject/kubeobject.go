@@ -54,6 +54,9 @@ func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 // NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
 func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
+	if x == nil {
+		return nil, fmt.Errorf("cannot initialize with a nil object")
+	}
 	o, err := fn.NewFromTypedObject(x)
 	if err != nil {
 		return nil, err
