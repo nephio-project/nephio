@@ -16,15 +16,12 @@ limitations under the License.
 package test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
 	"sigs.k8s.io/yaml"
 )
 
@@ -77,70 +74,6 @@ func RunFailureCases(t *testing.T, basedir string, krmFunction fn.ResourceListPr
 			CheckResults(t, dir, rl)
 		})
 	}
-}
-
-// MustParseKubeObjects reads a list of KubeObjects from the given YAML file or fails the test
-func MustParseKubeObjects(t *testing.T, path string) fn.KubeObjects {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	b := testhelpers.MustReadFile(t, path)
-
-	objects, err := fn.ParseKubeObjects(b)
-	if err != nil {
-		t.Fatalf("failed to parse objects from file %q: %v", path, err)
-	}
-	return objects
-}
-
-// MustParseKubeObject reads one KubeObject from the given YAML file or fails the test
-func MustParseKubeObject(t *testing.T, path string) *fn.KubeObject {
-	b := testhelpers.MustReadFile(t, path)
-	object, err := fn.ParseKubeObject(b)
-	if err != nil {
-		t.Fatalf("failed to parse object from file %q: %v", path, err)
-	}
-	return object
-}
-
-// InsertBeforeExtension inserts the string `toInsert` into a filepath right before the extension
-func InsertBeforeExtension(origPath string, toInsert string) string {
-	ext := filepath.Ext(origPath)
-	base, _ := strings.CutSuffix(origPath, ext)
-	return base + toInsert + ext
-
-}
-
-func ParseResourceListFromDir(t *testing.T, dir string) *fn.ResourceList {
-	files, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatalf("failed to read directory %q: %v", dir, err)
-	}
-	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
-	var items fn.KubeObjects
-	for _, f := range files {
-		if strings.HasPrefix(f.Name(), "_") {
-			continue
-		}
-		// Users can put other types of files to the test dir, but they won't be read.
-		// A default kpt package contains README file.
-		if !testhelpers.IsValidYAMLOrKptfile(f.Name()) {
-			continue
-		}
-		fileItems := MustParseKubeObjects(t, filepath.Join(dir, f.Name()))
-		items = append(items, fileItems...)
-	}
-
-	var functionConfig *fn.KubeObject
-	config := MustParseKubeObjects(t, filepath.Join(dir, "_fnconfig.yaml"))
-	if len(config) == 0 {
-		functionConfig = fn.NewEmptyKubeObject()
-	} else if len(config) == 1 {
-		functionConfig = config[0]
-	} else {
-		t.Fatalf("found multiple config objects in %s", filepath.Join(dir, "_fnconfig.yaml"))
-	}
-	return &fn.ResourceList{Items: items, FunctionConfig: functionConfig}
 }
 
 func CheckRunError(t *testing.T, dir string, actualError error) {
