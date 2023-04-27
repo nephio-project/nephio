@@ -1,0 +1,16 @@
+apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
+metadata:
+  name: n6
+  annotations:
+    fnruntime.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/site: edge1
+  networkInstance:
+    name: vpc-internet
+status:
+  prefix: 16.0.0.2/24
+  gateway: 16.0.0.1

@@ -1,0 +1,9 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Capacity
+metadata:
+  name: dataplane
+  annotations:
+    config.kubernetes.io/local-config: "true"
+spec:
+  maxUplinkThroughput: 10G
+  maxDownlinkThroughput: 10G
