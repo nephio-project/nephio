@@ -25,7 +25,6 @@ import (
 )
 
 const (
-	// errors
 	errKubeObjectNotInitialized = "KubeObject not initialized"
 	CniVersion                  = "0.3.1"
 	NadMode                     = "bridge"
@@ -37,17 +36,17 @@ var (
 )
 
 type NadConfig struct {
-	CniVersion string          `json:"cniVersion"`
+	CniVersion string          `json:"cniVersion,omitempty"`
 	Vlan       int             `json:"vlan,omitempty"`
 	Plugins    []PluginCniType `json:"plugins,omitempty"`
 }
 
 type PluginCniType struct {
-	Type         string       `json:"type"`
+	Type         string       `json:"type,omitempty"`
 	Capabilities Capabilities `json:"capabilities,omitempty"`
-	Master       string       `json:"master"`
-	Mode         string       `json:"mode"`
-	Ipam         Ipam         `json:"ipam"`
+	Master       string       `json:"master,omitempty"`
+	Mode         string       `json:"mode,omitempty"`
+	Ipam         Ipam         `json:"ipam,omitempty"`
 }
 
 type Capabilities struct {
@@ -56,13 +55,13 @@ type Capabilities struct {
 }
 
 type Ipam struct {
-	Type      string      `json:"type"`
-	Addresses []Addresses `json:"addresses"`
+	Type      string      `json:"type,omitempty"`
+	Addresses []Addresses `json:"addresses,omitempty"`
 }
 
 type Addresses struct {
-	Address string `json:"address"`
-	Gateway string `json:"gateway"`
+	Address string `json:"address,omitempty"`
+	Gateway string `json:"gateway,omitempty"`
 }
 
 type Nad interface {
@@ -94,18 +93,6 @@ type Nad interface {
 	SetIpamAddress(a []Addresses) error
 }
 
-// NewFromKubeObject creates a new parser interface
-// It expects a *fn.KubeObject as input representing the serialized yaml file
-func NewFromKubeObject(o *fn.KubeObject) (Nad, error) {
-	p, err := kubeobject.NewFromKubeObject[*nadv1.NetworkAttachmentDefinition](o)
-	if err != nil {
-		return nil, err
-	}
-	return &nadStruct{
-		p: *p,
-	}, nil
-}
-
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (Nad, error) {
@@ -134,12 +121,10 @@ type nadStruct struct {
 	p kubeobject.KubeObjectExt[*nadv1.NetworkAttachmentDefinition]
 }
 
-// GetKubeObject returns the present kubeObject
 func (r *nadStruct) GetKubeObject() *fn.KubeObject {
 	return &r.p.KubeObject
 }
 
-// GetGoStruct returns a go struct representing the present KRM resource
 func (r *nadStruct) GetGoStruct() (*nadv1.NetworkAttachmentDefinition, error) {
 	return r.p.GetGoStruct()
 }
@@ -158,76 +143,6 @@ func (r *nadStruct) GetStringValue(fields ...string) string {
 	return s
 }
 
-func (r *nadStruct) GetBoolValue(fields ...string) bool {
-	if r == nil {
-		return false
-	}
-	b, ok, err := r.p.NestedBool(fields...)
-	if err != nil {
-		return false
-	}
-	if !ok {
-		return false
-	}
-	return b
-}
-
-func (r *nadStruct) GetIntValue(fields ...string) int {
-	if r == nil {
-		return 0
-	}
-	i, ok, err := r.p.NestedInt(fields...)
-	if err != nil {
-		return 0
-	}
-	if !ok {
-		return 0
-	}
-	return i
-}
-
-func (r *nadStruct) GetStringMap(fields ...string) map[string]string {
-	if r == nil {
-		return map[string]string{}
-	}
-	m, ok, err := r.p.NestedStringMap(fields...)
-	if err != nil {
-		return map[string]string{}
-	}
-	if !ok {
-		return map[string]string{}
-	}
-	return m
-}
-
-func (r *nadStruct) SetNestedString(s string, fields ...string) error {
-	return r.p.SetNestedString(s, fields...)
-}
-
-func (r *nadStruct) SetNestedInt(s int, fields ...string) error {
-	return r.p.SetNestedInt(s, fields...)
-}
-
-func (r *nadStruct) SetNestedBool(s bool, fields ...string) error {
-	return r.p.SetNestedBool(s, fields...)
-}
-
-func (r *nadStruct) SetNestedMap(s map[string]string, fields ...string) error {
-	return r.p.SetNestedStringMap(s, fields...)
-}
-
-func (r *nadStruct) DeleteNestedField(fields ...string) error {
-	if r == nil {
-		return fmt.Errorf(errKubeObjectNotInitialized)
-	}
-	_, err := r.p.RemoveNestedField(fields...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetConfigSpec gets the spec attributes in the kubeobject according the go struct
 func (r *nadStruct) GetConfigSpec() string {
 	if r == nil {
 		return ""
@@ -312,10 +227,10 @@ func (r *nadStruct) GetNadConfig() NadConfig {
 	return nadConfigStruct
 }
 
-func (r *nadStruct) SetCNIType(cnfType string) error {
-	if cnfType != "" {
+func (r *nadStruct) SetCNIType(cniType string) error {
+	if cniType != "" {
 		nadConfigStruct := r.GetNadConfig()
-		nadConfigStruct.Plugins[0].Type = cnfType
+		nadConfigStruct.Plugins[0].Type = cniType
 		b, err := json.Marshal(nadConfigStruct)
 		if err != nil {
 			return err
