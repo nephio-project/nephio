@@ -73,11 +73,8 @@ func RunFailureCases(t *testing.T, basedir string, krmFunction fn.ResourceListPr
 			rl := ParseResourceListFromDir(t, dir)
 			_, processError := krmFunction.Process(rl)
 
-			p := filepath.Join(dir, "_expected_error.txt")
-			CheckRunError(t, p, processError)
-
-			p = filepath.Join(dir, "_expected_results.yaml")
-			CheckResults(t, p, rl)
+			CheckRunError(t, dir, processError)
+			CheckResults(t, dir, rl)
 		})
 	}
 }
@@ -146,8 +143,8 @@ func ParseResourceListFromDir(t *testing.T, dir string) *fn.ResourceList {
 	return &fn.ResourceList{Items: items, FunctionConfig: functionConfig}
 }
 
-func CheckRunError(t *testing.T, expectedErrorFile string, actualError error) {
-	content, err := os.ReadFile(expectedErrorFile)
+func CheckRunError(t *testing.T, dir string, actualError error) {
+	content, err := os.ReadFile(filepath.Clean(filepath.Join(dir, "_expected_error.txt")))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// if no expected errors are set: handle KRM function errors normally
@@ -156,7 +153,7 @@ func CheckRunError(t *testing.T, expectedErrorFile string, actualError error) {
 			}
 			return
 		} else {
-			t.Fatalf("couldn't read file %q: %v", expectedErrorFile, err)
+			t.Fatalf("couldn't read file %v/_expected_error.txt: %v", dir, err)
 		}
 	}
 
@@ -169,14 +166,14 @@ func CheckRunError(t *testing.T, expectedErrorFile string, actualError error) {
 	}
 }
 
-func CheckResults(t *testing.T, expectedResultsFile string, rl *fn.ResourceList) {
-	resultsBytes, err := os.ReadFile(expectedResultsFile)
+func CheckResults(t *testing.T, dir string, rl *fn.ResourceList) {
+	resultsBytes, err := os.ReadFile(filepath.Clean(filepath.Join(dir, "_expected_results.yaml")))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// if no expected results are set: then pass the test
 			return
 		} else {
-			t.Fatalf("couldn't read file %q: %v", expectedResultsFile, err)
+			t.Fatalf("couldn't read file %v/_expected_results.yaml: %v", dir, err)
 		}
 	}
 	var expectedResults fn.Results
