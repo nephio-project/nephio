@@ -320,14 +320,20 @@ func TestNewFromGoStruct(t *testing.T) {
 				},
 			},
 		}
-		deploymentKubeObjectParser, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
+		deploymentKubeObject, _ := NewFromGoStruct[v1.Deployment](deploymentReceived)
 
-		s, _, err := deploymentKubeObjectParser.NestedString([]string{"metadata", "name"}...)
+		s, _, err := deploymentKubeObject.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
 			t.Errorf("unexpected error: %v\n", err)
 		}
 		if deploymentReceived.Name != s {
 			t.Errorf("-want%s, +got:\n%s", deploymentReceived.Name, s)
 		}
+	}
+
+	// test with nil input
+	_, err := NewFromGoStruct[v1.Deployment](nil)
+	if err == nil {
+		t.Errorf("NewFromGoStruct(nil) doesn't return with an error")
 	}
 }
