@@ -10,10 +10,8 @@ import (
 	"reflect"
 )
 
-const UpfDeploymentName string = "upf-deployment"
-
 func Run(rl *fn.ResourceList) (bool, error) {
-	nfDeployFn := NewMutatorContext()
+	nfDeployFn := NewMutator()
 
 	var err error
 
@@ -41,6 +39,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
 					Kind:       nephioreqv1alpha1.DataNetworkKind,
 				}: nfDeployFn.DnnCallBackFn,
+				// TODO: Should also include Kptfile for UPF Deployment Name
 			},
 			GenerateResourceFn: nfDeployFn.GenerateResourceFn,
 		},

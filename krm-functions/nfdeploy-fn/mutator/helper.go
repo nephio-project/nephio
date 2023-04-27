@@ -15,7 +15,7 @@ type NfDeployFn struct {
 	interfaceConfigsMap           map[string]nephiodeployv1alpha1.InterfaceConfig
 }
 
-func NewMutatorContext() NfDeployFn {
+func NewMutator() NfDeployFn {
 	return NfDeployFn{
 		interfaceConfigsMap: make(map[string]nephiodeployv1alpha1.InterfaceConfig),
 		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),
