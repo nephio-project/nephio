@@ -374,7 +374,7 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
 			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
 
-			err = SetNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
+			err = setNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}

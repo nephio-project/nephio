@@ -70,13 +70,13 @@ func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
-	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, newSpec, "spec")
+	return setNestedFieldKeepFormatting(&o.KubeObject.SubObject, newSpec, "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
-	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, newStatus, "status")
+	return setNestedFieldKeepFormatting(&o.KubeObject.SubObject, newStatus, "status")
 }
 
 // NOTE: the following functions are considered as "methods" of KubeObject,
@@ -108,13 +108,13 @@ func GetStatus[T any](obj *fn.KubeObject) (T, error) {
 
 }
 
-// SetNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
+// setNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
 // comments and the order of fields in the YAML wherever it is possible.
 //
 // NOTE: This functionality should be solved in the upstream SDK.
 // Merging the code below to the upstream SDK is in progress and tracked in this issue:
 // https://github.com/GoogleContainerTools/kpt/issues/3923
-func SetNestedFieldKeepFormatting(obj *fn.SubObject, value interface{}, field string) error {
+func setNestedFieldKeepFormatting(obj *fn.SubObject, value interface{}, field string) error {
 	oldNode := yamlNodeOf(obj.UpsertMap(field))
 	err := obj.SetNestedField(value, field)
 	if err != nil {
