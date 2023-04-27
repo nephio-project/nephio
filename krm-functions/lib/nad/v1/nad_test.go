@@ -31,6 +31,7 @@ kind: NetworkAttachmentDefinition
 metadata:
   creationTimestamp: null
   name: upf-us-central1-n3
+  generation: 100
 spec:
   config: '{"cniVersion":"0.3.1","vlan": 1001, "plugins":[{"type":"sriov","capabilities":{"ips":true,"mac":false},"master":"bond0","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.3/24","gateway":"10.0.0.1"}]}}]}'
 `
@@ -394,6 +395,11 @@ func TestSetCNIType(t *testing.T) {
 			value:       "",
 			errExpected: true,
 		},
+		"SetAttachmentTypeCreateNew": {
+			file:        nadTestEmpty,
+			value:       "calico",
+			errExpected: false,
+		},
 	}
 
 	for name, tc := range cases {
@@ -457,7 +463,6 @@ func TestSetVlan(t *testing.T) {
 
 		})
 	}
-
 }
 
 func TestSetNadMaster(t *testing.T) {
