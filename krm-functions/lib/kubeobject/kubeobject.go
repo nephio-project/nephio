@@ -70,23 +70,13 @@ func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
-	return SetSpec(&o.KubeObject, newSpec)
+	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, newSpec, "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
-	return SetStatus(&o.KubeObject, newStatus)
-}
-
-// SetNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
-// comments and the order of fields in the YAML wherever it is possible.
-//
-// NOTE: This functionality should be solved in the upstream SDK.
-// Merging the code below to the upstream SDK is in progress and tracked in this issue:
-// https://github.com/GoogleContainerTools/kpt/issues/3923
-func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, field string) error {
-	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, value, field)
+	return SetNestedFieldKeepFormatting(&o.KubeObject.SubObject, newStatus, "status")
 }
 
 // NOTE: the following functions are considered as "methods" of KubeObject,
@@ -116,18 +106,6 @@ func GetStatus[T any](obj *fn.KubeObject) (T, error) {
 	err := obj.UpsertMap("status").As(&status)
 	return status, err
 
-}
-
-// SetSpec sets the `spec` field of a KubeObject to the value of `newSpec`,
-// while trying to keep as much formatting as possible
-func SetSpec(obj *fn.KubeObject, newSpec interface{}) error {
-	return SetNestedFieldKeepFormatting(&obj.SubObject, newSpec, "spec")
-}
-
-// SetStatus sets the `status` field of a KubeObject to the value of `newStatus`,
-// while trying to keep as much formatting as possible
-func SetStatus(obj *fn.KubeObject, newStatus interface{}) error {
-	return SetNestedFieldKeepFormatting(&obj.SubObject, newStatus, "status")
 }
 
 // SetNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the

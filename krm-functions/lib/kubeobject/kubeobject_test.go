@@ -370,82 +370,11 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error in ToStruct[v1.Deployment]: %v", err)
 			}
+
 			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
 			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
+
 			err = SetNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
-			if err != nil {
-				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
-			}
-
-			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
-		})
-	}
-}
-
-func TestSetSpec(t *testing.T) {
-	testfiles := []string{"testdata/comments.yaml"}
-	for _, inputFile := range testfiles {
-		t.Run(inputFile, func(t *testing.T) {
-			obj := testlib.MustParseKubeObject(t, inputFile)
-
-			spec, err := GetSpec[appsv1.DeploymentSpec](obj)
-			if err != nil {
-				t.Errorf("unexpected error in GetSpec: %v", err)
-			}
-			spec.Replicas = nil                                              // delete Replicas field if present
-			spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
-			err = SetSpec(obj, spec)
-			if err != nil {
-				t.Errorf("unexpected error in SetSpec: %v", err)
-			}
-
-			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
-		})
-	}
-}
-
-func TestSetStatus(t *testing.T) {
-	testfiles := []string{
-		"testdata/status_comments.yaml",
-		"testdata/empty_status.yaml",
-	}
-	for _, inputFile := range testfiles {
-		t.Run(inputFile, func(t *testing.T) {
-			obj := testlib.MustParseKubeObject(t, inputFile)
-
-			status, err := GetStatus[appsv1.DeploymentStatus](obj)
-			if err != nil {
-				t.Errorf("unexpected error in GetStatus: %v", err)
-			}
-			status.AvailableReplicas = 0
-			err = SetStatus(obj, status)
-			if err != nil {
-				t.Errorf("unexpected error in SetStatus: %v", err)
-			}
-
-			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
-		})
-	}
-}
-
-func TestKubeObjectExtSetNestedFieldKeepFormatting(t *testing.T) {
-	testfiles := []string{"testdata/comments.yaml"}
-	for _, inputFile := range testfiles {
-		t.Run(inputFile, func(t *testing.T) {
-			obj := testlib.MustParseKubeObject(t, inputFile)
-
-			koe, err := NewFromKubeObject[appsv1.Deployment](obj)
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			deploy, err := koe.GetGoStruct()
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-
-			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
-			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
-			err = koe.SetNestedFieldKeepFormatting(deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
