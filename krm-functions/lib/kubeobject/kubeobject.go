@@ -83,31 +83,6 @@ func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
 // and thus nill checking of `obj` was omitted intentionally:
 // the caller is responsible for ensuring that `obj` is not nil`
 
-// ToStruct converts the KubeObject to a go struct with type `T`
-func ToStruct[T any](obj *fn.KubeObject) (T, error) {
-	var x T
-	err := obj.As(&x)
-	return x, err
-}
-
-// GetSpec returns with the `spec` field of the KubeObject as a go struct with type `T`
-// NOTE: consider using ToStruct() instead
-func GetSpec[T any](obj *fn.KubeObject) (T, error) {
-	var spec T
-	err := obj.UpsertMap("spec").As(&spec)
-	return spec, err
-
-}
-
-// GetStatus returns with the `status` field of the KubeObject as a go struct with type `T`
-// NOTE: consider using ToStruct() instead
-func GetStatus[T any](obj *fn.KubeObject) (T, error) {
-	var status T
-	err := obj.UpsertMap("status").As(&status)
-	return status, err
-
-}
-
 // setNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
 // comments and the order of fields in the YAML wherever it is possible.
 //

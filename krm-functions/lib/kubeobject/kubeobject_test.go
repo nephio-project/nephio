@@ -337,7 +337,7 @@ func TestNewFromGoStruct(t *testing.T) {
 	}
 
 	// test with nil input
-	_, err := NewFromGoStruct[v1.Deployment](nil)
+	_, err := NewFromGoStruct[appsv1.Deployment](nil)
 	if err == nil {
 		t.Errorf("NewFromGoStruct(nil) doesn't return with an error")
 	}
@@ -366,15 +366,15 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 		t.Run(inputFile, func(t *testing.T) {
 			obj := testlib.MustParseKubeObject(t, inputFile)
 
-			deploy, err := ToStruct[appsv1.Deployment](obj)
-			if err != nil {
-				t.Errorf("unexpected error in ToStruct[v1.Deployment]: %v", err)
+			var deploy appsv1.Deployment
+			if err := obj.As(&deploy); err != nil {
+				t.Fatalf("couldn't convert object to Deployment: %v", err)
 			}
 
 			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
 			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
 
-			err = setNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
+			err := setNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
