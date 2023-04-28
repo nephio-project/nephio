@@ -67,7 +67,6 @@ metadata:
     c: c
 `)
 
-
 func TestAddResults(t *testing.T) {
 
 	rl, err := fn.ParseResourceList(resList)
