@@ -37,10 +37,11 @@ import (
 )
 
 type mutatorCtx struct {
-	fnCondSdk       condkptsdk.KptCondSDK
-	masterInterface string
-	cniType         string
-	siteCode        string
+	fnCondSdk         condkptsdk.KptCondSDK
+	masterInterface   string
+	cniType           string
+	siteCode          string
+	clusterContextSet bool
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -102,13 +103,23 @@ func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
 	} else {
 		r.siteCode = *cluster.Spec.SiteCode
 	}
+	r.clusterContextSet = true
 	return nil
 }
 
 func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
-	if len(objs) == 0 || len(objs) < 2 {
-		return nil, fmt.Errorf("expecting objects missing to generate the nad")
+	// verify all needed objects exist
+	if objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind)).Len() == 0 {
+		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
 	}
+	if objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)).Len() == 0 &&
+		objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)).Len() == 0 {
+		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPAllocationKind, vlanv1alpha1.VLANAllocationKind)
+	}
+	if !r.clusterContextSet {
+		return nil, fmt.Errorf("expected ClusterContext object to generate the nad")
+	}
+
 	// generate an empty nad struct
 	nad, err := nadlibv1.NewFromGoStruct(&nadv1.NetworkAttachmentDefinition{
 		TypeMeta: metav1.TypeMeta{
@@ -123,7 +134,7 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 
 	interfaces := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 	for _, itfce := range interfaces {
-		i, err := interfacelibv1alpha1.NewFromKubeObject(itfce)
+		i, err := interfacelibv1alpha1.NewFromYAML([]byte(itfce.String()))
 		if err != nil {
 			return nil, err
 		}

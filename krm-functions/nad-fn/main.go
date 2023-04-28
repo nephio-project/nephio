@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	dat, _ := os.Open("C:\\Users\\ganesh.c\\Documents\\GitHub\\pkg-examples\\nadfn\\kptdata.yaml")
-	os.Stdin = dat
+	//	dat, _ := os.Open("C:\\Users\\ganesh.c\\Documents\\GitHub\\pkg-examples\\nadfn\\created.yaml")
+	//	os.Stdin = dat
 	if err := fn.AsMain(fn.ResourceListProcessorFunc(mutator.Run)); err != nil {
 		os.Exit(1)
 	}

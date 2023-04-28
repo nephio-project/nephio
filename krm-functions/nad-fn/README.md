@@ -7,12 +7,12 @@ The `NAD` KRM function is designed to be a part of the pipeline of a Nephio NF k
 
 Its primary purpose is to find all `Network Function Deployments` custom resources and the `IP allocations` in the package and expand it to a set of network attachement definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus. 
 
-The function is also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions and controllers acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
+The functions and controllers are also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions and controllers acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
 
 Child resources generated for an `NAD` resource
 -------------------------------------------------------
 
-For each `NAD` the function will generate one `NetworkAttachmentDefinition` CR. In order to generate the `Spec` of this child resource it uses information also from the `ClusterContext`, `Network Function Deployments`, `IPAllocation` resource that the kpt package assumed to also contain. 
+For each `NAD` the function will generate one `NetworkAttachmentDefinition` CR. In order to generate the `Spec` of this child resource it uses information also from the `ClusterContext`, `Network Function Deployments`, `IPAllocation` resources that the kpt package assumed to also contain. 
 
 Let's see an example! Assuming that a kpt package contains the following three resources (among others):
 
@@ -98,7 +98,7 @@ The function also adds the following conditions to the `Status` of the `Kptfile`
 Implementation details
 ----------------------
 
-The function ensures that the resources of an `NetworkAttachmentDefinition` are always in sync with the `Spec` of the input resources: the `ClusterContext`, `Network Function Deployments` and `IPAllocation`. In addition, it also checks for any previous `NetworkAttachmentDefinition` that exist part of kpt package and act upon them to produce the latest on every run. 
+The function ensures that the resources of an `NetworkAttachmentDefinition` (NAD) are always in sync with the `Spec` of the input resources: the `ClusterContext`, `Network Function Deployments` and `IPAllocation`. In addition, it also checks for any previous `NetworkAttachmentDefinition` that exist part of kpt package and act upon them to produce the latest on every run. 
 
 
 ## dev test
