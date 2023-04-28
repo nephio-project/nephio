@@ -20,32 +20,31 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
-	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var itface = `apiVersion: req.nephio.org/v1alpha1
-kind: Interface
+var normal = `apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
 # test comment a
 metadata:
   name: n3
   annotations:
     config.kubernetes.io/local-config: "true"
 spec:
-  # test comment b
+  kind: network
   networkInstance:
     name: vpc-ran # test comment c
   # test comment d
-  cniType: sriov # test comment e
-  attachmentType: vlan # test comment f
+  selector:
+    matchLabels:
+      a: b
 `
 
-var itfaceEmpty = `apiVersion: req.nephio.org/v1alpha1
-kind: Interface
+var empty = `apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
 metadata:
   name: n3
   annotations:
@@ -57,11 +56,11 @@ func TestNewFromYAML(t *testing.T) {
 		input       []byte
 		errExpected bool
 	}{
-		"TestNewFromYAMLNormal": {
-			input:       []byte(itface),
+		"Normal": {
+			input:       []byte(normal),
 			errExpected: false,
 		},
-		"TestNewFromYAMLNil": {
+		"Nil": {
 			input:       nil,
 			errExpected: true,
 		},
@@ -82,29 +81,33 @@ func TestNewFromYAML(t *testing.T) {
 
 func TestNewFromGoStruct(t *testing.T) {
 	cases := map[string]struct {
-		input       *nephioreqv1alpha1.Interface
+		input       *ipamv1alpha1.IPAllocation
 		errExpected bool
 	}{
-		"TestNewFromGoStructNormal": {
-			input: &nephioreqv1alpha1.Interface{
+		"Normal": {
+			input: &ipamv1alpha1.IPAllocation{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: nephioreqv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-					Kind:       nephioreqv1alpha1.InterfaceKind,
+					APIVersion: ipamv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
+					Kind:       ipamv1alpha1.IPAllocationKind,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",
 				},
-				Spec: nephioreqv1alpha1.InterfaceSpec{
-					AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
-					CNIType:        nephioreqv1alpha1.CNITypeSRIOV,
+				Spec: ipamv1alpha1.IPAllocationSpec{
+					PrefixKind: ipamv1alpha1.PrefixKindNetwork,
 					NetworkInstance: &corev1.ObjectReference{
 						Name: "x",
+					},
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"a": "b",
+						},
 					},
 				},
 			},
 			errExpected: false,
 		},
-		"TestNewFromGoStructNil": {
+		"Nil": {
 			input:       nil,
 			errExpected: false, // new approach does not return an error
 		},
@@ -124,7 +127,7 @@ func TestNewFromGoStruct(t *testing.T) {
 }
 
 func TestGetKubeObject(t *testing.T) {
-	i, err := NewFromYAML([]byte(itface))
+	i, err := NewFromYAML([]byte(normal))
 	if err != nil {
 		t.Errorf("cannot unmarshal file: %s", err.Error())
 	}
@@ -134,7 +137,7 @@ func TestGetKubeObject(t *testing.T) {
 		wantName string
 	}{
 		"ParseObject": {
-			wantKind: "Interface",
+			wantKind: "IPAllocation",
 			wantName: "n3",
 		},
 	}
@@ -155,22 +158,24 @@ func TestGetKubeObject(t *testing.T) {
 func TestGetGoStruct(t *testing.T) {
 	cases := map[string]struct {
 		file   string
-		wantAT nephioreqv1alpha1.AttachmentType
-		wantCT nephioreqv1alpha1.CNIType
+		wantPK ipamv1alpha1.PrefixKind
+		wantML map[string]string
 		wantNI *corev1.ObjectReference
 	}{
 		"Normal": {
-			file:   itface,
-			wantAT: nephioreqv1alpha1.AttachmentTypeVLAN,
-			wantCT: nephioreqv1alpha1.CNITypeSRIOV,
+			file:   normal,
+			wantPK: ipamv1alpha1.PrefixKindNetwork,
+			wantML: map[string]string{
+				"a": "b",
+			},
 			wantNI: &corev1.ObjectReference{
 				Name: "vpc-ran",
 			},
 		},
 		"Empty": {
-			file:   itfaceEmpty,
-			wantAT: "",
-			wantCT: "",
+			file:   empty,
+			wantPK: "",
+			wantML: nil,
 			wantNI: nil,
 		},
 	}
@@ -185,13 +190,17 @@ func TestGetGoStruct(t *testing.T) {
 			g, err := i.GetGoStruct()
 			assert.NoError(t, err)
 
-			gotAT := g.Spec.AttachmentType
-			if diff := cmp.Diff(tc.wantAT, gotAT); diff != "" {
-				t.Errorf("AttachmentType: -want, +got:\n%s", diff)
+			gotPK := g.Spec.PrefixKind
+			if diff := cmp.Diff(tc.wantPK, gotPK); diff != "" {
+				t.Errorf("PrefixKind: -want, +got:\n%s", diff)
 			}
-			gotCT := g.Spec.CNIType
-			if diff := cmp.Diff(tc.wantCT, gotCT); diff != "" {
-				t.Errorf("CNIType: -want, +got:\n%s", diff)
+
+			var gotML map[string]string
+			if g.Spec.Selector != nil {
+				gotML = g.Spec.Selector.MatchLabels
+			}
+			if diff := cmp.Diff(tc.wantML, gotML); diff != "" {
+				t.Errorf("MatchLabels: -want, +got:\n%s", diff)
 			}
 			gotNI := g.Spec.NetworkInstance
 			if diff := cmp.Diff(tc.wantNI, gotNI); diff != "" {
@@ -204,34 +213,59 @@ func TestGetGoStruct(t *testing.T) {
 func TestSetSpec(t *testing.T) {
 	cases := map[string]struct {
 		file string
-		t    nephioreqv1alpha1.InterfaceSpec
+		t    ipamv1alpha1.IPAllocationSpec
 	}{
 		"Override": {
-			file: itface,
-			t: nephioreqv1alpha1.InterfaceSpec{
+			file: normal,
+			t: ipamv1alpha1.IPAllocationSpec{
 				NetworkInstance: &corev1.ObjectReference{
-					Name:      "a",
-					Namespace: "b",
+					Name:      "x",
+					Namespace: "y",
 				},
-				AttachmentType: nephioreqv1alpha1.AttachmentTypeNone,
-				CNIType:        nephioreqv1alpha1.CNITypeIPVLAN,
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
+					},
+				},
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 		"Change": {
-			file: itface,
-			t: nephioreqv1alpha1.InterfaceSpec{
-				CNIType: nephioreqv1alpha1.CNITypeIPVLAN,
+			file: normal,
+			t: ipamv1alpha1.IPAllocationSpec{
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
+					},
+				},
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 		"Empty": {
-			file: itfaceEmpty,
-			t: nephioreqv1alpha1.InterfaceSpec{
+			file: empty,
+			t: ipamv1alpha1.IPAllocationSpec{
 				NetworkInstance: &corev1.ObjectReference{
-					Name:      "a",
-					Namespace: "b",
+					Name:      "x",
+					Namespace: "y",
 				},
-				AttachmentType: nephioreqv1alpha1.AttachmentTypeNone,
-				CNIType:        nephioreqv1alpha1.CNITypeIPVLAN,
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
+					},
+				},
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 	}
@@ -259,18 +293,13 @@ func TestSetSpec(t *testing.T) {
 func TestSetStatus(t *testing.T) {
 	cases := map[string]struct {
 		file string
-		t    nephioreqv1alpha1.InterfaceStatus
+		t    ipamv1alpha1.IPAllocationStatus
 	}{
 		"Override": {
-			file: itface,
-			t: nephioreqv1alpha1.InterfaceStatus{
-				IPAllocationStatus: &ipamv1alpha1.IPAllocationStatus{
-					AllocatedPrefix: "10.0.0.2/24",
-					Gateway: "10.0.0.1",
-				},
-				VLANAllocationStatus: &vlanv1alpha1.VLANAllocationStatus{
-					AllocatedVlanID: 10,
-				},
+			file: normal,
+			t: ipamv1alpha1.IPAllocationStatus{
+				AllocatedPrefix: "10.0.0.1/24",
+				Gateway:         "10.0.0.254",
 			},
 		},
 	}
