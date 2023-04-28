@@ -6,10 +6,12 @@ require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
 	github.com/google/go-cmp v0.5.9
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/nephio-project/api v0.0.0-20230404174821-1fa5d1c78b70
 	github.com/stretchr/testify v1.8.1
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.3
+	sigs.k8s.io/kustomize/kyaml v0.13.9
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -47,6 +49,5 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.5 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

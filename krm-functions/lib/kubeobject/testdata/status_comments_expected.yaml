@@ -1,0 +1,62 @@
+apiVersion: apps/v1 # comment 
+kind: Deployment # comment 
+metadata: # comment 
+  name: nginx-deployment # comment 
+  labels: # comment 
+    app: nginx # comment 
+# comment 
+spec: # comment
+  # comment before deleted field
+  replicas: 3 # comment next to deleted field
+  # comment
+  selector: # comment
+    # comment
+    # comment
+    matchLabels: # comment
+      # comment
+
+      # comment
+
+      # comment
+      app: nginx # comment
+      # comment
+  template: # comment
+    # comment
+    metadata: # comment
+      labels: # comment
+        # comment
+        app: nginx # comment
+    spec: # comment
+      containers: # comment
+      - name: nginx # comment
+        image: nginx:1.14.2 # comment
+        ports: # comment
+        - containerPort: 80 # comment
+      # comment before updated field
+      restartPolicy: Always # comment next to updated field
+      # comment after updated field
+# comment
+status: # comment
+  conditions: # comment
+  - type: Progressing
+    status: "True"
+    lastTransitionTime: "2016-10-04T12:25:39Z"
+    lastUpdateTime: "2016-10-04T12:25:39Z"
+    message: Replica set "nginx-deployment-4262182780" is progressing.
+    reason: ReplicaSetUpdated
+  - type: Available
+    status: "True"
+    lastTransitionTime: "2016-10-04T12:25:42Z"
+    lastUpdateTime: "2016-10-04T12:25:42Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+  - type: ReplicaFailure
+    status: "True"
+    lastTransitionTime: "2016-10-04T12:25:39Z"
+    lastUpdateTime: "2016-10-04T12:25:39Z"
+    message: 'Error creating: pods "nginx-deployment-4262182780-" is forbidden: exceeded quota: object-counts, requested: pods=1, used: pods=3, limited: pods=2'
+    reason: FailedCreate
+  # comment
+  observedGeneration: 3 # comment
+  replicas: 2 # comment
+  unavailableReplicas: 2 # comment

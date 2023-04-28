@@ -17,3 +17,4 @@
 # Tox environments
 .tox/
 *.dic
+/.vscode
