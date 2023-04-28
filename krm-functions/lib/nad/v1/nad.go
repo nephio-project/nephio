@@ -265,7 +265,7 @@ func (r *nadStruct) SetNadMaster(nadMaster string) error {
 		}
 		return r.p.SetNestedString(string(b), ConfigType...)
 	} else {
-		return fmt.Errorf("unknown cniType")
+		return fmt.Errorf("unknown nad master interface")
 	}
 }
 
@@ -279,7 +279,7 @@ func (r *nadStruct) SetIpamAddress(ipam []Addresses) error {
 		}
 		return r.p.SetNestedString(string(b), ConfigType...)
 	} else {
-		return fmt.Errorf("unknown cniType")
+		return fmt.Errorf("unknown IPAM address")
 	}
 }
 
