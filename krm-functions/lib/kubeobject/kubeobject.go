@@ -17,9 +17,9 @@ limitations under the License.
 package kubeobject
 
 import (
+	"bytes"
 	"fmt"
-	"reflect"
-	"unsafe"
+	"io"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -70,13 +70,13 @@ func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject.SubObject, newSpec, "spec")
+	return safeSetNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject.SubObject, newStatus, "status")
+	return safeSetNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
 
 // NOTE: the following functions are considered as "methods" of KubeObject,
@@ -89,16 +89,31 @@ func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
 // NOTE: This functionality should be solved in the upstream SDK.
 // Merging the code below to the upstream SDK is in progress and tracked in this issue:
 // https://github.com/GoogleContainerTools/kpt/issues/3923
-func setNestedFieldKeepFormatting(obj *fn.SubObject, value interface{}, field string) error {
-	oldNode := yamlNodeOf(obj.UpsertMap(field))
-	err := obj.SetNestedField(value, field)
+func safeSetNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
+	oldNode := yamlNodeOf2(&obj.SubObject)
+	err := obj.SetNestedField(value, fields...)
 	if err != nil {
 		return err
 	}
-	newNode := yamlNodeOf(obj.GetMap(field))
+	newNode := yamlNodeOf2(&obj.SubObject)
 
-	restoreFieldOrder(oldNode, newNode)
-	deepCopyComments(oldNode, newNode)
+	if oldNode.Kind != yaml.DocumentNode || len(oldNode.Content) == 0 ||
+		newNode.Kind != yaml.DocumentNode || len(newNode.Content) == 0 {
+		panic("unexpected YAML node type after parsing SubObject")
+	}
+	restoreFieldOrder(oldNode.Content[0], newNode.Content[0])
+	deepCopyComments(oldNode.Content[0], newNode.Content[0])
+
+	b, err := toYAML(newNode)
+	if err != nil {
+		return fmt.Errorf("unexpected error during round-trip YAML parsing (ToYAML): %v", err)
+	}
+
+	obj2, err := fn.ParseKubeObject(b)
+	if err != nil {
+		return fmt.Errorf("unexpected error during round-trip YAML parsing (ParseKubeObject): %v", err)
+	}
+	*obj = *obj2
 	return nil
 }
 
@@ -191,11 +206,39 @@ func findKey(m *yaml.Node, key string) (int, bool) {
 	return 0, false
 }
 
-// This is a temporary workaround until SetNestedFieldKeppFormatting functionality is merged into the upstream SDK
-// The merge process has already started and tracked in this issue: https://github.com/GoogleContainerTools/kpt/issues/3923
-func yamlNodeOf(obj *fn.SubObject) *yaml.Node {
-	internalObj := reflect.ValueOf(*obj).FieldByName("obj")
-	nodePtr := internalObj.Elem().FieldByName("node")
-	nodePtr = reflect.NewAt(nodePtr.Type(), unsafe.Pointer(nodePtr.UnsafeAddr())).Elem()
-	return nodePtr.Interface().(*yaml.Node)
+func yamlNodeOf2(obj *fn.SubObject) *yaml.Node {
+	var node *yaml.Node
+	yamlBytes := []byte(obj.String())
+	node, err := parseFirstObj(yamlBytes)
+	if err != nil {
+		panic(fmt.Sprintf("round-trip YAML serialization failed (ParseFirstObj): %v", err))
+	}
+	return node
+}
+
+func parseFirstObj(b []byte) (*yaml.Node, error) {
+	br := bytes.NewReader(b)
+	decoder := yaml.NewDecoder(br)
+	node := &yaml.Node{}
+	if err := decoder.Decode(node); err != nil {
+		if err != io.EOF {
+			return nil, err
+		}
+	}
+	return node, nil
+}
+
+func toYAML(node *yaml.Node) ([]byte, error) {
+	var w bytes.Buffer
+	encoder := yaml.NewEncoder(&w)
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			// These cause errors when we try to write them
+			return nil, fmt.Errorf("ToYAML: invalid DocumentNode")
+		}
+	}
+	if err := encoder.Encode(node); err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
 }

@@ -374,7 +374,7 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
 			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
 
-			err := setNestedFieldKeepFormatting(&obj.SubObject, deploy.Spec, "spec")
+			err := safeSetNestedFieldKeepFormatting(obj, deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
@@ -401,12 +401,13 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 
 			deploy.Spec.Replicas = nil                                              // delete Replicas field if present
 			deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
-			err = koe.SetSpec(&deploy.Spec)
+
+			err = koe.SetSpec(deploy.Spec)
 			if err != nil {
 				t.Errorf("unexpected error in SetSpec: %v", err)
 			}
 
-			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+			compareKubeObjectWithExpectedYaml(t, &koe.KubeObject, inputFile)
 		})
 	}
 }
@@ -435,7 +436,7 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 				t.Errorf("unexpected error in SetStatus: %v", err)
 			}
 
-			compareKubeObjectWithExpectedYaml(t, obj, inputFile)
+			compareKubeObjectWithExpectedYaml(t, &koe.KubeObject, inputFile)
 		})
 	}
 }
