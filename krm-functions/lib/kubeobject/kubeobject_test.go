@@ -464,6 +464,68 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 	}
 }
 
+func TestSetFromTypedObject(t *testing.T) {
+	testcases := []deploymentTestcase{
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__noop_expected.yaml",
+			transform:    noop,
+		},
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__change_spec_fields_expected.yaml",
+			transform:    setSpecFields,
+		},
+		{
+			inputFile:    "testdata/deployment_no_status.yaml",
+			expectedFile: "testdata/deployment_no_status__change_spec_fields_expected.yaml",
+			transform:    setSpecFields,
+		},
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__change_status_fields_expected.yaml",
+			transform:    setStatusFields,
+		},
+		{
+			inputFile:    "testdata/deployment_no_status.yaml",
+			expectedFile: "testdata/deployment_no_status__change_status_fields_expected.yaml",
+			transform:    setStatusFields,
+		},
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__change_all_fields_expected.yaml",
+			transform:    setAllFields,
+		},
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__change_list_expected.yaml",
+			transform:    changeList,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.expectedFile, func(t *testing.T) {
+			obj := testlib.MustParseKubeObject(t, tc.inputFile)
+			koe, err := NewFromKubeObject[appsv1.Deployment](obj)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			deploy, err := koe.GetGoStruct()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			tc.transform(deploy)
+
+			err = koe.SetFromTypedObject(deploy)
+			if err != nil {
+				t.Errorf("unexpected error in SetFromTypedObject: %v", err)
+			}
+
+			compareKubeObjectWithExpectedYaml(t, &koe.KubeObject, tc.expectedFile)
+		})
+	}
+}
+
 func TestKubeObjectExtSetSpec(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{

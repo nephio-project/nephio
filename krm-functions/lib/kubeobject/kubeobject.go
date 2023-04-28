@@ -84,6 +84,12 @@ func (o *KubeObjectExt[T1]) UnsafeSetStatus(newStatus interface{}) error {
 	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
 
+// SetFromTypedObject sets the value of `o` to `value`, while keeping most of the YAML formatting.
+// It can be seen as an in-place version of fn.NewFromTypedObject
+func (o *KubeObjectExt[T1]) SetFromTypedObject(value *T1) error {
+	return setNestedFieldKeepFormatting(&o.KubeObject, value)
+}
+
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetSpec(value *T1) error {
@@ -108,9 +114,17 @@ func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, fiel
 // https://github.com/GoogleContainerTools/kpt/issues/3923
 func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
 	oldNode := yamlNodeOf(&obj.SubObject)
-	err := obj.SetNestedField(value, fields...)
-	if err != nil {
-		return err
+	if len(fields) == 0 {
+		obj2, err := fn.NewFromTypedObject(value)
+		if err != nil {
+			return err
+		}
+		*obj = *obj2
+	} else {
+		err := obj.SetNestedField(value, fields...)
+		if err != nil {
+			return err
+		}
 	}
 	newNode := yamlNodeOf(&obj.SubObject)
 
