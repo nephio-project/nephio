@@ -99,9 +99,6 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 					readyMap[forRef].ready = false
 				}
 			}
-			if _, ok := readyMap[forRef].watches[ref]; !ok {
-				readyMap[forRef].watches[ref] = *resCtx.existingResource
-			}
 			if resCtx.existingResource != nil {
 				readyMap[forRef].watches[ref] = *resCtx.existingResource
 			}
