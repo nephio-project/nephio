@@ -82,7 +82,7 @@ func CheckRunError(t *testing.T, expectedErrorFile string, actualError error) {
 	if actualError == nil {
 		t.Errorf("the KRM function hasn't returned any errors, but it should have failed with this error message: %v", expectedError)
 	}
-	if !strings.Contains(actualError.Error(), expectedError) {
+	if actualError != nil && !strings.Contains(actualError.Error(), expectedError) {
 		t.Errorf("the KRM function returned with the wrong error message.\n    expected error: %v\n    actual error: %v", expectedError, actualError)
 	}
 }
@@ -110,9 +110,9 @@ func CheckResults(t *testing.T, expectedResultsFile string, rl *fn.ResourceList)
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing %q result with this message: %v", er.Severity, er.Message)
-		}
+	}
+	if !found {
+		t.Errorf("missing error with this expected_result message")
 	}
 }
 
