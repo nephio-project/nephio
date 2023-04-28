@@ -55,11 +55,11 @@ func TestNewFromYAML(t *testing.T) {
 		input       []byte
 		errExpected bool
 	}{
-		"Normal": {
+		"TestNewFromYAMLNormal": {
 			input:       []byte(itface),
 			errExpected: false,
 		},
-		"Nil": {
+		"TestNewFromYAMLNil": {
 			input:       nil,
 			errExpected: true,
 		},
@@ -83,7 +83,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		input       *nephioreqv1alpha1.Interface
 		errExpected bool
 	}{
-		"Normal": {
+		"TestNewFromGoStructNormal": {
 			input: &nephioreqv1alpha1.Interface{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: nephioreqv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
@@ -102,9 +102,9 @@ func TestNewFromGoStruct(t *testing.T) {
 			},
 			errExpected: false,
 		},
-		"Nil": {
+		"TestNewFromGoStructNil": {
 			input:       nil,
-			errExpected: false, // new approach does not return an error
+			errExpected: true,
 		},
 	}
 
@@ -140,10 +140,10 @@ func TestGetKubeObject(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 
-			if diff := cmp.Diff(tc.wantKind, i.GetKind()); diff != "" {
+			if diff := cmp.Diff(tc.wantKind, i.GetKubeObject().GetKind()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.wantName, i.GetName()); diff != "" {
+			if diff := cmp.Diff(tc.wantName, i.GetKubeObject().GetName()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
 		})
@@ -152,24 +152,16 @@ func TestGetKubeObject(t *testing.T) {
 
 func TestGetGoStruct(t *testing.T) {
 	cases := map[string]struct {
-		file   string
-		wantAT nephioreqv1alpha1.AttachmentType
-		wantCT nephioreqv1alpha1.CNIType
-		wantNI *corev1.ObjectReference
+		file string
+		want string
 	}{
 		"TestGetGoStructNormal": {
-			file:   itface,
-			wantAT: "vlan",
-			wantCT: "sriov",
-			wantNI: &corev1.ObjectReference{
-				Name: "vpc-ran",
-			},
+			file: itface,
+			want: "vlan",
 		},
 		"TestGetGoStructEmpty": {
-			file:   itfaceEmpty,
-			wantAT: "",
-			wantCT: "",
-			wantNI: nil,
+			file: itfaceEmpty,
+			want: "",
 		},
 	}
 
@@ -182,57 +174,26 @@ func TestGetGoStruct(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g, err := i.GetGoStruct()
 			assert.NoError(t, err)
-			// attchementType
-			gotAT := g.Spec.AttachmentType
-			if diff := cmp.Diff(tc.wantAT, gotAT); diff != "" {
-				t.Errorf("AttachmentType: -want, +got:\n%s", diff)
-			}
-			// cniType
-			gotCT := g.Spec.CNIType
-			if diff := cmp.Diff(tc.wantCT, gotCT); diff != "" {
-				t.Errorf("CNIType: -want, +got:\n%s", diff)
-			}
-			// networkInstance
-			gotNI := g.Spec.NetworkInstance
-			if diff := cmp.Diff(tc.wantNI, gotNI); diff != "" {
-				t.Errorf("AttachmentType: -want, +got:\n%s", diff)
+			got := g.Spec.AttachmentType
+			if diff := cmp.Diff(tc.want, string(got)); diff != "" {
+				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestSetSpec(t *testing.T) {
+func TestGetAttachmentType(t *testing.T) {
 	cases := map[string]struct {
 		file string
-		t    nephioreqv1alpha1.InterfaceSpec
+		want string
 	}{
-		"ExistingOverride": {
+		"GetAttachmentTypeNormal": {
 			file: itface,
-			t: nephioreqv1alpha1.InterfaceSpec{
-				NetworkInstance: &corev1.ObjectReference{
-					Name: "a",
-					Namespace: "b",
-				},
-				CNIType: nephioreqv1alpha1.CNITypeMACVLAN,
-				AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
-			},
+			want: "vlan",
 		},
-		"ExistingDelete": {
-			file: itface,
-			t: nephioreqv1alpha1.InterfaceSpec{
-				CNIType: nephioreqv1alpha1.CNITypeMACVLAN,
-			},
-		},
-		"Empty": {
-			file:   itfaceEmpty,
-			t: nephioreqv1alpha1.InterfaceSpec{
-				NetworkInstance: &corev1.ObjectReference{
-					Name: "a",
-					Namespace: "b",
-				},
-				CNIType: nephioreqv1alpha1.CNITypeMACVLAN,
-				AttachmentType: nephioreqv1alpha1.AttachmentTypeVLAN,
-			},
+		"GetAttachmentTypeEmpty": {
+			file: itfaceEmpty,
+			want: "",
 		},
 	}
 
@@ -241,26 +202,80 @@ func TestSetSpec(t *testing.T) {
 		if err != nil {
 			t.Errorf("cannot unmarshal file: %s", err.Error())
 		}
-		t.Run(name, func(t *testing.T) {
-			err := i.SetSpec(tc.t)
-			assert.NoError(t, err)
 
-			got, err := i.GetGoStruct()
-			assert.NoError(t, err)
-			
-			if diff := cmp.Diff(tc.t, got.Spec); diff != "" {
-				t.Errorf("-want, +got:\n%s", diff)
+		t.Run(name, func(t *testing.T) {
+			got := i.GetAttachmentType()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
 		})
 	}
 }
 
-/*
+func TestGetCNIType(t *testing.T) {
+	cases := map[string]struct {
+		file string
+		want string
+	}{
+		"GetCNITypeNormal": {
+			file: itface,
+			want: "sriov",
+		},
+		"GetCNITypeEmpty": {
+			file: itfaceEmpty,
+			want: "",
+		},
+	}
+
+	for name, tc := range cases {
+		i, err := NewFromYAML([]byte(tc.file))
+		if err != nil {
+			t.Errorf("cannot unmarshal file: %s", err.Error())
+		}
+
+		t.Run(name, func(t *testing.T) {
+			got := i.GetCNIType()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("TestGetCNIType: -want, +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetNetworkInstanceName(t *testing.T) {
+	cases := map[string]struct {
+		file string
+		want string
+	}{
+		"GetNetworkInstanceNameNormal": {
+			file: itface,
+			want: "vpc-ran",
+		},
+		"GetNetworkInstanceNameEmpty": {
+			file: itfaceEmpty,
+			want: "",
+		},
+	}
+
+	for name, tc := range cases {
+		i, err := NewFromYAML([]byte(tc.file))
+		if err != nil {
+			t.Errorf("cannot unmarshal file: %s", err.Error())
+		}
+
+		t.Run(name, func(t *testing.T) {
+			got := i.GetNetworkInstanceName()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("TestGetNetworkInstanceName: -want, +got:\n%s", diff)
+			}
+		})
+	}
+}
 
 func TestSetAttachmentType(t *testing.T) {
 	cases := map[string]struct {
 		file        string
-		value       nephioreqv1alpha1.AttachmentType
+		value       string
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
@@ -272,6 +287,11 @@ func TestSetAttachmentType(t *testing.T) {
 			file:        itfaceEmpty,
 			value:       "vlan",
 			errExpected: false,
+		},
+		"SetAttachmentTypeUnknown": {
+			file:        itfaceEmpty,
+			value:       "a",
+			errExpected: true,
 		},
 	}
 
@@ -288,7 +308,7 @@ func TestSetAttachmentType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				got := i.GetAttachmentType()
-				if diff := cmp.Diff(tc.value, nephioreqv1alpha1.AttachmentType(got)); diff != "" {
+				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
 			}
@@ -300,7 +320,7 @@ func TestSetAttachmentType(t *testing.T) {
 func TestSetCNIType(t *testing.T) {
 	cases := map[string]struct {
 		file        string
-		value       nephioreqv1alpha1.CNIType
+		value       string
 		errExpected bool
 	}{
 		"SetCNITypeNormal": {
@@ -312,6 +332,11 @@ func TestSetCNIType(t *testing.T) {
 			file:        itfaceEmpty,
 			value:       "sriov",
 			errExpected: false,
+		},
+		"SetCNITypeUnknown": {
+			file:        itfaceEmpty,
+			value:       "a",
+			errExpected: true,
 		},
 	}
 
@@ -328,7 +353,7 @@ func TestSetCNIType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				got := i.GetCNIType()
-				if diff := cmp.Diff(tc.value, nephioreqv1alpha1.CNIType(got)); diff != "" {
+				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetCNIType: -want, +got:\n%s", diff)
 				}
 			}
@@ -484,7 +509,7 @@ func TestDeleteCNIType(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			_, err := i.DeleteCNIType()
+			err := i.DeleteCNIType()
 			assert.NoError(t, err)
 
 		})
@@ -510,7 +535,7 @@ func TestDeleteAttachmentType(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			_, err := i.DeleteAttachmentType()
+			err := i.DeleteAttachmentType()
 			assert.NoError(t, err)
 
 		})
@@ -557,10 +582,11 @@ func TestYamlComments(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			if i.String() != string(tc.input) {
-				t.Errorf("expected output to be %q, but got %q", string(tc.input), i.String())
+			o := i.GetKubeObject()
+
+			if o.String() != string(tc.input) {
+				t.Errorf("expected output to be %q, but got %q", string(tc.input), o.String())
 			}
 		})
 	}
 }
-*/
