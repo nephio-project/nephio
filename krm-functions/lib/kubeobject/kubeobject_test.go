@@ -326,7 +326,7 @@ func TestNewFromGoStruct(t *testing.T) {
 				},
 			},
 		}
-		deploymentKubeObject, _ := NewFromGoStruct[appsv1.Deployment](deploymentReceived)
+		deploymentKubeObject, _ := NewFromGoStruct(deploymentReceived)
 
 		s, _, err := deploymentKubeObject.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
@@ -335,12 +335,6 @@ func TestNewFromGoStruct(t *testing.T) {
 		if deploymentReceived.Name != s {
 			t.Errorf("-want%s, +got:\n%s", deploymentReceived.Name, s)
 		}
-	}
-
-	// test with nil input
-	_, err := NewFromGoStruct[appsv1.Deployment](nil)
-	if err == nil {
-		t.Errorf("NewFromGoStruct(nil) doesn't return with an error")
 	}
 }
 
@@ -497,13 +491,34 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 
 			tc.transform(&deploy)
 
-			err = koe.SetSpec(deploy.Spec)
+			err = koe.SafeSetSpec(deploy)
 			if err != nil {
 				t.Errorf("unexpected error in SetSpec: %v", err)
 			}
 
 			compareKubeObjectWithExpectedYaml(t, &koe.KubeObject, tc.expectedFile)
 		})
+	}
+}
+
+func TestSettersWithMissingFields(t *testing.T) {
+
+	type NoSpecOrStatus struct{}
+	var val NoSpecOrStatus
+
+	koe, err := NewFromGoStruct(val)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	err = koe.SafeSetSpec(val)
+	if err == nil {
+		t.Errorf("error was expected in SetSpec, but got no error")
+	}
+
+	err = koe.SafeSetStatus(val)
+	if err == nil {
+		t.Errorf("error was expected in SetStatus, but got no error")
 	}
 }
 
@@ -534,7 +549,7 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 
 			tc.transform(&deploy)
 
-			err = koe.SetStatus(deploy.Status)
+			err = koe.SafeSetStatus(deploy)
 			if err != nil {
 				t.Errorf("unexpected error in SetStatus: %v", err)
 			}
