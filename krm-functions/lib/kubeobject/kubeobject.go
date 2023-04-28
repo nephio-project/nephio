@@ -32,50 +32,6 @@ func (r *KubeObjectExt[T1]) GetGoStruct() (T1, error) {
 	return x, err
 }
 
-func (r *KubeObjectExt[T1]) GetNestedString(fields ...string) string {
-	s, ok, err := r.NestedString(fields...)
-	if err != nil {
-		return ""
-	}
-	if !ok {
-		return ""
-	}
-	return s
-}
-
-func (r *KubeObjectExt[T1]) GetNestedInt(fields ...string) int {
-	s, ok, err := r.NestedInt(fields...)
-	if err != nil {
-		return 0
-	}
-	if !ok {
-		return 0
-	}
-	return s
-}
-
-func (r *KubeObjectExt[T1]) GetNestedBool(fields ...string) bool {
-	s, ok, err := r.NestedBool(fields...)
-	if err != nil {
-		return false
-	}
-	if !ok {
-		return false
-	}
-	return s
-}
-
-func (r *KubeObjectExt[T1]) GetNestedStringMap(fields ...string) map[string]string {
-	s, ok, err := r.NestedStringMap(fields...)
-	if err != nil {
-		return map[string]string{}
-	}
-	if !ok {
-		return map[string]string{}
-	}
-	return s
-}
-
 // NewFromKubeObject returns a KubeObjectExt struct
 // It expects a fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject[T1 any](o *fn.KubeObject) (*KubeObjectExt[T1], error) {
