@@ -1,0 +1,79 @@
+# comment 
+# comment 
+# comment 
+
+
+apiVersion: apps/v1 # comment 
+kind: Deployment # comment 
+metadata: # comment 
+  name: nginx-deployment # comment 
+  labels: # comment 
+    app: nginx # comment 
+# comment 
+spec: # comment
+# comment before deleted field
+  replicas: 3 # comment next to deleted field
+  
+  # comment
+  selector: # comment
+  # comment
+  # comment
+    matchLabels: # comment
+    # comment
+
+
+
+    # comment
+
+
+
+    # comment
+      app: nginx # comment
+      # comment
+  template: # comment
+  # comment
+    metadata: # comment
+
+      labels: # comment
+      # comment
+        app: nginx # comment
+
+        
+    spec: # comment
+      containers: # comment
+      - name: nginx # comment
+        image: nginx:1.14.2 # comment
+        ports: # comment
+        - containerPort: 80 # comment
+
+      # comment before updated field
+      restartPolicy: Always  # comment next to updated field
+      # comment after updated field
+# comment
+status: # comment
+  availableReplicas: 2 # comment
+  conditions: # comment
+  - lastTransitionTime: 2016-10-04T12:25:39Z # comment
+    lastUpdateTime: 2016-10-04T12:25:39Z # comment
+    message: Replica set "nginx-deployment-4262182780" is progressing. # comment
+    reason: ReplicaSetUpdated # comment
+    status: "True" # comment
+    type: Progressing # comment
+  - lastTransitionTime: 2016-10-04T12:25:42Z # comment
+    lastUpdateTime: 2016-10-04T12:25:42Z # comment
+    message: Deployment has minimum availability. # comment
+    reason: MinimumReplicasAvailable # comment
+    status: "True" # comment
+    type: Available # comment
+  - lastTransitionTime: 2016-10-04T12:25:39Z
+    lastUpdateTime: 2016-10-04T12:25:39Z
+    message: 'Error creating: pods "nginx-deployment-4262182780-" is forbidden: exceeded quota:
+      object-counts, requested: pods=1, used: pods=3, limited: pods=2'
+    reason: FailedCreate
+    status: "True"
+    type: ReplicaFailure
+
+  # comment
+  observedGeneration: 3 # comment
+  replicas: 2 # comment
+  unavailableReplicas: 2 # comment
