@@ -55,3 +55,11 @@ func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
 	}
 	return &VLANAllocation{*r}, nil
 }
+
+func (r *VLANAllocation) SetSpec(spec vlanv1alpha1.VLANAllocationSpec) error {
+	return r.KubeObjectExt.SetSpec(spec)
+}
+
+func (r *VLANAllocation) SetStatus(spec vlanv1alpha1.VLANAllocationStatus) error {
+	return r.KubeObjectExt.SetStatus(spec)
+}
