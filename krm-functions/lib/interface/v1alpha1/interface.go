@@ -56,7 +56,6 @@ func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
 	return &Interface{*r}, nil
 }
 
-
 func (r *Interface) SetSpec(spec nephioreqv1alpha1.InterfaceSpec) error {
 	return r.KubeObjectExt.SetSpec(spec)
 }

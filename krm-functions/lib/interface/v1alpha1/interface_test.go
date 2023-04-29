@@ -266,7 +266,7 @@ func TestSetStatus(t *testing.T) {
 			t: nephioreqv1alpha1.InterfaceStatus{
 				IPAllocationStatus: &ipamv1alpha1.IPAllocationStatus{
 					AllocatedPrefix: "10.0.0.2/24",
-					Gateway: "10.0.0.1",
+					Gateway:         "10.0.0.1",
 				},
 				VLANAllocationStatus: &vlanv1alpha1.VLANAllocationStatus{
 					AllocatedVlanID: 10,
