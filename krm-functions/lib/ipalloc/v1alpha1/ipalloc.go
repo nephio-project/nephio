@@ -55,3 +55,11 @@ func NewFromGoStruct(x *ipamv1alpha1.IPAllocation) (*IPAllocation, error) {
 	}
 	return &IPAllocation{*r}, nil
 }
+
+func (r *IPAllocation) SetSpec(spec ipamv1alpha1.IPAllocationSpec) error {
+	return r.KubeObjectExt.SetSpec(spec)
+}
+
+func (r *IPAllocation) SetStatus(spec ipamv1alpha1.IPAllocationStatus) error {
+	return r.KubeObjectExt.SetStatus(spec)
+}
