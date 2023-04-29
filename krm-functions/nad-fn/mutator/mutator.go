@@ -131,6 +131,10 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 	if err != nil {
 		return nil, err
 	}
+	if objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)).Len() == 0 &&
+		objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)).Len() != 0 {
+		nad.SetCniSpecType(nadlibv1.VlanType)
+	}
 
 	interfaces := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 	for _, itfce := range interfaces {
@@ -186,5 +190,5 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 		}
 	}
 
-	return nad.GetKubeObject(), nil
+	return &nad.K.KubeObject, nil
 }
