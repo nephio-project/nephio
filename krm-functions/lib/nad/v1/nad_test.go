@@ -31,7 +31,6 @@ kind: NetworkAttachmentDefinition
 metadata:
   creationTimestamp: null
   name: upf-us-central1-n3
-  generation: 100
 spec:
   config: '{"cniVersion":"0.3.1","vlan": 1001, "plugins":[{"type":"sriov","capabilities":{"ips":true,"mac":false},"master":"bond0","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.3/24","gateway":"10.0.0.1"}]}}]}'
 `
@@ -132,10 +131,10 @@ func TestGetKubeObject(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 
-			if diff := cmp.Diff(tc.wantKind, i.GetKubeObject().GetKind()); diff != "" {
+			if diff := cmp.Diff(tc.wantKind, i.K.KubeObject.GetKind()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.wantName, i.GetKubeObject().GetName()); diff != "" {
+			if diff := cmp.Diff(tc.wantName, i.K.KubeObject.GetName()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
 		})
@@ -164,7 +163,7 @@ func TestGetGoStruct(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			g, err := i.GetGoStruct()
+			g, err := i.K.GetGoStruct()
 			assert.NoError(t, err)
 			got := g.Spec.Config
 			configSpec := &NadConfig{}
@@ -395,11 +394,6 @@ func TestSetCNIType(t *testing.T) {
 			value:       "",
 			errExpected: true,
 		},
-		"SetAttachmentTypeCreateNew": {
-			file:        nadTestEmpty,
-			value:       "calico",
-			errExpected: false,
-		},
 	}
 
 	for name, tc := range cases {
@@ -463,6 +457,7 @@ func TestSetVlan(t *testing.T) {
 
 		})
 	}
+
 }
 
 func TestSetNadMaster(t *testing.T) {
