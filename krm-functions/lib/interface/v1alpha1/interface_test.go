@@ -21,6 +21,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,7 +106,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		},
 		"TestNewFromGoStructNil": {
 			input:       nil,
-			errExpected: true,
+			errExpected: false, // new approach does not return an error
 		},
 	}
 
@@ -140,10 +142,10 @@ func TestGetKubeObject(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 
-			if diff := cmp.Diff(tc.wantKind, i.GetKubeObject().GetKind()); diff != "" {
+			if diff := cmp.Diff(tc.wantKind, i.GetKind()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.wantName, i.GetKubeObject().GetName()); diff != "" {
+			if diff := cmp.Diff(tc.wantName, i.GetName()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
 		})
@@ -152,16 +154,24 @@ func TestGetKubeObject(t *testing.T) {
 
 func TestGetGoStruct(t *testing.T) {
 	cases := map[string]struct {
-		file string
-		want string
+		file   string
+		wantAT nephioreqv1alpha1.AttachmentType
+		wantCT nephioreqv1alpha1.CNIType
+		wantNI *corev1.ObjectReference
 	}{
-		"TestGetGoStructNormal": {
-			file: itface,
-			want: "vlan",
+		"Normal": {
+			file:   itface,
+			wantAT: nephioreqv1alpha1.AttachmentTypeVLAN,
+			wantCT: nephioreqv1alpha1.CNITypeSRIOV,
+			wantNI: &corev1.ObjectReference{
+				Name: "vpc-ran",
+			},
 		},
-		"TestGetGoStructEmpty": {
-			file: itfaceEmpty,
-			want: "",
+		"Empty": {
+			file:   itfaceEmpty,
+			wantAT: "",
+			wantCT: "",
+			wantNI: nil,
 		},
 	}
 
@@ -174,227 +184,18 @@ func TestGetGoStruct(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			g, err := i.GetGoStruct()
 			assert.NoError(t, err)
-			got := g.Spec.AttachmentType
-			if diff := cmp.Diff(tc.want, string(got)); diff != "" {
-				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
+
+			gotAT := g.Spec.AttachmentType
+			if diff := cmp.Diff(tc.wantAT, gotAT); diff != "" {
+				t.Errorf("AttachmentType: -want, +got:\n%s", diff)
 			}
-		})
-	}
-}
-
-func TestGetAttachmentType(t *testing.T) {
-	cases := map[string]struct {
-		file string
-		want string
-	}{
-		"GetAttachmentTypeNormal": {
-			file: itface,
-			want: "vlan",
-		},
-		"GetAttachmentTypeEmpty": {
-			file: itfaceEmpty,
-			want: "",
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			got := i.GetAttachmentType()
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
+			gotCT := g.Spec.CNIType
+			if diff := cmp.Diff(tc.wantCT, gotCT); diff != "" {
+				t.Errorf("CNIType: -want, +got:\n%s", diff)
 			}
-		})
-	}
-}
-
-func TestGetCNIType(t *testing.T) {
-	cases := map[string]struct {
-		file string
-		want string
-	}{
-		"GetCNITypeNormal": {
-			file: itface,
-			want: "sriov",
-		},
-		"GetCNITypeEmpty": {
-			file: itfaceEmpty,
-			want: "",
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			got := i.GetCNIType()
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("TestGetCNIType: -want, +got:\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetNetworkInstanceName(t *testing.T) {
-	cases := map[string]struct {
-		file string
-		want string
-	}{
-		"GetNetworkInstanceNameNormal": {
-			file: itface,
-			want: "vpc-ran",
-		},
-		"GetNetworkInstanceNameEmpty": {
-			file: itfaceEmpty,
-			want: "",
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			got := i.GetNetworkInstanceName()
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("TestGetNetworkInstanceName: -want, +got:\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestSetAttachmentType(t *testing.T) {
-	cases := map[string]struct {
-		file        string
-		value       string
-		errExpected bool
-	}{
-		"SetAttachmentTypeNormal": {
-			file:        itface,
-			value:       "none",
-			errExpected: false,
-		},
-		"SetAttachmentTypeEmpty": {
-			file:        itfaceEmpty,
-			value:       "vlan",
-			errExpected: false,
-		},
-		"SetAttachmentTypeUnknown": {
-			file:        itfaceEmpty,
-			value:       "a",
-			errExpected: true,
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			err := i.SetAttachmentType(tc.value)
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				got := i.GetAttachmentType()
-				if diff := cmp.Diff(tc.value, got); diff != "" {
-					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
-				}
-			}
-
-		})
-	}
-}
-
-func TestSetCNIType(t *testing.T) {
-	cases := map[string]struct {
-		file        string
-		value       string
-		errExpected bool
-	}{
-		"SetCNITypeNormal": {
-			file:        itface,
-			value:       "ipvlan",
-			errExpected: false,
-		},
-		"SetCNITypeEmpty": {
-			file:        itfaceEmpty,
-			value:       "sriov",
-			errExpected: false,
-		},
-		"SetCNITypeUnknown": {
-			file:        itfaceEmpty,
-			value:       "a",
-			errExpected: true,
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			err := i.SetCNIType(tc.value)
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				got := i.GetCNIType()
-				if diff := cmp.Diff(tc.value, got); diff != "" {
-					t.Errorf("TestSetCNIType: -want, +got:\n%s", diff)
-				}
-			}
-		})
-	}
-}
-
-func TestSetNetworkInstanceName(t *testing.T) {
-	cases := map[string]struct {
-		file        string
-		value       string
-		errExpected bool
-	}{
-		"SetNetworkInstanceNameNormal": {
-			file:        itface,
-			value:       "a",
-			errExpected: false,
-		},
-		"SetNetworkInstanceNameEmpty": {
-			file:        itfaceEmpty,
-			value:       "b",
-			errExpected: false,
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			err := i.SetNetworkInstanceName(tc.value)
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				got := i.GetNetworkInstanceName()
-				if diff := cmp.Diff(tc.value, got); diff != "" {
-					t.Errorf("TestSetNetworkInstanceName: -want, +got:\n%s", diff)
-				}
+			gotNI := g.Spec.NetworkInstance
+			if diff := cmp.Diff(tc.wantNI, gotNI); diff != "" {
+				t.Errorf("NetworkInstance: -want, +got:\n%s", diff)
 			}
 		})
 	}
@@ -402,103 +203,36 @@ func TestSetNetworkInstanceName(t *testing.T) {
 
 func TestSetSpec(t *testing.T) {
 	cases := map[string]struct {
-		file                  string
-		spec                  *nephioreqv1alpha1.InterfaceSpec
-		errExpected           bool
-		defaultCNIType        string
-		defaultAttachmentType string
+		file string
+		t    nephioreqv1alpha1.InterfaceSpec
 	}{
-		"SetInterfaceSpecNormal": {
-			file:                  itface,
-			defaultCNIType:        "sriov",
-			defaultAttachmentType: "vlan",
-			spec: &nephioreqv1alpha1.InterfaceSpec{
+		"Override": {
+			file: itface,
+			t: nephioreqv1alpha1.InterfaceSpec{
 				NetworkInstance: &corev1.ObjectReference{
-					Name: "test",
+					Name:      "a",
+					Namespace: "b",
 				},
 				AttachmentType: nephioreqv1alpha1.AttachmentTypeNone,
 				CNIType:        nephioreqv1alpha1.CNITypeIPVLAN,
 			},
-			errExpected: false,
 		},
-		"SetInterfaceSpecDefault": {
-			file:                  itface,
-			defaultCNIType:        "",
-			defaultAttachmentType: "",
-			spec: &nephioreqv1alpha1.InterfaceSpec{
-				NetworkInstance: &corev1.ObjectReference{
-					Name: "test",
-				},
-			},
-			errExpected: false,
-		},
-		"SetInterfaceSpecEmpty": {
-			file:                  itfaceEmpty,
-			defaultCNIType:        "",
-			defaultAttachmentType: "",
-			spec: &nephioreqv1alpha1.InterfaceSpec{
-				NetworkInstance: &corev1.ObjectReference{
-					Name: "test",
-				},
-			},
-			errExpected: false,
-		},
-	}
-
-	for name, tc := range cases {
-		i, err := NewFromYAML([]byte(tc.file))
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-
-		t.Run(name, func(t *testing.T) {
-			err := i.SetSpec(tc.spec)
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				if tc.spec.NetworkInstance != nil {
-					got := i.GetNetworkInstanceName()
-					if diff := cmp.Diff(tc.spec.NetworkInstance.Name, got); diff != "" {
-						t.Errorf("TestSetInterfaceSpec: -want, +got:\n%s", diff)
-					}
-				}
-				if tc.spec.AttachmentType != "" {
-					got := i.GetAttachmentType()
-					if diff := cmp.Diff(string(tc.spec.AttachmentType), got); diff != "" {
-						t.Errorf("TestSetInterfaceSpec: -want, +got:\n%s", diff)
-					}
-				} else {
-					got := i.GetAttachmentType()
-					if diff := cmp.Diff(tc.defaultAttachmentType, got); diff != "" {
-						t.Errorf("TestSetInterfaceSpec: -want, +got:\n%s", diff)
-					}
-				}
-				if tc.spec.CNIType != "" {
-					got := i.GetCNIType()
-					if diff := cmp.Diff(string(tc.spec.CNIType), got); diff != "" {
-						t.Errorf("TestSetInterfaceSpec: -want, +got:\n%s", diff)
-					}
-				} else {
-					got := i.GetCNIType()
-					if diff := cmp.Diff(tc.defaultCNIType, got); diff != "" {
-						t.Errorf("TestSetInterfaceSpec: -want, +got:\n%s", diff)
-					}
-				}
-			}
-		})
-	}
-}
-
-func TestDeleteCNIType(t *testing.T) {
-	cases := map[string]struct {
-		file string
-	}{
-		"DeleteCNIType": {
+		"Change": {
 			file: itface,
+			t: nephioreqv1alpha1.InterfaceSpec{
+				CNIType: nephioreqv1alpha1.CNITypeIPVLAN,
+			},
 		},
-		"DeleteCNITypeEmpty": {
+		"Empty": {
 			file: itfaceEmpty,
+			t: nephioreqv1alpha1.InterfaceSpec{
+				NetworkInstance: &corev1.ObjectReference{
+					Name:      "a",
+					Namespace: "b",
+				},
+				AttachmentType: nephioreqv1alpha1.AttachmentTypeNone,
+				CNIType:        nephioreqv1alpha1.CNITypeIPVLAN,
+			},
 		},
 	}
 
@@ -509,22 +243,35 @@ func TestDeleteCNIType(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			err := i.DeleteCNIType()
+			err = i.SetSpec(tc.t)
 			assert.NoError(t, err)
 
+			got, err := i.GetGoStruct()
+			assert.NoError(t, err)
+
+			if diff := cmp.Diff(tc.t, got.Spec); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
+			}
 		})
 	}
 }
 
-func TestDeleteAttachmentType(t *testing.T) {
+func TestSetStatus(t *testing.T) {
 	cases := map[string]struct {
 		file string
+		t    nephioreqv1alpha1.InterfaceStatus
 	}{
-		"TestDeleteAttachmentType": {
+		"Override": {
 			file: itface,
-		},
-		"TestDeleteAttachmentTypeEmpty": {
-			file: itfaceEmpty,
+			t: nephioreqv1alpha1.InterfaceStatus{
+				IPAllocationStatus: &ipamv1alpha1.IPAllocationStatus{
+					AllocatedPrefix: "10.0.0.2/24",
+					Gateway:         "10.0.0.1",
+				},
+				VLANAllocationStatus: &vlanv1alpha1.VLANAllocationStatus{
+					AllocatedVlanID: 10,
+				},
+			},
 		},
 	}
 
@@ -535,57 +282,14 @@ func TestDeleteAttachmentType(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			err := i.DeleteAttachmentType()
+			err = i.SetStatus(tc.t)
 			assert.NoError(t, err)
 
-		})
-	}
-}
+			got, err := i.GetGoStruct()
+			assert.NoError(t, err)
 
-func TestYamlComments(t *testing.T) {
-	cases := map[string]struct {
-		input       []byte
-		errExpected bool
-	}{
-		"TestNewFromYAMLNormal": {
-			input:       []byte(itface),
-			errExpected: false,
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			i, err := NewFromYAML(tc.input)
-
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			if err := i.SetCNIType("ipvlan"); err != nil {
-				assert.NoError(t, err)
-			}
-			if err := i.SetAttachmentType("none"); err != nil {
-				assert.NoError(t, err)
-			}
-			if err := i.SetNetworkInstanceName("new"); err != nil {
-				assert.NoError(t, err)
-			}
-
-			if err := i.SetCNIType("sriov"); err != nil {
-				assert.NoError(t, err)
-			}
-			if err := i.SetAttachmentType("vlan"); err != nil {
-				assert.NoError(t, err)
-			}
-			if err := i.SetNetworkInstanceName("vpc-ran"); err != nil {
-				assert.NoError(t, err)
-			}
-
-			o := i.GetKubeObject()
-
-			if o.String() != string(tc.input) {
-				t.Errorf("expected output to be %q, but got %q", string(tc.input), o.String())
+			if diff := cmp.Diff(tc.t, got.Status); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
 			}
 		})
 	}

@@ -17,224 +17,49 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-	"sigs.k8s.io/yaml"
+	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 )
 
-const (
-	// errors
-	errKubeObjectNotInitialized = "KubeObject not initialized"
-)
+type Interface struct {
+	kubeobject.KubeObjectExt[*nephioreqv1alpha1.Interface]
+}
 
-var (
-	attachmentType      = []string{"spec", "attachmentType"}
-	cniType             = []string{"spec", "cniType"}
-	networkInstanceName = []string{"spec", "networkInstance", "name"}
-)
-
-type Interface interface {
-	// GetKubeObject returns the present kubeObject
-	GetKubeObject() *fn.KubeObject
-	// GetGoStruct returns a go struct representing the present KRM resource
-	GetGoStruct() (*nephioreqv1alpha1.Interface, error)
-	// GetAttachmentType returns the attachmentType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetAttachmentType() string
-	// GetCNIType returns the cniType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetCNIType() string
-	// GetNetworkInstanceName returns the name of the networkInstance from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetNetworkInstanceName() string
-	// SetAttachmentType sets the attachmentType in the spec
-	SetAttachmentType(s string) error
-	// SetCNIType sets the cniType in the spec
-	SetCNIType(s string) error
-	// SetNetworkInstanceName sets the name of the networkInstance in the spec
-	SetNetworkInstanceName(s string) error
-	// SetSpec sets the spec attributes in the kubeobject according the go struct
-	SetSpec(*nephioreqv1alpha1.InterfaceSpec) error
-	// DeleteAttachmentType deletes the attachmentType from the spec
-	DeleteAttachmentType() error
-	// DeleteAttachmentType deletes the attachmentType from the spec
-	DeleteCNIType() error
+// NewFromKubeObject creates a new parser interface
+// It expects a *fn.KubeObject as input representing the serialized yaml file
+func NewFromKubeObject(o *fn.KubeObject) (*Interface, error) {
+	r, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
+	if err != nil {
+		return nil, err
+	}
+	return &Interface{*r}, nil
 }
 
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewFromYAML(b []byte) (Interface, error) {
-	o, err := fn.ParseKubeObject(b)
+func NewFromYAML(b []byte) (*Interface, error) {
+	r, err := kubeobject.NewFromYaml[*nephioreqv1alpha1.Interface](b)
 	if err != nil {
 		return nil, err
 	}
-	return &itfce{
-		o: o,
-	}, nil
+	return &Interface{*r}, nil
 }
 
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (Interface, error) {
-	b, err := yaml.Marshal(x)
+func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
+	r, err := kubeobject.NewFromGoStruct[*nephioreqv1alpha1.Interface](x)
 	if err != nil {
 		return nil, err
 	}
-	return NewFromYAML(b)
+	return &Interface{*r}, nil
 }
 
-type itfce struct {
-	o *fn.KubeObject
+func (r *Interface) SetSpec(spec nephioreqv1alpha1.InterfaceSpec) error {
+	return r.KubeObjectExt.SetSpec(spec)
 }
 
-// GetKubeObject returns the present kubeObject
-func (r *itfce) GetKubeObject() *fn.KubeObject {
-	return r.o
-}
-
-// GetGoStruct returns a go struct representing the present KRM resource
-func (r *itfce) GetGoStruct() (*nephioreqv1alpha1.Interface, error) {
-	x := &nephioreqv1alpha1.Interface{}
-	if err := yaml.Unmarshal([]byte(r.o.String()), x); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// GetAttachmentType returns the attachmentType from the spec
-// if an error occurs or the attribute is not present an empty string is returned
-func (r *itfce) GetAttachmentType() string {
-	return r.getStringValue(attachmentType...)
-}
-
-// GetCNIType returns the cniType from the spec
-// if an error occurs or the attribute is not present an empty string is returned
-func (r *itfce) GetCNIType() string {
-	return r.getStringValue(cniType...)
-}
-
-// GetNetworkInstanceName returns the name of the networkInstance from the spec
-// if an error occurs or the attribute is not present an empty string is returned
-func (r *itfce) GetNetworkInstanceName() string {
-	return r.getStringValue(networkInstanceName...)
-}
-
-// SetAttachmentType sets the attachmentType in the spec
-func (r *itfce) SetAttachmentType(s string) error {
-
-	// validation -> should be part of the interface api repo
-	switch s {
-	case string(nephioreqv1alpha1.AttachmentTypeNone):
-	case string(nephioreqv1alpha1.AttachmentTypeVLAN):
-	default:
-		return fmt.Errorf("unknown attachmentType")
-	}
-
-	return r.setNestedField(s, attachmentType...)
-}
-
-// SetCNIType sets the cniType in the spec
-func (r *itfce) SetCNIType(s string) error {
-
-	// validation -> should be part of the interface api repo
-	switch s {
-	case string(nephioreqv1alpha1.CNITypeIPVLAN):
-	case string(nephioreqv1alpha1.CNITypeSRIOV):
-	case string(nephioreqv1alpha1.CNITypeMACVLAN):
-	default:
-		return fmt.Errorf("unknown cniType")
-	}
-
-	return r.setNestedField(s, cniType...)
-}
-
-// SetNetworkInstanceName sets the name of the networkInstance in the spec
-func (r *itfce) SetNetworkInstanceName(s string) error {
-	return r.setNestedField(s, networkInstanceName...)
-}
-
-// SetSpec sets the spec attributes in the kubeobject according the go struct
-func (r *itfce) SetSpec(spec *nephioreqv1alpha1.InterfaceSpec) error {
-	if spec == nil {
-		return nil
-	}
-	if spec.AttachmentType != "" {
-		if err := r.SetAttachmentType(string(spec.AttachmentType)); err != nil {
-			return err
-		}
-	} else {
-		if err := r.DeleteAttachmentType(); err != nil {
-			return err
-		}
-	}
-	if spec.CNIType != "" {
-		if err := r.SetCNIType(string(spec.CNIType)); err != nil {
-			return err
-		}
-	} else {
-		if err := r.DeleteCNIType(); err != nil {
-			return err
-		}
-	}
-	if spec.NetworkInstance != nil {
-		if err := r.SetNetworkInstanceName(string(spec.NetworkInstance.Name)); err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("networkInstance is required")
-	}
-	return nil
-}
-
-// DeleteAttachmentType deletes the attachmentType from the spec
-func (r *itfce) DeleteAttachmentType() error {
-	return r.deleteNestedField(attachmentType...)
-}
-
-// DeleteAttachmentType deletes the attachmentType from the spec
-func (r *itfce) DeleteCNIType() error {
-	return r.deleteNestedField(cniType...)
-}
-
-// getStringValue is a generic utility function that returns a string from
-// a string slice representing the path in the yaml doc
-func (r *itfce) getStringValue(fields ...string) string {
-	if r.o == nil {
-		return ""
-	}
-	s, ok, err := r.o.NestedString(fields...)
-	if err != nil {
-		return ""
-	}
-	if !ok {
-		return ""
-	}
-	return s
-}
-
-// setNestedField is a generic utility function that sets a string on
-// a string slice representing the path in the yaml doc
-func (r *itfce) setNestedField(s string, fields ...string) error {
-	if r.o == nil {
-		return fmt.Errorf(errKubeObjectNotInitialized)
-	}
-	if err := r.o.SetNestedField(s, fields...); err != nil {
-		return err
-	}
-	return nil
-}
-
-// deleteNestedField is a generic utility function that deletes
-// a string slice representing the path from the yaml doc
-func (r *itfce) deleteNestedField(fields ...string) error {
-	if r.o == nil {
-		return fmt.Errorf(errKubeObjectNotInitialized)
-	}
-	_, err := r.o.RemoveNestedField(fields...)
-	if err != nil {
-		return err
-	}
-	return nil
+func (r *Interface) SetStatus(spec nephioreqv1alpha1.InterfaceStatus) error {
+	return r.KubeObjectExt.SetStatus(spec)
 }
