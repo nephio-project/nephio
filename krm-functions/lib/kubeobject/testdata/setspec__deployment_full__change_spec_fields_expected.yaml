@@ -27,10 +27,15 @@ spec: # comment
       creationTimestamp: null
     spec: # comment
       containers: # comment
-      - name: nginx # comment
-        image: nginx:1.14.2 # comment
-        ports: # comment
-        - containerPort: 80 # comment
+      - name: nginx # comment 1
+        image: nginx:1.14.2 # comment 1
+        ports: # comment 1
+        - containerPort: 80 # comment 1
+        resources: {}
+      - name: nginx-2 # comment 2
+        image: nginx:1.14.3 # comment 2
+        ports: # comment 2
+        - containerPort: 80 # comment 2
         resources: {}
       # comment before updated field
       restartPolicy: OnFailure # comment next to updated field
@@ -41,23 +46,23 @@ spec: # comment
 status: # comment
   availableReplicas: 2 # comment
   conditions: # comment
-  - lastTransitionTime: 2016-10-04T12:25:39Z # comment
-    lastUpdateTime: 2016-10-04T12:25:39Z # comment
-    message: Replica set "nginx-deployment-4262182780" is progressing. # comment
-    reason: ReplicaSetUpdated # comment
-    status: "True" # comment
-    type: Progressing # comment
-  - lastTransitionTime: 2016-10-04T12:25:42Z # comment
-    lastUpdateTime: 2016-10-04T12:25:42Z # comment
-    message: Deployment has minimum availability. # comment
-    reason: MinimumReplicasAvailable # comment
-    status: "True" # comment
-    type: Available # comment
-  - lastTransitionTime: 2016-10-04T12:25:39Z
-    lastUpdateTime: 2016-10-04T12:25:39Z
+  - lastTransitionTime: 2016-10-04T12:25:39Z # comment 1
+    lastUpdateTime: 2016-10-04T12:25:39Z # comment 1
+    message: Replica set "nginx-deployment-4262182780" is progressing. # comment 1
+    reason: ReplicaSetUpdated # comment 1
+    status: "True" # comment 1
+    type: Progressing # comment 1
+  - lastTransitionTime: 2016-10-04T12:25:42Z # comment 2
+    lastUpdateTime: 2016-10-04T12:25:42Z # comment 2
+    message: Deployment has minimum availability. # comment 2
+    reason: MinimumReplicasAvailable # comment 2
+    status: "True" # comment 2
+    type: Available # comment 2
+  - lastTransitionTime: 2016-10-04T12:25:39Z # comment 3
+    lastUpdateTime: 2016-10-04T12:25:39Z # comment 3
     message: 'Error creating: pods "nginx-deployment-4262182780-" is forbidden: exceeded quota: object-counts, requested: pods=1, used: pods=3, limited: pods=2'
-    reason: FailedCreate
-    status: "True"
+    reason: FailedCreate # comment 3
+    status: "True" # comment 3
     type: ReplicaFailure
   # comment
   observedGeneration: 3 # comment

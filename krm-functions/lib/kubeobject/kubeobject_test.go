@@ -18,6 +18,7 @@ package kubeobject
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -348,13 +349,14 @@ func compareKubeObjectWithExpectedYaml(t *testing.T, obj *fn.KubeObject, expecte
 	expectedYAML := strings.TrimSpace(string(testhelpers.MustReadFile(t, expectedFile)))
 
 	if actualYAML != expectedYAML {
+		ext := filepath.Ext(expectedFile)
+		base, _ := strings.CutSuffix(expectedFile, ext)
+		base, _ = strings.CutSuffix(base, "_expected")
+		actualFile := base + "_actual" + ext
+		os.WriteFile(actualFile, []byte(actualYAML), 0666)
 		t.Errorf(`mismatch in expected and actual KubeObject YAML:
---- want: -----
-%v
---- got: ----
-%v
-----------------`, expectedYAML, actualYAML)
-		os.WriteFile(testlib.InsertBeforeExtension(expectedFile, "_actual"), []byte(actualYAML), 0666)
+  - find expected YAML in %v
+  - find actual YAML in   %v`, expectedFile, actualFile)
 	}
 
 }
@@ -452,12 +454,12 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_spec_fields_setspec_expected.yaml",
+			expectedFile: "testdata/setspec__deployment_full__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_spec_fields_setspec_expected.yaml",
+			expectedFile: "testdata/setspec__deployment_no_status__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 	}
@@ -489,12 +491,12 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_status_fields_setstatus_expected.yaml",
+			expectedFile: "testdata/setstatus__deployment_full__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_status_fields_setstatus_expected.yaml",
+			expectedFile: "testdata/setstatus__deployment_no_status__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 	}

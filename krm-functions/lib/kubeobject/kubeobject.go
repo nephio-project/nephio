@@ -183,8 +183,9 @@ func copyListFormatting(src, dst *yaml.Node) {
 		if !found {
 			continue
 		}
+		// NOTE: the order of list items isn't restored, since the change in order might be significant and deliberate
 
-		// keep comments
+		// keep formatting
 		deepCopyFormatting(src.Content[i], dst.Content[j])
 	}
 }
@@ -208,18 +209,20 @@ func findKey(haystack *yaml.Node, key string, startIndex int) (int, bool) {
 	return 0, false
 }
 
-func findItem(needle, haystack *yaml.Node, startIndex int) (int, bool) {
-	for i := startIndex; i < len(haystack.Content); i++ {
-		if deepEqual(needle, haystack.Content[i]) {
+// findItem finds the list item in `dstList` that matches with `srcItem`
+// in the sense that formatting should be copied from `srcItem` to the matching item in `dstList`
+func findItem(srcItem, dstList *yaml.Node, startIndex int) (int, bool) {
+	for i := startIndex; i < len(dstList.Content); i++ {
+		if shouldCopyFormatting(srcItem, dstList.Content[i]) {
 			return i, true
 		}
 	}
 	return 0, false
 }
 
-// deepEqual recursively compares two YAML nodes by value.
-// deepEqual is used to find matching items in two lists
-func deepEqual(src, dst *yaml.Node) bool {
+// shouldCopyFormatting recursively compares two YAML nodes by value.
+// shouldCopyFormatting is only used to find matching items in two lists, and nothing else
+func shouldCopyFormatting(src, dst *yaml.Node) bool {
 	if src.Kind != dst.Kind {
 		return false
 	}
@@ -241,13 +244,16 @@ func deepEqual(src, dst *yaml.Node) bool {
 			if !found {
 				return false
 			}
-			if !deepEqual(src.Content[i+1], dst.Content[j+1]) {
+			if !shouldCopyFormatting(src.Content[i+1], dst.Content[j+1]) {
 				return false
 			}
 		}
 		return true
 	case yaml.SequenceNode:
-		// any change in embedded lists isn't considered as a difference for our purposes (comparing list items by value)
+		// Any change in embedded lists isn't considered as a difference for our purposes (comparing list items by value),
+		// or in other words: only map fields are compared recursively, but list items are ignored.
+		// In the extreme case of list of lists this can lead to inapropriate formatting,
+		// but this liberal approach is more practical and efficient in real-life cases.
 		return true
 	case yaml.AliasNode, yaml.DocumentNode:
 		// TODO
