@@ -6,8 +6,6 @@ metadata: # comment
     app: nginx # comment 
 # comment 
 spec: # comment
-  # comment before deleted field
-  replicas: 3 # comment next to deleted field
   # comment
   selector: # comment
     # comment
@@ -26,15 +24,17 @@ spec: # comment
       labels: # comment
         # comment
         app: nginx # comment
+      creationTimestamp: null
     spec: # comment
       containers: # comment
-      - name: nginx # comment
-        image: nginx:1.14.2 # comment
-        ports: # comment
-        - containerPort: 80 # comment
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+        resources: {}
       # comment before updated field
-      restartPolicy: Always # comment next to updated field
+      restartPolicy: OnFailure # comment next to updated field
       # comment after updated field
+  strategy:
+    type: RollingUpdate
 # comment
-
-status: {}

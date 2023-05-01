@@ -35,4 +35,8 @@ spec: # comment
       # comment before updated field
       restartPolicy: OnFailure # comment next to updated field
       # comment after updated field
-  strategy: {}
+  strategy:
+    type: RollingUpdate
+# comment
+
+status: {}
