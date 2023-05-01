@@ -16,9 +16,6 @@ limitations under the License.
 
 package kubeobject
 
-// TODO: do not try to restore order of lists
-// TODO: do not consider adding item to list anywhere as a change
-
 import (
 	"bytes"
 	"fmt"
@@ -181,21 +178,14 @@ func copyListFormatting(src, dst *yaml.Node) {
 	// keep comments
 	shallowCopyComments(src, dst)
 	// copy formatting of `src` fields to corresponding `dst` fields
-	nextInDst := 0 // next index in `dst`
 	for i := 0; i < len(src.Content); i++ {
-		j, found := findItem(src.Content[i], dst, nextInDst)
+		j, found := findItem(src.Content[i], dst, 0)
 		if !found {
 			continue
 		}
 
-		// keep ordering
-		if j != nextInDst {
-			dst.Content[j], dst.Content[nextInDst] = dst.Content[nextInDst], dst.Content[j]
-			dst.Content[j+1], dst.Content[nextInDst+1] = dst.Content[nextInDst+1], dst.Content[j+1]
-		}
 		// keep comments
-		deepCopyFormatting(src.Content[i], dst.Content[nextInDst])
-		nextInDst++
+		deepCopyFormatting(src.Content[i], dst.Content[j])
 	}
 }
 
@@ -227,6 +217,8 @@ func findItem(needle, haystack *yaml.Node, startIndex int) (int, bool) {
 	return 0, false
 }
 
+// deepEqual recursively compares two YAML nodes by value.
+// deepEqual is used to find matching items in two lists
 func deepEqual(src, dst *yaml.Node) bool {
 	if src.Kind != dst.Kind {
 		return false
@@ -238,8 +230,8 @@ func deepEqual(src, dst *yaml.Node) bool {
 		if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
 			panic("unexpected number of children for YAML map")
 		}
-		// if all `src` fields are present in `dst` with the same value, the two is considered equal
-		// in other words we do not consider adding new fields as a difference here
+		// If all `src` fields are present in `dst` with the same value, the two is considered equal
+		// In other words, adding new fields to a map isn't considered as a difference for our purposes (comparing list items by value)
 		for i := 0; i < len(src.Content); i += 2 {
 			key, ok := asString(src.Content[i])
 			if !ok {
@@ -254,30 +246,14 @@ func deepEqual(src, dst *yaml.Node) bool {
 			}
 		}
 		return true
-	case yaml.SequenceNode, yaml.DocumentNode:
-		// adding items to the end of the list is NOT considered a difference
-		// adding items anywhere else is considered a difference
-		// removing items from the list is considered a difference
-		// changing the order of the items is considered a difference
-
-		// NOTE: since different order of the same items is considered to make a difference here,
-		//       that means we will only restore the order of "outermost" lists
-		// TODO: do not consider changing the order of items as a difference? does it worth the increase in time-complexity to O(n^2)?
-
-		if len(src.Content) > len(dst.Content) {
-			return false
-		}
-		for i, srcItem := range src.Content {
-			if !deepEqual(srcItem, dst.Content[i]) {
-				return false
-			}
-		}
+	case yaml.SequenceNode:
+		// any change in embedded lists isn't considered as a difference for our purposes (comparing list items by value)
 		return true
-	case yaml.AliasNode:
+	case yaml.AliasNode, yaml.DocumentNode:
 		// TODO
-		return false
+		return true
 	}
-	return false
+	panic(fmt.Sprintf("unexpected YAML node type: %v", src.Kind))
 }
 
 func yamlNodeOf(obj *fn.SubObject) *yaml.Node {

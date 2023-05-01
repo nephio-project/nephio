@@ -389,8 +389,7 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 	// TODO: changing item of outermost list
 	// TODO: changing order of outermost list
 	// TODO: add item to the middle of outermost list
-	// TODO: changing item of list inside list
-	// TODO: add item to the end of list inside list
+	// TODO: changing a list inside a list (ports inside containers)
 
 	testcases := []deploymentTestcase{
 		{
