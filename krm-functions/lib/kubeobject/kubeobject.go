@@ -16,6 +16,9 @@ limitations under the License.
 
 package kubeobject
 
+// TODO: do not try to restore order of lists
+// TODO: do not consider adding item to list anywhere as a change
+
 import (
 	"bytes"
 	"fmt"
@@ -78,10 +81,6 @@ func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
 func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
 	return safeSetNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
-
-// NOTE: the following functions are considered as "methods" of KubeObject,
-// and thus nill checking of `obj` was omitted intentionally:
-// the caller is responsible for ensuring that `obj` is not nil`
 
 // setNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
 // comments and the order of fields in the YAML wherever it is possible.
@@ -239,6 +238,8 @@ func deepEqual(src, dst *yaml.Node) bool {
 		if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
 			panic("unexpected number of children for YAML map")
 		}
+		// if all `src` fields are present in `dst` with the same value, the two is considered equal
+		// in other words we do not consider adding new fields as a difference here
 		for i := 0; i < len(src.Content); i += 2 {
 			key, ok := asString(src.Content[i])
 			if !ok {
@@ -248,18 +249,26 @@ func deepEqual(src, dst *yaml.Node) bool {
 			if !found {
 				return false
 			}
-
 			if !deepEqual(src.Content[i+1], dst.Content[j+1]) {
 				return false
 			}
 		}
 		return true
 	case yaml.SequenceNode, yaml.DocumentNode:
-		if len(src.Content) != len(dst.Content) {
+		// adding items to the end of the list is NOT considered a difference
+		// adding items anywhere else is considered a difference
+		// removing items from the list is considered a difference
+		// changing the order of the items is considered a difference
+
+		// NOTE: since different order of the same items is considered to make a difference here,
+		//       that means we will only restore the order of "outermost" lists
+		// TODO: do not consider changing the order of items as a difference? does it worth the increase in time-complexity to O(n^2)?
+
+		if len(src.Content) > len(dst.Content) {
 			return false
 		}
-		for i, aItem := range src.Content {
-			if !deepEqual(aItem, dst.Content[i]) {
+		for i, srcItem := range src.Content {
+			if !deepEqual(srcItem, dst.Content[i]) {
 				return false
 			}
 		}

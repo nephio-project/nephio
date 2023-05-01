@@ -365,53 +365,68 @@ type deploymentTestcase struct {
 	transform    func(*appsv1.Deployment)
 }
 
-func crudSpecFields(deploy *appsv1.Deployment) {
+func setSpecFields(deploy *appsv1.Deployment) {
 	deploy.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType  // "create new" field
 	deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyOnFailure // update field value
 	deploy.Spec.Replicas = nil                                              // "delete" field if present
 
 }
 
-func crudStatusFields(deploy *appsv1.Deployment) {
+func setStatusFields(deploy *appsv1.Deployment) {
 	deploy.Status.AvailableReplicas = 0 // "delete"
 	deploy.Status.Replicas = 3          // "update"
 }
 
-func crudAllFields(deploy *appsv1.Deployment) {
-	crudSpecFields(deploy)
-	crudStatusFields(deploy)
+func setAllFields(deploy *appsv1.Deployment) {
+	setSpecFields(deploy)
+	setStatusFields(deploy)
+}
+
+func noop(deploy *appsv1.Deployment) {
 }
 
 func TestSetNestedFieldKeepFormatting(t *testing.T) {
+	// TODO: changing item of outermost list
+	// TODO: changing order of outermost list
+	// TODO: add item to the middle of outermost list
+	// TODO: changing item of list inside list
+	// TODO: add item to the end of list inside list
+
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__spec_field_crud_expected.yaml",
-			transform:    crudSpecFields,
+			expectedFile: "testdata/deployment_full__change_spec_fields_expected.yaml",
+			transform:    setSpecFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__spec_field_crud_expected.yaml",
-			transform:    crudSpecFields,
+			expectedFile: "testdata/deployment_no_status__change_spec_fields_expected.yaml",
+			transform:    setSpecFields,
 		},
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__status_field_crud_expected.yaml",
-			transform:    crudStatusFields,
+			expectedFile: "testdata/deployment_full__change_status_fields_expected.yaml",
+			transform:    setStatusFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__status_field_crud_expected.yaml",
-			transform:    crudStatusFields,
+			expectedFile: "testdata/deployment_no_status__change_status_fields_expected.yaml",
+			transform:    setStatusFields,
 		},
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__all_field_crud_expected.yaml",
-			transform:    crudAllFields,
+			expectedFile: "testdata/deployment_full__change_all_fields_expected.yaml",
+			transform:    setAllFields,
+		},
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__noop_expected.yaml",
+			transform:    noop,
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.expectedFile, func(t *testing.T) {
+			var err error
 			obj := testlib.MustParseKubeObject(t, tc.inputFile)
 			var deploy appsv1.Deployment
 			if err := obj.As(&deploy); err != nil {
@@ -420,7 +435,7 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 
 			tc.transform(&deploy)
 
-			err := safeSetNestedFieldKeepFormatting(obj, deploy.Spec, "spec")
+			err = safeSetNestedFieldKeepFormatting(obj, deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
@@ -438,13 +453,13 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__spec_field_crud_setspec_expected.yaml",
-			transform:    crudSpecFields,
+			expectedFile: "testdata/deployment_full__change_spec_fields_setspec_expected.yaml",
+			transform:    setSpecFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__spec_field_crud_setspec_expected.yaml",
-			transform:    crudSpecFields,
+			expectedFile: "testdata/deployment_no_status__change_spec_fields_setspec_expected.yaml",
+			transform:    setSpecFields,
 		},
 	}
 	for _, tc := range testcases {
@@ -475,13 +490,13 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__status_field_crud_setstatus_expected.yaml",
-			transform:    crudStatusFields,
+			expectedFile: "testdata/deployment_full__change_status_fields_setstatus_expected.yaml",
+			transform:    setStatusFields,
 		},
 		{
 			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__status_field_crud_setstatus_expected.yaml",
-			transform:    crudStatusFields,
+			expectedFile: "testdata/deployment_no_status__change_status_fields_setstatus_expected.yaml",
+			transform:    setStatusFields,
 		},
 	}
 	for _, tc := range testcases {
