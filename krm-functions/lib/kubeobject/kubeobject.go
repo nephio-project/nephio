@@ -101,8 +101,7 @@ func safeSetNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fie
 		newNode.Kind != yaml.DocumentNode || len(newNode.Content) == 0 {
 		panic("unexpected YAML node type after parsing SubObject")
 	}
-	restoreFieldOrder(oldNode.Content[0], newNode.Content[0])
-	deepCopyComments(oldNode.Content[0], newNode.Content[0])
+	deepCopyFormatting(oldNode.Content[0], newNode.Content[0])
 
 	b, err := toYAML(newNode)
 	if err != nil {
@@ -125,50 +124,37 @@ func shallowCopyComments(src, dst *yaml.Node) {
 	dst.FootComment = src.FootComment
 }
 
-func deepCopyComments(src, dst *yaml.Node) {
+func deepCopyFormatting(src, dst *yaml.Node) {
 	if src.Kind != dst.Kind {
 		return
 	}
-	shallowCopyComments(src, dst)
-	if dst.Kind == yaml.MappingNode {
-		if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
-			panic("unexpected number of children for YAML map")
-		}
-		for i := 0; i < len(dst.Content); i += 2 {
-			dstKeyNode := dst.Content[i]
-			key, ok := asString(dstKeyNode)
-			if !ok {
-				continue
-			}
 
-			j, ok := findKey(src, key)
-			if !ok {
-				continue
-			}
-			srcKeyNode, srcValueNode := src.Content[j], src.Content[j+1]
-			dstValueNode := dst.Content[i+1]
-			shallowCopyComments(srcKeyNode, dstKeyNode)
-			deepCopyComments(srcValueNode, dstValueNode)
-		}
+	switch dst.Kind {
+	case yaml.MappingNode:
+		deepCopyFormattingMap(src, dst)
+	case yaml.SequenceNode:
+		deepCopyFormattingList(src, dst)
+	default:
+		shallowCopyComments(src, dst)
 	}
 }
 
-func restoreFieldOrder(src, dst *yaml.Node) {
-	if (src.Kind != dst.Kind) || (dst.Kind != yaml.MappingNode) {
-		return
-	}
+func deepCopyFormattingMap(src, dst *yaml.Node) {
 	if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
 		panic("unexpected number of children for YAML map")
 	}
 
-	nextInDst := 0
+	shallowCopyComments(src, dst)
+
+	// reorder `dst` fields to match `src`
+	nextInDst := 0 // next index in `dst`
 	for i := 0; i < len(src.Content); i += 2 {
 		key, ok := asString(src.Content[i])
 		if !ok {
 			continue
 		}
 
-		j, ok := findKey(dst, key)
+		j, ok := findKey(dst, key, nextInDst)
 		if !ok {
 			continue
 		}
@@ -176,12 +162,13 @@ func restoreFieldOrder(src, dst *yaml.Node) {
 			dst.Content[j], dst.Content[nextInDst] = dst.Content[nextInDst], dst.Content[j]
 			dst.Content[j+1], dst.Content[nextInDst+1] = dst.Content[nextInDst+1], dst.Content[j+1]
 		}
+		shallowCopyComments(src.Content[i], dst.Content[nextInDst])
+		deepCopyFormatting(src.Content[i+1], dst.Content[nextInDst+1])
 		nextInDst += 2
-
-		srcValueNode := src.Content[i+1]
-		dstValueNode := dst.Content[nextInDst-1]
-		restoreFieldOrder(srcValueNode, dstValueNode)
 	}
+}
+
+func deepCopyFormattingList(src, dst *yaml.Node) {
 }
 
 func asString(node *yaml.Node) (string, bool) {
@@ -191,12 +178,12 @@ func asString(node *yaml.Node) (string, bool) {
 	return "", false
 }
 
-func findKey(m *yaml.Node, key string) (int, bool) {
+func findKey(m *yaml.Node, key string, startIndex int) (int, bool) {
 	children := m.Content
 	if len(children)%2 != 0 {
 		panic("unexpected number of children for YAML map")
 	}
-	for i := 0; i < len(children); i += 2 {
+	for i := startIndex; i < len(children); i += 2 {
 		keyNode := children[i]
 		k, ok := asString(keyNode)
 		if ok && k == key {
