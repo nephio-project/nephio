@@ -90,12 +90,12 @@ func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
 // Merging the code below to the upstream SDK is in progress and tracked in this issue:
 // https://github.com/GoogleContainerTools/kpt/issues/3923
 func safeSetNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
-	oldNode := yamlNodeOf2(&obj.SubObject)
+	oldNode := yamlNodeOf(&obj.SubObject)
 	err := obj.SetNestedField(value, fields...)
 	if err != nil {
 		return err
 	}
-	newNode := yamlNodeOf2(&obj.SubObject)
+	newNode := yamlNodeOf(&obj.SubObject)
 
 	if oldNode.Kind != yaml.DocumentNode || len(oldNode.Content) == 0 ||
 		newNode.Kind != yaml.DocumentNode || len(newNode.Content) == 0 {
@@ -131,44 +131,73 @@ func deepCopyFormatting(src, dst *yaml.Node) {
 
 	switch dst.Kind {
 	case yaml.MappingNode:
-		deepCopyFormattingMap(src, dst)
+		copyMapFormatting(src, dst)
 	case yaml.SequenceNode:
-		deepCopyFormattingList(src, dst)
+		copyListFormatting(src, dst)
+	case yaml.DocumentNode:
+		if len(src.Content) == 1 && len(dst.Content) == 1 {
+			shallowCopyComments(src, dst)
+			deepCopyFormatting(src.Content[0], dst.Content[0])
+		} else {
+			copyListFormatting(src, dst)
+		}
 	default:
 		shallowCopyComments(src, dst)
 	}
 }
 
-func deepCopyFormattingMap(src, dst *yaml.Node) {
+func copyMapFormatting(src, dst *yaml.Node) {
 	if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
 		panic("unexpected number of children for YAML map")
 	}
 
+	// keep comments
 	shallowCopyComments(src, dst)
 
-	// reorder `dst` fields to match `src`
+	// copy formatting of `src` fields to corresponding `dst` fields
 	nextInDst := 0 // next index in `dst`
 	for i := 0; i < len(src.Content); i += 2 {
 		key, ok := asString(src.Content[i])
 		if !ok {
 			continue
 		}
-
-		j, ok := findKey(dst, key, nextInDst)
-		if !ok {
+		j, found := findKey(dst, key, nextInDst)
+		if !found {
 			continue
 		}
+
+		// keep ordering
 		if j != nextInDst {
 			dst.Content[j], dst.Content[nextInDst] = dst.Content[nextInDst], dst.Content[j]
 			dst.Content[j+1], dst.Content[nextInDst+1] = dst.Content[nextInDst+1], dst.Content[j+1]
 		}
+		// keep comments
 		shallowCopyComments(src.Content[i], dst.Content[nextInDst])
 		deepCopyFormatting(src.Content[i+1], dst.Content[nextInDst+1])
 		nextInDst += 2
 	}
 }
 
-func deepCopyFormattingList(src, dst *yaml.Node) {
+func copyListFormatting(src, dst *yaml.Node) {
+	// keep comments
+	shallowCopyComments(src, dst)
+	// copy formatting of `src` fields to corresponding `dst` fields
+	nextInDst := 0 // next index in `dst`
+	for i := 0; i < len(src.Content); i++ {
+		j, found := findItem(src.Content[i], dst, nextInDst)
+		if !found {
+			continue
+		}
+
+		// keep ordering
+		if j != nextInDst {
+			dst.Content[j], dst.Content[nextInDst] = dst.Content[nextInDst], dst.Content[j]
+			dst.Content[j+1], dst.Content[nextInDst+1] = dst.Content[nextInDst+1], dst.Content[j+1]
+		}
+		// keep comments
+		deepCopyFormatting(src.Content[i], dst.Content[nextInDst])
+		nextInDst++
+	}
 }
 
 func asString(node *yaml.Node) (string, bool) {
@@ -178,11 +207,8 @@ func asString(node *yaml.Node) (string, bool) {
 	return "", false
 }
 
-func findKey(m *yaml.Node, key string, startIndex int) (int, bool) {
-	children := m.Content
-	if len(children)%2 != 0 {
-		panic("unexpected number of children for YAML map")
-	}
+func findKey(haystack *yaml.Node, key string, startIndex int) (int, bool) {
+	children := haystack.Content
 	for i := startIndex; i < len(children); i += 2 {
 		keyNode := children[i]
 		k, ok := asString(keyNode)
@@ -193,7 +219,59 @@ func findKey(m *yaml.Node, key string, startIndex int) (int, bool) {
 	return 0, false
 }
 
-func yamlNodeOf2(obj *fn.SubObject) *yaml.Node {
+func findItem(needle, haystack *yaml.Node, startIndex int) (int, bool) {
+	for i := startIndex; i < len(haystack.Content); i++ {
+		if deepEqual(needle, haystack.Content[i]) {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func deepEqual(src, dst *yaml.Node) bool {
+	if src.Kind != dst.Kind {
+		return false
+	}
+	switch src.Kind {
+	case yaml.ScalarNode:
+		return src.Value == dst.Value
+	case yaml.MappingNode:
+		if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
+			panic("unexpected number of children for YAML map")
+		}
+		for i := 0; i < len(src.Content); i += 2 {
+			key, ok := asString(src.Content[i])
+			if !ok {
+				return false
+			}
+			j, found := findKey(dst, key, 0)
+			if !found {
+				return false
+			}
+
+			if !deepEqual(src.Content[i+1], dst.Content[j+1]) {
+				return false
+			}
+		}
+		return true
+	case yaml.SequenceNode, yaml.DocumentNode:
+		if len(src.Content) != len(dst.Content) {
+			return false
+		}
+		for i, aItem := range src.Content {
+			if !deepEqual(aItem, dst.Content[i]) {
+				return false
+			}
+		}
+		return true
+	case yaml.AliasNode:
+		// TODO
+		return false
+	}
+	return false
+}
+
+func yamlNodeOf(obj *fn.SubObject) *yaml.Node {
 	var node *yaml.Node
 	yamlBytes := []byte(obj.String())
 	node, err := parseFirstObj(yamlBytes)
