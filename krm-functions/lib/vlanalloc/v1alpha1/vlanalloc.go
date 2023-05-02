@@ -18,48 +18,48 @@ package v1alpha1
 
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 )
 
-type Interface struct {
-	kubeobject.KubeObjectExt[*nephioreqv1alpha1.Interface]
+type VLANAllocation struct {
+	kubeobject.KubeObjectExt[*vlanv1alpha1.VLANAllocation]
 }
 
-// NewFromKubeObject creates a new parser interface
+// NewFromKubeObject creates a new KubeObjectExt
 // It expects a *fn.KubeObject as input representing the serialized yaml file
-func NewFromKubeObject(o *fn.KubeObject) (*Interface, error) {
-	r, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
+func NewFromKubeObject(o *fn.KubeObject) (*VLANAllocation, error) {
+	r, err := kubeobject.NewFromKubeObject[*vlanv1alpha1.VLANAllocation](o)
 	if err != nil {
 		return nil, err
 	}
-	return &Interface{*r}, nil
+	return &VLANAllocation{*r}, nil
 }
 
-// NewFromYAML creates a new parser interface
+// NewFromYAML creates a new KubeObjectExt
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewFromYAML(b []byte) (*Interface, error) {
-	r, err := kubeobject.NewFromYaml[*nephioreqv1alpha1.Interface](b)
+func NewFromYAML(b []byte) (*VLANAllocation, error) {
+	r, err := kubeobject.NewFromYaml[*vlanv1alpha1.VLANAllocation](b)
 	if err != nil {
 		return nil, err
 	}
-	return &Interface{*r}, nil
+	return &VLANAllocation{*r}, nil
 }
 
-// NewFromGoStruct creates a new parser interface
-// It expects a go struct representing the interface krm resource
-func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
-	r, err := kubeobject.NewFromGoStruct[*nephioreqv1alpha1.Interface](x)
+// NewFromGoStruct creates a new KubeObjectExt
+// It expects a go struct representing the KRM resource
+func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
+	r, err := kubeobject.NewFromGoStruct[*vlanv1alpha1.VLANAllocation](x)
 	if err != nil {
 		return nil, err
 	}
-	return &Interface{*r}, nil
+	return &VLANAllocation{*r}, nil
 }
 
-func (r *Interface) SetSpec(spec nephioreqv1alpha1.InterfaceSpec) error {
+func (r *VLANAllocation) SetSpec(spec vlanv1alpha1.VLANAllocationSpec) error {
 	return r.KubeObjectExt.SetSpec(spec)
 }
 
-func (r *Interface) SetStatus(spec nephioreqv1alpha1.InterfaceStatus) error {
+func (r *VLANAllocation) SetStatus(spec vlanv1alpha1.VLANAllocationStatus) error {
 	return r.KubeObjectExt.SetStatus(spec)
 }
