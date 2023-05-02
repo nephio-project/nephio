@@ -95,7 +95,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		},
 		"TestNewFromGoStructNil": {
 			input:       nil,
-			errExpected: true,
+			errExpected: false,
 		},
 	}
 
@@ -131,10 +131,10 @@ func TestGetKubeObject(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 
-			if diff := cmp.Diff(tc.wantKind, i.GetKubeObject().GetKind()); diff != "" {
+			if diff := cmp.Diff(tc.wantKind, i.K.KubeObject.GetKind()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
-			if diff := cmp.Diff(tc.wantName, i.GetKubeObject().GetName()); diff != "" {
+			if diff := cmp.Diff(tc.wantName, i.K.KubeObject.GetName()); diff != "" {
 				t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
 			}
 		})
@@ -163,7 +163,7 @@ func TestGetGoStruct(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			g, err := i.GetGoStruct()
+			g, err := i.K.GetGoStruct()
 			assert.NoError(t, err)
 			got := g.Spec.Config
 			configSpec := &NadConfig{}

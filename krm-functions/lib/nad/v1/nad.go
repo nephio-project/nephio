@@ -21,11 +21,10 @@ import (
 	"fmt"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	"github.com/nephio-project/nephio/krm-functions/lib/parser"
+	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 )
 
 const (
-	// errors
 	errKubeObjectNotInitialized = "KubeObject not initialized"
 	CniVersion                  = "0.3.1"
 	NadMode                     = "bridge"
@@ -37,255 +36,241 @@ var (
 )
 
 type NadConfig struct {
-	CniVersion string          `json:"cniVersion"`
-	Vlan       int             `json:"vlan"`
-	Plugins    []PluginCniType `json:"plugins"`
+	CniVersion string          `json:"cniVersion,omitempty"`
+	Vlan       int             `json:"vlan,omitempty"`
+	Plugins    []PluginCniType `json:"plugins,omitempty"`
 }
 
 type PluginCniType struct {
-	Type         string       `json:"type"`
-	Capabilities Capabilities `json:"capabilities"`
-	Master       string       `json:"master"`
-	Mode         string       `json:"mode"`
-	Ipam         Ipam         `json:"ipam"`
+	Type         string       `json:"type,omitempty"`
+	Capabilities Capabilities `json:"capabilities,omitempty"`
+	Master       string       `json:"master,omitempty"`
+	Mode         string       `json:"mode,omitempty"`
+	Ipam         Ipam         `json:"ipam,omitempty"`
 }
 
 type Capabilities struct {
-	Ips bool `json:"ips"`
-	Mac bool `json:"mac"`
+	Ips bool `json:"ips,omitempty"`
+	Mac bool `json:"mac,omitempty"`
 }
 
 type Ipam struct {
-	Type      string      `json:"type"`
-	Addresses []Addresses `json:"addresses"`
+	Type      string      `json:"type,omitempty"`
+	Addresses []Addresses `json:"addresses,omitempty"`
 }
 
 type Addresses struct {
-	Address string `json:"address"`
-	Gateway string `json:"gateway"`
+	Address string `json:"address,omitempty"`
+	Gateway string `json:"gateway,omitempty"`
 }
 
-type Nad interface {
-	parser.Parser[*nadv1.NetworkAttachmentDefinition]
-	// GetKubeObject returns the present kubeObject
-	GetKubeObject() *fn.KubeObject
-	// GetConfigSpec returns the  spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetConfigSpec() string
-	// GetCNIType returns the cniType from the spec
-	// if an error occurs or the attribute is not present an empty string is returned
-	GetCNIType() string
-	// GetVlan get the name of the Vlan in the spec
-	GetVlan() int
-	// GetNadMaster get the name of the NAD Master interface in the spec
-	GetNadMaster() string
-	// GetIpamAddress get the name of the NAD IPAM addresses in the spec
-	GetIpamAddress() []Addresses
-	// SetConfigSpec sets the spec attributes in the kubeobject according the go struct
-	SetConfigSpec(s *nadv1.NetworkAttachmentDefinitionSpec) error
-	// SetCNIType sets the cniType in the spec
-	SetCNIType(s string) error
-	// SetVlan sets the name of the Vlan in the spec
-	SetVlan(s int) error
-	// SetNadMaster sets the master interface in the spec
-	SetNadMaster(s string) error
-	// SetIpamAddress sets the name of the IPAM info in the spec
-	SetIpamAddress(a []Addresses) error
+type CniSpecType int64
+
+const (
+	Both     CniSpecType = iota // 0
+	IpamType                    // 1
+	VlanType                    // 2
+)
+
+type NadStruct struct {
+	K kubeobject.KubeObjectExt[*nadv1.NetworkAttachmentDefinition]
+	C CniSpecType
 }
 
 // NewFromKubeObject creates a new parser interface
 // It expects a *fn.KubeObject as input representing the serialized yaml file
-func NewFromKubeObject(o *fn.KubeObject) Nad {
-	return &nadStruct{
-		p: parser.NewFromKubeObject[*nadv1.NetworkAttachmentDefinition](o),
+func NewFromKubeObject(b *fn.KubeObject) (*NadStruct, error) {
+	p, err := kubeobject.NewFromKubeObject[*nadv1.NetworkAttachmentDefinition](b)
+	if err != nil {
+		return nil, err
 	}
+	return &NadStruct{K: *p}, nil
 }
 
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
-func NewFromYAML(b []byte) (Nad, error) {
-	p, err := parser.NewFromYaml[*nadv1.NetworkAttachmentDefinition](b)
+func NewFromYAML(b []byte) (*NadStruct, error) {
+	p, err := kubeobject.NewFromYaml[*nadv1.NetworkAttachmentDefinition](b)
 	if err != nil {
 		return nil, err
 	}
-	return &nadStruct{
-		p: p,
-	}, nil
+	return &NadStruct{K: *p}, nil
 }
 
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct(x *nadv1.NetworkAttachmentDefinition) (Nad, error) {
-	p, err := parser.NewFromGoStruct[*nadv1.NetworkAttachmentDefinition](x)
+func NewFromGoStruct(x *nadv1.NetworkAttachmentDefinition) (*NadStruct, error) {
+	p, err := kubeobject.NewFromGoStruct[*nadv1.NetworkAttachmentDefinition](x)
 	if err != nil {
 		return nil, err
 	}
-	return &nadStruct{
-		p: p,
-	}, nil
+	return &NadStruct{K: *p}, nil
 }
 
-type nadStruct struct {
-	p parser.Parser[*nadv1.NetworkAttachmentDefinition]
+func (r *NadStruct) GetCniSpecType(fields ...string) CniSpecType {
+	return r.C
 }
 
-// GetKubeObject returns the present kubeObject
-func (r *nadStruct) GetKubeObject() *fn.KubeObject {
-	return r.p.GetKubeObject()
+func (r *NadStruct) GetStringValue(fields ...string) string {
+	if r == nil {
+		return ""
+	}
+	s, ok, err := r.K.NestedString(fields...)
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
 }
 
-// GetGoStruct returns a go struct representing the present KRM resource
-func (r *nadStruct) GetGoStruct() (*nadv1.NetworkAttachmentDefinition, error) {
-	return r.p.GetGoStruct()
+func (r *NadStruct) GetConfigSpec() string {
+	if r == nil {
+		return ""
+	}
+	s, ok, err := r.K.NestedString(ConfigType...)
+	if err != nil {
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return s
 }
 
-func (r *nadStruct) GetStringValue(fields ...string) string {
-	return r.p.GetStringValue()
-}
-
-func (r *nadStruct) GetBoolValue(fields ...string) bool {
-	return r.p.GetBoolValue()
-}
-
-func (r *nadStruct) GetIntValue(fields ...string) int {
-	return r.p.GetIntValue()
-}
-
-func (r *nadStruct) GetStringMap(fields ...string) map[string]string {
-	return r.p.GetStringMap()
-}
-
-func (r *nadStruct) SetNestedString(s string, fields ...string) error {
-	return r.p.SetNestedString(s, fields...)
-}
-
-func (r *nadStruct) SetNestedInt(s int, fields ...string) error {
-	return r.p.SetNestedInt(s, fields...)
-}
-
-func (r *nadStruct) SetNestedBool(s bool, fields ...string) error {
-	return r.p.SetNestedBool(s, fields...)
-}
-
-func (r *nadStruct) SetNestedMap(s map[string]string, fields ...string) error {
-	return r.p.SetNestedMap(s, fields...)
-}
-
-func (r *nadStruct) DeleteNestedField(fields ...string) error {
-	return r.p.DeleteNestedField(fields...)
-}
-
-// GetConfigSpec gets the spec attributes in the kubeobject according the go struct
-func (r *nadStruct) GetConfigSpec() string {
-	return r.p.GetStringValue(ConfigType...)
-}
-
-func (r *nadStruct) GetCNIType() string {
+func (r *NadStruct) GetCNIType() string {
 	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
 		return ""
 	}
 	return nadConfigStruct.Plugins[0].Type
 }
 
-func (r *nadStruct) GetVlan() int {
+func (r *NadStruct) GetVlan() int {
 	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
 		return 0
 	}
 	return nadConfigStruct.Vlan
 }
 
-func (r *nadStruct) GetNadMaster() string {
+func (r *NadStruct) GetNadMaster() string {
 	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
 		return ""
 	}
 	return nadConfigStruct.Plugins[0].Master
 }
 
-func (r *nadStruct) GetIpamAddress() []Addresses {
+func (r *NadStruct) GetIpamAddress() []Addresses {
 	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
 		return []Addresses{}
 	}
 	return nadConfigStruct.Plugins[0].Ipam.Addresses
 }
 
+func (r *NadStruct) GetNadConfig() NadConfig {
+	nadConfigStruct := NadConfig{}
+	configSpec := r.GetStringValue(ConfigType...)
+	if configSpec == "" {
+		configSpec = "{}"
+	}
+	if err := json.Unmarshal([]byte(configSpec), &nadConfigStruct); err != nil {
+		panic(err)
+	}
+	nadConfigStruct.CniVersion = CniVersion
+	if r.GetCniSpecType() == VlanType {
+		return nadConfigStruct
+	} else if r.GetCniSpecType() == IpamType || r.GetCniSpecType() == Both {
+		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+			nadConfigStruct.Plugins = []PluginCniType{
+				{
+					Capabilities: Capabilities{
+						Ips: true,
+					},
+					Mode: NadMode,
+					Ipam: Ipam{
+						Type: NadType,
+						Addresses: []Addresses{
+							{},
+						},
+					},
+				},
+			}
+		}
+		return nadConfigStruct
+	}
+	return nadConfigStruct
+}
+
+func (r *NadStruct) SetCniSpecType(cniType CniSpecType) {
+	r.C = cniType
+}
+
 // SetConfigSpec sets the spec attributes in the kubeobject according the go struct
-func (r *nadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) error {
+func (r *NadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) error {
 	b, err := json.Marshal(spec.Config)
 	if err != nil {
 		return err
 	}
-	return r.p.SetNestedString(string(b), ConfigType...)
+	return r.K.SetNestedString(string(b), ConfigType...)
 }
 
-func (r *nadStruct) SetCNIType(cnfType string) error {
-	if cnfType != "" {
-		nadConfigStruct := NadConfig{}
-		if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-			panic(err)
-		}
-		nadConfigStruct.Plugins[0].Type = cnfType
+func (r *NadStruct) SetCNIType(cniType string) error {
+	if cniType != "" {
+		nadConfigStruct := r.GetNadConfig()
+		nadConfigStruct.Plugins[0].Type = cniType
 		b, err := json.Marshal(nadConfigStruct)
 		if err != nil {
 			return err
 		}
-		return r.p.SetNestedString(string(b), ConfigType...)
+		return r.K.SetNestedString(string(b), ConfigType...)
 	} else {
 		return fmt.Errorf("unknown cniType")
 	}
 }
 
-func (r *nadStruct) SetVlan(vlanType int) error {
+func (r *NadStruct) SetVlan(vlanType int) error {
 	if vlanType != 0 {
-		nadConfigStruct := NadConfig{}
-		if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-			panic(err)
-		}
+		nadConfigStruct := r.GetNadConfig()
 		nadConfigStruct.Vlan = vlanType
 		b, err := json.Marshal(nadConfigStruct)
 		if err != nil {
 			return err
 		}
-		return r.p.SetNestedString(string(b), ConfigType...)
+		return r.K.SetNestedString(string(b), ConfigType...)
 	} else {
 		return fmt.Errorf("unknown vlanType")
 	}
 }
 
-func (r *nadStruct) SetNadMaster(nadMaster string) error {
+func (r *NadStruct) SetNadMaster(nadMaster string) error {
 	if nadMaster != "" {
-		nadConfigStruct := NadConfig{}
-		if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-			panic(err)
-		}
+		nadConfigStruct := r.GetNadConfig()
 		nadConfigStruct.Plugins[0].Master = nadMaster
 		b, err := json.Marshal(nadConfigStruct)
 		if err != nil {
 			return err
 		}
-		return r.p.SetNestedString(string(b), ConfigType...)
+		return r.K.SetNestedString(string(b), ConfigType...)
 	} else {
-		return fmt.Errorf("unknown cniType")
+		return fmt.Errorf("unknown nad master interface")
 	}
 }
 
-func (r *nadStruct) SetIpamAddress(ipam []Addresses) error {
+func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
 	if ipam != nil {
-		nadConfigStruct := NadConfig{}
-		if err := json.Unmarshal([]byte(r.p.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-			panic(err)
-		}
+		nadConfigStruct := r.GetNadConfig()
 		nadConfigStruct.Plugins[0].Ipam.Addresses = ipam
 		b, err := json.Marshal(nadConfigStruct)
 		if err != nil {
 			return err
 		}
-		return r.p.SetNestedString(string(b), ConfigType...)
+		return r.K.SetNestedString(string(b), ConfigType...)
 	} else {
-		return fmt.Errorf("unknown cniType")
+		return fmt.Errorf("unknown IPAM address")
 	}
 }
 
