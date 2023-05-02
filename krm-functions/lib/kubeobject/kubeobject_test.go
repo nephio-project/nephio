@@ -436,11 +436,11 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 
 			tc.transform(&deploy)
 
-			err = safeSetNestedFieldKeepFormatting(obj, deploy.Spec, "spec")
+			err = setNestedFieldKeepFormatting(obj, deploy.Spec, "spec")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
-			err = safeSetNestedFieldKeepFormatting(obj, deploy.Status, "status")
+			err = setNestedFieldKeepFormatting(obj, deploy.Status, "status")
 			if err != nil {
 				t.Errorf("unexpected error in SetNestedFieldKeepFormatting: %v", err)
 			}
