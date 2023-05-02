@@ -215,7 +215,7 @@ func findMatchingItemForFormattingCopy(srcItem *yaml.Node, dstList []*yaml.Node)
 	return 0, false
 }
 
-// shouldCopyFormatting retrurns whether `src` and `dst` nodes are matching in the sense
+// shouldCopyFormatting retrurns whether `src` and `dst` nodes are matching in the sense that
 // formatting should be copied from `src` to `dst`
 func shouldCopyFormatting(src, dst *yaml.Node) bool {
 	if src.Kind != dst.Kind {
@@ -228,8 +228,8 @@ func shouldCopyFormatting(src, dst *yaml.Node) bool {
 		if (len(src.Content)%2 != 0) || (len(dst.Content)%2 != 0) {
 			panic("unexpected number of children for YAML map")
 		}
-		// If all `src` fields are present in `dst` with the same value, the two is considered equal
-		// In other words, adding new fields to a map isn't considered as a difference for our purposes (comparing list items by value)
+		// If all `src` fields are present in `dst` with the same value, the two are considered equal
+		// In other words, adding new fields to a map isn't considered as a difference for our purposes
 		for i := 0; i < len(src.Content); i += 2 {
 			key, ok := asString(src.Content[i])
 			if !ok {
@@ -245,10 +245,10 @@ func shouldCopyFormatting(src, dst *yaml.Node) bool {
 		}
 		return true
 	case yaml.SequenceNode:
-		// Any change in embedded lists isn't considered as a difference for our purposes (comparing list items by value),
+		// Any change in embedded lists isn't considered as a difference for our purposes,
 		// or in other words: only map fields are compared recursively, but list items are ignored.
 		// In the extreme case of list of lists this can lead to inapropriate formatting,
-		// but this liberal approach is more practical and efficient in real-life cases.
+		// but I find this liberal approach to be more practical and efficient in real-life cases.
 		return true
 	case yaml.AliasNode, yaml.DocumentNode:
 		// TODO: check AliasNode properly?
@@ -302,7 +302,7 @@ func parseFirstObj(b []byte) (*yaml.Node, error) {
 	return node, nil
 }
 
-// marshal parsed yaml.Node to YAML text (bytes)
+// marshal yaml.Node to YAML text (bytes)
 func toYAML(node *yaml.Node) ([]byte, error) {
 	var w bytes.Buffer
 	encoder := yaml.NewEncoder(&w)
