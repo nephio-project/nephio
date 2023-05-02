@@ -384,6 +384,26 @@ func setAllFields(deploy *appsv1.Deployment) {
 	setStatusFields(deploy)
 }
 
+func changeList(deploy *appsv1.Deployment) {
+	deploy.Spec.Template.Spec.Containers = []corev1.Container{
+		deploy.Spec.Template.Spec.Containers[1],
+		{
+			Name:  "injected-by-test",
+			Image: "noop:1",
+			Ports: []corev1.ContainerPort{
+				{
+					Name:          "test-port",
+					ContainerPort: 8080,
+					Protocol:      "tcp",
+				},
+			},
+		},
+		deploy.Spec.Template.Spec.Containers[0],
+	}
+	deploy.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 1111
+
+}
+
 func noop(deploy *appsv1.Deployment) {
 }
 
@@ -394,6 +414,11 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 	// TODO: changing a list inside a list (ports inside containers)
 
 	testcases := []deploymentTestcase{
+		{
+			inputFile:    "testdata/deployment_full.yaml",
+			expectedFile: "testdata/deployment_full__noop_expected.yaml",
+			transform:    noop,
+		},
 		{
 			inputFile:    "testdata/deployment_full.yaml",
 			expectedFile: "testdata/deployment_full__change_spec_fields_expected.yaml",
@@ -421,8 +446,8 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 		},
 		{
 			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__noop_expected.yaml",
-			transform:    noop,
+			expectedFile: "testdata/deployment_full__change_list_expected.yaml",
+			transform:    changeList,
 		},
 	}
 	for _, tc := range testcases {
