@@ -408,11 +408,6 @@ func noop(deploy *appsv1.Deployment) {
 }
 
 func TestSetNestedFieldKeepFormatting(t *testing.T) {
-	// TODO: changing item of outermost list
-	// TODO: changing order of outermost list
-	// TODO: add item to the middle of outermost list
-	// TODO: changing a list inside a list (ports inside containers)
-
 	testcases := []deploymentTestcase{
 		{
 			inputFile:    "testdata/deployment_full.yaml",

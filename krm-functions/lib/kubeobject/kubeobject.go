@@ -16,8 +16,6 @@ limitations under the License.
 
 package kubeobject
 
-// TODO: add test cases from iface/ipalloc/... lib tests
-
 import (
 	"bytes"
 	"fmt"
