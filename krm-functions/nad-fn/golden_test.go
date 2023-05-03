@@ -22,18 +22,24 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	krmtest "github.com/nephio-project/nephio/krm-functions/lib/test"
 )
 
 const GoldenTestDataPath = "testdata/golden"
 const FailureCaseDataPath = "testdata/failure_cases"
 
-func TestFunction(t *testing.T) {
-	//fnRunner := fn.WithContext(context.TODO(), &DnnFn{})
+func TestGolden(t *testing.T) {
 	fnRunner := fn.ResourceListProcessorFunc(mutator.Run)
 
-	// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
+	// This golden test expects each subdirectory of `testdata` has its input resources (in `resources.yaml`)
 	// be modified to the output resources (in `_expected_error.txt`).
 	testhelpers.RunGoldenTests(t, GoldenTestDataPath, fnRunner)
 
-	RunFailureCases(t, FailureCaseDataPath, fnRunner)
+}
+
+func TestFailureCases(t *testing.T) {
+	fnRunner := fn.ResourceListProcessorFunc(mutator.Run)
+
+	// This failure tests, expects each directory to check for a specific failure
+	krmtest.RunFailureCases(t, FailureCaseDataPath, fnRunner)
 }

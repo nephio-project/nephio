@@ -20,12 +20,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	allocv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 )
 
 var normal = `apiVersion: ipam.alloc.nephio.org/v1alpha1
@@ -96,15 +94,13 @@ func TestNewFromGoStruct(t *testing.T) {
 					Name: "a",
 				},
 				Spec: ipamv1alpha1.IPAllocationSpec{
-					Kind: ipamv1alpha1.PrefixKindNetwork,
-					NetworkInstance: corev1.ObjectReference{
+					PrefixKind: ipamv1alpha1.PrefixKindNetwork,
+					NetworkInstance: &corev1.ObjectReference{
 						Name: "x",
 					},
-					AllocationLabels: allocv1alpha1.AllocationLabels{
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"a": "b",
-							},
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"a": "b",
 						},
 					},
 				},
@@ -113,7 +109,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		},
 		"Nil": {
 			input:       nil,
-			errExpected: true,
+			errExpected: false, // new approach does not return an error
 		},
 	}
 
@@ -164,7 +160,7 @@ func TestGetGoStruct(t *testing.T) {
 		file   string
 		wantPK ipamv1alpha1.PrefixKind
 		wantML map[string]string
-		wantNI corev1.ObjectReference
+		wantNI *corev1.ObjectReference
 	}{
 		"Normal": {
 			file:   normal,
@@ -172,7 +168,7 @@ func TestGetGoStruct(t *testing.T) {
 			wantML: map[string]string{
 				"a": "b",
 			},
-			wantNI: corev1.ObjectReference{
+			wantNI: &corev1.ObjectReference{
 				Name: "vpc-ran",
 			},
 		},
@@ -180,7 +176,7 @@ func TestGetGoStruct(t *testing.T) {
 			file:   empty,
 			wantPK: "",
 			wantML: nil,
-			wantNI: corev1.ObjectReference{},
+			wantNI: nil,
 		},
 	}
 
@@ -194,7 +190,7 @@ func TestGetGoStruct(t *testing.T) {
 			g, err := i.GetGoStruct()
 			assert.NoError(t, err)
 
-			gotPK := g.Spec.Kind
+			gotPK := g.Spec.PrefixKind
 			if diff := cmp.Diff(tc.wantPK, gotPK); diff != "" {
 				t.Errorf("PrefixKind: -want, +got:\n%s", diff)
 			}
@@ -222,60 +218,54 @@ func TestSetSpec(t *testing.T) {
 		"Override": {
 			file: normal,
 			t: ipamv1alpha1.IPAllocationSpec{
-				NetworkInstance: corev1.ObjectReference{
+				NetworkInstance: &corev1.ObjectReference{
 					Name:      "x",
 					Namespace: "y",
 				},
-				Kind: ipamv1alpha1.PrefixKindLoopback,
-				AllocationLabels: allocv1alpha1.AllocationLabels{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"a": "b",
-							"c": "d",
-							"e": "f",
-						},
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 		"Change": {
 			file: normal,
 			t: ipamv1alpha1.IPAllocationSpec{
-				Kind: ipamv1alpha1.PrefixKindLoopback,
-				AllocationLabels: allocv1alpha1.AllocationLabels{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"a": "b",
-							"c": "d",
-							"e": "f",
-						},
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 		"Empty": {
 			file: empty,
 			t: ipamv1alpha1.IPAllocationSpec{
-				NetworkInstance: corev1.ObjectReference{
+				NetworkInstance: &corev1.ObjectReference{
 					Name:      "x",
 					Namespace: "y",
 				},
-				Kind: ipamv1alpha1.PrefixKindLoopback,
-				AllocationLabels: allocv1alpha1.AllocationLabels{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"a": "b",
-							"c": "d",
-							"e": "f",
-						},
+				PrefixKind: ipamv1alpha1.PrefixKindLoopback,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"a": "b",
+						"c": "d",
+						"e": "f",
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
+				CreatePrefix: true,
+				Prefix:       "10.0.0.0/24",
 			},
 		},
 	}
@@ -308,8 +298,8 @@ func TestSetStatus(t *testing.T) {
 		"Override": {
 			file: normal,
 			t: ipamv1alpha1.IPAllocationStatus{
-				Prefix:  pointer.String("10.0.0.1/24"),
-				Gateway: pointer.String("10.0.0.254"),
+				AllocatedPrefix: "10.0.0.1/24",
+				Gateway:         "10.0.0.254",
 			},
 		},
 	}

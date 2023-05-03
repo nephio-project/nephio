@@ -28,7 +28,7 @@ import (
 	interfacelibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/interface/v1alpha1"
 	//ipallocv1v1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipallocation/v1alpha1"
 	condkptsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
-	ipalloclibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipallocation/v1alpha1"
+	ipalloclibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipalloc/v1alpha1"
 	nadlibv1 "github.com/nephio-project/nephio/krm-functions/lib/nad/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
@@ -136,48 +136,50 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 		nad.SetCniSpecType(nadlibv1.VlanType)
 	}
 
-	interfaces := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
-	for _, itfce := range interfaces {
-		i, err := interfacelibv1alpha1.NewFromYAML([]byte(itfce.String()))
-		if err != nil {
-			return nil, err
+	if nad.GetCniSpecType() != nadlibv1.VlanType {
+		interfaces := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
+		for _, itfce := range interfaces {
+			i, err := interfacelibv1alpha1.NewFromKubeObject(itfce)
+			if err != nil {
+				return nil, err
+			}
+			interfaceGoStruct, err := i.GetGoStruct()
+			if err != nil {
+				return nil, err
+			}
+			if r.cniType == "" {
+				err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
+			} else if r.cniType == string(interfaceGoStruct.Spec.CNIType) {
+				err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
+			} else {
+				return nil, fmt.Errorf("CNIType mismatch between interface and clustercontext")
+			}
+			if err != nil {
+				return nil, err
+			}
+			err = nad.SetNadMaster(r.masterInterface)
+			if err != nil {
+				return nil, err
+			}
 		}
-		interfaceGoStruct, err := i.GetGoStruct()
-		if err != nil {
-			return nil, err
-		}
-		err = nad.SetNadMaster(r.masterInterface)
-		if err != nil {
-			return nil, err
-		}
-		if r.cniType == "" {
-			err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
-		} else if r.cniType == string(interfaceGoStruct.Spec.CNIType) {
-			err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
-		} else {
-			return nil, fmt.Errorf("CNIType mismatch between interface and clustercontext")
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	ipAllocations := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
-	for _, ipAllocation := range ipAllocations {
-		alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipAllocation)
-		if err != nil {
-			return nil, err
-		}
-		allocGoStruct, err := alloc.GetGoStruct()
-		if err != nil {
-			return nil, err
-		}
-		err = nad.SetIpamAddress([]nadlibv1.Addresses{{
-			Address: allocGoStruct.Status.AllocatedPrefix,
-			Gateway: allocGoStruct.Status.Gateway,
-		}})
-		if err != nil {
-			return nil, err
+		ipAllocations := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+		for _, ipAllocation := range ipAllocations {
+			alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipAllocation)
+			if err != nil {
+				return nil, err
+			}
+			allocGoStruct, err := alloc.GetGoStruct()
+			if err != nil {
+				return nil, err
+			}
+			err = nad.SetIpamAddress([]nadlibv1.Addresses{{
+				Address: allocGoStruct.Status.AllocatedPrefix,
+				Gateway: allocGoStruct.Status.Gateway,
+			}})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

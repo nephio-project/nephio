@@ -23,13 +23,13 @@ import (
 )
 
 type VLANAllocation struct {
-	kubeobject.KubeObjectExt[vlanv1alpha1.VLANAllocation]
+	kubeobject.KubeObjectExt[*vlanv1alpha1.VLANAllocation]
 }
 
 // NewFromKubeObject creates a new KubeObjectExt
 // It expects a *fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject(o *fn.KubeObject) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANAllocation](o)
+	r, err := kubeobject.NewFromKubeObject[*vlanv1alpha1.VLANAllocation](o)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func NewFromKubeObject(o *fn.KubeObject) (*VLANAllocation, error) {
 // NewFromYAML creates a new KubeObjectExt
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromYaml[vlanv1alpha1.VLANAllocation](b)
+	r, err := kubeobject.NewFromYaml[*vlanv1alpha1.VLANAllocation](b)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func NewFromYAML(b []byte) (*VLANAllocation, error) {
 // NewFromGoStruct creates a new KubeObjectExt
 // It expects a go struct representing the KRM resource
 func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromGoStruct(x)
+	r, err := kubeobject.NewFromGoStruct[*vlanv1alpha1.VLANAllocation](x)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +57,9 @@ func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
 }
 
 func (r *VLANAllocation) SetSpec(spec vlanv1alpha1.VLANAllocationSpec) error {
-	return r.KubeObjectExt.UnsafeSetSpec(spec)
+	return r.KubeObjectExt.SetSpec(spec)
 }
 
 func (r *VLANAllocation) SetStatus(spec vlanv1alpha1.VLANAllocationStatus) error {
-	return r.KubeObjectExt.UnsafeSetStatus(spec)
+	return r.KubeObjectExt.SetStatus(spec)
 }
