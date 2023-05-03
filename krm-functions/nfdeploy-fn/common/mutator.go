@@ -75,8 +75,7 @@ func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, erro
 		return false, err
 	}
 
-	nfDeployFn.sdk.Run()
-	return true, nil
+	return nfDeployFn.sdk.Run()
 }
 
 func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
