@@ -106,12 +106,12 @@ func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
 		return err
 	}
 
-	if itfce.Status.IPAllocationStatus == nil || itfce.Status.VLANAllocationStatus == nil {
-		return nil
-	}
-
 	itfcIPAllocStatus := itfce.Status.IPAllocationStatus
 	itfcVlanAllocStatus := itfce.Status.VLANAllocationStatus
+
+	if itfcIPAllocStatus == nil || itfcVlanAllocStatus == nil {
+		return nil
+	}
 
 	itfcConfig := nephiodeployv1alpha1.InterfaceConfig{
 		Name: itfce.Name,
