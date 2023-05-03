@@ -1,0 +1,75 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: ClusterContext
+  metadata:
+    name: cluster-context
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    cniConfig:
+      cniType: macvlan
+      masterInterface: eth1
+    siteCode: edge1
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: update done
+      status: "True"
+      type: workload.nephio.org/v1alpha1.AMFDeployment.pkg-upf
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Capacity
+  metadata:
+    name: dataplane
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    maxSubscribers: 10000
+- apiVersion: req.nephio.org/v1alpha1
+  kind: DataNetwork
+  metadata:
+    name: internet
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      prefix: 10.0.0.0/8
+  spec:
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n1 # also used as pfcp
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: sriov
+    attachementType: vlan
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: sbi
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-sba
+    cniType: ipvlan
+    attachementType: vlan
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: AMFDeployment
+  metadata:
+    name: pkg-upf
+  spec:
+    capacity:
+      maxDownlinkThroughput: "0"
+      maxSubscribers: 10000
+      maxUplinkThroughput: "0"
