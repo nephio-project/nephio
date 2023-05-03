@@ -68,6 +68,23 @@ items:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
+    name: n4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: sriov
+    attachementType: vlan
+  status:
+    ipAllocationStatus:
+      prefix: 10.0.0.3/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 100
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
     name: n6
     annotations:
       config.kubernetes.io/local-config: "true"
@@ -84,6 +101,8 @@ items:
       vlanID: 101
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
+  metadata:
+    name: pkg-upf
   spec:
     capacity:
       maxDownlinkThroughput: 10G
@@ -94,11 +113,23 @@ items:
         address: 10.0.0.3/24
         gateway: 10.0.0.1
       vlanID: 100
+    - name: n4
+      ipv4:
+        address: 10.0.0.3/24
+        gateway: 10.0.0.1
+      vlanID: 100
     - name: n6
       ipv4:
         address: 10.0.0.4/24
         gateway: 10.0.0.2
       vlanID: 101
     networkInstances:
-    - name: vpc-ran
+    - name: vpc-internal
+      interfaces:
+      - n4
     - name: vpc-internet
+      interfaces:
+      - n6
+    - name: vpc-ran
+      interfaces:
+      - n3

@@ -19,14 +19,13 @@ package main
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
-	"github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/mutator"
 	"testing"
 )
 
 const TestDataPath = "testdata"
 
 func TestNFDeployFn(t *testing.T) {
-	fnRunner := fn.ResourceListProcessorFunc(mutator.Run)
+	fnRunner := fn.ResourceListProcessorFunc(Run)
 
 	//// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
 	//// be modified to the output resources (in `_expected.yaml`).

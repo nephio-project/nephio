@@ -6,12 +6,13 @@ metadata:
     config.kubernetes.io/local-config: "true"
     prefix: 10.0.0.0/8
 spec:
-  networkInstanceReference:
+  networkInstance:
     name: vpc-internet
   pools:
   - name: pool1
     prefixLength: 8
 status:
-  ipAllocationStatus:
-    prefix: 10.0.0.3/24
-    gateway: 10.0.0.1
+  pools:
+  - ipAllocation:
+     prefix: 10.0.0.3/24
+     gateway: 10.0.0.1
