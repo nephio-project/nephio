@@ -27,8 +27,10 @@ import (
 const (
 	errKubeObjectNotInitialized = "KubeObject not initialized"
 	CniVersion                  = "0.3.1"
-	NadMode                     = "bridge"
+	ModeBridge                  = "bridge"
+	ModeL2                      = "l2"
 	NadType                     = "static"
+	TuningType                  = "tuning"
 )
 
 var (
@@ -67,9 +69,11 @@ type Addresses struct {
 type CniSpecType int64
 
 const (
-	Both     CniSpecType = iota // 0
-	IpamType                    // 1
-	VlanType                    // 2
+	BothIpamVlan  CniSpecType = iota // 0
+	VlanAllocOnly CniSpecType = iota // 2
+	IpVlanType
+	SriovType
+	MacVlanType
 )
 
 type NadStruct struct {
@@ -181,16 +185,70 @@ func (r *NadStruct) GetNadConfig() NadConfig {
 		panic(err)
 	}
 	nadConfigStruct.CniVersion = CniVersion
-	if r.GetCniSpecType() == VlanType {
+	if r.GetCniSpecType() == VlanAllocOnly {
 		return nadConfigStruct
-	} else if r.GetCniSpecType() == IpamType || r.GetCniSpecType() == Both {
+	} else if r.GetCniSpecType() == IpVlanType {
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Capabilities: Capabilities{
 						Ips: true,
 					},
-					Mode: NadMode,
+					Mode: ModeL2,
+					Ipam: Ipam{
+						Type: NadType,
+						Addresses: []Addresses{
+							{},
+						},
+					},
+				},
+			}
+		}
+		return nadConfigStruct
+	} else if r.GetCniSpecType() == MacVlanType {
+		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+			nadConfigStruct.Plugins = []PluginCniType{
+				{
+					Capabilities: Capabilities{Ips: true},
+					Mode:         ModeBridge,
+					Ipam: Ipam{
+						Type: NadType,
+						Addresses: []Addresses{
+							{},
+						},
+					},
+				},
+				{
+					Capabilities: Capabilities{Mac: true},
+					Type:         TuningType,
+				},
+			}
+		}
+		return nadConfigStruct
+	} else if r.GetCniSpecType() == SriovType {
+		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+			nadConfigStruct.Plugins = []PluginCniType{
+				{
+					Capabilities: Capabilities{Ips: true},
+					Mode:         ModeBridge,
+					Ipam: Ipam{
+						Type: NadType,
+						Addresses: []Addresses{
+							{},
+						},
+					},
+				},
+			}
+		}
+		return nadConfigStruct
+	} else if r.GetCniSpecType() == BothIpamVlan {
+		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+			nadConfigStruct.Plugins = []PluginCniType{
+				{
+					Capabilities: Capabilities{
+						Ips: true,
+					},
+					Mode: ModeBridge,
 					Ipam: Ipam{
 						Type: NadType,
 						Addresses: []Addresses{
@@ -220,6 +278,13 @@ func (r *NadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) e
 
 func (r *NadStruct) SetCNIType(cniType string) error {
 	if cniType != "" {
+		if cniType == "ipvlan" {
+			r.SetCniSpecType(IpVlanType)
+		} else if cniType == "macvlan" {
+			r.SetCniSpecType(MacVlanType)
+		} else if cniType == "sriov" {
+			r.SetCniSpecType(SriovType)
+		}
 		nadConfigStruct := r.GetNadConfig()
 		nadConfigStruct.Plugins[0].Type = cniType
 		b, err := json.Marshal(nadConfigStruct)
