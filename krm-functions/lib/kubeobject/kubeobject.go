@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
@@ -56,10 +57,7 @@ func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 
 // NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct[T1 any](x any) (*KubeObjectExt[T1], error) {
-	if x == nil {
-		return nil, fmt.Errorf("cannot initialize with a nil object")
-	}
+func NewFromGoStruct[T1 any](x T1) (*KubeObjectExt[T1], error) {
 	o, err := fn.NewFromTypedObject(x)
 	if err != nil {
 		return nil, err
@@ -76,6 +74,28 @@ func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
+	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
+}
+
+// SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
+// while trying to keep as much formatting as possible
+func (o *KubeObjectExt[T1]) SafeSetSpec(value T1) error {
+	newSpec, err := o.getField(value, "Spec")
+	if err != nil {
+		// TODO: consider panicking here
+		return err
+	}
+	return setNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
+}
+
+// SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
+// while trying to keep as much formatting as possible
+func (o *KubeObjectExt[T1]) SafeSetStatus(value T1) error {
+	newStatus, err := o.getField(value, "Status")
+	if err != nil {
+		// TODO: consider panicking here
+		return err
+	}
 	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
 
@@ -99,6 +119,21 @@ func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields 
 }
 
 ///////////////// internals
+
+func (o *KubeObjectExt[T1]) getField(value T1, fieldName string) (interface{}, error) {
+	v := reflect.ValueOf(value)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("type %q is not a struct, so it doesn't have a %q field", v.Type().Name(), fieldName)
+	}
+	field := v.FieldByName(fieldName)
+	if !field.IsValid() {
+		return nil, fmt.Errorf("type %q doesn't have a %q field", v.Type().Name(), fieldName)
+	}
+	return field.Interface(), nil
+}
 
 // shallowCopyComments copies comments from `src` to `dst` non-recursively
 func shallowCopyComments(src, dst *yaml.Node) {
