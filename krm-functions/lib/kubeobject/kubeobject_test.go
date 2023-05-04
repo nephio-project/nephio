@@ -326,7 +326,7 @@ func TestNewFromGoStruct(t *testing.T) {
 				},
 			},
 		}
-		deploymentKubeObject, _ := NewFromGoStruct(deploymentReceived)
+		deploymentKubeObject, _ := NewFromGoStruct(&deploymentReceived)
 
 		s, _, err := deploymentKubeObject.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
@@ -489,36 +489,15 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			tc.transform(&deploy)
+			tc.transform(deploy)
 
-			err = koe.SafeSetSpec(deploy)
+			err = koe.SetSpec(deploy)
 			if err != nil {
 				t.Errorf("unexpected error in SetSpec: %v", err)
 			}
 
 			compareKubeObjectWithExpectedYaml(t, &koe.KubeObject, tc.expectedFile)
 		})
-	}
-}
-
-func TestSettersWithMissingFields(t *testing.T) {
-
-	type NoSpecOrStatus struct{}
-	var val NoSpecOrStatus
-
-	koe, err := NewFromGoStruct(val)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	err = koe.SafeSetSpec(val)
-	if err == nil {
-		t.Errorf("error was expected in SetSpec, but got no error")
-	}
-
-	err = koe.SafeSetStatus(val)
-	if err == nil {
-		t.Errorf("error was expected in SetStatus, but got no error")
 	}
 }
 
@@ -547,9 +526,9 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			tc.transform(&deploy)
+			tc.transform(deploy)
 
-			err = koe.SafeSetStatus(deploy)
+			err = koe.SetStatus(deploy)
 			if err != nil {
 				t.Errorf("unexpected error in SetStatus: %v", err)
 			}
@@ -557,4 +536,59 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 		})
 	}
 
+}
+
+func TestNewFromGoStructWithPointerType(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("NewFromGoStruct did NOT panic")
+		}
+	}()
+
+	deploy := &appsv1.Deployment{}
+	_, _ = NewFromGoStruct(&deploy)
+}
+
+func TestNewFromKubeObjectWithPointerType(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("NewFromKubeObject did NOT panic")
+		}
+	}()
+
+	_, _ = NewFromKubeObject[*appsv1.Deployment](nil)
+}
+
+func TestSetSpecWithMissingSpecField(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("SetSpec did NOT panic")
+		}
+	}()
+
+	type NoSpecOrStatus struct{}
+	var val NoSpecOrStatus
+
+	koe, err := NewFromGoStruct(&val)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	_ = koe.SetSpec(&val)
+}
+
+func TestSetStatusWithMissingStatusField(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("SetStatus did NOT panic")
+		}
+	}()
+
+	type NoSpecOrStatus struct{}
+	var val NoSpecOrStatus
+
+	koe, err := NewFromGoStruct(&val)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	_ = koe.SetStatus(&val)
 }

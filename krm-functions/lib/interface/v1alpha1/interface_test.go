@@ -106,7 +106,7 @@ func TestNewFromGoStruct(t *testing.T) {
 		},
 		"TestNewFromGoStructNil": {
 			input:       nil,
-			errExpected: false, // new approach does not return an error
+			errExpected: true,
 		},
 	}
 

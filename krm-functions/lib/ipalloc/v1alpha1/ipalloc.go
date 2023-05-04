@@ -23,13 +23,13 @@ import (
 )
 
 type IPAllocation struct {
-	kubeobject.KubeObjectExt[*ipamv1alpha1.IPAllocation]
+	kubeobject.KubeObjectExt[ipamv1alpha1.IPAllocation]
 }
 
 // NewFromKubeObject creates a new KubeObjectExt
 // It expects a *fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject(o *fn.KubeObject) (*IPAllocation, error) {
-	r, err := kubeobject.NewFromKubeObject[*ipamv1alpha1.IPAllocation](o)
+	r, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPAllocation](o)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func NewFromKubeObject(o *fn.KubeObject) (*IPAllocation, error) {
 // NewFromYAML creates a new KubeObjectExt
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (*IPAllocation, error) {
-	r, err := kubeobject.NewFromYaml[*ipamv1alpha1.IPAllocation](b)
+	r, err := kubeobject.NewFromYaml[ipamv1alpha1.IPAllocation](b)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func NewFromYAML(b []byte) (*IPAllocation, error) {
 // NewFromGoStruct creates a new KubeObjectExt
 // It expects a go struct representing the KRM resource
 func NewFromGoStruct(x *ipamv1alpha1.IPAllocation) (*IPAllocation, error) {
-	r, err := kubeobject.NewFromGoStruct[*ipamv1alpha1.IPAllocation](x)
+	r, err := kubeobject.NewFromGoStruct(x)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +57,9 @@ func NewFromGoStruct(x *ipamv1alpha1.IPAllocation) (*IPAllocation, error) {
 }
 
 func (r *IPAllocation) SetSpec(spec ipamv1alpha1.IPAllocationSpec) error {
-	return r.KubeObjectExt.SetSpec(spec)
+	return r.KubeObjectExt.UnsafeSetSpec(spec)
 }
 
 func (r *IPAllocation) SetStatus(spec ipamv1alpha1.IPAllocationStatus) error {
-	return r.KubeObjectExt.SetStatus(spec)
+	return r.KubeObjectExt.UnsafeSetStatus(spec)
 }

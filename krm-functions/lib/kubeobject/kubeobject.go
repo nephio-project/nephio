@@ -30,15 +30,17 @@ type KubeObjectExt[T1 any] struct {
 	fn.KubeObject
 }
 
-func (r *KubeObjectExt[T1]) GetGoStruct() (T1, error) {
+func (r *KubeObjectExt[T1]) GetGoStruct() (*T1, error) {
+	validateTypeOrPanic[T1]()
 	var x T1
 	err := r.KubeObject.As(&x)
-	return x, err
+	return &x, err
 }
 
 // NewFromKubeObject returns a KubeObjectExt struct
 // It expects a fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject[T1 any](o *fn.KubeObject) (*KubeObjectExt[T1], error) {
+	validateTypeOrPanic[T1]()
 	if o == nil {
 		return nil, fmt.Errorf("cannot initialize with a nil object")
 	}
@@ -48,6 +50,7 @@ func NewFromKubeObject[T1 any](o *fn.KubeObject) (*KubeObjectExt[T1], error) {
 // NewFromYaml returns a KubeObjectExt struct
 // It expects raw byte slice as input representing the serialized yaml file
 func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
+	validateTypeOrPanic[T1]()
 	o, err := fn.ParseKubeObject(b)
 	if err != nil {
 		return nil, err
@@ -57,7 +60,11 @@ func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 
 // NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct[T1 any](x T1) (*KubeObjectExt[T1], error) {
+func NewFromGoStruct[T1 any](x *T1) (*KubeObjectExt[T1], error) {
+	validateTypeOrPanic[T1]()
+	if x == nil {
+		return nil, fmt.Errorf("cannot initialize with nil pointer")
+	}
 	o, err := fn.NewFromTypedObject(x)
 	if err != nil {
 		return nil, err
@@ -65,38 +72,32 @@ func NewFromGoStruct[T1 any](x T1) (*KubeObjectExt[T1], error) {
 	return NewFromKubeObject[T1](o)
 }
 
-// SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
+// UnsafeSetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SetSpec(newSpec interface{}) error {
+func (o *KubeObjectExt[T1]) UnsafeSetSpec(newSpec interface{}) error {
 	return setNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
 }
 
-// SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
+// UnsafeSetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SetStatus(newStatus interface{}) error {
+func (o *KubeObjectExt[T1]) UnsafeSetStatus(newStatus interface{}) error {
 	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
 
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SafeSetSpec(value T1) error {
-	newSpec, err := o.getField(value, "Spec")
-	if err != nil {
-		// TODO: consider panicking here
-		return err
-	}
-	return setNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
+func (o *KubeObjectExt[T1]) SetSpec(value *T1) error {
+	return setNestedFieldKeepFormatting(&(o.KubeObject), o.getFieldOrPanic(value, "Spec"), "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SafeSetStatus(value T1) error {
-	newStatus, err := o.getField(value, "Status")
-	if err != nil {
-		// TODO: consider panicking here
-		return err
-	}
-	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
+func (o *KubeObjectExt[T1]) SetStatus(value *T1) error {
+	return setNestedFieldKeepFormatting(&o.KubeObject, o.getFieldOrPanic(value, "Status"), "status")
+}
+
+func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, fields ...string) error {
+	return setNestedFieldKeepFormatting(&o.KubeObject, value, fields...)
 }
 
 // setNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
@@ -120,19 +121,24 @@ func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields 
 
 ///////////////// internals
 
-func (o *KubeObjectExt[T1]) getField(value T1, fieldName string) (interface{}, error) {
-	v := reflect.ValueOf(value)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
+func (o *KubeObjectExt[T1]) getFieldOrPanic(value *T1, fieldName string) interface{} {
+	v := reflect.ValueOf(*value)
 	if v.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("type %q is not a struct, so it doesn't have a %q field", v.Type().Name(), fieldName)
+		panic(fmt.Sprintf("type %q is not a struct, so it doesn't have a %q field", v.Type().Name(), fieldName))
 	}
 	field := v.FieldByName(fieldName)
 	if !field.IsValid() {
-		return nil, fmt.Errorf("type %q doesn't have a %q field", v.Type().Name(), fieldName)
+		panic(fmt.Sprintf("type %q doesn't have a %q field", v.Type().Name(), fieldName))
 	}
-	return field.Interface(), nil
+	return field.Interface()
+}
+
+func validateTypeOrPanic[T1 any]() {
+	var x T1
+	v := reflect.TypeOf(x)
+	if v.Kind() != reflect.Struct {
+		panic(fmt.Sprintf("type %q is not a struct", v.Name()))
+	}
 }
 
 // shallowCopyComments copies comments from `src` to `dst` non-recursively
