@@ -120,9 +120,9 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 	}
 
 	if ipAllocationObjs.Len() == 0 && vlanAllocationObjs.Len() != 0 {
-		nad.SetCniSpecType(nadlibv1.VlanAllocOnly)
+		nad.CniSpecType = nadlibv1.VlanAllocOnly
 	}
-	if nad.GetCniSpecType() != nadlibv1.VlanAllocOnly {
+	if nad.CniSpecType != nadlibv1.VlanAllocOnly {
 		for _, itfce := range interfaceObjs {
 			i, err := interfacelibv1alpha1.NewFromKubeObject(itfce)
 			if err != nil {
