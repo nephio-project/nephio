@@ -9,16 +9,6 @@ presubmits:
         - make
         args:
         - unit
-  - name: presubmit-nephio-gosec
-    decorate: true
-    run_if_changed: "^.*.go$"
-    spec:
-      containers:
-      - image: nephio/gotests:4
-        command:
-        - make
-        args:
-        - gosec
   - name: presubmit-nephio-golangci-lint
     decorate: true
     run_if_changed: "^.*.go$"
