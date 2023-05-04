@@ -326,7 +326,7 @@ func TestNewFromGoStruct(t *testing.T) {
 				},
 			},
 		}
-		deploymentKubeObject, _ := NewFromGoStruct(deploymentReceived)
+		deploymentKubeObject, _ := NewFromGoStruct(&deploymentReceived)
 
 		s, _, err := deploymentKubeObject.NestedString([]string{"metadata", "name"}...)
 		if err != nil {
@@ -489,7 +489,7 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			tc.transform(&deploy)
+			tc.transform(deploy)
 
 			err = koe.SetSpec(deploy)
 			if err != nil {
@@ -526,7 +526,7 @@ func TestKubeObjectExtSetStatus(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			tc.transform(&deploy)
+			tc.transform(deploy)
 
 			err = koe.SetStatus(deploy)
 			if err != nil {
@@ -545,7 +545,8 @@ func TestNewFromGoStructWithPointerType(t *testing.T) {
 		}
 	}()
 
-	_, _ = NewFromGoStruct(&appsv1.Deployment{})
+	deploy := &appsv1.Deployment{}
+	_, _ = NewFromGoStruct(&deploy)
 }
 
 func TestNewFromKubeObjectWithPointerType(t *testing.T) {
@@ -568,11 +569,11 @@ func TestSetSpecWithMissingSpecField(t *testing.T) {
 	type NoSpecOrStatus struct{}
 	var val NoSpecOrStatus
 
-	koe, err := NewFromGoStruct(val)
+	koe, err := NewFromGoStruct(&val)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	_ = koe.SetSpec(val)
+	_ = koe.SetSpec(&val)
 }
 
 func TestSetStatusWithMissingStatusField(t *testing.T) {
@@ -585,9 +586,9 @@ func TestSetStatusWithMissingStatusField(t *testing.T) {
 	type NoSpecOrStatus struct{}
 	var val NoSpecOrStatus
 
-	koe, err := NewFromGoStruct(val)
+	koe, err := NewFromGoStruct(&val)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	_ = koe.SetStatus(val)
+	_ = koe.SetStatus(&val)
 }

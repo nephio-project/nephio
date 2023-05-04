@@ -30,11 +30,11 @@ type KubeObjectExt[T1 any] struct {
 	fn.KubeObject
 }
 
-func (r *KubeObjectExt[T1]) GetGoStruct() (T1, error) {
+func (r *KubeObjectExt[T1]) GetGoStruct() (*T1, error) {
 	validateTypeOrPanic[T1]()
 	var x T1
 	err := r.KubeObject.As(&x)
-	return x, err
+	return &x, err
 }
 
 // NewFromKubeObject returns a KubeObjectExt struct
@@ -60,8 +60,11 @@ func NewFromYaml[T1 any](b []byte) (*KubeObjectExt[T1], error) {
 
 // NewFromGoStruct returns a KubeObjectExt struct
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct[T1 any](x T1) (*KubeObjectExt[T1], error) {
+func NewFromGoStruct[T1 any](x *T1) (*KubeObjectExt[T1], error) {
 	validateTypeOrPanic[T1]()
+	if x == nil {
+		return nil, fmt.Errorf("cannot initialize with nil pointer")
+	}
 	o, err := fn.NewFromTypedObject(x)
 	if err != nil {
 		return nil, err
@@ -83,13 +86,13 @@ func (o *KubeObjectExt[T1]) UnsafeSetStatus(newStatus interface{}) error {
 
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SetSpec(value T1) error {
+func (o *KubeObjectExt[T1]) SetSpec(value *T1) error {
 	return setNestedFieldKeepFormatting(&(o.KubeObject), o.getFieldOrPanic(value, "Spec"), "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
-func (o *KubeObjectExt[T1]) SetStatus(value T1) error {
+func (o *KubeObjectExt[T1]) SetStatus(value *T1) error {
 	return setNestedFieldKeepFormatting(&o.KubeObject, o.getFieldOrPanic(value, "Status"), "status")
 }
 
@@ -118,11 +121,8 @@ func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields 
 
 ///////////////// internals
 
-func (o *KubeObjectExt[T1]) getFieldOrPanic(value T1, fieldName string) interface{} {
-	v := reflect.ValueOf(value)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
+func (o *KubeObjectExt[T1]) getFieldOrPanic(value *T1, fieldName string) interface{} {
+	v := reflect.ValueOf(*value)
 	if v.Kind() != reflect.Struct {
 		panic(fmt.Sprintf("type %q is not a struct, so it doesn't have a %q field", v.Type().Name(), fieldName))
 	}

@@ -17,8 +17,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
@@ -51,10 +49,7 @@ func NewFromYAML(b []byte) (*VLANAllocation, error) {
 // NewFromGoStruct creates a new KubeObjectExt
 // It expects a go struct representing the KRM resource
 func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
-	if x == nil {
-		return nil, fmt.Errorf("cannot initialize with nil pointer")
-	}
-	r, err := kubeobject.NewFromGoStruct(*x)
+	r, err := kubeobject.NewFromGoStruct(x)
 	if err != nil {
 		return nil, err
 	}

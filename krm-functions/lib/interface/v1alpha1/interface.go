@@ -17,8 +17,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
@@ -51,10 +49,7 @@ func NewFromYAML(b []byte) (*Interface, error) {
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
 func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
-	if x == nil {
-		return nil, fmt.Errorf("cannot initialize with nil pointer")
-	}
-	r, err := kubeobject.NewFromGoStruct(*x)
+	r, err := kubeobject.NewFromGoStruct(x)
 	if err != nil {
 		return nil, err
 	}
