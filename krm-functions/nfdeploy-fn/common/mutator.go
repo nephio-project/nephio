@@ -18,9 +18,9 @@ package common
 
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-	infrav1alpha1 "github.com/nephio-project/nephio-controller-poc/apis/infra/v1alpha1"
 	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	corev1 "k8s.io/api/core/v1"
@@ -78,18 +78,32 @@ func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, erro
 }
 
 func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
-	var cluster infrav1alpha1.ClusterContext
-	err := o.As(&cluster)
+	clusterKOE, err := kubeobject.NewFromKubeObject[*infrav1alpha1.ClusterContext](o)
 	if err != nil {
 		return err
 	}
-	h.site = *cluster.Spec.SiteCode
+	clusterContext, err := clusterKOE.GetGoStruct()
+	if err != nil {
+		return err
+	}
+
+	fn.Logf("clusterctxt validate:%v\n", clusterContext.Spec.Validate())
+	// validate check the specifics of the spec, like mandatory fields
+	if err := clusterContext.Spec.Validate(); err != nil {
+		return err
+	}
+
+	h.clusterContext = clusterContext
 	return nil
 }
 
 func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
-	var capacity nephioreqv1alpha1.Capacity
-	err := o.As(&capacity)
+	capacityKOE, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Capacity](o)
+	if err != nil {
+		return err
+	}
+
+	capacity, err := capacityKOE.GetGoStruct()
 	if err != nil {
 		return err
 	}
@@ -99,15 +113,26 @@ func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 }
 
 func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
-	var itfce nephioreqv1alpha1.Interface
-	err := o.As(&itfce)
+	itfcKOE, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
 	if err != nil {
+		return err
+	}
+
+	itfce, err := itfcKOE.GetGoStruct()
+	if err != nil {
+		return err
+	}
+
+	fn.Logf("Interface Spec validate:%v\n", itfce.Spec.Validate())
+	// validate check the specifics of the spec, like mandatory fields
+	if err := itfce.Spec.Validate(); err != nil {
 		return err
 	}
 
 	itfcIPAllocStatus := itfce.Status.IPAllocationStatus
 	itfcVlanAllocStatus := itfce.Status.VLANAllocationStatus
 
+	// validate if status is not nil
 	if itfcIPAllocStatus == nil || itfcVlanAllocStatus == nil {
 		return nil
 	}
@@ -126,8 +151,12 @@ func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
 }
 
 func (h *NfDeployFn[T1]) DnnCallBackFn(o *fn.KubeObject) error {
-	var dnnReq nephioreqv1alpha1.DataNetwork
-	err := o.As(&dnnReq)
+	dnnReqKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](o)
+	if err != nil {
+		return err
+	}
+
+	dnnReq, err := dnnReqKOE.GetGoStruct()
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
@@ -26,9 +27,9 @@ import (
 
 type NfDeployFn[T NfType] struct {
 	sdk                 kptcondsdk.KptCondSDK
-	site                string
+	clusterContext      *infrav1alpha1.ClusterContext
 	gvk                 schema.GroupVersionKind
-	capacity            nephioreqv1alpha1.Capacity
+	capacity            *nephioreqv1alpha1.Capacity
 	pkgName             string
 	networkInstance     map[string]nephiodeployv1alpha1.NetworkInstance
 	interfaceConfigsMap map[string]nephiodeployv1alpha1.InterfaceConfig
