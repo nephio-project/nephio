@@ -22,12 +22,10 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-	infrav1alpha1 "github.com/nephio-project/nephio-controller-poc/apis/infra/v1alpha1"
-	clusterctxtlibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/clustercontext/v1alpha1"
+	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	interfacelibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/interface/v1alpha1"
-	//ipallocv1v1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipallocation/v1alpha1"
-	condkptsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ipalloclibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipalloc/v1alpha1"
 	nadlibv1 "github.com/nephio-project/nephio/krm-functions/lib/nad/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
@@ -37,11 +35,8 @@ import (
 )
 
 type mutatorCtx struct {
-	fnCondSdk         condkptsdk.KptCondSDK
-	masterInterface   string
-	cniType           string
-	siteCode          string
-	clusterContextSet bool
+	fnCondSdk      condkptsdk.KptCondSDK
+	clusterContext infrav1alpha1.ClusterContext
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -83,40 +78,32 @@ func Run(rl *fn.ResourceList) (bool, error) {
 }
 
 func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
-	clusterContext := clusterctxtlibv1alpha1.NewMutator(o.String())
-	cluster, err := clusterContext.UnMarshal()
+	var cluster infrav1alpha1.ClusterContext
+	err := o.As(&cluster)
 	if err != nil {
 		return err
 	}
-	if cluster.Spec.CNIConfig.MasterInterface == "" {
-		return fmt.Errorf("MasterInterface on ClusterContext cannot be empty")
-	} else {
-		r.masterInterface = cluster.Spec.CNIConfig.MasterInterface
+	err = cluster.Spec.Validate()
+	if err != nil {
+		return err
 	}
-	if cluster.Spec.CNIConfig.CNIType == "" {
-		return fmt.Errorf("CNIType on ClusterContext cannot be empty")
-	} else {
-		r.cniType = cluster.Spec.CNIConfig.CNIType
-	}
-	if cluster.Spec.SiteCode == nil {
-		return fmt.Errorf("SiteCode on ClusterContext cannot be empty")
-	} else {
-		r.siteCode = *cluster.Spec.SiteCode
-	}
-	r.clusterContextSet = true
+	r.clusterContext = cluster
 	return nil
 }
 
 func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+	ipAllocationObjs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
+	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
+
 	// verify all needed objects exist
-	if objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind)).Len() == 0 {
+	if interfaceObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
 	}
-	if objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)).Len() == 0 &&
-		objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)).Len() == 0 {
+	if ipAllocationObjs.Len() == 0 && vlanAllocationObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPAllocationKind, vlanv1alpha1.VLANAllocationKind)
 	}
-	if !r.clusterContextSet {
+	if r.clusterContext.Spec.CNIConfig == nil {
 		return nil, fmt.Errorf("expected ClusterContext object to generate the nad")
 	}
 
@@ -131,14 +118,12 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 	if err != nil {
 		return nil, err
 	}
-	if objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)).Len() == 0 &&
-		objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)).Len() != 0 {
+
+	if ipAllocationObjs.Len() == 0 && vlanAllocationObjs.Len() != 0 {
 		nad.SetCniSpecType(nadlibv1.VlanAllocOnly)
 	}
-
 	if nad.GetCniSpecType() != nadlibv1.VlanAllocOnly {
-		interfaces := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
-		for _, itfce := range interfaces {
+		for _, itfce := range interfaceObjs {
 			i, err := interfacelibv1alpha1.NewFromKubeObject(itfce)
 			if err != nil {
 				return nil, err
@@ -147,9 +132,9 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 			if err != nil {
 				return nil, err
 			}
-			if r.cniType == "" {
+			if r.clusterContext.Spec.CNIConfig.CNIType == "" {
 				err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
-			} else if r.cniType == string(interfaceGoStruct.Spec.CNIType) {
+			} else if r.clusterContext.Spec.CNIConfig.CNIType == string(interfaceGoStruct.Spec.CNIType) {
 				err = nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType))
 			} else {
 				return nil, fmt.Errorf("CNIType mismatch between interface and clustercontext")
@@ -157,14 +142,13 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 			if err != nil {
 				return nil, err
 			}
-			err = nad.SetNadMaster(r.masterInterface)
+			err = nad.SetNadMaster(r.clusterContext.Spec.CNIConfig.MasterInterface)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		ipAllocations := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
-		for _, ipAllocation := range ipAllocations {
+		for _, ipAllocation := range ipAllocationObjs {
 			alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipAllocation)
 			if err != nil {
 				return nil, err
@@ -183,8 +167,7 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 		}
 	}
 
-	vlanAllocations := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
-	for _, vlanAllocation := range vlanAllocations {
+	for _, vlanAllocation := range vlanAllocationObjs {
 		vlanID, _, _ := vlanAllocation.NestedInt([]string{"status", "vlanID"}...)
 		err = nad.SetVlan(vlanID)
 		if err != nil {

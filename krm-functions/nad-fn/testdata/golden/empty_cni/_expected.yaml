@@ -191,7 +191,7 @@ items:
 results:
 - file:
     index: -1
-  message: CNIType on ClusterContext cannot be empty
+  message: 'spec invalid: mandatory field CNIType is missing from ClusterContext'
   resourceRef:
     name: cluster-context
     apiVersion: infra.nephio.org/v1alpha1
