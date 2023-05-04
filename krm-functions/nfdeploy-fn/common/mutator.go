@@ -17,7 +17,6 @@ limitations under the License.
 package common
 
 import (
-	"fmt"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
@@ -100,7 +99,7 @@ func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 }
 
 func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
-	var itfce *nephioreqv1alpha1.Interface
+	var itfce nephioreqv1alpha1.Interface
 	err := o.As(&itfce)
 	if err != nil {
 		return err
@@ -187,10 +186,6 @@ func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn
 
 	h.FillCapacityDetails(nfSpec)
 
-	if err != nil {
-		return nil, err
-	}
-
 	for networkInstanceName, itfceConfig := range h.interfaceConfigsMap {
 		h.AddInterfaceToNetworkInstance(itfceConfig.Name, networkInstanceName)
 	}
@@ -200,7 +195,5 @@ func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn
 
 	err = nfKoExt.SetSpec(nfSpec)
 
-	nf, _ := nfKoExt.GetGoStruct()
-	fmt.Println(nf)
 	return &nfKoExt.KubeObject, err
 }

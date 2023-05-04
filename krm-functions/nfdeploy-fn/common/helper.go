@@ -44,7 +44,7 @@ func NewMutator[T NfType](gvk schema.GroupVersionKind) NfDeployFn[T] {
 
 func (h *NfDeployFn[T]) SetInterfaceConfig(interfaceConfig nephiodeployv1alpha1.InterfaceConfig, networkInstanceName string) {
 	// dont add to empty networkInstanceName, ideally should not happen
-	if networkInstanceName == "" {
+	if len(networkInstanceName) == 0 {
 		return
 	}
 
