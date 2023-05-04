@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/nephio-project/api v0.0.0-20230503145925-bdf80c9b1256
-	github.com/nephio-project/nephio v0.0.0-20230502210925-08d4f5c5fca2
+	github.com/nephio-project/nephio v0.0.0-20230504173126-28de0ad17447
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 )

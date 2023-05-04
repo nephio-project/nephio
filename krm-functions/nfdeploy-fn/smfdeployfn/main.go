@@ -24,7 +24,7 @@ import (
 )
 
 func Run(rl *fn.ResourceList) (bool, error) {
-	return common.Run[*nephiodeployv1alpha1.SMFDeployment](rl, nephiodeployv1alpha1.SMFDeploymenteGroupVersionKind)
+	return common.Run[nephiodeployv1alpha1.SMFDeployment](rl, nephiodeployv1alpha1.SMFDeploymenteGroupVersionKind)
 }
 
 func main() {

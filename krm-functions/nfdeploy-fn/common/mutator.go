@@ -29,7 +29,7 @@ import (
 )
 
 type NfType interface {
-	*nephiodeployv1alpha1.UPFDeployment | *nephiodeployv1alpha1.AMFDeployment | *nephiodeployv1alpha1.SMFDeployment
+	nephiodeployv1alpha1.UPFDeployment | nephiodeployv1alpha1.AMFDeployment | nephiodeployv1alpha1.SMFDeployment
 }
 
 func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {
@@ -78,7 +78,7 @@ func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, erro
 }
 
 func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
-	clusterKOE, err := kubeobject.NewFromKubeObject[*infrav1alpha1.ClusterContext](o)
+	clusterKOE, err := kubeobject.NewFromKubeObject[infrav1alpha1.ClusterContext](o)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
 }
 
 func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
-	capacityKOE, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Capacity](o)
+	capacityKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Capacity](o)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 }
 
 func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
-	itfcKOE, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
+	itfcKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn
 	nfSpec.Interfaces = h.GetAllInterfaceConfig()
 	nfSpec.NetworkInstances = h.GetAllNetworkInstance()
 
-	err = nfKoExt.SetSpec(nfSpec)
+	err = nfKoExt.UnsafeSetSpec(nfSpec)
 
 	return &nfKoExt.KubeObject, err
 }

@@ -23,7 +23,7 @@ import (
 )
 
 func Run(rl *fn.ResourceList) (bool, error) {
-	return common.Run[*nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymenteGroupVersionKind)
+	return common.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymenteGroupVersionKind)
 }
 
 func main() {
