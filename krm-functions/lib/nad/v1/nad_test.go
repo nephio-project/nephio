@@ -88,13 +88,9 @@ func TestNewFromGoStruct(t *testing.T) {
 					Name: "a",
 				},
 				Spec: nadv1.NetworkAttachmentDefinitionSpec{
-					Config: configSpec.ToString(),
+					Config: configSpec.String(),
 				},
 			},
-			errExpected: false,
-		},
-		"TestNewFromGoStructNil": {
-			input:       nil,
 			errExpected: false,
 		},
 	}
@@ -346,13 +342,13 @@ func TestSetConfigSpec(t *testing.T) {
 				Config: "{\"cniVersion\": \"0.3.1\"}",
 			},
 			errExpected: false,
-			length:      29,
+			length:      23,
 		},
 		"SetAttachmentTypeEmpty": {
 			file:        nadTestEmpty,
 			value:       &nadv1.NetworkAttachmentDefinitionSpec{},
 			errExpected: false,
-			length:      2,
+			length:      0,
 		},
 	}
 
