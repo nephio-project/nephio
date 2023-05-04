@@ -69,22 +69,22 @@ type Addresses struct {
 type CniSpecType int64
 
 const (
-	BothIpamVlan  CniSpecType = iota // 0
-	VlanAllocOnly CniSpecType = iota // 2
+	BothIpamVlan CniSpecType = iota // 0
+	VlanAllocOnly
 	IpVlanType
 	SriovType
 	MacVlanType
 )
 
 type NadStruct struct {
-	K kubeobject.KubeObjectExt[*nadv1.NetworkAttachmentDefinition]
-	C CniSpecType
+	K           kubeobject.KubeObjectExt[nadv1.NetworkAttachmentDefinition]
+	CniSpecType CniSpecType
 }
 
 // NewFromKubeObject creates a new parser interface
 // It expects a *fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject(b *fn.KubeObject) (*NadStruct, error) {
-	p, err := kubeobject.NewFromKubeObject[*nadv1.NetworkAttachmentDefinition](b)
+	p, err := kubeobject.NewFromKubeObject[nadv1.NetworkAttachmentDefinition](b)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func NewFromKubeObject(b *fn.KubeObject) (*NadStruct, error) {
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (*NadStruct, error) {
-	p, err := kubeobject.NewFromYaml[*nadv1.NetworkAttachmentDefinition](b)
+	p, err := kubeobject.NewFromYaml[nadv1.NetworkAttachmentDefinition](b)
 	if err != nil {
 		return nil, err
 	}
@@ -103,16 +103,12 @@ func NewFromYAML(b []byte) (*NadStruct, error) {
 
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
-func NewFromGoStruct(x *nadv1.NetworkAttachmentDefinition) (*NadStruct, error) {
-	p, err := kubeobject.NewFromGoStruct[*nadv1.NetworkAttachmentDefinition](x)
+func NewFromGoStruct(b *nadv1.NetworkAttachmentDefinition) (*NadStruct, error) {
+	p, err := kubeobject.NewFromGoStruct[nadv1.NetworkAttachmentDefinition](*b)
 	if err != nil {
 		return nil, err
 	}
 	return &NadStruct{K: *p}, nil
-}
-
-func (r *NadStruct) GetCniSpecType(fields ...string) CniSpecType {
-	return r.C
 }
 
 func (r *NadStruct) GetStringValue(fields ...string) string {
@@ -133,61 +129,67 @@ func (r *NadStruct) GetConfigSpec() string {
 	if r == nil {
 		return ""
 	}
-	s, ok, err := r.K.NestedString(ConfigType...)
-	if err != nil {
-		return ""
+	return r.GetStringValue(ConfigType...)
+}
+
+func (r *NadStruct) GetExistingNadConfig() NadConfig {
+	nadConfigStruct := NadConfig{}
+	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
+		return nadConfigStruct
 	}
-	if !ok {
-		return ""
-	}
-	return s
+	return nadConfigStruct
 }
 
 func (r *NadStruct) GetCNIType() string {
-	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-		return ""
+	for i, plugin := range r.GetExistingNadConfig().Plugins {
+		if plugin.Type == TuningType {
+			continue
+		} else {
+			return r.GetExistingNadConfig().Plugins[i].Type
+		}
 	}
-	return nadConfigStruct.Plugins[0].Type
+	return ""
 }
 
 func (r *NadStruct) GetVlan() int {
-	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-		return 0
-	}
-	return nadConfigStruct.Vlan
+	return r.GetExistingNadConfig().Vlan
 }
 
 func (r *NadStruct) GetNadMaster() string {
-	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-		return ""
+	for i, plugin := range r.GetExistingNadConfig().Plugins {
+		if plugin.Type == TuningType {
+			continue
+		} else {
+			return r.GetExistingNadConfig().Plugins[i].Master
+		}
 	}
-	return nadConfigStruct.Plugins[0].Master
+	return ""
 }
 
 func (r *NadStruct) GetIpamAddress() []Addresses {
-	nadConfigStruct := NadConfig{}
-	if err := json.Unmarshal([]byte(r.GetStringValue(ConfigType...)), &nadConfigStruct); err != nil {
-		return []Addresses{}
+	for i, plugin := range r.GetExistingNadConfig().Plugins {
+		if plugin.Type == TuningType {
+			continue
+		} else {
+			return r.GetExistingNadConfig().Plugins[i].Ipam.Addresses
+		}
 	}
-	return nadConfigStruct.Plugins[0].Ipam.Addresses
+	return []Addresses{}
 }
 
-func (r *NadStruct) GetNadConfig() NadConfig {
+func (r *NadStruct) GetNewNadConfig() (NadConfig, error) {
 	nadConfigStruct := NadConfig{}
-	configSpec := r.GetStringValue(ConfigType...)
+	configSpec := r.GetConfigSpec()
 	if configSpec == "" {
 		configSpec = "{}"
 	}
 	if err := json.Unmarshal([]byte(configSpec), &nadConfigStruct); err != nil {
-		panic(err)
+		return nadConfigStruct, fmt.Errorf("invalid NAD Config, %s", err)
 	}
 	nadConfigStruct.CniVersion = CniVersion
-	if r.GetCniSpecType() == VlanAllocOnly {
-		return nadConfigStruct
-	} else if r.GetCniSpecType() == IpVlanType {
+	if r.CniSpecType == VlanAllocOnly {
+		return nadConfigStruct, nil
+	} else if r.CniSpecType == IpVlanType {
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
@@ -204,8 +206,8 @@ func (r *NadStruct) GetNadConfig() NadConfig {
 				},
 			}
 		}
-		return nadConfigStruct
-	} else if r.GetCniSpecType() == MacVlanType {
+		return nadConfigStruct, nil
+	} else if r.CniSpecType == MacVlanType {
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
@@ -224,8 +226,8 @@ func (r *NadStruct) GetNadConfig() NadConfig {
 				},
 			}
 		}
-		return nadConfigStruct
-	} else if r.GetCniSpecType() == SriovType {
+		return nadConfigStruct, nil
+	} else if r.CniSpecType == SriovType {
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
@@ -240,8 +242,8 @@ func (r *NadStruct) GetNadConfig() NadConfig {
 				},
 			}
 		}
-		return nadConfigStruct
-	} else if r.GetCniSpecType() == BothIpamVlan {
+		return nadConfigStruct, nil
+	} else if r.CniSpecType == BothIpamVlan {
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
@@ -258,18 +260,18 @@ func (r *NadStruct) GetNadConfig() NadConfig {
 				},
 			}
 		}
-		return nadConfigStruct
+		return nadConfigStruct, nil
 	}
-	return nadConfigStruct
-}
-
-func (r *NadStruct) SetCniSpecType(cniType CniSpecType) {
-	r.C = cniType
+	return nadConfigStruct, nil
 }
 
 // SetConfigSpec sets the spec attributes in the kubeobject according the go struct
 func (r *NadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) error {
-	b, err := json.Marshal(spec.Config)
+	return r.K.SetNestedString(spec.Config, ConfigType...)
+}
+
+func (r *NadStruct) SetNadConfig(config NadConfig) error {
+	b, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
@@ -279,19 +281,24 @@ func (r *NadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) e
 func (r *NadStruct) SetCNIType(cniType string) error {
 	if cniType != "" {
 		if cniType == "ipvlan" {
-			r.SetCniSpecType(IpVlanType)
+			r.CniSpecType = IpVlanType
 		} else if cniType == "macvlan" {
-			r.SetCniSpecType(MacVlanType)
+			r.CniSpecType = MacVlanType
 		} else if cniType == "sriov" {
-			r.SetCniSpecType(SriovType)
+			r.CniSpecType = SriovType
 		}
-		nadConfigStruct := r.GetNadConfig()
-		nadConfigStruct.Plugins[0].Type = cniType
-		b, err := json.Marshal(nadConfigStruct)
+		nadConfigStruct, err := r.GetNewNadConfig()
 		if err != nil {
 			return err
 		}
-		return r.K.SetNestedString(string(b), ConfigType...)
+		for i, plugin := range nadConfigStruct.Plugins {
+			if plugin.Type == TuningType {
+				continue
+			} else {
+				nadConfigStruct.Plugins[i].Type = cniType
+			}
+		}
+		return r.SetNadConfig(nadConfigStruct)
 	} else {
 		return fmt.Errorf("unknown cniType")
 	}
@@ -299,13 +306,12 @@ func (r *NadStruct) SetCNIType(cniType string) error {
 
 func (r *NadStruct) SetVlan(vlanType int) error {
 	if vlanType != 0 {
-		nadConfigStruct := r.GetNadConfig()
-		nadConfigStruct.Vlan = vlanType
-		b, err := json.Marshal(nadConfigStruct)
+		nadConfigStruct, err := r.GetNewNadConfig()
 		if err != nil {
 			return err
 		}
-		return r.K.SetNestedString(string(b), ConfigType...)
+		nadConfigStruct.Vlan = vlanType
+		return r.SetNadConfig(nadConfigStruct)
 	} else {
 		return fmt.Errorf("unknown vlanType")
 	}
@@ -313,13 +319,18 @@ func (r *NadStruct) SetVlan(vlanType int) error {
 
 func (r *NadStruct) SetNadMaster(nadMaster string) error {
 	if nadMaster != "" {
-		nadConfigStruct := r.GetNadConfig()
-		nadConfigStruct.Plugins[0].Master = nadMaster
-		b, err := json.Marshal(nadConfigStruct)
+		nadConfigStruct, err := r.GetNewNadConfig()
 		if err != nil {
 			return err
 		}
-		return r.K.SetNestedString(string(b), ConfigType...)
+		for i, plugin := range nadConfigStruct.Plugins {
+			if plugin.Type == TuningType {
+				continue
+			} else {
+				nadConfigStruct.Plugins[i].Master = nadMaster
+			}
+		}
+		return r.SetNadConfig(nadConfigStruct)
 	} else {
 		return fmt.Errorf("unknown nad master interface")
 	}
@@ -327,19 +338,24 @@ func (r *NadStruct) SetNadMaster(nadMaster string) error {
 
 func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
 	if ipam != nil {
-		nadConfigStruct := r.GetNadConfig()
-		nadConfigStruct.Plugins[0].Ipam.Addresses = ipam
-		b, err := json.Marshal(nadConfigStruct)
+		nadConfigStruct, err := r.GetNewNadConfig()
 		if err != nil {
 			return err
 		}
-		return r.K.SetNestedString(string(b), ConfigType...)
+		for i, plugin := range nadConfigStruct.Plugins {
+			if plugin.Type == TuningType {
+				continue
+			} else {
+				nadConfigStruct.Plugins[i].Ipam.Addresses = ipam
+			}
+		}
+		return r.SetNadConfig(nadConfigStruct)
 	} else {
 		return fmt.Errorf("unknown IPAM address")
 	}
 }
 
-func (n *NadConfig) ToString() string {
+func (n *NadConfig) String() string {
 	b, err := json.Marshal(n)
 	if err != nil {
 		panic(err)
