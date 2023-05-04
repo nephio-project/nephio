@@ -17,19 +17,21 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 )
 
 type Interface struct {
-	kubeobject.KubeObjectExt[*nephioreqv1alpha1.Interface]
+	kubeobject.KubeObjectExt[nephioreqv1alpha1.Interface]
 }
 
 // NewFromKubeObject creates a new parser interface
 // It expects a *fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject(o *fn.KubeObject) (*Interface, error) {
-	r, err := kubeobject.NewFromKubeObject[*nephioreqv1alpha1.Interface](o)
+	r, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func NewFromKubeObject(o *fn.KubeObject) (*Interface, error) {
 // NewFromYAML creates a new parser interface
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (*Interface, error) {
-	r, err := kubeobject.NewFromYaml[*nephioreqv1alpha1.Interface](b)
+	r, err := kubeobject.NewFromYaml[nephioreqv1alpha1.Interface](b)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +51,10 @@ func NewFromYAML(b []byte) (*Interface, error) {
 // NewFromGoStruct creates a new parser interface
 // It expects a go struct representing the interface krm resource
 func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
-	r, err := kubeobject.NewFromGoStruct[*nephioreqv1alpha1.Interface](x)
+	if x == nil {
+		return nil, fmt.Errorf("cannot initialize with nil pointer")
+	}
+	r, err := kubeobject.NewFromGoStruct(*x)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +62,9 @@ func NewFromGoStruct(x *nephioreqv1alpha1.Interface) (*Interface, error) {
 }
 
 func (r *Interface) SetSpec(spec nephioreqv1alpha1.InterfaceSpec) error {
-	return r.KubeObjectExt.SetSpec(spec)
+	return r.KubeObjectExt.UnsafeSetSpec(spec)
 }
 
 func (r *Interface) SetStatus(spec nephioreqv1alpha1.InterfaceStatus) error {
-	return r.KubeObjectExt.SetStatus(spec)
+	return r.KubeObjectExt.UnsafeSetStatus(spec)
 }

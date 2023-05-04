@@ -17,19 +17,21 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 )
 
 type VLANAllocation struct {
-	kubeobject.KubeObjectExt[*vlanv1alpha1.VLANAllocation]
+	kubeobject.KubeObjectExt[vlanv1alpha1.VLANAllocation]
 }
 
 // NewFromKubeObject creates a new KubeObjectExt
 // It expects a *fn.KubeObject as input representing the serialized yaml file
 func NewFromKubeObject(o *fn.KubeObject) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromKubeObject[*vlanv1alpha1.VLANAllocation](o)
+	r, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANAllocation](o)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func NewFromKubeObject(o *fn.KubeObject) (*VLANAllocation, error) {
 // NewFromYAML creates a new KubeObjectExt
 // It expects a raw byte slice as input representing the serialized yaml file
 func NewFromYAML(b []byte) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromYaml[*vlanv1alpha1.VLANAllocation](b)
+	r, err := kubeobject.NewFromYaml[vlanv1alpha1.VLANAllocation](b)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +51,10 @@ func NewFromYAML(b []byte) (*VLANAllocation, error) {
 // NewFromGoStruct creates a new KubeObjectExt
 // It expects a go struct representing the KRM resource
 func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
-	r, err := kubeobject.NewFromGoStruct[*vlanv1alpha1.VLANAllocation](x)
+	if x == nil {
+		return nil, fmt.Errorf("cannot initialize with nil pointer")
+	}
+	r, err := kubeobject.NewFromGoStruct(*x)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +62,9 @@ func NewFromGoStruct(x *vlanv1alpha1.VLANAllocation) (*VLANAllocation, error) {
 }
 
 func (r *VLANAllocation) SetSpec(spec vlanv1alpha1.VLANAllocationSpec) error {
-	return r.KubeObjectExt.SetSpec(spec)
+	return r.KubeObjectExt.UnsafeSetSpec(spec)
 }
 
 func (r *VLANAllocation) SetStatus(spec vlanv1alpha1.VLANAllocationStatus) error {
-	return r.KubeObjectExt.SetStatus(spec)
+	return r.KubeObjectExt.UnsafeSetStatus(spec)
 }
