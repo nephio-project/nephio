@@ -25,29 +25,31 @@ endif
 unit: ## Run unit tests against code.
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/library/golang:${GO_VERSION}-alpine3.17 \
-         /bin/sh -c "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
+         sh -e ./run-for-all-go-modules.sh "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
          go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
          go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"
 else
-		go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}
-		go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}
-		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
+		sh -e ./run-for-all-go-modules.sh  "\
+		 go test ./... -v -coverprofile ${TEST_COVERAGE_FILE} ; \
+		 go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE} ; \
+		 go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"
 endif
 
 # Install link at https://golangci-lint.run/usage/install/ if not running inside a container
 .PHONY: lint
 lint: ## Run lint  against code.
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine golangci-lint run ./... -v --timeout 10m
+		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
+		 sh -e ./run-for-all-go-modules.sh golangci-lint run ./... -v --timeout 10m
 else
-		golangci-lint run ./... -v --timeout 10m
+		sh -e ./run-for-all-go-modules.sh golangci-lint run ./... -v --timeout 10m
 endif
 
 # Install link at https://github.com/securego/gosec#install if not running inside a container
 .PHONY: gosec
 gosec: ## inspects source code for security problem by scanning the Go Abstract Syntax Tree
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/securego/gosec:${GOSEC_VER} ./...
+		sh -e ./run-for-all-go-modules.sh $(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/securego/gosec:${GOSEC_VER} ./...
 else
-		gosec ./...
+		sh -e ./run-for-all-go-modules.sh gosec ./...
 endif
