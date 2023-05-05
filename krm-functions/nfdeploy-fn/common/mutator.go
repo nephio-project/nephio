@@ -17,6 +17,8 @@ limitations under the License.
 package common
 
 import (
+	"reflect"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
@@ -25,15 +27,10 @@ import (
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
 )
 
-type NfType interface {
-	nephiodeployv1alpha1.UPFDeployment | nephiodeployv1alpha1.AMFDeployment | nephiodeployv1alpha1.SMFDeployment
-}
-
-func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {
-	nfDeployFn := NewMutator[T](gvk)
+func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {
+	nfDeployFn := NewMutator[T, PT](gvk)
 
 	var err error
 
@@ -77,7 +74,7 @@ func Run[T NfType](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, erro
 	return nfDeployFn.sdk.Run()
 }
 
-func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
+func (h *NfDeployFn[T, PT]) ClusterContextCallBackFn(o *fn.KubeObject) error {
 	clusterKOE, err := kubeobject.NewFromKubeObject[infrav1alpha1.ClusterContext](o)
 	if err != nil {
 		return err
@@ -97,7 +94,7 @@ func (h *NfDeployFn[T1]) ClusterContextCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
+func (h *NfDeployFn[T, PT]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 	capacityKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Capacity](o)
 	if err != nil {
 		return err
@@ -112,7 +109,7 @@ func (h *NfDeployFn[T1]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
+func (h *NfDeployFn[T, PT]) InterfaceCallBackFn(o *fn.KubeObject) error {
 	itfcKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
 	if err != nil {
 		return err
@@ -150,7 +147,7 @@ func (h *NfDeployFn[T1]) InterfaceCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (h *NfDeployFn[T1]) DnnCallBackFn(o *fn.KubeObject) error {
+func (h *NfDeployFn[T, PT]) DnnCallBackFn(o *fn.KubeObject) error {
 	dnnReqKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](o)
 	if err != nil {
 		return err
@@ -180,7 +177,7 @@ func (h *NfDeployFn[T1]) DnnCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn.KubeObjects) (*fn.KubeObject, error) {
+func (h *NfDeployFn[T, PT]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn.KubeObjects) (*fn.KubeObject, error) {
 	var err error
 
 	if nfDeploymentObj == nil {
@@ -202,16 +199,18 @@ func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn
 		}
 	}
 
-	nfKoExt, err := kubeobject.NewFromKubeObject[T1](nfDeploymentObj)
+	nfKoExt, err := kubeobject.NewFromKubeObject[T](nfDeploymentObj)
 	if err != nil {
 		return nil, err
 	}
 
+	var nf PT
+	nf, err = nfKoExt.GetGoStruct()
 	if err != nil {
 		return nil, err
 	}
 
-	nfSpec := &nephiodeployv1alpha1.NFDeploymentSpec{}
+	nfSpec := nf.GetNFDeploymentSpec()
 
 	h.FillCapacityDetails(nfSpec)
 
@@ -221,8 +220,9 @@ func (h *NfDeployFn[T1]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn
 
 	nfSpec.Interfaces = h.GetAllInterfaceConfig()
 	nfSpec.NetworkInstances = h.GetAllNetworkInstance()
+	nf.SetNFDeploymentSpec(nfSpec)
 
-	err = nfKoExt.UnsafeSetSpec(nfSpec)
+	err = nfKoExt.SetSpec((*T)(nf))
 
 	return &nfKoExt.KubeObject, err
 }
