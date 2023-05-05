@@ -1,7 +1,7 @@
 presubmits:
   - name: presubmit-nephio-go-test
     decorate: true
-    run_if_changed: "^.*.go$"
+    run_if_changed: "(\\.go|^Makefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
@@ -11,7 +11,7 @@ presubmits:
         - unit
   - name: presubmit-nephio-golangci-lint
     decorate: true
-    run_if_changed: "^.*.go$"
+    run_if_changed: "(\\.go|^Makefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
@@ -21,7 +21,7 @@ presubmits:
         - lint
   - name: presubmit-nephio-license-header-check
     decorate: true
-    run_if_changed: "^.*.go$"
+    run_if_changed: "(\\.go|^Makefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
