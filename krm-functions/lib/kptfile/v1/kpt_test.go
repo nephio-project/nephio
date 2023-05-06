@@ -383,3 +383,56 @@ status:
 		})
 	}
 }
+
+func TestSortCondition(t *testing.T) {
+
+	f := `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: xxx
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: xxx
+status:
+`
+
+	cases := map[string]struct {
+		set  []kptv1.Condition
+		want []kptv1.Condition
+	}{
+		"Normal": {
+			set: []kptv1.Condition{
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+				{Type: "aa", Status: kptv1.ConditionFalse, Reason: "aa", Message: "aa"},
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+			},
+			want: []kptv1.Condition{
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+				{Type: "aa", Status: kptv1.ConditionFalse, Reason: "aa", Message: "aa"},
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			kf, err := New(f)
+			if err != nil {
+				t.Errorf("cannot unmarshal file: %s", err.Error())
+			}
+			kf.SetConditions(tc.set...)
+			kf.SortConditions()
+			if len(kf.GetConditions()) != len(tc.want) {
+				assert.NoError(t, err)
+			}
+			for i, want := range tc.want {
+				if diff := cmp.Diff(want, kf.GetConditions()[i]); diff != "" {
+					t.Errorf("-want, +got:\n%s", diff)
+				}
+			}
+		})
+	}
+}
