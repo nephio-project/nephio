@@ -36,7 +36,9 @@ const defaultPODNetwork = "default"
 
 type itfceFn struct {
 	sdk            condkptsdk.KptCondSDK
-	clusterContext *infrav1alpha1.ClusterContext
+	//clusterContext *infrav1alpha1.ClusterContext
+	siteCode string
+	cniType string
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -97,7 +99,8 @@ func (r *itfceFn) ClusterContextCallbackFn(o *fn.KubeObject) error {
 	if err := clusterContext.Spec.Validate(); err != nil {
 		return err
 	}
-	r.clusterContext = clusterContext
+	r.siteCode = *clusterContext.Spec.SiteCode
+	r.cniType = clusterContext.Spec.CNIConfig.CNIType
 	return nil
 }
 
@@ -131,8 +134,8 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	}
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
-		if itfce.Spec.CNIType != nephioreqv1alpha1.CNIType(r.clusterContext.Spec.CNIConfig.CNIType) {
-			return nil, fmt.Errorf("cluster cniType not supported: cluster cniType: %s, interface cniType: %s", r.clusterContext.Spec.CNIConfig.CNIType, itfce.Spec.CNIType)
+		if itfce.Spec.CNIType != nephioreqv1alpha1.CNIType(r.cniType) {
+			return nil, fmt.Errorf("cluster cniType not supported: cluster cniType: %s, interface cniType: %s", r.cniType, itfce.Spec.CNIType)
 		}
 		// add IP allocation of type network
 		o, err := r.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork)
@@ -222,7 +225,7 @@ func (r *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, err
 		meta,
 		vlanv1alpha1.VLANAllocationSpec{
 			VLANDatabase: corev1.ObjectReference{
-				Name: *r.clusterContext.Spec.SiteCode,
+				Name: r.siteCode,
 			},
 		},
 		vlanv1alpha1.VLANAllocationStatus{},
@@ -240,7 +243,7 @@ func (r *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectRefere
 			AllocationLabels: allocv1alpha1.AllocationLabels{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						allocv1alpha1.NephioSiteKey: *r.clusterContext.Spec.SiteCode,
+						allocv1alpha1.NephioSiteKey: r.siteCode,
 					},
 				},
 			},
