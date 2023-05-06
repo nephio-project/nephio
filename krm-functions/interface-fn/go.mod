@@ -2,7 +2,7 @@ module github.com/nephio-project/nephio/krm-functions/interface-fn
 
 go 1.20
 
-replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+replace github.com/nephio-project/nephio/krm-functions/lib/... => ../lib/...
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d

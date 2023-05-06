@@ -35,10 +35,10 @@ import (
 const defaultPODNetwork = "default"
 
 type itfceFn struct {
-	sdk            condkptsdk.KptCondSDK
+	sdk condkptsdk.KptCondSDK
 	//clusterContext *infrav1alpha1.ClusterContext
 	siteCode string
-	cniType string
+	cniType  string
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
