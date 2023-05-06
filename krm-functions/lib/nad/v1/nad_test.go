@@ -74,6 +74,10 @@ func TestNewFromGoStruct(t *testing.T) {
 	configSpec := &NadConfig{
 		Vlan: 007,
 	}
+	config, err := configSpec.String()
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 	cases := map[string]struct {
 		input       *nadv1.NetworkAttachmentDefinition
 		errExpected bool
@@ -88,10 +92,14 @@ func TestNewFromGoStruct(t *testing.T) {
 					Name: "a",
 				},
 				Spec: nadv1.NetworkAttachmentDefinitionSpec{
-					Config: configSpec.String(),
+					Config: config,
 				},
 			},
 			errExpected: false,
+		},
+		"TestNewFromGoStructNil": {
+			input:       nil,
+			errExpected: true,
 		},
 	}
 
@@ -226,7 +234,10 @@ func TestGetCNIType(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			got := i.GetCNIType()
+			got, err := i.GetCNIType()
+			if err != nil {
+				t.Errorf("cannot get CNIType: %s", err.Error())
+			}
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
@@ -256,7 +267,10 @@ func TestGetVlan(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			got := i.GetVlan()
+			got, err := i.GetVlan()
+			if err != nil {
+				t.Errorf("cannot get vlan: %s", err.Error())
+			}
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
@@ -288,7 +302,10 @@ func TestGetNadMaster(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			got := i.GetNadMaster()
+			got, err := i.GetNadMaster()
+			if err != nil {
+				t.Errorf("cannot get nad master: %s", err.Error())
+			}
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
@@ -309,7 +326,7 @@ func TestGetIpamAddress(t *testing.T) {
 		},
 		"GetAttachmentTypeEmpty": {
 			file: nadTestEmpty,
-			want: []Addresses{},
+			want: []Addresses{{}},
 		},
 	}
 
@@ -320,7 +337,10 @@ func TestGetIpamAddress(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			got := i.GetIpamAddress()
+			got, err := i.GetIpamAddress()
+			if err != nil {
+				t.Errorf("cannot get ipam addresses: %s", err.Error())
+			}
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("TestGetAttachmentType: -want, +got:\n%s", diff)
 			}
@@ -404,7 +424,10 @@ func TestSetCNIType(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				got := i.GetCNIType()
+				got, err := i.GetCNIType()
+				if err != nil {
+					t.Errorf("cannot get CNIType: %s", err.Error())
+				}
 				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
@@ -445,7 +468,10 @@ func TestSetVlan(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				got := i.GetVlan()
+				got, err := i.GetVlan()
+				if err != nil {
+					t.Errorf("cannot get vlan: %s", err.Error())
+				}
 				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
@@ -486,7 +512,10 @@ func TestSetNadMaster(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				got := i.GetNadMaster()
+				got, err := i.GetNadMaster()
+				if err != nil {
+					t.Errorf("cannot get nad master: %s", err.Error())
+				}
 				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
@@ -529,7 +558,10 @@ func TestSetNadAddress(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				got := i.GetIpamAddress()
+				got, err := i.GetIpamAddress()
+				if err != nil {
+					t.Errorf("cannot get ipam addresses: %s", err.Error())
+				}
 				if diff := cmp.Diff(tc.value, got); diff != "" {
 					t.Errorf("TestSetAttachmentType: -want, +got:\n%s", diff)
 				}
