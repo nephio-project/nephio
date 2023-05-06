@@ -20,7 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	vlan1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
+	allocv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,7 @@ metadata:
     config.kubernetes.io/local-config: "true"
 spec:
   vlanDatabase:
-  - name: vpc-ran # test comment c
+    name: vpc-ran # test comment c
   # test comment d
   selector:
     matchLabels:
@@ -80,25 +81,27 @@ func TestNewFromYAML(t *testing.T) {
 
 func TestNewFromGoStruct(t *testing.T) {
 	cases := map[string]struct {
-		input       *vlan1alpha1.VLANAllocation
+		input       *vlanv1alpha1.VLANAllocation
 		errExpected bool
 	}{
 		"Normal": {
-			input: &vlan1alpha1.VLANAllocation{
+			input: &vlanv1alpha1.VLANAllocation{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: vlan1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-					Kind:       vlan1alpha1.VLANAllocationKind,
+					APIVersion: vlanv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
+					Kind:       vlanv1alpha1.VLANAllocationKind,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",
 				},
-				Spec: vlan1alpha1.VLANAllocationSpec{
-					VLANDatabases: []*corev1.ObjectReference{
-						{Name: "x"},
+				Spec: vlanv1alpha1.VLANAllocationSpec{
+					VLANDatabase: corev1.ObjectReference{
+						Name: "x",
 					},
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"a": "b",
+					AllocationLabels: allocv1alpha1.AllocationLabels{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"a": "b",
+							},
 						},
 					},
 				},
@@ -157,21 +160,21 @@ func TestGetGoStruct(t *testing.T) {
 	cases := map[string]struct {
 		file   string
 		wantML map[string]string
-		wantDB []*corev1.ObjectReference
+		wantDB corev1.ObjectReference
 	}{
 		"Normal": {
 			file: normal,
 			wantML: map[string]string{
 				"a": "b",
 			},
-			wantDB: []*corev1.ObjectReference{
-				{Name: "vpc-ran"},
+			wantDB: corev1.ObjectReference{
+				Name: "vpc-ran",
 			},
 		},
 		"Empty": {
 			file:   empty,
 			wantML: nil,
-			wantDB: nil,
+			wantDB: corev1.ObjectReference{},
 		},
 	}
 
@@ -192,7 +195,7 @@ func TestGetGoStruct(t *testing.T) {
 			if diff := cmp.Diff(tc.wantML, gotML); diff != "" {
 				t.Errorf("MatchLabels: -want, +got:\n%s", diff)
 			}
-			gotDB := g.Spec.VLANDatabases
+			gotDB := g.Spec.VLANDatabase
 			if diff := cmp.Diff(tc.wantDB, gotDB); diff != "" {
 				t.Errorf("NetworkInstance: -want, +got:\n%s", diff)
 			}
@@ -203,46 +206,52 @@ func TestGetGoStruct(t *testing.T) {
 func TestSetSpec(t *testing.T) {
 	cases := map[string]struct {
 		file string
-		t    vlan1alpha1.VLANAllocationSpec
+		t    vlanv1alpha1.VLANAllocationSpec
 	}{
 		"Override": {
 			file: normal,
-			t: vlan1alpha1.VLANAllocationSpec{
-				VLANDatabases: []*corev1.ObjectReference{
-					{Name: "x", Namespace: "y"},
+			t: vlanv1alpha1.VLANAllocationSpec{
+				VLANDatabase: corev1.ObjectReference{
+					Name: "x", Namespace: "y",
 				},
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"a": "b",
-						"c": "d",
-						"e": "f",
+				AllocationLabels: allocv1alpha1.AllocationLabels{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"a": "b",
+							"c": "d",
+							"e": "f",
+						},
 					},
 				},
 			},
 		},
 		"Change": {
 			file: normal,
-			t: vlan1alpha1.VLANAllocationSpec{
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"a": "b",
-						"c": "d",
-						"e": "f",
+			t: vlanv1alpha1.VLANAllocationSpec{
+				AllocationLabels: allocv1alpha1.AllocationLabels{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"a": "b",
+							"c": "d",
+							"e": "f",
+						},
 					},
 				},
 			},
 		},
 		"Empty": {
 			file: empty,
-			t: vlan1alpha1.VLANAllocationSpec{
-				VLANDatabases: []*corev1.ObjectReference{
-					{Name: "x", Namespace: "y"},
+			t: vlanv1alpha1.VLANAllocationSpec{
+				VLANDatabase: corev1.ObjectReference{
+					Name: "x", Namespace: "y",
 				},
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"a": "b",
-						"c": "d",
-						"e": "f",
+				AllocationLabels: allocv1alpha1.AllocationLabels{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"a": "b",
+							"c": "d",
+							"e": "f",
+						},
 					},
 				},
 			},
@@ -270,14 +279,15 @@ func TestSetSpec(t *testing.T) {
 }
 
 func TestSetStatus(t *testing.T) {
+	v := uint16(100)
 	cases := map[string]struct {
 		file string
-		t    vlan1alpha1.VLANAllocationStatus
+		t    vlanv1alpha1.VLANAllocationStatus
 	}{
 		"Override": {
 			file: normal,
-			t: vlan1alpha1.VLANAllocationStatus{
-				AllocatedVlanID: 100,
+			t: vlanv1alpha1.VLANAllocationStatus{
+				VLANID: &v,
 			},
 		},
 	}
