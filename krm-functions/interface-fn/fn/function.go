@@ -92,7 +92,7 @@ func (r *itfceFn) ClusterContextCallbackFn(o *fn.KubeObject) error {
 		return err
 	}
 
-	fn.Logf("clusterctxt validate:%v\n",clusterContext.Spec.Validate())
+	fn.Logf("clusterctxt validate:%v\n", clusterContext.Spec.Validate())
 	// validate check the specifics of the spec, like mandatory fields
 	if err := clusterContext.Spec.Validate(); err != nil {
 		return err

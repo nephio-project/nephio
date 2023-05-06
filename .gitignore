@@ -19,3 +19,4 @@
 *.dic
 /.vscode
 go.work
+go.work.sum
