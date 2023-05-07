@@ -2,6 +2,12 @@ module github.com/nephio-project/nephio/krm-functions/lib
 
 go 1.20
 
+replace k8s.io/api => k8s.io/api v0.26.1
+
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
+
+replace k8s.io/client-go => k8s.io/client-go v0.26.1
+
 require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
