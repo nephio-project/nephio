@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/google/go-cmp/cmp"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/stretchr/testify/assert"
@@ -26,13 +27,31 @@ import (
 	"testing"
 )
 
-var nadTest = `apiVersion: "k8s.cni.cncf.io/v1"
+var nadTestSriov = `apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   creationTimestamp: null
   name: upf-us-central1-n3
 spec:
   config: '{"cniVersion":"0.3.1","vlan": 1001, "plugins":[{"type":"sriov","capabilities":{"ips":true,"mac":false},"master":"bond0","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.3/24","gateway":"10.0.0.1"}]}}]}'
+`
+
+var nadTestIpVlan = `apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  creationTimestamp: null
+  name: upf-us-central1-n3
+spec:
+  config: '{"cniVersion":"0.3.1","plugins":[{"type":"ipvlan","capabilities":{"ips":true},"master":"eth1","mode":"l2","ipam":{"type":"static","addresses":[{"address":"16.0.0.2/24","gateway":"16.0.0.1"}]}}]}'
+`
+
+var nadTestMacVlan = `apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  creationTimestamp: null
+  name: upf-us-central1-n3
+spec:
+  config: '{"cniVersion":"0.3.1","plugins":[{"type":"macvlan","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"14.0.0.2/24","gateway":"14.0.0.1"}]}},{"type":"tuning","capabilities":{"mac":true},"ipam":{}}]}'
 `
 
 var nadTestEmpty = `apiVersion: "k8s.cni.cncf.io/v1"
@@ -48,7 +67,7 @@ func TestNewFromYAML(t *testing.T) {
 		errExpected bool
 	}{
 		"TestNewFromYAMLNormal": {
-			input:       []byte(nadTest),
+			input:       []byte(nadTestSriov),
 			errExpected: false,
 		},
 		"TestNewFromYAMLNil": {
@@ -116,8 +135,31 @@ func TestNewFromGoStruct(t *testing.T) {
 	}
 }
 
+func TestNewFromKubeObject(t *testing.T) {
+	cases := map[string]struct {
+		input       fn.KubeObject
+		errExpected bool
+	}{
+		"TestEmptyKubeObject": {
+			input:       fn.KubeObject{},
+			errExpected: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := NewFromKubeObject(&tc.input)
+			if tc.errExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestGetKubeObject(t *testing.T) {
-	i, err := NewFromYAML([]byte(nadTest))
+	i, err := NewFromYAML([]byte(nadTestSriov))
 	if err != nil {
 		t.Errorf("cannot unmarshal file: %s", err.Error())
 	}
@@ -151,7 +193,7 @@ func TestGetGoStruct(t *testing.T) {
 		want string
 	}{
 		"TestGetGoStructNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: "0.3.1",
 		},
 		"TestGetGoStructEmpty": {
@@ -187,7 +229,7 @@ func TestGetSpec(t *testing.T) {
 		want int
 	}{
 		"GetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: 224,
 		},
 		"GetAttachmentTypeEmpty": {
@@ -218,7 +260,7 @@ func TestGetCNIType(t *testing.T) {
 		want string
 	}{
 		"GetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: "sriov",
 		},
 		"GetAttachmentTypeEmpty": {
@@ -251,7 +293,7 @@ func TestGetVlan(t *testing.T) {
 		want int
 	}{
 		"GetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: 1001,
 		},
 		"GetAttachmentTypeEmpty": {
@@ -286,7 +328,7 @@ func TestGetNadMaster(t *testing.T) {
 		want string
 	}{
 		"GetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: "bond0",
 		},
 		"GetAttachmentTypeEmpty": {
@@ -319,7 +361,7 @@ func TestGetIpamAddress(t *testing.T) {
 		want []Addresses
 	}{
 		"GetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			want: []Addresses{
 				{Address: "10.0.0.3/24", Gateway: "10.0.0.1"},
 			},
@@ -357,7 +399,7 @@ func TestSetConfigSpec(t *testing.T) {
 		length      int
 	}{
 		"SetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			value: &nadv1.NetworkAttachmentDefinitionSpec{
 				Config: "{\"cniVersion\": \"0.3.1\"}",
 			},
@@ -400,15 +442,50 @@ func TestSetCNIType(t *testing.T) {
 		value       string
 		errExpected bool
 	}{
-		"SetAttachmentTypeNormal": {
-			file:        nadTest,
+		"SetAttachmentTypeOther": {
+			file:        nadTestSriov,
 			value:       "calico",
+			errExpected: false,
+		},
+		"SetAttachmentTypeSriov": {
+			file:        nadTestSriov,
+			value:       "sriov",
+			errExpected: false,
+		},
+		"SetAttachmentTypeIpVlan": {
+			file:        nadTestIpVlan,
+			value:       "ipvlan",
+			errExpected: false,
+		},
+		"SetAttachmentTypeMacVlan": {
+			file:        nadTestMacVlan,
+			value:       "macvlan",
 			errExpected: false,
 		},
 		"SetAttachmentTypeEmpty": {
 			file:        nadTestEmpty,
 			value:       "",
 			errExpected: true,
+		},
+		"SetNewAttachmentTypeOther": {
+			file:        nadTestEmpty,
+			value:       "calico",
+			errExpected: false,
+		},
+		"SetNewAttachmentTypeSriov": {
+			file:        nadTestEmpty,
+			value:       "sriov",
+			errExpected: false,
+		},
+		"SetNewAttachmentTypeIpVlan": {
+			file:        nadTestEmpty,
+			value:       "ipvlan",
+			errExpected: false,
+		},
+		"SetNewAttachmentTypeMacVlan": {
+			file:        nadTestEmpty,
+			value:       "macvlan",
+			errExpected: false,
 		},
 	}
 
@@ -445,7 +522,7 @@ func TestSetVlan(t *testing.T) {
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
-			file:        nadTest,
+			file:        nadTestSriov,
 			value:       2002,
 			errExpected: false,
 		},
@@ -489,7 +566,7 @@ func TestSetNadMaster(t *testing.T) {
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
-			file:        nadTest,
+			file:        nadTestSriov,
 			value:       "eno1",
 			errExpected: false,
 		},
@@ -533,7 +610,7 @@ func TestSetNadAddress(t *testing.T) {
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
-			file: nadTest,
+			file: nadTestSriov,
 			value: []Addresses{
 				{Address: "10.0.0.3/24", Gateway: "10.0.0.1"},
 			},
