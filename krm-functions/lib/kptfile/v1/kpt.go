@@ -18,6 +18,7 @@ package v1
 
 import (
 	"errors"
+	"sort"
 	"sync"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -45,6 +46,8 @@ type KptFile interface {
 	// GetConditions returns all the conditions in the kptfile. if not initialized it
 	// returns an emoty slice
 	GetConditions() []kptv1.Condition
+	// Sort Conditions sorts the consition in the kptfile
+	SortConditions()
 }
 
 // New creates a new parser interface
@@ -169,4 +172,18 @@ func (r *kptFile) GetConditions() []kptv1.Condition {
 		return []kptv1.Condition{}
 	}
 	return r.GetKptFile().Status.Conditions
+}
+
+// SortConditions returns a kptfile with sorted conditions
+func (r *kptFile) SortConditions() {
+	r.m.RLock()
+	defer r.m.RUnlock()
+
+	if r.GetKptFile().Status == nil || len(r.GetKptFile().Status.Conditions) == 0 {
+		return
+	}
+
+	sort.SliceStable(r.GetKptFile().Status.Conditions, func(i, j int) bool {
+		return r.GetKptFile().Status.Conditions[i].Type < r.GetKptFile().Status.Conditions[j].Type
+	})
 }
