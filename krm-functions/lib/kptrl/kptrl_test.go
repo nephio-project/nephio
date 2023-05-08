@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 var resList = []byte(`
@@ -273,6 +274,33 @@ func TestDeleteObject(t *testing.T) {
 
 			if got != nil {
 				t.Errorf("TestDeleteObject: -want: nil, +got:%v\n", got)
+			}
+		})
+	}
+}
+
+func TestGetResourceList(t *testing.T) {
+	cases := map[string]struct {
+		t    map[string]string
+		want fn.ResourceList
+	}{
+		"Normal": {
+			t: map[string]string{
+				"a.yaml": string(objA),
+				"b.yaml": string(objB),
+				"c.yaml": string(objC)},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+
+			rl, err := GetResourceList(tc.t)
+			if err != nil {
+				assert.NoError(t, err)
+			}
+			if len(rl.Items) != len(tc.t) {
+				t.Errorf("ResouceList: -want: nil, +got:%v\n", rl.Items)
 			}
 		})
 	}
