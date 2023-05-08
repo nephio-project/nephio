@@ -285,29 +285,28 @@ func (r *NadStruct) SetConfigSpec(spec *nadv1.NetworkAttachmentDefinitionSpec) e
 }
 
 func (r *NadStruct) SetCNIType(cniType string) error {
-	if cniType == "" {
+	switch cniSpecType := cniType; cniSpecType {
+	case "":
 		return fmt.Errorf("unknown cniType")
-	} else {
-		if cniType == "ipvlan" {
-			r.CniSpecType = IpVlanType
-		} else if cniType == "macvlan" {
-			r.CniSpecType = MacVlanType
-		} else if cniType == "sriov" {
-			r.CniSpecType = SriovType
-		}
-		nadConfigStruct, err := r.getNadConfig()
-		if err != nil {
-			return err
-		}
-		for i, plugin := range nadConfigStruct.Plugins {
-			if plugin.Type == TuningType {
-				continue
-			} else {
-				nadConfigStruct.Plugins[i].Type = cniType
-			}
-		}
-		return r.setNadConfig(nadConfigStruct)
+	case "ipvlan":
+		r.CniSpecType = IpVlanType
+	case "macvlan":
+		r.CniSpecType = MacVlanType
+	case "sriov":
+		r.CniSpecType = SriovType
 	}
+	nadConfigStruct, err := r.getNadConfig()
+	if err != nil {
+		return err
+	}
+	for i, plugin := range nadConfigStruct.Plugins {
+		if plugin.Type == TuningType {
+			continue
+		} else {
+			nadConfigStruct.Plugins[i].Type = cniType
+		}
+	}
+	return r.setNadConfig(nadConfigStruct)
 }
 
 func (r *NadStruct) SetVlan(vlanType int) error {
