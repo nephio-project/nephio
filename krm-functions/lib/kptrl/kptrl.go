@@ -17,7 +17,12 @@
 package kptrl
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"sigs.k8s.io/kustomize/kyaml/kio"
+	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
 type ResourceList struct {
@@ -71,4 +76,56 @@ func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
 		return true
 	}
 	return false
+}
+
+func includeFile(path string, match []string) bool {
+	for _, m := range match {
+		file := filepath.Base(path)
+		if matched, err := filepath.Match(m, file); err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
+
+func GetResourceList(resources map[string]string) (*fn.ResourceList, error) {
+	inputs := []kio.Reader{}
+	for path, data := range resources {
+		if includeFile(path, []string{"*.yaml", "*.yml", "Kptfile"}) {
+			inputs = append(inputs, &kio.ByteReader{
+				Reader: strings.NewReader(data),
+				SetAnnotations: map[string]string{
+					kioutil.PathAnnotation: path,
+				},
+				DisableUnwrapping: true,
+			})
+		}
+	}
+	var pb kio.PackageBuffer
+	err := kio.Pipeline{
+		Inputs:  inputs,
+		Filters: []kio.Filter{},
+		Outputs: []kio.Writer{&pb},
+	}.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	rl := &fn.ResourceList{
+		Items: fn.KubeObjects{},
+	}
+	for _, n := range pb.Nodes {
+		s, err := n.String()
+		if err != nil {
+			return nil, err
+		}
+		o, err := fn.ParseKubeObject([]byte(s))
+		if err != nil {
+			return nil, err
+		}
+		if err := rl.UpsertObjectToItems(o, nil, true); err != nil {
+			panic(err)
+		}
+	}
+	return rl, nil
 }
