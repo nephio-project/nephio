@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 var itface = `apiVersion: req.nephio.org/v1alpha1
@@ -257,6 +258,7 @@ func TestSetSpec(t *testing.T) {
 }
 
 func TestSetStatus(t *testing.T) {
+	x := uint16(10)
 	cases := map[string]struct {
 		file string
 		t    nephioreqv1alpha1.InterfaceStatus
@@ -265,11 +267,11 @@ func TestSetStatus(t *testing.T) {
 			file: itface,
 			t: nephioreqv1alpha1.InterfaceStatus{
 				IPAllocationStatus: &ipamv1alpha1.IPAllocationStatus{
-					AllocatedPrefix: "10.0.0.2/24",
-					Gateway:         "10.0.0.1",
+					Prefix:  pointer.String("10.0.0.2/24"),
+					Gateway: pointer.String("10.0.0.1"),
 				},
 				VLANAllocationStatus: &vlanv1alpha1.VLANAllocationStatus{
-					AllocatedVlanID: 10,
+					VLANID: &x,
 				},
 			},
 		},

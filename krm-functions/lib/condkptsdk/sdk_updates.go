@@ -161,6 +161,8 @@ func (r *sdk) setObjectInResourceList(kind gvkKind, refs []corev1.ObjectReferenc
 }
 
 func (r *sdk) updateKptFile() error {
+	r.kptf.SortConditions()
+
 	kptfile, err := r.kptf.ParseKubeObject()
 	if err != nil {
 		fn.Log(err)
