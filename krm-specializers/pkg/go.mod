@@ -8,7 +8,7 @@ require (
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230121152246-dc44dbd18a33
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230505152827-3d240775bc79
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9
 	github.com/pkg/errors v0.9.1
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
