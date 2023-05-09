@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/nephio-project/nephio/controllers/pkg/specializerreconciler"
+	"github.com/nephio-project/nephio/controllers/pkg/specializer-reconciler"
 	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/config"
 	function "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
