@@ -310,20 +310,22 @@ func (r *NadStruct) SetCNIType(cniType string) error {
 }
 
 func (r *NadStruct) SetVlan(vlanType int) error {
-	if vlanType != 0 {
+	if vlanType == 0 {
+		return fmt.Errorf("unknown vlanType")
+	} else {
 		nadConfigStruct, err := r.getNadConfig()
 		if err != nil {
 			return err
 		}
 		nadConfigStruct.Vlan = vlanType
 		return r.setNadConfig(nadConfigStruct)
-	} else {
-		return fmt.Errorf("unknown vlanType")
 	}
 }
 
 func (r *NadStruct) SetNadMaster(nadMaster string) error {
-	if nadMaster != "" {
+	if nadMaster == "" {
+		return fmt.Errorf("unknown nad master interface")
+	} else {
 		nadConfigStruct, err := r.getNadConfig()
 		if err != nil {
 			return err
@@ -336,13 +338,13 @@ func (r *NadStruct) SetNadMaster(nadMaster string) error {
 			}
 		}
 		return r.setNadConfig(nadConfigStruct)
-	} else {
-		return fmt.Errorf("unknown nad master interface")
 	}
 }
 
 func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
-	if ipam != nil {
+	if ipam == nil {
+		return fmt.Errorf("unknown IPAM address")
+	} else {
 		nadConfigStruct, err := r.getNadConfig()
 		if err != nil {
 			return err
@@ -355,8 +357,6 @@ func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
 			}
 		}
 		return r.setNadConfig(nadConfigStruct)
-	} else {
-		return fmt.Errorf("unknown IPAM address")
 	}
 }
 
