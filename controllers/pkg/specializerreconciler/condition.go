@@ -14,7 +14,7 @@
  limitations under the License.
 */
 
-package reconciler
+package specializerreconciler
 
 import (
 	"strings"

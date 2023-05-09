@@ -19,9 +19,9 @@ package controllers
 import (
 	"context"
 
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers/config"
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers/ipam"
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers/vlan"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/config"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/ipam"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/vlan"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
