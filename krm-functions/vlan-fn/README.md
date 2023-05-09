@@ -1,7 +1,8 @@
 # vlan-fn
 
-The ipam-fn is a KRM function leveraging the `cond sdk` using the vlan.alloc.nephio.org/v1alpha1.VLANAllocation as a `for` KRM resource.
-The function allocates VLANs from a VLAN backend based on the content of the VLANAllocation. A function is implemented to align with the fn sdk, but more importantly it allows us to use the fn in a `kpt` pipeline w/o relying on porch. When used in the `kpt` pipeline it uses a stub backend for testing purposes
+The `vlan-fn` is a KRM function leveraging the `cond fn sdk`. It uses the `vlan.alloc.nephio.org/v1alpha1.VLANAllocation` as a `for` KRM resource.
+
+The function allocates VLANs from a VLAN backend based on the content of the VLANAllocation. The function is implemented to align with the `cond fn sdk` but, more importantly, the function can be used in a `kpt` pipeline without relying on porch. When used in a kpt pipeline, a stub backend can be deployed for testing purposes.
 
 ## usage
 
