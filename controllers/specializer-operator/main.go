@@ -22,8 +22,8 @@ import (
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers"
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers/config"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/config"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	"go.uber.org/zap/zapcore"

@@ -20,9 +20,9 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/nephio-project/nephio/controllers/pkg/specializer-reconciler"
+	"github.com/nephio-project/nephio/controllers/specializer-operator/controllers/config"
 	function "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
-	"github.com/nephio-project/nephio/krm-specializers/operator/controllers/config"
-	"github.com/nephio-project/nephio/krm-specializers/pkg/reconciler"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
@@ -35,7 +35,7 @@ func Setup(ctx context.Context, mgr ctrl.Manager, cfg config.SpecializerControll
 		ctx, clientproxy.Config{Address: cfg.Address},
 	)}
 
-	return reconciler.Setup(mgr, reconciler.Config{
+	return specializerreconciler.Setup(mgr, specializerreconciler.Config{
 		For: corev1.ObjectReference{
 			APIVersion: ipamv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
 			Kind:       ipamv1alpha1.IPAllocationKind,
