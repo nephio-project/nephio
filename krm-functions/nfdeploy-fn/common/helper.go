@@ -80,8 +80,6 @@ func (h *NfDeployFn[T, PT]) AddInterfaceToNetworkInstance(interfaceName, network
 			Interfaces: []string{interfaceName},
 		}
 	}
-
-	return
 }
 
 func (h *NfDeployFn[T, PT]) GetAllNetworkInstance() []nephiodeployv1alpha1.NetworkInstance {
