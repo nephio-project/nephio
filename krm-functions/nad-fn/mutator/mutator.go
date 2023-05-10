@@ -18,7 +18,6 @@ package mutator
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -93,8 +92,8 @@ func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
 }
 
 func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
-	ipAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)))
-	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)))
+	ipAllocationObjs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
 	// verify all needed objects exist
@@ -159,8 +158,8 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 				return nil, err
 			}
 			err = nad.SetIpamAddress([]nadlibv1.Addresses{{
-				Address: *allocGoStruct.Status.Prefix,
-				Gateway: *allocGoStruct.Status.Gateway,
+				Address: allocGoStruct.Status.AllocatedPrefix,
+				Gateway: allocGoStruct.Status.Gateway,
 			}})
 			if err != nil {
 				return nil, err
