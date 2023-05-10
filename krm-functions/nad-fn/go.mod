@@ -2,14 +2,12 @@ module github.com/nephio-project/nephio/krm-functions/nad-fn
 
 go 1.20
 
-replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
-
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/nephio-project/api v0.0.0-20230503145925-bdf80c9b1256
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-00010101000000-000000000000
-	github.com/nokia/k8s-ipam v0.0.4-0.20230416191338-dcd944a8d636
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230510092133-1bc78cd2f3a6
+	github.com/nokia/k8s-ipam v0.0.4-0.20230505052819-ca2376dd660e
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 )
