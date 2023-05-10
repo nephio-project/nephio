@@ -19,7 +19,6 @@ package resource
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/nokia/k8s-ipam/pkg/meta"
 	"github.com/pkg/errors"
@@ -115,34 +114,28 @@ func (a *APIFinalizer) RemoveFinalizer(ctx context.Context, obj Object) error {
 
 // AddFinalizer to the supplied Managed resource.
 func (a *APIFinalizer) AddFinalizerString(ctx context.Context, obj Object, finalizerString string) error {
-	//fmt.Printf("AddFinalizerString finalizerString: %s\n", finalizerString)
 	f := obj.GetFinalizers()
-	found := false
 	for _, ff := range f {
 		if ff == finalizerString {
-			found = true
 			return nil
 		}
 	}
-	if !found {
-		f = append(f, finalizerString)
-		obj.SetFinalizers(f)
-	}
-	//fmt.Printf("AddFinalizerString finalizers end: %v\n", obj.GetFinalizers())
+	// if we come here the finalizer was not found
+	f = append(f, finalizerString)
+	obj.SetFinalizers(f)
+
 	return errors.Wrap(a.client.Update(ctx, obj), errUpdateObject)
 }
 
 // RemoveFinalizer from the supplied Managed resource.
 func (a *APIFinalizer) RemoveFinalizerString(ctx context.Context, obj Object, finalizerString string) error {
 	f := obj.GetFinalizers()
-	fmt.Printf("RemoveFinalizerString finalizers start: %v\n", obj.GetFinalizers())
 	for _, ff := range f {
 		if ff == finalizerString {
 			f = RemoveString(f, ff)
 			obj.SetFinalizers(f)
 		}
 	}
-	fmt.Printf("RemoveFinalizerString finalizers end: %v\n", obj.GetFinalizers())
 	return errors.Wrap(IgnoreNotFound(a.client.Update(ctx, obj)), errUpdateObject)
 }
 
