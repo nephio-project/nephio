@@ -21,23 +21,21 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	allocv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 )
 
-var normal = `apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+var normal = `apiVersion: vlan.alloc.nephio.org/v1alpha1
+kind: VLANAllocation
 # test comment a
 metadata:
   name: n3
   annotations:
     config.kubernetes.io/local-config: "true"
 spec:
-  kind: network
-  networkInstance:
+  vlanDatabase:
     name: vpc-ran # test comment c
   # test comment d
   selector:
@@ -46,7 +44,7 @@ spec:
 `
 
 var empty = `apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+kind: VLANAllocation
 metadata:
   name: n3
   annotations:
@@ -83,21 +81,20 @@ func TestNewFromYAML(t *testing.T) {
 
 func TestNewFromGoStruct(t *testing.T) {
 	cases := map[string]struct {
-		input       *ipamv1alpha1.IPAllocation
+		input       *vlanv1alpha1.VLANAllocation
 		errExpected bool
 	}{
 		"Normal": {
-			input: &ipamv1alpha1.IPAllocation{
+			input: &vlanv1alpha1.VLANAllocation{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: ipamv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-					Kind:       ipamv1alpha1.IPAllocationKind,
+					APIVersion: vlanv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
+					Kind:       vlanv1alpha1.VLANAllocationKind,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",
 				},
-				Spec: ipamv1alpha1.IPAllocationSpec{
-					Kind: ipamv1alpha1.PrefixKindNetwork,
-					NetworkInstance: corev1.ObjectReference{
+				Spec: vlanv1alpha1.VLANAllocationSpec{
+					VLANDatabase: corev1.ObjectReference{
 						Name: "x",
 					},
 					AllocationLabels: allocv1alpha1.AllocationLabels{
@@ -141,7 +138,7 @@ func TestGetKubeObject(t *testing.T) {
 		wantName string
 	}{
 		"ParseObject": {
-			wantKind: "IPAllocation",
+			wantKind: "VLANAllocation",
 			wantName: "n3",
 		},
 	}
@@ -162,25 +159,22 @@ func TestGetKubeObject(t *testing.T) {
 func TestGetGoStruct(t *testing.T) {
 	cases := map[string]struct {
 		file   string
-		wantPK ipamv1alpha1.PrefixKind
 		wantML map[string]string
-		wantNI corev1.ObjectReference
+		wantDB corev1.ObjectReference
 	}{
 		"Normal": {
-			file:   normal,
-			wantPK: ipamv1alpha1.PrefixKindNetwork,
+			file: normal,
 			wantML: map[string]string{
 				"a": "b",
 			},
-			wantNI: corev1.ObjectReference{
+			wantDB: corev1.ObjectReference{
 				Name: "vpc-ran",
 			},
 		},
 		"Empty": {
 			file:   empty,
-			wantPK: "",
 			wantML: nil,
-			wantNI: corev1.ObjectReference{},
+			wantDB: corev1.ObjectReference{},
 		},
 	}
 
@@ -194,11 +188,6 @@ func TestGetGoStruct(t *testing.T) {
 			g, err := i.GetGoStruct()
 			assert.NoError(t, err)
 
-			gotPK := g.Spec.Kind
-			if diff := cmp.Diff(tc.wantPK, gotPK); diff != "" {
-				t.Errorf("PrefixKind: -want, +got:\n%s", diff)
-			}
-
 			var gotML map[string]string
 			if g.Spec.Selector != nil {
 				gotML = g.Spec.Selector.MatchLabels
@@ -206,8 +195,8 @@ func TestGetGoStruct(t *testing.T) {
 			if diff := cmp.Diff(tc.wantML, gotML); diff != "" {
 				t.Errorf("MatchLabels: -want, +got:\n%s", diff)
 			}
-			gotNI := g.Spec.NetworkInstance
-			if diff := cmp.Diff(tc.wantNI, gotNI); diff != "" {
+			gotDB := g.Spec.VLANDatabase
+			if diff := cmp.Diff(tc.wantDB, gotDB); diff != "" {
 				t.Errorf("NetworkInstance: -want, +got:\n%s", diff)
 			}
 		})
@@ -217,16 +206,14 @@ func TestGetGoStruct(t *testing.T) {
 func TestSetSpec(t *testing.T) {
 	cases := map[string]struct {
 		file string
-		t    ipamv1alpha1.IPAllocationSpec
+		t    vlanv1alpha1.VLANAllocationSpec
 	}{
 		"Override": {
 			file: normal,
-			t: ipamv1alpha1.IPAllocationSpec{
-				NetworkInstance: corev1.ObjectReference{
-					Name:      "x",
-					Namespace: "y",
+			t: vlanv1alpha1.VLANAllocationSpec{
+				VLANDatabase: corev1.ObjectReference{
+					Name: "x", Namespace: "y",
 				},
-				Kind: ipamv1alpha1.PrefixKindLoopback,
 				AllocationLabels: allocv1alpha1.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -236,14 +223,11 @@ func TestSetSpec(t *testing.T) {
 						},
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
 			},
 		},
 		"Change": {
 			file: normal,
-			t: ipamv1alpha1.IPAllocationSpec{
-				Kind: ipamv1alpha1.PrefixKindLoopback,
+			t: vlanv1alpha1.VLANAllocationSpec{
 				AllocationLabels: allocv1alpha1.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -253,18 +237,14 @@ func TestSetSpec(t *testing.T) {
 						},
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
 			},
 		},
 		"Empty": {
 			file: empty,
-			t: ipamv1alpha1.IPAllocationSpec{
-				NetworkInstance: corev1.ObjectReference{
-					Name:      "x",
-					Namespace: "y",
+			t: vlanv1alpha1.VLANAllocationSpec{
+				VLANDatabase: corev1.ObjectReference{
+					Name: "x", Namespace: "y",
 				},
-				Kind: ipamv1alpha1.PrefixKindLoopback,
 				AllocationLabels: allocv1alpha1.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -274,8 +254,6 @@ func TestSetSpec(t *testing.T) {
 						},
 					},
 				},
-				CreatePrefix: pointer.Bool(true),
-				Prefix:       pointer.String("10.0.0.0/24"),
 			},
 		},
 	}
@@ -301,15 +279,15 @@ func TestSetSpec(t *testing.T) {
 }
 
 func TestSetStatus(t *testing.T) {
+	v := uint16(100)
 	cases := map[string]struct {
 		file string
-		t    ipamv1alpha1.IPAllocationStatus
+		t    vlanv1alpha1.VLANAllocationStatus
 	}{
 		"Override": {
 			file: normal,
-			t: ipamv1alpha1.IPAllocationStatus{
-				Prefix:  pointer.String("10.0.0.1/24"),
-				Gateway: pointer.String("10.0.0.254"),
+			t: vlanv1alpha1.VLANAllocationStatus{
+				VLANID: &v,
 			},
 		},
 	}

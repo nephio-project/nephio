@@ -61,7 +61,7 @@ metadata:
 
 var objC = []byte(`
 apiVersion: c.c/v1
-kind: CniSpecType
+kind: C
 metadata:
   name: c
   labels:
