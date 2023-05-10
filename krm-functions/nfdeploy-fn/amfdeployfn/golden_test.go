@@ -14,18 +14,19 @@
  limitations under the License.
 */
 
-package main
+package fn
 
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	fn2 "github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/amfdeployfn/fn"
 	"testing"
 )
 
 const TestDataPath = "testdata"
 
 func TestNFDeployFn(t *testing.T) {
-	fnRunner := fn.ResourceListProcessorFunc(Run)
+	fnRunner := fn.ResourceListProcessorFunc(fn2.Run)
 
 	//// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
 	//// be modified to the output resources (in `_expected.yaml`).
