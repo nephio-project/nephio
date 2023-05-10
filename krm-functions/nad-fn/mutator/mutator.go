@@ -158,9 +158,17 @@ func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjec
 			if err != nil {
 				return nil, err
 			}
+			address := ""
+			gateway := ""
+			if allocGoStruct.Status.Prefix != nil {
+				address = *allocGoStruct.Status.Prefix
+			}
+			if allocGoStruct.Status.Gateway != nil {
+				gateway = *allocGoStruct.Status.Gateway
+			}
 			err = nad.SetIpamAddress([]nadlibv1.Addresses{{
-				Address: *allocGoStruct.Status.Prefix,
-				Gateway: *allocGoStruct.Status.Gateway,
+				Address: address,
+				Gateway: gateway,
 			}})
 			if err != nil {
 				return nil, err
