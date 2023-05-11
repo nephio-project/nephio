@@ -22,3 +22,5 @@ bin
 /.vscode
 go.work
 go.work.sum
+lcov.info
+coverage_unit.html
