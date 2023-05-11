@@ -1,5 +1,5 @@
 VERSION ?= latest
-REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+REGISTRY ?= docker.io/nephio
 PROJECT ?= specialzer-operator
 
 KPT_BLUEPRINT_CFG_DIR ?= blueprint/fn-config
