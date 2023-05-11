@@ -1,5 +1,5 @@
 VERSION ?= latest
-REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+REGISTRY ?= docker.io/nephio
 IMG ?= $(REGISTRY)/vlan-fn:${VERSION}
 
 .PHONY: all
