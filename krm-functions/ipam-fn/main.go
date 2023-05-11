@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	fnr "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 )
 
 func main() {

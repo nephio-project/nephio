@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 	fnr "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 )
 
 func main() {
