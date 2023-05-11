@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -35,6 +36,12 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 	var err error
 
 	kptfile := rl.Items.GetRootKptfile()
+	if kptfile == nil {
+		fn.Log("mandatory Kptfile is missing from the package")
+		rl.Results.Errorf("mandatory Kptfile is missing from the package")
+		return false, fmt.Errorf("mandatory Kptfile is missing from the package")
+	}
+
 	nfDeployFn.pkgName = kptfile.GetName()
 
 	nfDeployFn.sdk, err = kptcondsdk.New(

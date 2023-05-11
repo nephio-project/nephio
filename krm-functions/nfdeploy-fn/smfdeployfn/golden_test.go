@@ -28,6 +28,6 @@ func TestNFDeployFn(t *testing.T) {
 	fnRunner := fn.ResourceListProcessorFunc(Run)
 
 	//// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
-	//// be modified to the output resources (in `_expected.yaml`).
+	//// be modified to the output resources (in `_expected_error.txt`).
 	testhelpers.RunGoldenTests(t, TestDataPath, fnRunner)
 }

@@ -19,15 +19,23 @@ package main
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	tst "github.com/nephio-project/nephio/krm-functions/lib/test"
 	"testing"
 )
 
-const TestDataPath = "testdata"
+const TestGoldenPath = "testdata/golden"
+const TestFailurePath = "testdata/failure"
 
-func TestNFDeployFn(t *testing.T) {
+func TestGolden(t *testing.T) {
 	fnRunner := fn.ResourceListProcessorFunc(Run)
 
 	//// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
-	//// be modified to the output resources (in `_expected.yaml`).
-	testhelpers.RunGoldenTests(t, TestDataPath, fnRunner)
+	//// be modified to the output resources (in `_expected_error.txt`).
+	testhelpers.RunGoldenTests(t, TestGoldenPath, fnRunner)
+}
+
+func TestFailureCases(t *testing.T) {
+	fnRunner := fn.ResourceListProcessorFunc(Run)
+
+	tst.RunFailureCases(t, TestFailurePath, fnRunner)
 }
