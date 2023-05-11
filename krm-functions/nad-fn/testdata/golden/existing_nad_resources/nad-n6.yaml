@@ -1,0 +1,8 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: n6
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+spec:
+  config: '{"cniVersion":"0.3.1","plugins":[{"type":"ipvlan","capabilities":{"ips":true},"master":"eth1","mode":"l2","ipam":{"type":"static","addresses":[{"address":"16.0.0.2/24","gateway":"16.0.0.1"}]}}]}'

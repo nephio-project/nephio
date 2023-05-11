@@ -1,0 +1,14 @@
+apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
+metadata:
+  name: n3
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/site: edge1
+  networkInstance:
+    name: vpc-ran
+status: {}

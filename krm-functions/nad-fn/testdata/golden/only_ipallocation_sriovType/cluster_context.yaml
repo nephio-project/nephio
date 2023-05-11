@@ -1,0 +1,11 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: ClusterContext
+metadata:
+  name: cluster-context
+  annotations:
+    config.kubernetes.io/local-config: "true"
+spec:
+  cniConfig:
+    cniType: sriov
+    masterInterface: eth1
+  siteCode: edge1
