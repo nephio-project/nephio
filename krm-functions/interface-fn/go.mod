@@ -12,7 +12,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/nephio-project/api v0.0.0-20230503145925-bdf80c9b1256
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230505152827-3d240775bc79
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230510004232-e627a450f230
 	github.com/nokia/k8s-ipam v0.0.4-0.20230505052819-ca2376dd660e
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
