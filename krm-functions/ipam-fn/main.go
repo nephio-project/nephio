@@ -20,12 +20,16 @@ import (
 	"os"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	fnr "github.com/nephio-project/nephio/krm-functions/interface-fn/fn"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
+	fnr "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 )
 
 func main() {
+	r := &fnr.FnR{
+		ClientProxy: ipam.NewMock(),
+	}
 
-	if err := fn.AsMain(fn.ResourceListProcessorFunc(fnr.Run)); err != nil {
+	if err := fn.AsMain(fn.ResourceListProcessorFunc(r.Run)); err != nil {
 		os.Exit(1)
 	}
 }

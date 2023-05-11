@@ -1,5 +1,5 @@
 VERSION ?= latest
-REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+REGISTRY ?= docker.io/nephio
 IMG ?= $(REGISTRY)/interface-fn:${VERSION}
 
 .PHONY: all

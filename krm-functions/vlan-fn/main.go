@@ -20,12 +20,16 @@ import (
 	"os"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	fnr "github.com/nephio-project/nephio/krm-functions/interface-fn/fn"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
+	fnr "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 )
 
 func main() {
+	r := &fnr.FnR{
+		ClientProxy: vlan.NewMock(),
+	}
 
-	if err := fn.AsMain(fn.ResourceListProcessorFunc(fnr.Run)); err != nil {
+	if err := fn.AsMain(fn.ResourceListProcessorFunc(r.Run)); err != nil {
 		os.Exit(1)
 	}
 }
