@@ -1,5 +1,5 @@
 VERSION ?= latest
-REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+REGISTRY ?= docker.io/nephio
 UPFIMG ?= $(REGISTRY)/upf-deploy-fn:${VERSION}
 AMFIMG ?= $(REGISTRY)/amf-deploy-fn:${VERSION}
 SMFIMG ?= $(REGISTRY)/smf-deploy-fn:${VERSION}

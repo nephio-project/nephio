@@ -52,7 +52,7 @@ spec:
         - containerPort: 8443
           name: https
       - name: controller
-        image: europe-docker.pkg.dev/srlinux/eu.gcr.io/specialzer-operator:latest
+        image: docker.io/nephio/specialzer-operator:latest
         command:
         - /manager
         args:
