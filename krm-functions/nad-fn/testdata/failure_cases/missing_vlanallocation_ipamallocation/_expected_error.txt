@@ -1,0 +1,1 @@
+expected one of IPAllocation or VLANAllocation objects to generate the nad
