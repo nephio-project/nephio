@@ -4,8 +4,9 @@ go 1.20
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v0.0.0-20230509165130-0f8b099ad663
-	github.com/nephio-project/nephio v0.0.0-20230504173126-28de0ad17447
+	github.com/nephio-project/api v0.0.0-20230511161732-3316d8b9a793
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230512102733-a986c2cde4d1
+	github.com/nokia/k8s-ipam v0.0.4-0.20230508220232-534a4724d032 // indirect
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
 )
@@ -37,7 +38,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nokia/k8s-ipam v0.0.4-0.20230416191338-dcd944a8d636 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect

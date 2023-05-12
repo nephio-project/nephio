@@ -16,14 +16,15 @@ limitations under the License.
 package main
 
 import (
+	"os"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/common"
-	"os"
 )
 
 func Run(rl *fn.ResourceList) (bool, error) {
-	return common.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymenteGroupVersionKind)
+	return common.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymentGroupVersionKind)
 }
 
 func main() {
