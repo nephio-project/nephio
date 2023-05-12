@@ -144,10 +144,10 @@ func (h *NfDeployFn[T, PT]) InterfaceCallBackFn(o *fn.KubeObject) error {
 	itfcConfig := nephiodeployv1alpha1.InterfaceConfig{
 		Name: itfce.Name,
 		IPv4: &nephiodeployv1alpha1.IPv4{
-			Address: itfcIPAllocStatus.AllocatedPrefix,
-			Gateway: &itfcIPAllocStatus.Gateway,
+			Address: *itfcIPAllocStatus.Prefix,
+			Gateway: itfcIPAllocStatus.Gateway,
 		},
-		VLANID: &itfcVlanAllocStatus.AllocatedVlanID,
+		VLANID: itfcVlanAllocStatus.VLANID,
 	}
 
 	h.SetInterfaceConfig(itfcConfig, itfce.Spec.NetworkInstance.Name)
@@ -171,7 +171,7 @@ func (h *NfDeployFn[T, PT]) DnnCallBackFn(o *fn.KubeObject) error {
 
 	var pools []nephiodeployv1alpha1.Pool
 	for _, pool := range dnnReq.Status.Pools {
-		pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: pool.IPAllocation.AllocatedPrefix})
+		pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPAllocation.Prefix})
 	}
 
 	dnn := nephiodeployv1alpha1.DataNetwork{
