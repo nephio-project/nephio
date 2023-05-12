@@ -13,7 +13,7 @@
 
 <!--mdtogo:Long-->
 
-## Usage
+## More details
 
 `dnn-fn` is primarily meant to be used declaratively, as part of the pipeline of a kpt package. It reads all of its inputs from the resources present in the package, and writes all of its outputs back into the package by creating/updating resources. It doesn't have any configuration parameters.
 
@@ -26,3 +26,13 @@ Based on these owner annotations `dnn-fn` automatically deletes (actually marks 
 `dnn-fn` never deletes `IPAllocation` resources directly, but it marks them for deletion if needed, by setting the `specializer.nephio.org/delete` annotation to `"true"`. It expects the IPAllocation specializer to actually delete the marked resources after properly deallocating the IP ranges.
 
 <!--mdtogo-->
+
+## Usage
+
+```
+kpt fn source <krm resource package> | go run main.go 
+```
+
+```
+kpt fn eval --type mutator <krm resource package>  -i <dnn-fn-container-image> 
+```
