@@ -343,10 +343,12 @@ func compareKubeObjectWithExpectedYaml(t *testing.T, obj *fn.KubeObject, expecte
 	expectedYAML := strings.TrimSpace(string(testhelpers.MustReadFile(t, expectedFile)))
 
 	if actualYAML != expectedYAML {
+		// assemble the full path of the _actual.yaml file
 		ext := filepath.Ext(expectedFile)
 		base, _ := strings.CutSuffix(expectedFile, ext)
 		base, _ = strings.CutSuffix(base, "_expected")
 		actualFile := base + "_actual" + ext
+		// write actual output into the file
 		os.WriteFile(actualFile, []byte(actualYAML), 0666)
 		t.Errorf(`mismatch in expected and actual KubeObject YAML:
   - find expected YAML in %v
@@ -359,6 +361,11 @@ type deploymentTestcase struct {
 	inputFile    string
 	expectedFile string
 	transform    func(*appsv1.Deployment)
+}
+
+// various transformations of appsv1.Deployments used in tests
+
+func noop(deploy *appsv1.Deployment) {
 }
 
 func setSpecFields(deploy *appsv1.Deployment) {
@@ -398,44 +405,43 @@ func changeList(deploy *appsv1.Deployment) {
 
 }
 
-func noop(deploy *appsv1.Deployment) {
-}
+var formattingTestDataDir = "testdata/formatting/"
 
 func TestSetNestedFieldKeepFormatting(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__noop_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__noop_expected.yaml",
 			transform:    noop,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "deployment_no_status__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "deployment_no_status__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_all_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_all_fields_expected.yaml",
 			transform:    setAllFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_list_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_list_expected.yaml",
 			transform:    changeList,
 		},
 	}
@@ -467,38 +473,38 @@ func TestSetNestedFieldKeepFormatting(t *testing.T) {
 func TestSetFromTypedObject(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__noop_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__noop_expected.yaml",
 			transform:    noop,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "deployment_no_status__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/deployment_no_status__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "deployment_no_status__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_all_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_all_fields_expected.yaml",
 			transform:    setAllFields,
 		},
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/deployment_full__change_list_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "deployment_full__change_list_expected.yaml",
 			transform:    changeList,
 		},
 	}
@@ -529,13 +535,13 @@ func TestSetFromTypedObject(t *testing.T) {
 func TestKubeObjectExtSetSpec(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/setspec__deployment_full__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "setspec__deployment_full__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/setspec__deployment_no_status__change_spec_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "setspec__deployment_no_status__change_spec_fields_expected.yaml",
 			transform:    setSpecFields,
 		},
 	}
@@ -566,13 +572,13 @@ func TestKubeObjectExtSetSpec(t *testing.T) {
 func TestKubeObjectExtSetStatus(t *testing.T) {
 	testcases := []deploymentTestcase{
 		{
-			inputFile:    "testdata/deployment_full.yaml",
-			expectedFile: "testdata/setstatus__deployment_full__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_full.yaml",
+			expectedFile: formattingTestDataDir + "setstatus__deployment_full__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 		{
-			inputFile:    "testdata/deployment_no_status.yaml",
-			expectedFile: "testdata/setstatus__deployment_no_status__change_status_fields_expected.yaml",
+			inputFile:    formattingTestDataDir + "deployment_no_status.yaml",
+			expectedFile: formattingTestDataDir + "setstatus__deployment_no_status__change_status_fields_expected.yaml",
 			transform:    setStatusFields,
 		},
 	}

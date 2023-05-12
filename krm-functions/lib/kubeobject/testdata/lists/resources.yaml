@@ -1,0 +1,96 @@
+apiVersion: apps/v1 # comment 
+kind: Deployment # comment 
+metadata: # comment 
+  name: apache-deployment # comment 
+  labels: # comment 
+    app: apache # comment 
+spec: # comment
+  replicas: 3 # comment next to deleted field
+  selector: # comment
+    matchLabels: # comment
+      app: apache # comment
+  template: # comment
+    metadata: # comment
+      labels: # comment
+        app: apache # comment
+    spec: # comment
+      containers: # comment
+      - name: apache # comment 1
+        image: apache:1.14.2 # comment 1
+        ports: # comment 1
+        - containerPort: 80 # comment 1
+      - name: apache-2 # comment 2
+        image: apache:1.14.3 # comment 2
+        ports: # comment 2
+        - containerPort: 80 # comment 2
+      restartPolicy: Always  # comment next to updated field
+---
+apiVersion: apps/v1 # comment 
+kind: Deployment # comment 
+metadata: # comment 
+  name: nginx-deployment # comment 
+  labels: # comment 
+    app: nginx # comment 
+spec: # comment
+  replicas: 3 # comment next to deleted field
+  selector: # comment
+    matchLabels: # comment
+      app: nginx # comment
+  template: # comment
+    metadata: # comment
+      labels: # comment
+        app: nginx # comment
+    spec: # comment
+      containers: # comment
+      - name: nginx # comment 1
+        image: nginx:1.14.2 # comment 1
+        ports: # comment 1
+        - containerPort: 80 # comment 1
+      - name: nginx-2 # comment 2
+        image: nginx:1.14.3 # comment 2
+        ports: # comment 2
+        - containerPort: 80 # comment 2
+      restartPolicy: Always  # comment next to updated field
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-elasticsearch
+  namespace: kube-system
+  labels:
+    k8s-app: fluentd-logging
+spec:
+  selector:
+    matchLabels:
+      name: fluentd-elasticsearch
+  template:
+    metadata:
+      labels:
+        name: fluentd-elasticsearch
+    spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fluentd-elasticsearch
+        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+        resources:
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
