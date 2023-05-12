@@ -69,7 +69,7 @@ func (r *gc) Start(ctx context.Context) {
 
 		service := &corev1.Service{}
 		if err := r.client.Get(ctx, types.NamespacedName{
-			Namespace: os.Getenv("GIT_NAMESPACE"),
+			Namespace: os.Getenv("GIT_SECRET_NAME"),
 			Name:      os.Getenv("GIT_SERVICE_NAME"),
 		},
 			service); err != nil {

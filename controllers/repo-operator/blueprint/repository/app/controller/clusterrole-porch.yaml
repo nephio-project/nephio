@@ -1,0 +1,38 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations: {}
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: tbd
+    app.kubernetes.io/instance: tbd
+    app.kubernetes.io/managed-by: kpt
+    app.kubernetes.io/name: repository
+    app.kubernetes.io/part-of: repository
+    app.kubernetes.io/version: tbd
+  name: repository-controller-porch-role
+rules:
+- apiGroups:
+  - config.porch.kpt.dev
+  resources:
+  - repositories
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - create
+  - delete
+- apiGroups:
+  - config.porch.kpt.dev
+  resources:
+  - repositories/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - create
+  - delete
