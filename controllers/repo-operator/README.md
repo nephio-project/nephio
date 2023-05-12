@@ -18,7 +18,7 @@ GIT_SECRET_NAME = the secret to connect to gitea
 GIT_SERVICE_NAME = the service to connect to gitea
 
 
-## example
+## example environment variables
 
 ```
 - name: "GIT_NAMESPACE"
@@ -27,4 +27,16 @@ GIT_SERVICE_NAME = the service to connect to gitea
   value: "git-user-secret"
 - name: "GIT_SERVICE_NAME"
   value: "gitea-http"
+```
+
+## example repo CRD
+
+```
+cat <<EOF | kubectl apply -f - 
+    apiVersion: infra.nephio.org/v1alpha1
+    kind: Repository
+    metadata:
+      name: mgmt
+    spec:
+EOF
 ```

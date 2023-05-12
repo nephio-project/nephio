@@ -193,10 +193,11 @@ func (r *reconciler) createRepo(ctx context.Context, giteaClient *gitea.Client, 
 func (r *reconciler) createAccessToken(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
 	secret := &corev1.Secret{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: os.Getenv("POD_NAMESPACE"),
-		Name:      "git-user-secret",
+		Namespace: os.Getenv("GIT_NAMESPACE"),
+		Name:      os.Getenv("GIT_SECRET_NAME"),
 	},
 		secret); err != nil {
+			r.l.Error(err, "cannot get secret")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return errors.Wrap(err, "cannot get secret")
 	}
