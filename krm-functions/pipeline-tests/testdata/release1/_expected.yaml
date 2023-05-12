@@ -142,14 +142,14 @@ items:
     - message: update done
       status: "True"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: update for condition
-      status: "False"
+    - message: update done
+      status: "True"
       type: req.nephio.org/v1alpha1.Interface.n3
-    - message: update for condition
-      status: "False"
+    - message: update done
+      status: "True"
       type: req.nephio.org/v1alpha1.Interface.n4
-    - message: update for condition
-      status: "False"
+    - message: update done
+      status: "True"
       type: req.nephio.org/v1alpha1.Interface.n6
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
@@ -163,6 +163,9 @@ items:
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
       type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
+    - message: update done
+      status: "True"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.pkg-upf
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -201,7 +204,12 @@ items:
       name: vpc-ran
     cniType: sriov
     attachmentType: vlan
-  status: {}
+  status:
+    ipAllocationStatus:
+      prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -213,7 +221,12 @@ items:
       name: vpc-internal
     cniType: sriov
     attachmentType: vlan
-  status: {}
+  status:
+    ipAllocationStatus:
+      prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -225,7 +238,12 @@ items:
       name: vpc-internet
     cniType: sriov
     attachmentType: vlan
-  status: {}
+  status:
+    ipAllocationStatus:
+      prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -267,3 +285,41 @@ items:
       name: edge1
   status:
     vlanID: 10
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: pkg-upf
+  spec:
+    capacity:
+      maxDownlinkThroughput: 10G
+      maxUplinkThroughput: 10G
+    interfaces:
+    - name: n3
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    - name: n4
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    - name: n6
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    networkInstances:
+    - name: vpc-internal
+      interfaces:
+      - n4
+    - name: vpc-internet
+      dataNetworks:
+      - name: vpc-internet
+        pool:
+        - prefix: 172.0.0.0/8
+      interfaces:
+      - n6
+    - name: vpc-ran
+      interfaces:
+      - n3

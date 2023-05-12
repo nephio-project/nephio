@@ -62,12 +62,10 @@ func TestRelease1Scenario(t *testing.T) {
 		dnn_fn.Run,
 		ipamFn.Run,
 		vlanFn.Run,
-		if_fn.Run,
-		dnn_fn.Run,
 		nad_fn.Run,
+		dnn_fn.Run,
+		if_fn.Run,
 		UpfRun,
-		SmfRun,
-		AmfRun,
 	}
 
 	tlib.RunGoldenTestForPipelineOfFuncs(t, testcaseDir, pipeline)
