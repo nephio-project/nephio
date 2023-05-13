@@ -2,10 +2,12 @@
 
 The repo controller is a k8s controller acting on `repository.infra.nephio.org` and handles the lifecycle of the repository in gitea.
 
-For each repo cr it creates/updates/deletes the following resources:
+For each repo cr the `repo-controller` creates/deletes the following resources:
 - repository in gitea
 - access token to the repository in gitea
-- a secret in k8s representing the access token to access the gitea repo. it is created in the namepsace where the controller runs. For Nephio this would be `nephio-system`
+- a secret in k8s representing the access token to access the gitea repo. The secret is created in the same namespace as the cr. When working with `config-sync` this must be `config-management-system` since the secret must be created in namespace: `config-management-system`
+
+There is no update, so if a change is required it should be handled directly in gitea or delete/create the repository.
 
 ## implementation
 
