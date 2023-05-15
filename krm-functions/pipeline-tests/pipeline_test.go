@@ -36,37 +36,99 @@ import (
 
 const testdir = "testdata"
 
-func UpfRun(rl *fn.ResourceList) (bool, error) {
+func upfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymentGroupVersionKind)
 }
 
-func SmfRun(rl *fn.ResourceList) (bool, error) {
+func smfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.SMFDeployment](rl, nephiodeployv1alpha1.SMFDeploymentGroupVersionKind)
 }
 
-func AmfRun(rl *fn.ResourceList) (bool, error) {
+func amfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.AMFDeployment](rl, nephiodeployv1alpha1.AMFDeploymentGroupVersionKind)
 }
 
-func TestRelease1Scenario(t *testing.T) {
-	ipamFn := &ipam_fn.FnR{
-		ClientProxy: ipam.NewMock(),
-	}
-	vlanFn := &vlan_fn.FnR{
-		ClientProxy: vlan.NewMock(),
+var ipamFn = &ipam_fn.FnR{
+	ClientProxy: ipam.NewMock(),
+}
+
+var vlanFn = &vlan_fn.FnR{
+	ClientProxy: vlan.NewMock(),
+}
+
+type TestCase struct {
+	pipeline        []fn.ResourceListProcessorFunc
+	inputDir        string
+	expectedDataDir string
+}
+
+func TestPipeline(t *testing.T) {
+	tcs := []TestCase{
+		{
+			inputDir:        "upf_pkg",
+			expectedDataDir: "simplified_deployment",
+			pipeline: []fn.ResourceListProcessorFunc{
+				if_fn.Run,
+				dnn_fn.Run,
+
+				ipamFn.Run,
+				vlanFn.Run,
+
+				nad_fn.Run,
+				dnn_fn.Run,
+				if_fn.Run,
+				upfFn,
+			},
+		},
+		{
+			inputDir:        "upf_pkg",
+			expectedDataDir: "real_deployment",
+			pipeline: []fn.ResourceListProcessorFunc{
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+
+				ipamFn.Run,
+				vlanFn.Run,
+
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+			},
+		},
+		{
+			inputDir:        "upf_pkg",
+			expectedDataDir: "real_deployment_2",
+			pipeline: []fn.ResourceListProcessorFunc{
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+
+				ipamFn.Run,
+
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+
+				vlanFn.Run,
+
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+			},
+		},
 	}
 
-	testcaseDir := filepath.Join(testdir, "release1")
-	var pipeline = []fn.ResourceListProcessorFunc{
-		if_fn.Run,
-		dnn_fn.Run,
-		ipamFn.Run,
-		vlanFn.Run,
-		nad_fn.Run,
-		dnn_fn.Run,
-		if_fn.Run,
-		UpfRun,
+	for _, tc := range tcs {
+		t.Run(tc.expectedDataDir, func(t *testing.T) {
+			inputDir := filepath.Join(testdir, tc.inputDir)
+			expectedDir := filepath.Join(testdir, tc.expectedDataDir)
+			tlib.RunGoldenTestForPipelineOfFuncs(t, inputDir, tc.pipeline, expectedDir)
+		})
 	}
-
-	tlib.RunGoldenTestForPipelineOfFuncs(t, testcaseDir, pipeline)
 }
