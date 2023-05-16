@@ -1,0 +1,151 @@
+apiVersion: fn.kptgen.dev/v1alpha1
+kind: Pod
+metadata:
+  name: controller
+  annotations:
+    config.kubernetes.io/local-config: "true"
+  namespace: nephio-system
+spec:
+  type: deployment
+  replicas: 1
+  permissionRequests:
+    controller:
+      scope: cluster
+    repository:
+      scope: cluster
+      permissions:
+      - apiGroups: ["*"]
+        resources: [services]
+        verbs: [get, list, watch]
+      - apiGroups: [infra.nephio.org]
+        resources: [repositories]
+        verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: [infra.nephio.org]
+        resources: [repositories/status]
+        verbs: [get, list, watch, update, patch, create, delete]
+    token:
+      scope: cluster
+      permissions:
+      - apiGroups: ["*"]
+        resources: [services]
+        verbs: [get, list, watch]
+      - apiGroups: [infra.nephio.org]
+        resources: [tokens]
+        verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: [infra.nephio.org]
+        resources: [tokens/status]
+        verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: [""]
+        resources: [secrets]
+        verbs: [get, list, watch, update, patch, create, delete]
+    bootstrap:
+      scope: cluster
+      permissions:
+      - apiGroups: [cluster.x-k8s.io]
+        resources: [clusters]
+        verbs: [get, list, watch]
+      - apiGroups: ["*"]
+        resources: [secrets]
+        verbs: [get, list, watch]
+      - apiGroups: [porch.kpt.dev]
+        resources: [packagerevisionresources, packagerevisions]
+        verbs: [get, list, watch]
+      - apiGroups: [porch.kpt.dev]
+        resources: [packagerevisionresources/status, packagerevisions/status, packagerevisions/approval]
+        verbs: [get]
+    leader-election:
+      permissions:
+      - apiGroups: [""]
+        resources: [configmaps]
+        verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: [coordination.k8s.io]
+        resources: [leases]
+        verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: [""]
+        resources: [events]
+        verbs: [create, patch]
+  template:
+    spec:
+      containers:
+      - name: kube-rbac-proxy
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+        args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        ports:
+        - containerPort: 8443
+          name: https
+      - name: controller
+        image: docker.io/nephio/nephio-operator:latest
+        command:
+        - /manager
+        args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # TODO(user): Configure the resources accordingly based on the project requirements.
+        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: "POD_IP"
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: "NODE_NAME"
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: "NODE_IP"
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: GIT_NAMESPACE
+          value: gitea
+        - name: GIT_SECRET_NAME
+          value: git-user-secret
+        - name: GIT_SERVICE_NAME
+          value: gitea-http
+        - name: ENABLE_REPOSITORIES
+          value: "true"
+        - name: ENABLE_TOKENS
+          value: "true"
+        - name: ENABLE_BOOTSTRAP
+          value: "true"
