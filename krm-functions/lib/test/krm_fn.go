@@ -103,29 +103,29 @@ func RunFailureCases(t *testing.T, basedir string, krmFunction fn.ResourceListPr
 // and the final output is tested against some expected output.
 // RunGoldenTestForPipeline behaves similar to RunGoldenTests, but it runs only one testcase whose data is in `dir`.
 // The files in `dir` are interpreted the same as by RunGoldenTests. (See details in the documentation of RunGoldenTests)
-func RunGoldenTestForPipeline(t *testing.T, dir string, krmFunctions []fn.ResourceListProcessor) {
+func RunGoldenTestForPipeline(t *testing.T, inputDir string, krmFunctions []fn.ResourceListProcessor, expectedDataDir string) {
 	var err error
-	rl := ParseResourceListFromDir(t, dir)
+	rl := ParseResourceListFromDir(t, inputDir)
 
 	for _, krm_fn := range krmFunctions {
 		_, err = krm_fn.Process(rl)
 		if err != nil {
-			CheckRunError(t, dir, err)
+			CheckRunError(t, expectedDataDir, err)
 			break
 		}
 	}
 
-	CheckResults(t, dir, rl)
-	CheckExpectedOutput(t, dir, rl)
+	CheckResults(t, expectedDataDir, rl)
+	CheckExpectedOutput(t, expectedDataDir, rl)
 }
 
 // RunGoldenTestForPipelineOfFuncs calls RunGoldenTestForPipeline after converting `krmFunctions` to the expected format
-func RunGoldenTestForPipelineOfFuncs(t *testing.T, dir string, krmFunctions []fn.ResourceListProcessorFunc) {
+func RunGoldenTestForPipelineOfFuncs(t *testing.T, inputDir string, krmFunctions []fn.ResourceListProcessorFunc, expectedDataDir string) {
 	processors := make([]fn.ResourceListProcessor, 0, len(krmFunctions))
 	for _, f := range krmFunctions {
 		processors = append(processors, f)
 	}
-	RunGoldenTestForPipeline(t, dir, processors)
+	RunGoldenTestForPipeline(t, inputDir, processors, expectedDataDir)
 }
 
 func CheckRunError(t *testing.T, dir string, actualError error) {
