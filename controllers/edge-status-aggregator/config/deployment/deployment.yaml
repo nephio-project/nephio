@@ -1,0 +1,560 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nephio-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: nfdeploys.nfdeploy.nephio.org
+spec:
+  group: nfdeploy.nephio.org
+  names:
+    kind: NfDeploy
+    listKind: NfDeployList
+    plural: nfdeploys
+    singular: nfdeploy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: NfDeploy is the Schema for the nfdeploys API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: NfDeploySpec defines the desired state of NfDeploy
+            properties:
+              capacity:
+                type: string
+              plmn:
+                properties:
+                  mcc:
+                    type: integer
+                  mnc:
+                    type: integer
+                type: object
+              sites:
+                items:
+                  properties:
+                    clusterName:
+                      type: string
+                    connectivities:
+                      items:
+                        properties:
+                          neighborName:
+                            type: string
+                        type: object
+                      type: array
+                    id:
+                      type: string
+                    ipAddrBlock:
+                      items:
+                        type: string
+                      type: array
+                    nfType:
+                      type: string
+                    nfTypeName:
+                      type: string
+                    nfVendor:
+                      type: string
+                    nfVersion:
+                      type: string
+                  type: object
+                type: array
+            type: object
+          status:
+            properties:
+              availableNFs:
+                description: Total number of NFs targeted by this deployment with
+                  an Available Condition set.
+                format: int32
+                type: integer
+              conditions:
+                description: Current service state of the UPF.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    lastUpdateTime:
+                      description: The last time this condition was updated.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of deployment condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: The generation observed by the deployment controller.
+                format: int32
+                type: integer
+              readyNFs:
+                description: Total number of NFs targeted by this deployment with
+                  a Ready Condition set.
+                format: int32
+                type: integer
+              stalledNFs:
+                description: Total number of NFs targeted by this deployment with
+                  a Stalled Condition set.
+                format: int32
+                type: integer
+              targetedNFs:
+                description: Total number of NFs targeted by this deployment
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: esa-controller-manager
+  namespace: nephio-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: esa-leader-election-role
+  namespace: nephio-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: esa-manager-role
+rules:
+- apiGroups:
+  - cloud.nephio.org
+  resources:
+  - edgeclusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisionresources
+  - packagerevisions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisions/approval
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: esa-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: esa-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: esa-leader-election-rolebinding
+  namespace: nephio-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: esa-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: esa-controller-manager
+  namespace: nephio-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: esa-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: esa-manager-role
+subjects:
+- kind: ServiceAccount
+  name: esa-controller-manager
+  namespace: nephio-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: esa-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: esa-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: esa-controller-manager
+  namespace: nephio-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    control-plane: esa-controller-manager
+  name: esa-controller-manager-crd-reader
+  namespace: nephio-system
+---
+apiVersion: v1
+data:
+  controller_manager_config.yaml: |
+    # Copyright 2022-2023 The Nephio Authors.
+    #
+    # Licensed under the Apache License, Version 2.0 (the "License");
+    # you may not use this file except in compliance with the License.
+    # You may obtain a copy of the License at
+    #
+    #   http://www.apache.org/licenses/LICENSE-2.0
+    #
+    # Unless required by applicable law or agreed to in writing, software
+    # distributed under the License is distributed on an "AS IS" BASIS,
+    # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    # See the License for the specific language governing permissions and
+    # limitations under the License.
+    ---
+    apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
+    kind: ControllerManagerConfig
+    health:
+      healthProbeBindAddress: :8081
+    metrics:
+      bindAddress: 127.0.0.1:8080
+    webhook:
+      port: 10250
+    leaderElection:
+      leaderElect: true
+      resourceName: leader.nephio.org
+    # leaderElectionReleaseOnCancel defines if the leader should step down volume
+    # when the Manager ends. This requires the binary to immediately end when the
+    # Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
+    # speeds up voluntary leader transitions as the new leader don't have to wait
+    # LeaseDuration time first.
+    # In the default scaffold provided, the program ends immediately after
+    # the manager stops, so would be fine to enable this option. However,
+    # if you are doing or is intended to do any operation such as perform cleanups
+    # after the manager stops then its usage might be unsafe.
+    # leaderElectionReleaseOnCancel: true
+kind: ConfigMap
+metadata:
+  name: esa-manager-config
+  namespace: nephio-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: esa-controller-manager
+  name: esa-controller-manager-metrics-service
+  namespace: nephio-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: esa-controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: esa-webhook-service
+  namespace: nephio-system
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 10250
+  selector:
+    control-plane: esa-controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: esa-controller-manager
+  name: esa-controller-manager
+  namespace: nephio-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: esa-controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: esa-controller-manager
+    spec:
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        env:
+        - name: CRD-DIRECTORY
+          value: /etc/crd-reader-config
+        - name: GRPC_PORT
+          value: "3000"
+        - name: NEPHIO_NAMESPACE
+          value: nephio-system
+        - name: EDGE_CLUSTER_NAMESPACE
+          value: config-control
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: ENABLE_WEBHOOK
+          value: "true"
+        image: edge-status-aggregator:latest
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        ports:
+        - containerPort: 10250
+          name: webhook-server
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+        - mountPath: /etc/crd-reader-config
+          name: crd-reader-volume
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.12.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: esa-controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: esa-webhook-server-cert
+      - configMap:
+          name: esa-controller-manager-crd-reader
+        name: crd-reader-volume
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: esa-serving-cert
+  namespace: nephio-system
+spec:
+  dnsNames:
+  - esa-webhook-service.nephio-system.svc
+  - esa-webhook-service.nephio-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: esa-selfsigned-issuer
+  secretName: esa-webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: esa-selfsigned-issuer
+  namespace: nephio-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: nephio-system/esa-serving-cert
+  creationTimestamp: null
+  name: esa-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: esa-webhook-service
+      namespace: nephio-system
+      path: /validate-nfdeploy-nephio-org-v1alpha1-nfdeploy
+  failurePolicy: Fail
+  name: vnfdeploy.google.com
+  rules:
+  - apiGroups:
+    - nfdeploy.nephio.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - nfdeploys
+  sideEffects: None

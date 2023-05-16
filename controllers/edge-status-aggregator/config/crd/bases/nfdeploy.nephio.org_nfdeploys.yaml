@@ -1,0 +1,137 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: nfdeploys.nfdeploy.nephio.org
+spec:
+  group: nfdeploy.nephio.org
+  names:
+    kind: NfDeploy
+    listKind: NfDeployList
+    plural: nfdeploys
+    singular: nfdeploy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: NfDeploy is the Schema for the nfdeploys API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: NfDeploySpec defines the desired state of NfDeploy
+            properties:
+              capacity:
+                type: string
+              plmn:
+                properties:
+                  mcc:
+                    type: integer
+                  mnc:
+                    type: integer
+                type: object
+              sites:
+                items:
+                  properties:
+                    clusterName:
+                      type: string
+                    connectivities:
+                      items:
+                        properties:
+                          neighborName:
+                            type: string
+                        type: object
+                      type: array
+                    id:
+                      type: string
+                    ipAddrBlock:
+                      items:
+                        type: string
+                      type: array
+                    nfType:
+                      type: string
+                    nfTypeName:
+                      type: string
+                    nfVendor:
+                      type: string
+                    nfVersion:
+                      type: string
+                  type: object
+                type: array
+            type: object
+          status:
+            properties:
+              availableNFs:
+                description: Total number of NFs targeted by this deployment with
+                  an Available Condition set.
+                format: int32
+                type: integer
+              conditions:
+                description: Current service state of the UPF.
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
+                      format: date-time
+                      type: string
+                    lastUpdateTime:
+                      description: The last time this condition was updated.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of deployment condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: The generation observed by the deployment controller.
+                format: int32
+                type: integer
+              readyNFs:
+                description: Total number of NFs targeted by this deployment with
+                  a Ready Condition set.
+                format: int32
+                type: integer
+              stalledNFs:
+                description: Total number of NFs targeted by this deployment with
+                  a Stalled Condition set.
+                format: int32
+                type: integer
+              targetedNFs:
+                description: Total number of NFs targeted by this deployment
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

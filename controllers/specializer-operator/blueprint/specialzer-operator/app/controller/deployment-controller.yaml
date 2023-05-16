@@ -67,7 +67,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.hostIP
-        image: docker.io/nephio/specialzer-operator:latest
+        image: europe-docker.pkg.dev/srlinux/eu.gcr.io/specialzer-operator:latest
         livenessProbe:
           httpGet:
             path: /healthz

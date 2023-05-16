@@ -1,0 +1,64 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - cloud.nephio.org
+  resources:
+  - edgeclusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nfdeploy.nephio.org
+  resources:
+  - nfdeploys/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisionresources
+  - packagerevisions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisions/approval
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
