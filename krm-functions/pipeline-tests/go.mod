@@ -2,22 +2,36 @@ module github.com/nephio-project/nephio/krm-functions/pipeline-tests
 
 go 1.20
 
-replace k8s.io/api => k8s.io/api v0.26.1
+// Prevents issue with k8s.io/client-go >= 0.27 and controller-runtime:
+// https://github.com/operator-framework/operator-sdk/issues/6396
+// TODO: remove after the issue is solved upstream
+replace (
+	k8s.io/api => k8s.io/api v0.26.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
+	k8s.io/client-go => k8s.io/client-go v0.26.1
+)
 
-replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
-
-replace k8s.io/client-go => k8s.io/client-go v0.26.1
+// always test the latest versions of all functions/libs
+replace (
+	github.com/nephio-project/nephio/krm-functions/dnn-fn => ../dnn-fn
+	github.com/nephio-project/nephio/krm-functions/interface-fn => ../interface-fn
+	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../ipam-fn
+	github.com/nephio-project/nephio/krm-functions/lib => ../lib
+	github.com/nephio-project/nephio/krm-functions/nad-fn => ../nad-fn
+	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn => ../nfdeploy-fn
+	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../vlan-fn
+)
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/nephio-project/api v0.0.0-20230511161732-3316d8b9a793
-	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230512121834-a81cdef2b7d1
-	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230512121834-a81cdef2b7d1
+	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nokia/k8s-ipam v0.0.4-0.20230508220232-534a4724d032
 )
 
