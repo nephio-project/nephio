@@ -30,14 +30,14 @@ func TestGetUnstructuredFromGVK(t *testing.T) {
 		wantKind       string
 	}{
 		"Normal": {
-			gvk: &schema.GroupVersionKind{Group: "a", Version: "b", Kind: "c"},
+			gvk:            &schema.GroupVersionKind{Group: "a", Version: "b", Kind: "c"},
 			wantAPIVersion: "a/b",
-			wantKind: "c",
+			wantKind:       "c",
 		},
 		"EmptyKind": {
-			gvk: &schema.GroupVersionKind{Group: "a", Version: "b", Kind: ""},
+			gvk:            &schema.GroupVersionKind{Group: "a", Version: "b", Kind: ""},
 			wantAPIVersion: "a/b",
-			wantKind: "",
+			wantKind:       "",
 		},
 	}
 
