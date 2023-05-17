@@ -30,7 +30,6 @@ import (
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -44,6 +43,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/kio/filters"
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 /*
@@ -60,10 +60,6 @@ func init() {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
-	//if err := capiv1beta1.AddToScheme(mgr.GetScheme()); err != nil {
-	//	return nil, err
-	//}
-
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
 
