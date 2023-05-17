@@ -46,6 +46,11 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
+const (
+	clusterNameKey = "nephio.org/cluster-name"
+	stagingNameKey = "nephio.org/staging"
+)
+
 /*
 func init() {
 	controllers.Register("bootstrap", &reconciler{})
@@ -98,7 +103,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// this branch handles installing the secrets to the remote cluster
 	if cr.GetNamespace() == "config-management-system" {
 		r.l.Info("reconcile")
-		clusterName, ok := cr.GetAnnotations()["nephio.org/site"]
+		clusterName, ok := cr.GetAnnotations()[clusterNameKey]
 		if !ok {
 			return reconcile.Result{}, nil
 		}
@@ -192,7 +197,7 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 
 	stagingRepoName := ""
 	for _, repo := range repos.Items {
-		if _, ok := repo.Annotations["nephio.org/staging"]; ok {
+		if _, ok := repo.Annotations[stagingNameKey]; ok {
 			stagingRepoName = repo.GetName()
 		}
 	}
@@ -204,7 +209,7 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 
 	prKeys := []types.NamespacedName{}
 	for _, pr := range prList.Items {
-		if pr.Spec.RepositoryName == stagingRepoName && pr.Annotations["nephio.org/site"] == clusterName {
+		if pr.Spec.RepositoryName == stagingRepoName && pr.Annotations[clusterNameKey] == clusterName {
 			prKeys = append(prKeys, types.NamespacedName{Name: pr.GetName(), Namespace: pr.GetNamespace()})
 		}
 	}
