@@ -105,6 +105,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if meta.WasDeleted(cr) {
+		// TODO DELETION POLICY: "orphan" deletion policy
 		// token being deleted
 		// Delete the token from the git server
 		// when successfull remove the finalizer
