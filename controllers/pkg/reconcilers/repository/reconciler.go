@@ -31,6 +31,7 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/resource"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -96,7 +97,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		err := fmt.Errorf("gitea server unreachable")
 		r.l.Error(err, "cannot connect to git server")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	if meta.WasDeleted(cr) {
@@ -125,58 +126,53 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	// create repo in git server
-	if err := r.createRepo(ctx, giteaClient, cr); err != nil {
+	// upsert repo in git server
+	if err := r.upsertRepo(ctx, giteaClient, cr); err != nil {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *Reconciler) createRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
-	repos, _, err := giteaClient.ListMyRepos(gitea.ListReposOptions{})
+func (r *Reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
-		r.l.Error(err, "cannot list repo")
+		r.l.Error(err, "cannot get user info")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return err
 	}
-	repoFound := false
-	for _, repo := range repos {
-		if repo.Name == cr.GetName() {
-			repoFound = true
-			cr.Status.URL = &repo.CloneURL
-			break
-		}
-	}
-	createRepo := gitea.CreateRepoOption{Name: cr.GetName()}
-	if cr.Spec.Description != nil {
-		createRepo.Description = *cr.Spec.Description
-	}
-	if cr.Spec.Private != nil {
-		createRepo.Private = *cr.Spec.Private
-	}
-	if cr.Spec.IssueLabels != nil {
-		createRepo.IssueLabels = *cr.Spec.IssueLabels
-	}
-	if cr.Spec.Gitignores != nil {
-		createRepo.Gitignores = *cr.Spec.Gitignores
-	}
-	if cr.Spec.License != nil {
-		createRepo.License = *cr.Spec.License
-	}
-	if cr.Spec.Readme != nil {
-		createRepo.Readme = *cr.Spec.Readme
-	}
-	if cr.Spec.DefaultBranch != nil {
-		createRepo.DefaultBranch = *cr.Spec.DefaultBranch
-	}
-	if cr.Spec.TrustModel != nil {
-		createRepo.TrustModel = gitea.TrustModel(*cr.Spec.TrustModel)
-	}
-	createRepo.AutoInit = true
-	r.l.Info("repository", "config", createRepo)
 
-	if !repoFound {
+	_, _, err = giteaClient.GetRepo(u.UserName, cr.GetName())
+	if err != nil {
+		// create repo
+		createRepo := gitea.CreateRepoOption{Name: cr.GetName()}
+		if cr.Spec.Description != nil {
+			createRepo.Description = *cr.Spec.Description
+		}
+		if cr.Spec.Private != nil {
+			createRepo.Private = *cr.Spec.Private
+		}
+		if cr.Spec.IssueLabels != nil {
+			createRepo.IssueLabels = *cr.Spec.IssueLabels
+		}
+		if cr.Spec.Gitignores != nil {
+			createRepo.Gitignores = *cr.Spec.Gitignores
+		}
+		if cr.Spec.License != nil {
+			createRepo.License = *cr.Spec.License
+		}
+		if cr.Spec.Readme != nil {
+			createRepo.Readme = *cr.Spec.Readme
+		}
+		if cr.Spec.DefaultBranch != nil {
+			createRepo.DefaultBranch = *cr.Spec.DefaultBranch
+		}
+		if cr.Spec.TrustModel != nil {
+			createRepo.TrustModel = gitea.TrustModel(*cr.Spec.TrustModel)
+		}
+		createRepo.AutoInit = true
+		r.l.Info("repository", "config", createRepo)
+
 		repo, _, err := giteaClient.CreateRepo(createRepo)
 		if err != nil {
 			r.l.Error(err, "cannot create repo")
@@ -187,7 +183,30 @@ func (r *Reconciler) createRepo(ctx context.Context, giteaClient *gitea.Client, 
 		}
 		r.l.Info("repo created", "name", cr.GetName())
 		cr.Status.URL = &repo.CloneURL
+	} else {
+		editRepo := gitea.EditRepoOption{Name: pointer.String(cr.GetName())}
+		if cr.Spec.Description != nil {
+			editRepo.Description = cr.Spec.Description
+		} else {
+			editRepo.Description = nil
+		}
+		if cr.Spec.Private != nil {
+			editRepo.Private = cr.Spec.Private
+		} else {
+			editRepo.Private = nil
+		}
+		repo, _, err := giteaClient.EditRepo(u.UserName, cr.GetName(), editRepo)
+		if err != nil {
+			r.l.Error(err, "cannot update repo")
+			// Here we dont provide the full error sicne the message change every time and this will retrigger
+			// a new reconcile loop
+			cr.SetConditions(infrav1alpha1.Failed("cannot update repo"))
+			return err
+		}
+		r.l.Info("repo updated", "name", cr.GetName())
+		cr.Status.URL = &repo.CloneURL
 	}
+
 	return nil
 }
 
