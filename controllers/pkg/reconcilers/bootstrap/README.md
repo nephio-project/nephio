@@ -9,4 +9,6 @@ The controller acts on a secret. This ensures that the bootstrap controller is a
 The are 2 scenario's wrt secret:
 
 - A secret representing the kubeconfig of a cluster. This secret (representing the kubeconfig of the remote cluster) is used to access the cluster. The bootstrap controller install the packages in the staging repo belonging to the cluster when the cluster is ready.
-- A secret belonging to the namesapce `config-management-system` will be installed on the corresponding cluster. This ensures the token to access the repo is installed on the cluster.
+- A secret belonging to the namespace `config-management-system` will be installed on the corresponding cluster. This ensures the token to access the repo is installed on the cluster.
+    - clustername is derive from the annotation: `nephio.org/site`
+    - when the `nephio.org/site` is equal the `mgmt` nothing is done.
