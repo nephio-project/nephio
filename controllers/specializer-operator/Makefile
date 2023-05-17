@@ -16,12 +16,16 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+
+# Only enable bash if it is in the PATH: 
+# this check is needed to be compatible with the busybox container used by PROW presubmit tests (that doesn't contain bash)
+HAVE_BASH ?= $(shell bash --version > /dev/null 2>&1; echo $$?)
+ifeq ($(HAVE_BASH), 0)
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
-
-# Disable this to be compatible with the busybox container used by PROW presubmit tests (that doesn't contain bash)
-# SHELL = /usr/bin/env bash -o pipefail
+SHELL = /usr/bin/env bash -o pipefail
+endif
 .SHELLFLAGS = -ec
 
 .PHONY: all

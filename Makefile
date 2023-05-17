@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+.SHELLFLAGS = -ec
+
 GO_VERSION ?= 1.20.2
 IMG_REGISTRY ?= docker.io/nephio
 
@@ -28,12 +30,14 @@ export CONTAINER_RUNTIME CONTAINER_RUNNABLE
 
 # find all subdirectories with a go.mod file in them
 GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
+# NOTE: the above line is complicated due to the limited capabilities of busybox's `find`.
+# It meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
 
 
 .PHONY: unit lint gosec unit_clean test
 # delegate these commands to the Makefiles next to the go.mod files
 unit lint gosec unit_clean test: 
 	for dir in $(GO_MOD_DIRS); do \
-		$(MAKE) -C "$$dir" $@  || exit $$? ; \
+		$(MAKE) -C "$$dir" $@ ; \
 	done
 
