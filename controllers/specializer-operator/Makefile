@@ -25,6 +25,9 @@ SHELL = /usr/bin/env bash -o pipefail
 .PHONY: all
 all: build
 
+include ../../default-go-lint.mk
+include ../../default-gosec.mk
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -71,6 +74,10 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
+
+.PHONY: unit
+unit: ## Run unit tests without any preparation
+	go test ./... -coverprofile cover.out
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.

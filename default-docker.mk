@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-self_dir := $(dir $(lastword $(MAKEFILE_LIST)))
-include $(self_dir)/default-go-misc.mk 
-include $(self_dir)/default-go-test.mk 
-include $(self_dir)/default-go-lint.mk 
-include $(self_dir)/default-gosec.mk
-include $(self_dir)/default-docker.mk
+.PHONY: docker-build
+docker-build:  ## Build docker image
+	docker buildx build --load --tag  ${IMG} -f ./Dockerfile .
+
+.PHONY: docker-push
+docker-push: ## Build and push docker image
+	docker buildx build --push --tag  ${IMG} -f ./Dockerfile .
