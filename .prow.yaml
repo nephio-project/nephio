@@ -1,7 +1,7 @@
 presubmits:
   - name: presubmit-nephio-go-test
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    run_if_changed: "(\\.go|[Mm]akefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
@@ -11,7 +11,7 @@ presubmits:
         - unit
   - name: presubmit-nephio-golangci-lint
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    run_if_changed: "(\\.go|[Mm]akefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
@@ -21,7 +21,7 @@ presubmits:
         - lint
   - name: presubmit-nephio-gosec
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    run_if_changed: "(\\.go|[Mm]akefile)$"
     spec:
       containers:
       - image: nephio/gotests:4
