@@ -25,6 +25,5 @@ func GetUnstructuredFromGVK(gvk *schema.GroupVersionKind) *unstructured.Unstruct
 	var u unstructured.Unstructured
 	u.SetAPIVersion(gvk.GroupVersion().String())
 	u.SetKind(gvk.Kind)
-	uCopy := u.DeepCopy()
-	return uCopy
+	return u.DeepCopy()
 }
