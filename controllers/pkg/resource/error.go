@@ -21,6 +21,11 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+// Error strings.
+const (
+	errUpdateObject = "cannot update object"
+)
+
 // An ErrorIs function returns true if an error satisfies a particular condition.
 type ErrorIs func(err error) bool
 
