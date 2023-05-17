@@ -8,15 +8,10 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
 
 replace k8s.io/client-go => k8s.io/client-go v0.26.1
 
-replace github.com/nephio-project/nephio/controllers/pkg => ../pkg
-
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230121152246-dc44dbd18a33
 	github.com/nephio-project/nephio-controller-poc v0.0.0-20221111013453-5a31b4722094
-	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230509143232-2875dee24447
-	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230509143232-2875dee24447
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230509143232-2875dee24447
 	github.com/nokia/k8s-ipam v0.0.4-0.20230505052819-ca2376dd660e
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.27.1
