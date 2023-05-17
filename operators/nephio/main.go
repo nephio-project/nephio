@@ -12,8 +12,8 @@ import (
 	_ "github.com/nephio-project/controllers/token"
 	*/
 
-	"github.com/nephio-project/nephio/controllers/pkg/controllers"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/config"
+	"github.com/nephio-project/nephio/controllers/pkg/controllers"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

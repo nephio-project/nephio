@@ -8,10 +8,9 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
 
 replace k8s.io/client-go => k8s.io/client-go v0.26.1
 
-replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+//replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 
 require (
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-00010101000000-000000000000
 	go.uber.org/zap v1.24.0
 	k8s.io/apimachinery v0.27.1
 	k8s.io/client-go v0.27.1
