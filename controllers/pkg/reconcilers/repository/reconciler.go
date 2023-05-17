@@ -19,7 +19,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
@@ -106,13 +105,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// when successfull remove the finalizer
 		if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
 			r.l.Error(err, "cannot delete repo in git server")
-			return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 		}
 
 		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {
 			r.l.Error(err, "cannot remove finalizer")
 			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-			return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 		}
 
 		r.l.Info("Successfully deleted resource")
@@ -123,12 +122,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.finalizer.AddFinalizer(ctx, cr); err != nil {
 		r.l.Error(err, "cannot add finalizer")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true, RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	// upsert repo in git server
 	if err := r.upsertRepo(ctx, giteaClient, cr); err != nil {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
@@ -183,29 +182,29 @@ func (r *Reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 		}
 		r.l.Info("repo created", "name", cr.GetName())
 		cr.Status.URL = &repo.CloneURL
-	} else {
-		editRepo := gitea.EditRepoOption{Name: pointer.String(cr.GetName())}
-		if cr.Spec.Description != nil {
-			editRepo.Description = cr.Spec.Description
-		} else {
-			editRepo.Description = nil
-		}
-		if cr.Spec.Private != nil {
-			editRepo.Private = cr.Spec.Private
-		} else {
-			editRepo.Private = nil
-		}
-		repo, _, err := giteaClient.EditRepo(u.UserName, cr.GetName(), editRepo)
-		if err != nil {
-			r.l.Error(err, "cannot update repo")
-			// Here we dont provide the full error sicne the message change every time and this will retrigger
-			// a new reconcile loop
-			cr.SetConditions(infrav1alpha1.Failed("cannot update repo"))
-			return err
-		}
-		r.l.Info("repo updated", "name", cr.GetName())
-		cr.Status.URL = &repo.CloneURL
+		return nil
 	}
+	editRepo := gitea.EditRepoOption{Name: pointer.String(cr.GetName())}
+	if cr.Spec.Description != nil {
+		editRepo.Description = cr.Spec.Description
+	} else {
+		editRepo.Description = nil
+	}
+	if cr.Spec.Private != nil {
+		editRepo.Private = cr.Spec.Private
+	} else {
+		editRepo.Private = nil
+	}
+	repo, _, err := giteaClient.EditRepo(u.UserName, cr.GetName(), editRepo)
+	if err != nil {
+		r.l.Error(err, "cannot update repo")
+		// Here we dont provide the full error sicne the message change every time and this will retrigger
+		// a new reconcile loop
+		cr.SetConditions(infrav1alpha1.Failed("cannot update repo"))
+		return err
+	}
+	r.l.Info("repo updated", "name", cr.GetName())
+	cr.Status.URL = &repo.CloneURL
 
 	return nil
 }
