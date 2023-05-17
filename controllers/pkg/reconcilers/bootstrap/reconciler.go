@@ -154,35 +154,36 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 			}
 		}
-	} else {
-		// this branch handles manifest installation
-		cl, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(cr)
-		if ok {
-			r.l.Info("reconcile")
-			clusterClient, ready, err := cl.GetClusterClient(ctx)
-			if err != nil {
-				msg := "cannot get clusterClient"
-				r.l.Error(err, msg)
-				return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
-			}
-			if !ready {
-				r.l.Info("cluster not ready")
-				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-			}
+		return ctrl.Result{}, nil
+	}
 
-			// install resources
-			resources, err := r.getResources(ctx, cl.GetClusterName())
-			if err != nil {
-				msg := "cannot get resources"
-				r.l.Error(err, msg)
-				return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(err, msg)
-			}
-			for _, resource := range resources {
-				r.l.Info("install manifest", "resources",
-					fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
-				if err := clusterClient.Apply(ctx, &resource); err != nil {
-					r.l.Error(err, "cannot apply resource to cluster", "name", resource.GetName())
-				}
+	// this branch handles manifest installation
+	cl, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(cr)
+	if ok {
+		r.l.Info("reconcile")
+		clusterClient, ready, err := cl.GetClusterClient(ctx)
+		if err != nil {
+			msg := "cannot get clusterClient"
+			r.l.Error(err, msg)
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
+		}
+		if !ready {
+			r.l.Info("cluster not ready")
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+		}
+
+		// install resources
+		resources, err := r.getResources(ctx, cl.GetClusterName())
+		if err != nil {
+			msg := "cannot get resources"
+			r.l.Error(err, msg)
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(err, msg)
+		}
+		for _, resource := range resources {
+			r.l.Info("install manifest", "resources",
+				fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
+			if err := clusterClient.Apply(ctx, &resource); err != nil {
+				r.l.Error(err, "cannot apply resource to cluster", "name", resource.GetName())
 			}
 		}
 	}
