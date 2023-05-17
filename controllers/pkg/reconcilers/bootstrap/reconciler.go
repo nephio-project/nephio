@@ -196,10 +196,10 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 		return nil, err
 	}
 
-	stagingRepoName := ""
+	stagingRepoNames := []string{}
 	for _, repo := range repos.Items {
 		if _, ok := repo.Annotations[stagingNameKey]; ok {
-			stagingRepoName = repo.GetName()
+			stagingRepoNames = append(stagingRepoNames, repo.GetName())
 		}
 	}
 
@@ -210,9 +210,10 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 
 	prKeys := []types.NamespacedName{}
 	for _, pr := range prList.Items {
-		if pr.Spec.RepositoryName == stagingRepoName && pr.Annotations[clusterNameKey] == clusterName {
+		if MatchesStagingRepo(pr.Spec.RepositoryName, stagingRepoNames) && pr.Annotations[clusterNameKey] == clusterName {
 			prKeys = append(prKeys, types.NamespacedName{Name: pr.GetName(), Namespace: pr.GetNamespace()})
 		}
+
 	}
 	resources := []unstructured.Unstructured{}
 	for _, prKey := range prKeys {
@@ -231,6 +232,15 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 	}
 
 	return resources, nil
+}
+
+func MatchesStagingRepo(repoName string, stagingRepoNames []string) bool {
+	for _, stagingRepoName := range stagingRepoNames {
+		if repoName == stagingRepoName {
+			return true
+		}
+	}
+	return false
 }
 
 func includeFile(path string, match []string) bool {
