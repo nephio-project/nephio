@@ -59,7 +59,7 @@ func init() {
 //+kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/status,verbs=get
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
+func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
 	//if err := capiv1beta1.AddToScheme(mgr.GetScheme()); err != nil {
 	//	return nil, err
 	//}
@@ -73,14 +73,14 @@ func (r *reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (
 		Complete(r)
 }
 
-type reconciler struct {
+type Reconciler struct {
 	client.Client
 	porchClient client.Client
 
 	l logr.Logger
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.l = log.FromContext(ctx)
 
 	cr := &corev1.Secret{}
@@ -188,7 +188,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *reconciler) getResources(ctx context.Context, clusterName string) ([]unstructured.Unstructured, error) {
+func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]unstructured.Unstructured, error) {
 	repos := &porchconfigv1alpha1.RepositoryList{}
 	if err := r.porchClient.List(ctx, repos); err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func includeFile(path string, match []string) bool {
 	return false
 }
 
-func (r *reconciler) getResourcesPRR(resources map[string]string) ([]unstructured.Unstructured, error) {
+func (r *Reconciler) getResourcesPRR(resources map[string]string) ([]unstructured.Unstructured, error) {
 	inputs := []kio.Reader{}
 	for path, data := range resources {
 		if includeFile(path, []string{"*.yaml", "*.yml", "Kptfile"}) {
