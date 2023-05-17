@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The Nephio Authors.
+Copyright 2022 Nokia.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package meta
+package resource
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GetUnstructuredFromGVK(gvk *schema.GroupVersionKind) *unstructured.Unstructured {
-	var u unstructured.Unstructured
-	u.SetAPIVersion(gvk.GroupVersion().String())
-	u.SetKind(gvk.Kind)
-	return u.DeepCopy()
+func WasDeleted(o metav1.Object) bool {
+	return !o.GetDeletionTimestamp().IsZero()
 }

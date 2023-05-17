@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/nephio-project/nephio/controllers/pkg/meta"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -62,7 +61,7 @@ func (r *Capi) isCapiClusterReady(ctx context.Context) bool {
 	r.l = log.FromContext(ctx)
 	name := r.GetClusterName()
 
-	cl := meta.GetUnstructuredFromGVK(&schema.GroupVersionKind{Group: capiv1beta1.GroupVersion.Group, Version: capiv1beta1.GroupVersion.Version, Kind: reflect.TypeOf(capiv1beta1.Cluster{}).Name()})
+	cl := resource.GetUnstructuredFromGVK(&schema.GroupVersionKind{Group: capiv1beta1.GroupVersion.Group, Version: capiv1beta1.GroupVersion.Version, Kind: reflect.TypeOf(capiv1beta1.Cluster{}).Name()})
 	if err := r.Get(ctx, types.NamespacedName{Namespace: r.Secret.GetNamespace(), Name: name}, cl); err != nil {
 		r.l.Error(err, "cannot get cluster")
 		return false
