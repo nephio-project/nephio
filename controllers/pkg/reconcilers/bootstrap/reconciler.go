@@ -208,7 +208,7 @@ func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]un
 
 	prKeys := []types.NamespacedName{}
 	for _, pr := range prList.Items {
-		if pr.Spec.RepositoryName == stagingRepoName && pr.Annotations["test"] == clusterName {
+		if pr.Spec.RepositoryName == stagingRepoName && pr.Annotations["nephio.org/site"] == clusterName {
 			prKeys = append(prKeys, types.NamespacedName{Name: pr.GetName(), Namespace: pr.GetNamespace()})
 		}
 	}
