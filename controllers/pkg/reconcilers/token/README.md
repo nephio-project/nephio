@@ -6,7 +6,7 @@ The token is immutable, so if you want to change the token it has to be deleted/
 
 ## implementation
 
-The implementation assumes the repo-controller runs in the same cluster as the gitea server. Based on the environment variables we help the controller to connect to the gitea server.
+The implementation assumes the token-controller runs in the same cluster as the gitea server. Based on the environment variables we help the controller to connect to the gitea server.
 
 The following environment variables are defined
 
