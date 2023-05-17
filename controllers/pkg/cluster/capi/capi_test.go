@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package capi
 
 import (
 	"testing"
@@ -24,14 +24,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGetClusterClient(t *testing.T) {
+func TestGetClusterName(t *testing.T) {
 	cases := map[string]struct {
 		secret *corev1.Secret
-		want   bool
+		want   string
 	}{
+		"Nil": {
+			secret: &corev1.Secret{},
+			want:   "",
+		},
 		"None": {
 			secret: &corev1.Secret{},
-			want:   false,
+			want:   "",
 		},
 		"Capi": {
 			secret: &corev1.Secret{
@@ -40,14 +44,16 @@ func TestGetClusterClient(t *testing.T) {
 				},
 				Type: corev1.SecretType("cluster.x-k8s.io/secret"),
 			},
-			want: true,
+			want: "a",
 		},
 	}
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			c := Cluster{}
-			_, got := c.GetClusterClient(tc.secret)
+			c := Capi{
+				Secret: tc.secret,
+			}
+			got := c.GetClusterName()
 
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("-want, +got:\n%s", diff)
