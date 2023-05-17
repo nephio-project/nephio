@@ -26,7 +26,8 @@ CONTAINER_RUNNABLE ?= $(shell $(CONTAINER_RUNTIME) -v > /dev/null 2>&1; echo $$?
 
 export CONTAINER_RUNTIME CONTAINER_RUNNABLE
 
-GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
+# find all subdirectories with a go.mod file in them
+GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
 
 
 .PHONY: unit lint gosec unit_clean test
