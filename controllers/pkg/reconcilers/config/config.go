@@ -27,7 +27,7 @@ import (
 type ControllerConfig struct {
 	PorchClient client.Client
 	GiteaClient giteaclient.GiteaClient
-	Poll    time.Duration
-	Copts   controller.Options
-	Address string // backend server address
+	Poll        time.Duration
+	Copts       controller.Options
+	Address     string // backend server address
 }
