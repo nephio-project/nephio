@@ -2,6 +2,12 @@ module github.com/nephio-project/nephio/operators/nephio-controller-manager
 
 go 1.20
 
+replace k8s.io/api => k8s.io/api v0.26.1
+
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
+
+replace k8s.io/client-go => k8s.io/client-go v0.26.1
+
 require (
 	github.com/nephio-project/nephio-controller-poc v0.0.2
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230518113240-c1dae051a9b5
@@ -49,6 +55,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	golang.org/x/net v0.9.0 // indirect
