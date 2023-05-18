@@ -74,7 +74,7 @@ spec:
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			r := Reconciler{}
+			r := reconciler{}
 			us, err := r.getResourcesPRR(tc.resources)
 
 			if tc.expectedErr {

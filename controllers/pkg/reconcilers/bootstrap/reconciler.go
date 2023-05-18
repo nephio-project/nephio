@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
+	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -46,16 +48,14 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
+func init() {
+	reconcilerinterface.Register("bootstrap", &reconciler{})
+}
+
 const (
 	clusterNameKey = "nephio.org/cluster-name"
 	stagingNameKey = "nephio.org/staging"
 )
-
-/*
-func init() {
-	controllers.Register("bootstrap", &reconciler{})
-}
-*/
 
 //+kubebuilder:rbac:groups="*",resources=secrets,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
@@ -64,7 +64,12 @@ func init() {
 //+kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/status,verbs=get
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
+func (r *reconciler) SetupWithManager(mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
+	cfg, ok := c.(*ctrlconfig.ControllerConfig)
+	if !ok {
+		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
+	}
+
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
 
@@ -74,14 +79,14 @@ func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (
 		Complete(r)
 }
 
-type Reconciler struct {
+type reconciler struct {
 	client.Client
 	porchClient client.Client
 
 	l logr.Logger
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.l = log.FromContext(ctx)
 
 	cr := &corev1.Secret{}
@@ -190,7 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *Reconciler) getResources(ctx context.Context, clusterName string) ([]unstructured.Unstructured, error) {
+func (r *reconciler) getResources(ctx context.Context, clusterName string) ([]unstructured.Unstructured, error) {
 	repos := &porchconfigv1alpha1.RepositoryList{}
 	if err := r.porchClient.List(ctx, repos); err != nil {
 		return nil, err
@@ -253,7 +258,7 @@ func includeFile(path string, match []string) bool {
 	return false
 }
 
-func (r *Reconciler) getResourcesPRR(resources map[string]string) ([]unstructured.Unstructured, error) {
+func (r *reconciler) getResourcesPRR(resources map[string]string) ([]unstructured.Unstructured, error) {
 	inputs := []kio.Reader{}
 	for path, data := range resources {
 		if includeFile(path, []string{"*.yaml", "*.yml", "Kptfile"}) {

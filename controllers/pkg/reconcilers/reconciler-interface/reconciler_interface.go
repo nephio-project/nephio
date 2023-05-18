@@ -16,6 +16,7 @@ limitations under the License.
 package reconcilerinterface
 
 import (
+	"time"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"

@@ -19,6 +19,7 @@ package ctrlrconfig
 import (
 	"time"
 
+	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
