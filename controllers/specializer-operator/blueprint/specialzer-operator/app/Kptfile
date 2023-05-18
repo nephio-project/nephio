@@ -5,4 +5,4 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
 info:
-  description: specialzer-operator app
+  description: specializer-operator app

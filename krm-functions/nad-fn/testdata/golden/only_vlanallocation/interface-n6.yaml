@@ -8,5 +8,5 @@ spec:
   networkInstance:
     name: vpc-internet
   cniType: sriov
-  attachementType: vlan
+  attachmentType: vlan
 status:

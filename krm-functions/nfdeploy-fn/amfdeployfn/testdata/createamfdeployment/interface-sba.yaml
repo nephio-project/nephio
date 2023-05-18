@@ -8,4 +8,4 @@ spec:
   networkInstance:
     name: vpc-sba
   cniType: ipvlan
-  attachementType: vlan
+  attachmentType: vlan

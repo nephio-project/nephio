@@ -5,7 +5,7 @@ Purpose of the function
 
 The `NAD` KRM function is designed to be a part of the pipeline of a Nephio NF kpt package.
 
-Its primary purpose is to find all the `IP allocations`, `VLAN allocation`, `Cluster context` and `Interfaces` in the package and expand it to a set of network attachement definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus.  
+Its primary purpose is to find all the `IP allocations`, `VLAN allocation`, `Cluster context` and `Interfaces` in the package and expand it to a set of network attachment definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus.  
 
 The functions and controllers are also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions and controllers acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
 
@@ -26,7 +26,7 @@ Let's see an example! Assuming that a kpt package contains the following three r
         networkInstance:
             name: vpc-ran
         cniType: sriov
-        attachementType: vlan
+        attachmentType: vlan
     status:
         ...
     ---
