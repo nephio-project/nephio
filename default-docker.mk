@@ -22,12 +22,11 @@ endif
 
 endif
 
-BUILD_CMD = $(CONTAINER_RUNTIME) buildx build --tag  ${IMG} -f ./Dockerfile 
 
 .PHONY: docker-build
 docker-build:  ## Build docker image
-	$(BUILD_CMD) --load .
+	$(CONTAINER_RUNTIME) buildx build --load --tag  ${IMG} -f ./Dockerfile .
 
 .PHONY: docker-push
-docker-push: ## Build and push docker image
-	$(BUILD_CMD) --push .
+docker-push: docker-build ## Build and push docker image
+	$(CONTAINER_RUNTIME) push ${IMG}
