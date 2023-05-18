@@ -18,13 +18,12 @@ GO_VERSION ?= 1.20.2
 IMG_REGISTRY ?= docker.io/nephio
 
 # CONTAINER_RUNNABLE checks if tests and lint check can be run inside container.
-PODMAN ?= $(shell podman -v > /dev/null 2>&1; echo $$?)
-ifeq ($(PODMAN), 0)
+ifeq ($(shell command -v podman > /dev/null 2>&1; echo $$?), 0)
 CONTAINER_RUNTIME=podman
 else
 CONTAINER_RUNTIME=docker
 endif
-CONTAINER_RUNNABLE ?= $(shell $(CONTAINER_RUNTIME) -v > /dev/null 2>&1; echo $$?)
+CONTAINER_RUNNABLE ?= $(shell command -v $(CONTAINER_RUNTIME) > /dev/null 2>&1; echo $$?)
 
 export CONTAINER_RUNTIME CONTAINER_RUNNABLE
 
@@ -34,10 +33,17 @@ GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")
 # It meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
 
 
-.PHONY: unit lint gosec unit_clean test
-# delegate these commands to the Makefiles next to the go.mod files
-unit lint gosec unit_clean test: 
+.PHONY: unit lint gosec test
+# delegate these targets to the Makefiles of individual go modules
+unit lint gosec test: 
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done
 
+.PHONY: unit-clean docker-build docker-push
+# delegate these targets to the Makefiles of individual go modules, 
+# but skip the module if the target doesn't exists, or an error happened
+docker-build docker-push unit-clean: 
+	for dir in $(GO_MOD_DIRS); do \
+		$(MAKE) -C "$$dir" $@  || true ; \
+	done

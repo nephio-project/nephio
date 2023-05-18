@@ -33,8 +33,8 @@ else
 		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
 endif
 
-.PHONY: unit_clean
-unit_clean: ## clean up the unit test artifacts created
+.PHONY: unit-clean
+unit-clean: ## clean up the unit test artifacts created
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) system prune -f
 endif

@@ -12,10 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+ifeq ($(CONTAINER_RUNTIME),)
+
+ifeq ($(shell command -v podman > /dev/null 2>&1; echo $$?), 0)
+CONTAINER_RUNTIME=podman
+else
+CONTAINER_RUNTIME=docker
+endif
+
+endif
+
 .PHONY: docker-build
 docker-build:  ## Build docker image
-	docker buildx build --load --tag  ${IMG} -f ./Dockerfile .
+	$(CONTAINER_RUNTIME) build --load --tag  ${IMG} -f ./Dockerfile .
 
 .PHONY: docker-push
 docker-push: ## Build and push docker image
-	docker buildx build --push --tag  ${IMG} -f ./Dockerfile .
+	$(CONTAINER_RUNTIME) build --push --tag  ${IMG} -f ./Dockerfile .
