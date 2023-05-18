@@ -19,12 +19,14 @@ package repository
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
+	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,11 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-/*
 func init() {
-	controllers.Register("repositories", &reconciler{})
+	reconcilerinterface.Register("repositories", &reconciler{})
 }
-*/
 
 const (
 	finalizer = "infra.nephio.org/finalizer"
@@ -50,8 +50,13 @@ const (
 //+kubebuilder:rbac:groups=infra.nephio.org,resources=repositories,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=infra.nephio.org,resources=repositories/status,verbs=get;update;patch
 
-// Setup sets up the controller with the Manager.
-func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
+// SetupWithManager sets up the controller with the Manager.
+func (r *reconciler) SetupWithManager(mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
+	cfg, ok := c.(*ctrlconfig.ControllerConfig)
+	if !ok {
+		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
+	}
+	
 	if err := infrav1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, err
 	}
@@ -66,7 +71,7 @@ func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (
 		Complete(r)
 }
 
-type Reconciler struct {
+type reconciler struct {
 	resource.APIPatchingApplicator
 	giteaClient giteaclient.GiteaClient
 	finalizer   *resource.APIFinalizer
@@ -74,7 +79,7 @@ type Reconciler struct {
 	l logr.Logger
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.l = log.FromContext(ctx)
 	r.l.Info("reconcile", "req", req)
 
@@ -132,7 +137,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *Reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
 		r.l.Error(err, "cannot get user info")
@@ -208,7 +213,7 @@ func (r *Reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 	return nil
 }
 
-func (r *Reconciler) deleteRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) deleteRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
 		r.l.Error(err, "cannot get user info")
