@@ -164,6 +164,9 @@ func (r *Reconciler) createToken(ctx context.Context, giteaClient *gitea.Client,
 	if !tokenFound {
 		token, _, err := giteaClient.CreateAccessToken(gitea.CreateAccessTokenOption{
 			Name: cr.GetTokenName(),
+			Scopes: []gitea.AccessTokenScope{
+				gitea.AccessTokenScopeRepo,
+			},
 		})
 		if err != nil {
 			r.l.Error(err, "cannot create token")
