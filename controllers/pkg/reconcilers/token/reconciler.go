@@ -24,12 +24,10 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
-	ctrlconfig "github.com/henderiw-nephio/nephio-controllers/controllers/config"
-	"github.com/henderiw-nephio/nephio-controllers/pkg/applicator"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
-	"github.com/nokia/k8s-ipam/pkg/meta"
-	"github.com/nokia/k8s-ipam/pkg/resource"
+	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +60,7 @@ func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (
 		return nil, err
 	}
 
-	r.APIPatchingApplicator = applicator.NewAPIPatchingApplicator(mgr.GetClient())
+	r.APIPatchingApplicator = resource.NewAPIPatchingApplicator(mgr.GetClient())
 	r.giteaClient = cfg.GiteaClient
 	r.finalizer = resource.NewAPIFinalizer(mgr.GetClient(), finalizer)
 
@@ -73,7 +71,7 @@ func (r *Reconciler) Setup(mgr ctrl.Manager, cfg *ctrlconfig.ControllerConfig) (
 }
 
 type Reconciler struct {
-	applicator.APIPatchingApplicator
+	resource.APIPatchingApplicator
 	giteaClient giteaclient.GiteaClient
 	finalizer   *resource.APIFinalizer
 
@@ -103,7 +101,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	if meta.WasDeleted(cr) {
+	if resource.WasDeleted(cr) {
 		// TODO DELETION POLICY: "orphan" deletion policy
 		// token being deleted
 		// Delete the token from the git server

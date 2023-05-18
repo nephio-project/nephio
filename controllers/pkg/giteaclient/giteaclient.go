@@ -24,7 +24,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
-	"github.com/henderiw-nephio/nephio-controllers/pkg/applicator"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,14 +36,14 @@ type GiteaClient interface {
 	Get() *gitea.Client
 }
 
-func New(client applicator.APIPatchingApplicator) GiteaClient {
+func New(client resource.APIPatchingApplicator) GiteaClient {
 	return &gc{
 		client: client,
 	}
 }
 
 type gc struct {
-	client applicator.APIPatchingApplicator
+	client resource.APIPatchingApplicator
 
 	giteaClient *gitea.Client
 	l           logr.Logger
