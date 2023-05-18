@@ -16,14 +16,15 @@ limitations under the License.
 package reconcilerinterface
 
 import (
-	"github.com/henderiw-nephio/nephio-controllers/pkg/giteaclient"
+	"time"
+
+	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 )
 
 // ControllerConfig: this is going to be a common struct required by all
