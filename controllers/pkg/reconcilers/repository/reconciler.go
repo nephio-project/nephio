@@ -56,7 +56,7 @@ func (r *reconciler) SetupWithManager(mgr ctrl.Manager, c interface{}) (map[sche
 	if !ok {
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
-	
+
 	if err := infrav1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, err
 	}
