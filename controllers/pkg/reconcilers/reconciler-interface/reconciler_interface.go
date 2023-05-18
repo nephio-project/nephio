@@ -28,7 +28,7 @@ import (
 
 // ControllerConfig: this is going to be a common struct required by all
 // reconcilers for accepting config env parameters
-// move this to a config dir .. TBD
+// move this to a config dir .. FIXME
 type ControllerConfig struct {
 	PorchClient client.Client
 	GiteaClient giteaclient.GiteaClient
