@@ -19,12 +19,15 @@ package ctrlrconfig
 import (
 	"time"
 
+	"github.com/henderiw-nephio/nephio-controllers/pkg/giteaclient"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 type ControllerConfig struct {
 	PorchClient client.Client
+	GiteaClient giteaclient.GiteaClient
 	Poll        time.Duration
 	Copts       controller.Options
+	Address     string // backend server address
 }
