@@ -7,10 +7,10 @@ metadata:
     app.kubernetes.io/component: tbd
     app.kubernetes.io/instance: tbd
     app.kubernetes.io/managed-by: kpt
-    app.kubernetes.io/name: specialzer-operator
-    app.kubernetes.io/part-of: specialzer-operator
+    app.kubernetes.io/name: specializer-operator
+    app.kubernetes.io/part-of: specializer-operator
     app.kubernetes.io/version: tbd
-  name: specialzer-operator-controller-porch-role
+  name: specializer-operator-controller-porch-role
 rules:
 - apiGroups:
   - porch.kpt.dev

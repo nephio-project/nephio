@@ -8,4 +8,4 @@ spec:
   networkInstance:
     name: vpc-internal
   cniType: sriov
-  attachementType: vlan
+  attachmentType: vlan
