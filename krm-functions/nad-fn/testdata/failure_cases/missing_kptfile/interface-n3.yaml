@@ -8,5 +8,5 @@ spec:
   networkInstance:
     name: vpc-ran
   cniType: sriov
-  attachementType: vlan
+  attachmentType: vlan
 status:

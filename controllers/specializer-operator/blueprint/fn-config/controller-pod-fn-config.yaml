@@ -52,7 +52,7 @@ spec:
         - containerPort: 8443
           name: https
       - name: controller
-        image: docker.io/nephio/specialzer-operator:latest
+        image: docker.io/nephio/specializer-operator:latest
         command:
         - /manager
         args:

@@ -3,12 +3,12 @@ kind: Deployment
 metadata:
   annotations: {}
   creationTimestamp: null
-  name: specialzer-operator-controller
+  name: specializer-operator-controller
 spec:
   replicas: 1
   selector:
     matchLabels:
-      fn.kptgen.dev/controller: specialzer-operator-controller
+      fn.kptgen.dev/controller: specializer-operator-controller
   strategy: {}
   template:
     metadata:
@@ -17,11 +17,11 @@ spec:
         app.kubernetes.io/component: tbd
         app.kubernetes.io/instance: tbd
         app.kubernetes.io/managed-by: kpt
-        app.kubernetes.io/name: specialzer-operator
-        app.kubernetes.io/part-of: specialzer-operator
+        app.kubernetes.io/name: specializer-operator
+        app.kubernetes.io/part-of: specializer-operator
         app.kubernetes.io/version: tbd
-        fn.kptgen.dev/controller: specialzer-operator-controller
-      name: specialzer-operator-controller
+        fn.kptgen.dev/controller: specializer-operator-controller
+      name: specializer-operator-controller
     spec:
       containers:
       - args:
@@ -67,7 +67,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.hostIP
-        image: docker.io/nephio/specialzer-operator:latest
+        image: docker.io/nephio/specializer-operator:latest
         livenessProbe:
           httpGet:
             path: /healthz
@@ -93,5 +93,5 @@ spec:
           capabilities:
             drop:
             - ALL
-      serviceAccountName: specialzer-operator-controller
+      serviceAccountName: specializer-operator-controller
 status: {}

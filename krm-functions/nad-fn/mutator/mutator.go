@@ -18,8 +18,9 @@ package mutator
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -73,7 +74,8 @@ func Run(rl *fn.ResourceList) (bool, error) {
 		},
 	)
 	if err != nil {
-		rl.Results = append(rl.Results, fn.ErrorResult(err))
+		rl.Results.ErrorE(err)
+		return false, err
 	}
 	return m.fnCondSdk.Run()
 }

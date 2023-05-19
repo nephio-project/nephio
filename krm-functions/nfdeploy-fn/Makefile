@@ -4,18 +4,10 @@ UPFIMG ?= $(REGISTRY)/upf-deploy-fn:${VERSION}
 AMFIMG ?= $(REGISTRY)/amf-deploy-fn:${VERSION}
 SMFIMG ?= $(REGISTRY)/smf-deploy-fn:${VERSION}
 
-
-.PHONY: all
-all: test
-
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
-vet: ## Run go vet against code.
-	go vet ./...
-
-test: fmt vet ## Run tests.
-	go test ./...
+include ../../default-go-test.mk
+include ../../default-go-lint.mk
+include ../../default-gosec.mk
+include ../../default-go-misc.mk
 
 upf-docker-build:  ## Build docker images.
 	docker buildx build --load --tag  ${UPFIMG} -f ./upfdeployfn/Dockerfile .

@@ -58,7 +58,7 @@ items:
     networkInstance:
       name: vpc-ran
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
     ipAllocationStatus:
       prefix: 10.0.0.3/24
@@ -75,7 +75,7 @@ items:
     networkInstance:
       name: vpc-internal
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
     ipAllocationStatus:
       prefix: 10.0.0.3/24
@@ -92,7 +92,7 @@ items:
     networkInstance:
       name: vpc-internet
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
     ipAllocationStatus:
       prefix: 10.0.0.4/24

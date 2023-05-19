@@ -62,7 +62,7 @@ items:
     networkInstance:
       name: vpc-internet
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
     ipAllocationStatus:
       prefix: 10.0.0.4/24
@@ -79,7 +79,7 @@ items:
     networkInstance:
       name: defaultPODNetwork
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
 - apiVersion: workload.nephio.org/v1alpha1
   kind: SMFDeployment
   metadata:

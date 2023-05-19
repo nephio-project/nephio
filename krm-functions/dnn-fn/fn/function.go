@@ -74,7 +74,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	)
 	if err != nil {
 		rl.Results.ErrorE(err)
-		return false, nil
+		return false, err
 	}
 	return myFn.sdk.Run()
 }

@@ -15,7 +15,7 @@ The interface fn supports various scenario's:
     - When no CNI type is present this is seen as a loopback interface request for which only an IPAllocation (kind loopback) child resource will be requested
 - CNI Type present:
     - When a CNI type is present the CNI Type of the interface request is validated against the cluster. If no match is found an error is returned
-    - If the CNI type matches the cluster context a NAD, IPAllocation (kind network) and potentially a VLANAllocation is requested based on the content of the attachementType in.
+    - If the CNI type matches the cluster context a NAD, IPAllocation (kind network) and potentially a VLANAllocation is requested based on the content of the attachmentType in.
 
 Only when all child/`own` resources are satisfied the status is determined as True. The interface-fn will update the status in its Status field of the Interface KRM resource.
 

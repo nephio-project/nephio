@@ -7,14 +7,14 @@ metadata:
     app.kubernetes.io/component: tbd
     app.kubernetes.io/instance: tbd
     app.kubernetes.io/managed-by: kpt
-    app.kubernetes.io/name: specialzer-operator
-    app.kubernetes.io/part-of: specialzer-operator
+    app.kubernetes.io/name: specializer-operator
+    app.kubernetes.io/part-of: specializer-operator
     app.kubernetes.io/version: tbd
-  name: specialzer-operator-controller-controller-role-binding
+  name: specializer-operator-controller-controller-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: specialzer-operator-controller-controller-role
+  name: specializer-operator-controller-controller-role
 subjects:
 - kind: ServiceAccount
-  name: specialzer-operator-controller
+  name: specializer-operator-controller

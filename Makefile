@@ -1,55 +1,49 @@
+#  Copyright 2023 The Nephio Authors.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+.SHELLFLAGS = -ec
+
 GO_VERSION ?= 1.20.2
-GOLANG_CI_VER ?= v1.52
-GOSEC_VER ?= 2.15.0
-TEST_COVERAGE_FILE=lcov.info
-TEST_COVERAGE_HTML_FILE=coverage_unit.html
-TEST_COVERAGE_FUNC_FILE=func_coverage.out
+IMG_REGISTRY ?= docker.io/nephio
 
 # CONTAINER_RUNNABLE checks if tests and lint check can be run inside container.
-PODMAN ?= $(shell podman -v > /dev/null 2>&1; echo $$?)
-ifeq ($(PODMAN), 0)
+ifeq ($(shell command -v podman > /dev/null 2>&1; echo $$?), 0)
 CONTAINER_RUNTIME=podman
 else
 CONTAINER_RUNTIME=docker
 endif
-CONTAINER_RUNNABLE ?= $(shell $(CONTAINER_RUNTIME) -v > /dev/null 2>&1; echo $$?)
+CONTAINER_RUNNABLE ?= $(shell command -v $(CONTAINER_RUNTIME) > /dev/null 2>&1; echo $$?)
 
-.PHONY: unit_clean
-unit_clean: ## clean up the unit test artifacts created
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) system prune -f
-endif
-		rm ${TEST_COVERAGE_FILE} ${TEST_COVERAGE_HTML_FILE} ${TEST_COVERAGE_FUNC_FILE} > /dev/null 2>&1
+export CONTAINER_RUNTIME CONTAINER_RUNNABLE
 
-.PHONY: unit
-unit: ## Run unit tests against code.
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/library/golang:${GO_VERSION}-alpine3.17 \
-         sh -e ./run-for-all-go-modules.sh "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
-         go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
-         go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"
-else
-		sh -e ./run-for-all-go-modules.sh  "\
-		 go test ./... -v -coverprofile ${TEST_COVERAGE_FILE} ; \
-		 go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE} ; \
-		 go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"
-endif
+# find all subdirectories with a go.mod file in them
+GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
+# NOTE: the above line is complicated due to the limited capabilities of busybox's `find`.
+# It meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
 
-# Install link at https://golangci-lint.run/usage/install/ if not running inside a container
-.PHONY: lint
-lint: ## Run lint  against code.
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-		 sh -e ./run-for-all-go-modules.sh golangci-lint run ./... -v --timeout 10m
-else
-		sh -e ./run-for-all-go-modules.sh golangci-lint run ./... -v --timeout 10m
-endif
 
-# Install link at https://github.com/securego/gosec#install if not running inside a container
-.PHONY: gosec
-gosec: ## inspects source code for security problem by scanning the Go Abstract Syntax Tree
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		sh -e ./run-for-all-go-modules.sh $(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/securego/gosec:${GOSEC_VER} ./...
-else
-		sh -e ./run-for-all-go-modules.sh gosec ./...
-endif
+.PHONY: unit lint gosec test
+# delegate these targets to the Makefiles of individual go modules
+unit lint gosec test: 
+	for dir in $(GO_MOD_DIRS); do \
+		$(MAKE) -C "$$dir" $@ ; \
+	done
+
+.PHONY: unit-clean docker-build docker-push
+# delegate these targets to the Makefiles of individual go modules, 
+# but skip the module if the target doesn't exists, or an error happened
+docker-build docker-push unit-clean: 
+	for dir in $(GO_MOD_DIRS); do \
+		$(MAKE) -C "$$dir" $@  || true ; \
+	done

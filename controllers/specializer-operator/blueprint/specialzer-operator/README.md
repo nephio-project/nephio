@@ -1,21 +1,21 @@
-# specialzer-operator
+# specializer-operator
 
 ## Description
-specialzer-operator controller
+specializer-operator controller
 
 ## Usage
 
 ### Fetch the package
-`kpt pkg get REPO_URI[.git]/PKG_PATH[@VERSION] specialzer-operator`
+`kpt pkg get REPO_URI[.git]/PKG_PATH[@VERSION] specializer-operator`
 Details: https://kpt.dev/reference/cli/pkg/get/
 
 ### View package content
-`kpt pkg tree specialzer-operator`
+`kpt pkg tree specializer-operator`
 Details: https://kpt.dev/reference/cli/pkg/tree/
 
 ### Apply the package
 ```
-kpt live init specialzer-operator
-kpt live apply specialzer-operator --reconcile-timeout=2m --output=table
+kpt live init specializer-operator
+kpt live apply specializer-operator --reconcile-timeout=2m --output=table
 ```
 Details: https://kpt.dev/reference/cli/live/

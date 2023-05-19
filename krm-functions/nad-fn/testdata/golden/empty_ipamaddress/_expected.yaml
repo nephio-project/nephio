@@ -148,7 +148,7 @@ items:
     networkInstance:
       name: vpc-ran
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -160,7 +160,7 @@ items:
     networkInstance:
       name: vpc-internal
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -172,7 +172,7 @@ items:
     networkInstance:
       name: vpc-internet
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: vlan.alloc.nephio.org/v1alpha1
   kind: VLANAllocation

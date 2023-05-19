@@ -1,6 +1,6 @@
 VERSION ?= latest
 REGISTRY ?= docker.io/nephio
-PROJECT ?= specialzer-operator
+PROJECT ?= specializer-operator
 
 KPT_BLUEPRINT_CFG_DIR ?= blueprint/fn-config
 KPT_BLUEPRINT_PKG_DIR ?= blueprint/${PROJECT}
@@ -16,14 +16,22 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+
+# Only enable bash if it is in the PATH: 
+# this check is needed to be compatible with the busybox container used by PROW presubmit tests (that doesn't contain bash)
+ifeq ($(shell command -v bash > /dev/null 2>&1; echo $$?), 0)
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
+endif
 .SHELLFLAGS = -ec
 
 .PHONY: all
 all: build
+
+include ../../default-go-lint.mk
+include ../../default-gosec.mk
 
 ##@ General
 
@@ -71,6 +79,10 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
+
+.PHONY: unit
+unit: ## Run unit tests without any preparation
+	go test ./... -coverprofile cover.out
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.

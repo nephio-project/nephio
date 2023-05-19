@@ -1,3 +1,4 @@
+WatchCallbackFn
 # Conditional kpt fn sdk
 
 ## Introduction
@@ -82,12 +83,12 @@ The sdk defines different types of own resources:
 - childRemote: 
     - the current/parent fn/controller defines the spec attributes of the child resource, but another child function/controller takes care of the actuation that are related to this KRM resource. Like updating the status and are deriving other child resources acting as a parent.
     - A remote function will act upon this KRM through a `for` filter and will update the status. 
-    - The deletion is taken care of by the remote resource by acting on the delete annotiation set by the sdk.
+    - The deletion is taken care of by the remote resource by acting on the delete annotation set by the sdk.
     - An example use case is e.g. the interface-fn that needs an IP. The interface-fn is the parent that creates an IPAllocation on which a downstream function/controller acts and fills out the IP Allocation
 - childRemoteCondition: 
     - the current/parent fn/controller defines the KRM header attributes of the child resource, but another function/controller takes care of the spec and or status that are related to this KRM resource. 
     - A remote function will act upon this KRM through a `for` filter and will update the status
-    - The deletion is take care of by the remote resource by acting on the delete annotiation set by the sdk
+    - The deletion is take care of by the remote resource by acting on the delete annotation set by the sdk
     - The typical usage pattern is when the parent has insufficient information to define the full spec. E.g. a NAD needs an IP and VLAN for it to be specified fully. So rather than building a half baked CRD the system generates a condition for the child NAD fn/controller to act upon and it will create the Spec within the child function/controller.
 - childLocal: `to be implemented` the fn/controller defines the spec locally within the fn/controller.
 
@@ -125,7 +126,7 @@ The `PopulateOwnResourcesFn` provides the `for KubeObject instance` to the fn/co
 
 The `PopulateOwnResourcesFn` is called for each `for` KRM resource instance.
 
-The sdk will handle from here on the lifecycle of the child resources based on the `OwnType`. The sdk uses the `ownerReference` implemented through an annotation to identify child resource instanaces belonging to a for instance 
+The sdk will handle from here on the lifecycle of the child resources based on the `OwnType`. The sdk uses the `ownerReference` implemented through an annotation to identify child resource instances belonging to a for instance 
 
 signature of the populateOwnResourcesFn:
 
@@ -354,7 +355,7 @@ func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
 
 func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if len(objs) == 0 {
-		return nil, fmt.Errorf("expecting sone object to generate the nad")
+		return nil, fmt.Errorf("expecting some object to generate the nad")
 	}
 	// generate an empty nad struct
 	meta := metav1.ObjectMeta{Name: objs[0].GetName()}
