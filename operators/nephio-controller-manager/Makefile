@@ -5,7 +5,6 @@ PROJECT ?= nephio
 KPT_BLUEPRINT_CFG_DIR ?= blueprint/fn-config
 KPT_BLUEPRINT_PKG_DIR ?= blueprint/${PROJECT}
 
-
 # Image URL to use all building/pushing image targets
 IMG ?= $(REGISTRY)/${PROJECT}-operator:$(VERSION)
 
@@ -15,12 +14,6 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
-
-# Setting SHELL to bash allows bash commands to be executed by recipes.
-# This is a requirement for 'setup-envtest.sh' in the test target.
-# Options are set to exit when a recipe line exits non-zero or a piped command fails.
-SHELL = /usr/bin/env bash -o pipefail
-.SHELLFLAGS = -ec
 
 .PHONY: all
 include ../../default-go-test.mk
@@ -68,18 +61,6 @@ manifests: controller-gen kpt kptgen ## Generate WebhookConfiguration, ClusterRo
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
-
-.PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
-
 ##@ Build
 
 .PHONY: build
@@ -119,24 +100,6 @@ else
 		go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}
 		go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE} 
 		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
-endif
-
-# Install link at https://golangci-lint.run/usage/install/ if not running inside a container
-.PHONY: lint
-lint: ## Run lint  against code.
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine golangci-lint run ./... -v --timeout 10m
-else
-		golangci-lint run ./... -v --timeout 10m
-endif
-
-# Install link at https://github.com/securego/gosec#install if not running inside a container
-.PHONY: gosec
-gosec: ## inspects source code for security problem by scanning the Go Abstract Syntax Tree
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/securego/gosec:${GOSEC_VER} ./...
-else
-		gosec ./...
 endif
 
 # PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
