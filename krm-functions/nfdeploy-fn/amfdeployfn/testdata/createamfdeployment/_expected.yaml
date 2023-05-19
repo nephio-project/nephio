@@ -52,7 +52,7 @@ items:
     networkInstance:
       name: vpc-internal
     cniType: sriov
-    attachementType: vlan
+    attachmentType: vlan
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -63,7 +63,7 @@ items:
     networkInstance:
       name: vpc-sba
     cniType: ipvlan
-    attachementType: vlan
+    attachmentType: vlan
 - apiVersion: workload.nephio.org/v1alpha1
   kind: AMFDeployment
   metadata:

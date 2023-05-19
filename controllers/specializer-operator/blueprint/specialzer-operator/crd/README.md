@@ -1,7 +1,7 @@
 # crd
 
 ## Description
-specialzer-operator crd
+specializer-operator crd
 
 ## Usage
 

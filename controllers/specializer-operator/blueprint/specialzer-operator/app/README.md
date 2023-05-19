@@ -1,7 +1,7 @@
 # app
 
 ## Description
-specialzer-operator app
+specializer-operator app
 
 ## Usage
 

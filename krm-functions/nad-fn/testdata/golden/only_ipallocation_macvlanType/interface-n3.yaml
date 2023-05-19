@@ -8,5 +8,5 @@ spec:
   networkInstance:
     name: vpc-ran
   cniType: macvlan
-  attachementType: vlan
+  attachmentType: vlan
 status:

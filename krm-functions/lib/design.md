@@ -20,7 +20,7 @@ We leverage (go)[https://go.dev] as the programming language for these libraries
 
 We provide on interface to the function/controller that represents this api/operations on the KRM resource. A set of generic and specific methods are exposed through the go interface.
 
-- Generic methods allow kpt fn sdk oeprations as well as go struct operations.
+- Generic methods allow kpt fn sdk operations as well as go struct operations.
 - Specific methods expose getter and setter operation on the spec/status field of the KRM resource
 
 ### generation of new KRM resources

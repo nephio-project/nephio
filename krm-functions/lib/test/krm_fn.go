@@ -198,6 +198,6 @@ func CheckExpectedOutput(t *testing.T, dir string, rl *fn.ResourceList) {
 	if err != nil {
 		t.Fatalf("failed to convert resource list to yaml: %v", err)
 	}
-	_ = os.WriteFile(filepath.Join(dir, "_actual_output.yaml"), rlYAML, 0666)
+	_ = os.WriteFile(filepath.Join(dir, "_actual_output.yaml"), rlYAML, 0600)
 	testhelpers.CompareGoldenFile(t, p, rlYAML)
 }
