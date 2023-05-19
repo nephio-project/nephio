@@ -23,6 +23,10 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 .PHONY: all
+include ../../default-go-test.mk
+include ../../default-go-lint.mk
+include ../../default-gosec.mk
+include ../../default-go-misc.mk
 all: build
 
 ##@ General
