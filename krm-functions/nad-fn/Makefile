@@ -1,6 +1,6 @@
 VERSION ?= latest
 REGISTRY ?= docker.io/nephio
-IMG ?= $(REGISTRY)/ipam-fn:${VERSION}
+IMG ?= $(REGISTRY)/nad-fn:${VERSION}
 
 .PHONY: all
 all: fmt test docker-build

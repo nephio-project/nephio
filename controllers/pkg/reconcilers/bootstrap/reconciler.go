@@ -122,6 +122,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			found := false
 			for _, secret := range secrets.Items {
 				if strings.Contains(secret.GetName(), clusterName) {
+					secret := secret // required to prevent gosec warning: G601 (CWE-118): Implicit memory aliasing in for loop
 					clusterClient, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(&secret)
 					if ok {
 						found = true
@@ -185,6 +186,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, errors.Wrap(err, msg)
 		}
 		for _, resource := range resources {
+			resource := resource // required to prevent gosec warning: G601 (CWE-118): Implicit memory aliasing in for loop
 			r.l.Info("install manifest", "resources",
 				fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
 			if err := clusterClient.Apply(ctx, &resource); err != nil {
