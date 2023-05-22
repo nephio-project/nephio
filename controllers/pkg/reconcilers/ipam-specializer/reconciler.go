@@ -14,12 +14,12 @@
  limitations under the License.
 */
 
-package ipamreconciler
+package ipamspecializer
 
 import (
 	"context"
 	"fmt"
-	porchcondition "github.com/nephio-project/nephio/controllers/pkg/reconcilers/condition"
+	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 
@@ -46,7 +46,7 @@ import (
 )
 
 func init() {
-	reconcilerinterface.Register("ipamreconciler", &reconciler{})
+	reconcilerinterface.Register("ipamspecializer", &reconciler{})
 }
 
 type Config struct {
@@ -80,7 +80,7 @@ func (r *reconciler) SetupWithManager(mgr ctrl.Manager, c interface{}) (map[sche
 
 	// TBD how does the proxy cache work with the injector for updates
 	return nil, ctrl.NewControllerManagedBy(mgr).
-		Named("IpamController").
+		Named("IpamSpecializer").
 		For(&porchv1alpha1.PackageRevision{}).
 		Complete(r)
 }
