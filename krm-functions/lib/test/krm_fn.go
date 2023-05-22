@@ -16,6 +16,7 @@ limitations under the License.
 package test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,10 +108,10 @@ func RunGoldenTestForPipeline(t *testing.T, inputDir string, krmFunctions []fn.R
 	var err error
 	rl := ParseResourceListFromDir(t, inputDir)
 
-	for _, krm_fn := range krmFunctions {
+	for i, krm_fn := range krmFunctions {
 		_, err = krm_fn.Process(rl)
 		if err != nil {
-			CheckRunError(t, expectedDataDir, err)
+			CheckRunError(t, expectedDataDir, fmt.Errorf("in Step %v of the pipeline: %v", i+1, err))
 			break
 		}
 	}
