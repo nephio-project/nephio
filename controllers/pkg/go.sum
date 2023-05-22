@@ -143,6 +143,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nephio-project/api v0.0.0-20230517035137-712cea05edd0 h1:La6pHVwbKUz2Ujv7s6VWyTDhEJY/XM54BKAM1nAnh2w=
 github.com/nephio-project/api v0.0.0-20230517035137-712cea05edd0/go.mod h1:v2DHagSVdoKQxQXFBwGw0VWvvmw5EFNJ0JuFjhwsGwM=
+github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495 h1:lKibqCJw7x5XKwev43GNGeEJwbx9twlVSLu2l5nDZBo=
+github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495/go.mod h1:v2DHagSVdoKQxQXFBwGw0VWvvmw5EFNJ0JuFjhwsGwM=
 github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9 h1:fWHt9kSXIHLfA5rc77iiRUsmshFmm5hqWmmvsPAvVuw=
 github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9/go.mod h1:L12uPshkoGM1PtYO92qtbJFZ36NkAdpc67JknyZLE9A=
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
