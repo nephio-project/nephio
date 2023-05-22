@@ -28,8 +28,8 @@ import (
 
 func TestDiffWithSameSpec(t *testing.T) {
 	inv, err := newInventory(&Config{
-		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-		GenerateResourceFn: GenerateResourceFnNop,
+		For:              corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		UpdateResourceFn: UpdateResourceFnNop,
 	})
 	if err != nil {
 		assert.NoError(t, err)
@@ -120,8 +120,8 @@ func TestDiffWithSameSpec(t *testing.T) {
 
 func TestDiffWithSpecToUpdate(t *testing.T) {
 	inv, err := newInventory(&Config{
-		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-		GenerateResourceFn: GenerateResourceFnNop,
+		For:              corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		UpdateResourceFn: UpdateResourceFnNop,
 	})
 	if err != nil {
 		assert.NoError(t, err)
@@ -226,8 +226,8 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 
 func TestDiffWithSpecToAdd(t *testing.T) {
 	inv, err := newInventory(&Config{
-		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-		GenerateResourceFn: GenerateResourceFnNop,
+		For:              corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		UpdateResourceFn: UpdateResourceFnNop,
 	})
 	if err != nil {
 		assert.NoError(t, err)
@@ -315,8 +315,8 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 
 func TestDiffWithSpecToDelete(t *testing.T) {
 	inv, err := newInventory(&Config{
-		For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-		GenerateResourceFn: GenerateResourceFnNop,
+		For:              corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+		UpdateResourceFn: UpdateResourceFnNop,
 	})
 	if err != nil {
 		assert.NoError(t, err)

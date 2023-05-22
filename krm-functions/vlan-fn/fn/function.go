@@ -41,7 +41,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       vlanv1alpha1.VLANAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			GenerateResourceFn:     r.updateVLANAllocationResource,
+			UpdateResourceFn:       r.updateVLANAllocationResource,
 		},
 	)
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 // in the package by calling the vlan backend
 func (r *FnR) updateVLANAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
-		return nil, fmt.Errorf("expected a for object but got nil")
+		return nil, fmt.Errorf("expected a VLANAllocation as a for object but got nil")
 	}
 	fn.Logf("vlanalloc: %v\n", forObj)
 	allocKOE, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANAllocation](forObj)

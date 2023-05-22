@@ -70,7 +70,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: nil,
 			},
 			PopulateOwnResourcesFn: nil,
-			GenerateResourceFn:     m.generateResourceFn,
+			UpdateResourceFn:       m.generateResourceFn,
 		},
 	)
 	if err != nil {
@@ -94,7 +94,7 @@ func (r *mutatorCtx) ClusterContextCallbackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (r *mutatorCtx) generateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (r *mutatorCtx) generateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	ipAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)))
 	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))

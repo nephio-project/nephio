@@ -47,15 +47,17 @@ type Config struct {
 	Owns                   map[corev1.ObjectReference]ResourceKind    // ResourceKind distinguishes different types of child resources.
 	Watch                  map[corev1.ObjectReference]WatchCallbackFn // Used for watches to non specific resources
 	PopulateOwnResourcesFn PopulateOwnResourcesFn
+	UpdateResourceFn       UpdateResourceFn
 	GenerateResourceFn     GenerateResourceFn
 }
 
-type PopulateOwnResourcesFn func(*fn.KubeObject) (fn.KubeObjects, error)
+type PopulateOwnResourcesFn func(forObj *fn.KubeObject) (fn.KubeObjects, error)
 
 // the list of objects contains the owns and the specific watches
-type GenerateResourceFn func(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error)
+type UpdateResourceFn func(forObj *fn.KubeObject, owned fn.KubeObjects) (*fn.KubeObject, error)
+type GenerateResourceFn func() (*fn.KubeObject, error)
 
-func GenerateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error) { return nil, nil }
+func UpdateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error) { return nil, nil }
 
 type WatchCallbackFn func(*fn.KubeObject) error
 

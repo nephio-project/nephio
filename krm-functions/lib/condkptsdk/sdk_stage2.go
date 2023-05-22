@@ -49,11 +49,12 @@ func (r *sdk) generateResource() error {
 	readyMap := r.inv.getReadyMap()
 	if len(readyMap) == 0 {
 		// this is when the global resource is not found
-		if err := r.handleGenerateUpdate(
-			corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
-			nil,
-			nil,
-			fn.KubeObjects{}); err != nil {
+		forRef := corev1.ObjectReference{
+			APIVersion: r.cfg.For.APIVersion,
+			Kind:       r.cfg.For.Kind,
+			Name:       r.kptf.GetKptFile().Name,
+		}
+		if err := r.handleGenerate(forRef); err != nil {
 			return err
 		}
 	}
@@ -72,7 +73,7 @@ func (r *sdk) generateResource() error {
 			}
 			continue
 		}
-		if r.cfg.GenerateResourceFn != nil {
+		if r.cfg.UpdateResourceFn != nil {
 			objs := fn.KubeObjects{}
 			for _, o := range readyCtx.owns {
 				x := o
@@ -98,7 +99,10 @@ func (r *sdk) generateResource() error {
 // handleGenerateUpdate performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
 func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) error {
-	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
+	if r.cfg.UpdateResourceFn == nil {
+		return nil
+	}
+	newObj, err := r.cfg.UpdateResourceFn(forObj, objs)
 	if err != nil {
 		fn.Logf("error generating new resource: %v\n", err.Error())
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
@@ -124,4 +128,22 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	// add the resource to the kptfile and updates the resource in the resourcelist
 
 	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
+}
+
+func (r *sdk) handleGenerate(forRef corev1.ObjectReference) error {
+	if r.cfg.GenerateResourceFn == nil {
+		return nil
+	}
+	newObj, err := r.cfg.GenerateResourceFn()
+	if err != nil {
+		fn.Logf("error generating new resource: %v\n", err.Error())
+		r.rl.Results.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
+		return err
+	}
+	if newObj == nil {
+		fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
+		r.rl.Results.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
+		return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
+	}
+	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, nil, kptv1.ConditionTrue, "done", true)
 }

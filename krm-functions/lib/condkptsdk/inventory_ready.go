@@ -38,27 +38,23 @@ type readyCtx struct {
 func (r *inv) isReady() bool {
 	r.m.RLock()
 	defer r.m.RUnlock()
-	// check readiness, we start positive
-	ready := true
 	// the readiness is determined by the global watch resources
-	for watchRef, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{{}}) {
-		fn.Logf("isReady: watchRef: %v, resCtx: %#v\n", watchRef, *resCtx)
-		if resCtx.existingCondition != nil {
-			fn.Logf("isReady: watchRef: %v, condition: %#v\n", watchRef, resCtx.existingCondition)
-		}
+	for _, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{{}}) {
+		// fn.Logf("isReady: watchRef: %v, resCtx: %#v\n", watchRef, *resCtx)
+		// if resCtx.existingCondition != nil {
+		// 	fn.Logf("isReady: watchRef: %v, condition: %#v\n", watchRef, resCtx.existingCondition)
+		// }
 		// if global watched resource does not exist we fail readiness
 		// if the condition is present and the status is False something is pending, so we
 		// fail readiness
-		if resCtx.existingResource == nil {
+		ready := resCtx.existingResource != nil &&
+			(resCtx.existingCondition == nil || resCtx.existingCondition.Status != kptv1.ConditionFalse)
+
+		if !ready {
 			return false
-		} else {
-			if resCtx.existingCondition != nil &&
-				resCtx.existingCondition.Status == kptv1.ConditionFalse {
-				return false
-			}
 		}
 	}
-	return ready
+	return true
 }
 
 // getReadyMap provides a readyMap based on the information of the children

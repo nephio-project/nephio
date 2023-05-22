@@ -69,7 +69,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: myFn.ClusterContextCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
-			GenerateResourceFn:     myFn.updateDnnResource,
+			UpdateResourceFn:       myFn.updateDnnResource,
 		},
 	)
 	if err != nil {

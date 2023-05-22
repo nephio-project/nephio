@@ -75,7 +75,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: myFn.ClusterContextCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
-			GenerateResourceFn:     myFn.updateItfceResource,
+			UpdateResourceFn:       myFn.updateItfceResource,
 		},
 	)
 	if err != nil {
@@ -175,7 +175,7 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 
 func (r *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
-		return nil, fmt.Errorf("expected a for object but got nil")
+		return nil, fmt.Errorf("expected an Interface as a for object but got nil")
 	}
 	itfceKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](forObj)
 	if err != nil {

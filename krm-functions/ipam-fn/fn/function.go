@@ -41,7 +41,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       ipamv1alpha1.IPAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			GenerateResourceFn:     r.updateIPAllocationResource,
+			UpdateResourceFn:       r.updateIPAllocationResource,
 		},
 	)
 	if err != nil {
@@ -55,7 +55,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 // in the package by calling the ipam backend
 func (r *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
-		return nil, fmt.Errorf("expected a for object but got nil")
+		return nil, fmt.Errorf("expected an IPAMAllocation as a for object but got nil")
 	}
 	fn.Logf("ipalloc: %v\n", forObj)
 	allocKOE, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPAllocation](forObj)

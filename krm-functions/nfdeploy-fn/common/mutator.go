@@ -70,6 +70,7 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 				}: nfDeployFn.DnnCallBackFn,
 			},
 			GenerateResourceFn: nfDeployFn.GenerateResourceFn,
+			UpdateResourceFn:   nfDeployFn.UpdateResourceFn,
 		},
 	)
 
@@ -184,27 +185,31 @@ func (h *NfDeployFn[T, PT]) DnnCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (h *NfDeployFn[T, PT]) GenerateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn.KubeObjects) (*fn.KubeObject, error) {
+func (h *NfDeployFn[T, PT]) GenerateResourceFn() (*fn.KubeObject, error) {
 	var err error
 
-	if nfDeploymentObj == nil {
-		nfDeploymentObj = fn.NewEmptyKubeObject()
+	nfDeploymentObj := fn.NewEmptyKubeObject()
 
-		err = nfDeploymentObj.SetAPIVersion(nephiodeployv1alpha1.GroupVersion.String())
-		if err != nil {
-			return nil, err
-		}
-
-		err = nfDeploymentObj.SetKind(h.gvk.Kind)
-		if err != nil {
-			return nil, err
-		}
-
-		err = nfDeploymentObj.SetName(h.pkgName)
-		if err != nil {
-			return nil, err
-		}
+	err = nfDeploymentObj.SetAPIVersion(nephiodeployv1alpha1.GroupVersion.String())
+	if err != nil {
+		return nil, err
 	}
+
+	err = nfDeploymentObj.SetKind(h.gvk.Kind)
+	if err != nil {
+		return nil, err
+	}
+
+	err = nfDeploymentObj.SetName(h.pkgName)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.UpdateResourceFn(nfDeploymentObj, nil)
+}
+
+func (h *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn.KubeObjects) (*fn.KubeObject, error) {
+	var err error
 
 	nfKoExt, err := kubeobject.NewFromKubeObject[T](nfDeploymentObj)
 	if err != nil {
