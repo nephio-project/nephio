@@ -37,3 +37,25 @@ presubmits:
       - image: nephio/gotests:4
         command:
         - "/usr/local/bin/checklicense.sh"
+  - name: presubmit-nephio-lichen
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: nephio/gotests:7
+        command:
+        - "/bin/bash"
+        args:
+        - "-c"
+        - |
+          for i in \
+          controllers/specializer-operator \
+          krm-functions/dnn-fn \
+          krm-functions/interface-fn \
+          krm-functions/ipam-fn \
+          krm-functions/nad-fn \
+          krm-functions/vlan-fn \
+          krm-functions/nfdeploy-fn/amfdeployfn \
+          krm-functions/nfdeploy-fn/smfdeployfn \
+          krm-functions/nfdeploy-fn/upfdeployfn ; \
+          do cd $i; go build; echo $i; lichen -c /etc/lichen.yaml $( echo $i | awk -F "/" '{print $NF}');  cd -; done
