@@ -6,23 +6,22 @@ The token is immutable, so if you want to change the token it has to be deleted/
 
 ## implementation
 
-The implementation assumes the token-controller runs in the same cluster as the gitea server. Based on the environment variables we help the controller to connect to the gitea server.
+Based on the environment variables we help the controller to connect to the gitea server.
 
-The following environment variables are defined
+A secret is required to connect to the git server with username and password. The default name and namespace are resp. `git-user-secret ` and POD_NAMESPACE where the token controller runs.
+With the following environment variable the defaults can be changed:
+- GIT_SECRET_NAME = sets the name of the secret to connect to the git server
+- GIT_NAMESPACE: sets the namespace where to find the secret to connect to the git server
 
-- GIT_NAMESPACE: sets the namespace where the gitea server runs 
-- GIT_SECRET_NAME = the secret to connect to gitea 
-- GIT_SERVICE_NAME = the service to connect to gitea
+The URL to connect to the git server is provided through an environment variable. This is a mandatory environment variable
+
+- GIT_URL = https://172.18.0.200:3000
 
 example environment variables
 
 ```
-- name: "GIT_NAMESPACE"
-  value: "gitea"
-- name: "GIT_SECRET_NAME"
-  value: "git-user-secret"
-- name: "GIT_SERVICE_NAME"
-  value: "gitea-http"
+- name: "GIT_URL"
+  value: "https://172.18.0.200:3000"
 ```
 
 ## example CRD
@@ -32,7 +31,7 @@ cat <<EOF | kubectl apply -f -
     apiVersion: infra.nephio.org/v1alpha1
     kind: Token
     metadata:
-      name: mgmt
+      name: mgmt-access-token-porch
     spec:
 EOF
 ```
@@ -42,8 +41,9 @@ cat <<EOF | kubectl apply -f -
     apiVersion: infra.nephio.org/v1alpha1
     kind: Token
     metadata:
-      name: mgmt
-      namespace: config-management-system
+      name: mgmt-access-token-configsync
+      annotations:
+        nephio.org/app: configsync
     spec:
 EOF
 ```
