@@ -14,7 +14,7 @@
  limitations under the License.
 */
 
-package porchcondition 
+package porchcondition
 
 import (
 	"testing"
@@ -42,7 +42,7 @@ func TestGetPorchConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			pc := getPorchConditions(tc.t)
+			pc := GetPorchConditions(tc.t)
 
 			if len(pc) != len(tc.t) {
 				t.Errorf("unexpected conditions: -want: %d, -got: %d", len(tc.t), len(pc))
@@ -99,7 +99,7 @@ func TestHasSpecificTypeConditions(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			b := hasSpecificTypeConditions(tc.t, tc.s)
+			b := HasSpecificTypeConditions(tc.t, tc.s)
 			if diff := cmp.Diff(b, tc.want); diff != "" {
 				t.Errorf("-want, +got:\n%s", diff)
 			}
