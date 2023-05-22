@@ -62,7 +62,7 @@ type TestCase struct {
 	expectedDataDir string
 }
 
-func TestPipeline(t *testing.T) {
+func TestPipelines(t *testing.T) {
 	tcs := []TestCase{
 		{
 			inputDir:        "upf_pkg",
@@ -84,6 +84,7 @@ func TestPipeline(t *testing.T) {
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
+				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
@@ -102,6 +103,7 @@ func TestPipeline(t *testing.T) {
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment_2",
 			pipeline: []fn.ResourceListProcessorFunc{
+				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
