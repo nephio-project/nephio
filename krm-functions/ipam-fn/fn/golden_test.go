@@ -20,13 +20,11 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
 	tst "github.com/nephio-project/nephio/krm-functions/lib/test"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 )
 
-const GoldenTestDataPath = "testdata/golden"
-const FailureCaseDataPath = "testdata/failure_cases"
+const GoldenTestDataPath = "testdata"
 
 func TestGolden(t *testing.T) {
 	r := &FnR{
@@ -36,14 +34,5 @@ func TestGolden(t *testing.T) {
 
 	// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
 	// be modified to the output resources (in `_expected.yaml`).
-	testhelpers.RunGoldenTests(t, GoldenTestDataPath, fnRunner)
-}
-
-func TestFailureCases(t *testing.T) {
-	r := &FnR{
-		ClientProxy: ipam.NewMock(),
-	}
-	fnRunner := fn.ResourceListProcessorFunc(r.Run)
-
-	tst.RunFailureCases(t, FailureCaseDataPath, fnRunner)
+	tst.RunGoldenTests(t, GoldenTestDataPath, fnRunner)
 }
