@@ -19,8 +19,8 @@ package repository
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
+	"strings"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
@@ -33,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -140,18 +139,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *reconciler) createToken(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Token) error {
-	// get username to create token
-	secret := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: os.Getenv("GIT_NAMESPACE"),
-		Name:      os.Getenv("GIT_SECRET_NAME"),
-	},
-		secret); err != nil {
-		r.l.Error(err, "cannot list repo")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return errors.Wrap(err, "cannot get secret")
-	}
-
 	tokens, _, err := giteaClient.ListAccessTokens(gitea.ListAccessTokensOptions{})
 	if err != nil {
 		r.l.Error(err, "cannot list repo")
@@ -166,6 +153,13 @@ func (r *reconciler) createToken(ctx context.Context, giteaClient *gitea.Client,
 		}
 	}
 	if !tokenFound {
+		u, _, err := giteaClient.GetMyUserInfo()
+		if err != nil {
+			r.l.Error(err, "cannot get user info")
+			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
+			return err
+		}
+
 		token, _, err := giteaClient.CreateAccessToken(gitea.CreateAccessTokenOption{
 			Name: cr.GetTokenName(),
 			Scopes: []gitea.AccessTokenScope{
@@ -190,7 +184,7 @@ func (r *reconciler) createToken(ctx context.Context, giteaClient *gitea.Client,
 				Annotations: cr.GetAnnotations(),
 			},
 			Data: map[string][]byte{
-				"username": secret.Data["username"],
+				"username": []byte(u.UserName),
 				"password": []byte(token.Token), // needed for porch
 				"token":    []byte(token.Token), // needed for configsync
 			},
@@ -227,9 +221,11 @@ func (r *reconciler) deleteToken(ctx context.Context, giteaClient *gitea.Client,
 	r.l.Info("token deleted", "name", cr.GetTokenName())
 	_, err = giteaClient.DeleteAccessToken(cr.GetTokenName())
 	if err != nil {
-		r.l.Error(err, "cannot delete token")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return err
+		if !strings.Contains(err.Error(), "couldn't be found") {
+			r.l.Error(err, "cannot delete token")
+			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
+			return err
+		}
 	}
 	r.l.Info("token deleted", "name", cr.GetTokenName())
 	return nil
