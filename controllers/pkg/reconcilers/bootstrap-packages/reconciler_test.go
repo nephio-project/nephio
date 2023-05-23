@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bootstrap
+package bootstrappackages
 
 import (
 	"fmt"
@@ -75,7 +75,7 @@ spec:
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := reconciler{}
-			us, err := r.getResourcesPRR(tc.resources)
+			us, _, err := r.getResourcesPRR(tc.resources)
 
 			if tc.expectedErr {
 				assert.Error(t, err)
