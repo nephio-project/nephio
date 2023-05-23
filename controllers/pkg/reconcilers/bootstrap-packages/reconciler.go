@@ -115,7 +115,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.l.Error(err, msg)
 		return ctrl.Result{}, errors.Wrap(err, msg)
 	}
-	if stagingPR {
+	if stagingPR && porchv1alpha1.LifecycleIsPublished(cr.Spec.Lifecycle) {
 		r.l.Info("reconcile package revision")
 		resources, namespacePresent, err := r.getResources(ctx, req)
 		if err != nil {
