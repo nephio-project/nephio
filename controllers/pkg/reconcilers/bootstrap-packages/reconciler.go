@@ -219,7 +219,7 @@ func (r *reconciler) IsStagingPackageRevision(ctx context.Context, cr *porchv1al
 func (r *reconciler) getResources(ctx context.Context, req ctrl.Request) ([]unstructured.Unstructured, bool, error) {
 	prr := &porchv1alpha1.PackageRevisionResources{}
 	if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
-		r.l.Error(err, "cannot get package resvision resourcelist", "key", req.NamespacedName)
+		r.l.Error(err, "cannot get package revision resourcelist", "key", req.NamespacedName)
 		return nil, false, err
 	}
 
