@@ -10,7 +10,7 @@ Based on the environment variables we help the controller to connect to the gite
 
 A secret is required to connect to the git server with username and password. The default name and namespace are resp. `git-user-secret ` and POD_NAMESPACE where the token controller runs.
 With the following environment variable the defaults can be changed:
-- GIT_SECRET_NAME = sets the name of the secret to connect to the git server
+- GIT_SECRET_NAME: sets the name of the secret to connect to the git server
 - GIT_NAMESPACE: sets the namespace where to find the secret to connect to the git server
 
 The URL to connect to the git server is provided through an environment variable. This is a mandatory environment variable
