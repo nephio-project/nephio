@@ -49,13 +49,5 @@ presubmits:
         - "-c"
         - |
           for i in \
-          controllers/specializer-operator \
-          krm-functions/dnn-fn \
-          krm-functions/interface-fn \
-          krm-functions/ipam-fn \
-          krm-functions/nad-fn \
-          krm-functions/vlan-fn \
-          krm-functions/nfdeploy-fn/amfdeployfn \
-          krm-functions/nfdeploy-fn/smfdeployfn \
-          krm-functions/nfdeploy-fn/upfdeployfn ; \
+          $(egrep -rl --null --include \*.go 'package\s+main\b' | xargs -0 -L 1  dirname  | sort -u | xargs -d '\n' -L 1 printf "'%s' ")  ; \
           do cd $i; go build; echo $i; lichen -c /etc/lichen.yaml $( echo $i | awk -F "/" '{print $NF}');  cd -; done
