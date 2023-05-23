@@ -29,4 +29,5 @@ type ControllerConfig struct {
 	GiteaClient giteaclient.GiteaClient
 	Poll        time.Duration
 	Copts       controller.Options
+	Address     string // backend server address
 }
