@@ -23,6 +23,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
+	commonv1alpha1 "github.com/nephio-project/api/common/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
@@ -107,9 +108,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// repo being deleted
 		// Delete the repo from the git server
 		// when successfull remove the finalizer
-		if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
-			r.l.Error(err, "cannot delete repo in git server")
-			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
+			if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
+				r.l.Error(err, "cannot delete repo in git server")
+				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+			}
 		}
 
 		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {
