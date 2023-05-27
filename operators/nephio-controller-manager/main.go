@@ -116,7 +116,7 @@ func run(ctx context.Context) error {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
+		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
 			Address:     os.Getenv("CLIENT_PROXY_ADDRESS"),
 			PorchClient: porchClient,
 			GiteaClient: g,
