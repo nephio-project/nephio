@@ -39,6 +39,12 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	//+kubebuilder:scaffold:imports
+
+	// Import our reconcilers
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
+        _ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
+        _ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
+        _ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
 )
 
 func main() {
