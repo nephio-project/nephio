@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
@@ -50,14 +49,6 @@ import (
 )
 
 func main() {
-	err := run(context.Background())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-}
-
-func run(ctx context.Context) error {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -75,12 +66,14 @@ func run(ctx context.Context) error {
 	flag.Parse()
 
 	if len(flag.Args()) != 0 {
-		return fmt.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
+		klog.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
+		os.Exit(1)
 	}
 
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
-		return fmt.Errorf("error initializing scheme: %w", err)
+		klog.Errorf("error initializing scheme: #{err}")
+		os.Exit(1)
 	}
 
 	managerOptions := ctrl.Options{
@@ -99,11 +92,12 @@ func run(ctx context.Context) error {
 		klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
 	}
-	ctx = ctrl.SetupSignalHandler()
+	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
-		return fmt.Errorf("error creating manager: %w", err)
+		klog.Errorf("error creating manager: #{err}")
+		os.Exit(1)
 	}
 
 	// Start a Gitea Client
@@ -121,7 +115,8 @@ func run(ctx context.Context) error {
 			PorchClient: porchClient,
 			GiteaClient: g,
 		}); err != nil {
-			return fmt.Errorf("error creating %s reconciler: %w", name, err)
+			klog.Errorf("error creating %s reconciler: #{err}", r)
+			os.Exit(1)
 		}
 		enabled = append(enabled, name)
 	}
@@ -134,17 +129,19 @@ func run(ctx context.Context) error {
 
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		return fmt.Errorf("error adding health check: %w", err)
+		klog.Errorf("error adding health check: #{err}")
+		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		return fmt.Errorf("error adding ready check: %w", err)
+		klog.Errorf("error adding ready check: #{err}")
+		os.Exit(1)
 	}
 
 	klog.Infof("starting manager")
 	if err := mgr.Start(ctx); err != nil {
-		return fmt.Errorf("error running manager: %w", err)
+		klog.Errorf("error running manager: #{err}")
+		os.Exit(1)
 	}
-	return nil
 }
 
 func parseReconcilers(reconcilers string) []string {
