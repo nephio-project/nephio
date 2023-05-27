@@ -8,9 +8,11 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
 
 replace k8s.io/client-go => k8s.io/client-go v0.26.1
 
+replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+
 require (
 	github.com/nephio-project/nephio-controller-poc v0.0.2
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230524181600-53f90020dbb6
+	github.com/nephio-project/nephio/controllers/pkg v0.0.0-00010101000000-000000000000
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
@@ -19,7 +21,13 @@ require (
 )
 
 require (
-	code.gitea.io/sdk/gitea v0.15.1 // indirect
+	github.com/davidmz/go-pageant v1.0.2 // indirect
+	github.com/go-fed/httpsig v1.1.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
+)
+
+require (
+	code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9 // indirect
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93 // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2 // indirect
