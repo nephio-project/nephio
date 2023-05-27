@@ -21,7 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
-	"github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
+	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"k8s.io/klog/v2"
 	"os"
@@ -39,6 +39,12 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	//+kubebuilder:scaffold:imports
+
+	// Import our reconcilers
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
 )
 
 func main() {
@@ -103,7 +109,7 @@ func run(ctx context.Context) error {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(mgr, ctrlrconfig.ControllerConfig{
+		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
 			//Address:     "127.0.0.1:9999",
 			PorchClient: porchClient,
 		}); err != nil {
