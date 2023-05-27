@@ -16,6 +16,7 @@ limitations under the License.
 package reconcilerinterface
 
 import (
+	"context"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -26,7 +27,7 @@ type Reconciler interface {
 	reconcile.Reconciler
 
 	// Setup registers the reconciler to run under the specified manager
-	SetupWithManager(ctrl.Manager, interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error)
+	SetupWithManager(context.Context, ctrl.Manager, interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error)
 }
 
 var Reconcilers = map[string]Reconciler{}

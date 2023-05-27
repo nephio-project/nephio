@@ -17,12 +17,13 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
+	giteclient "github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"k8s.io/klog/v2"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -48,14 +49,6 @@ import (
 )
 
 func main() {
-	err := run(context.Background())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
-}
-
-func run(ctx context.Context) error {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -73,12 +66,14 @@ func run(ctx context.Context) error {
 	flag.Parse()
 
 	if len(flag.Args()) != 0 {
-		return fmt.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
+		klog.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
+		os.Exit(1)
 	}
 
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
-		return fmt.Errorf("error initializing scheme: %w", err)
+		klog.Errorf("error initializing scheme: #{err}")
+		os.Exit(1)
 	}
 
 	managerOptions := ctrl.Options{
@@ -97,11 +92,17 @@ func run(ctx context.Context) error {
 		klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
 	}
+	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
-		return fmt.Errorf("error creating manager: %w", err)
+		klog.Errorf("error creating manager: #{err}")
+		os.Exit(1)
 	}
+
+	// Start a Gitea Client
+	g := giteclient.New(resource.NewAPIPatchingApplicator(mgr.GetClient()))
+	g.Start(ctx)
 
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)
 	var enabled []string
@@ -110,10 +111,12 @@ func run(ctx context.Context) error {
 			continue
 		}
 		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
-			//Address:     "127.0.0.1:9999",
+			Address:     os.Getenv("CLIENT_PROXY_ADDRESS"),
 			PorchClient: porchClient,
+			GiteaClient: g,
 		}); err != nil {
-			return fmt.Errorf("error creating %s reconciler: %w", name, err)
+			klog.Errorf("error creating %s reconciler: #{err}", r)
+			os.Exit(1)
 		}
 		enabled = append(enabled, name)
 	}
@@ -126,17 +129,19 @@ func run(ctx context.Context) error {
 
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		return fmt.Errorf("error adding health check: %w", err)
+		klog.Errorf("error adding health check: #{err}")
+		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		return fmt.Errorf("error adding ready check: %w", err)
+		klog.Errorf("error adding ready check: #{err}")
+		os.Exit(1)
 	}
 
 	klog.Infof("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		return fmt.Errorf("error running manager: %w", err)
+	if err := mgr.Start(ctx); err != nil {
+		klog.Errorf("error running manager: #{err}")
+		os.Exit(1)
 	}
-	return nil
 }
 
 func parseReconcilers(reconcilers string) []string {
