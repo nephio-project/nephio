@@ -21,8 +21,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
+	giteclient "github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"k8s.io/klog/v2"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -97,11 +99,16 @@ func run(ctx context.Context) error {
 		klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
 	}
+	ctx = ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
 		return fmt.Errorf("error creating manager: %w", err)
 	}
+
+	// Start a Gitea Client
+	g := giteclient.New(resource.NewAPIPatchingApplicator(mgr.GetClient()))
+	g.Start(ctx)
 
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)
 	var enabled []string
@@ -109,9 +116,10 @@ func run(ctx context.Context) error {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
-			//Address:     "127.0.0.1:9999",
+		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
+			Address:     os.Getenv("CLIENT_PROXY_ADDRESS"),
 			PorchClient: porchClient,
+			GiteaClient: g,
 		}); err != nil {
 			return fmt.Errorf("error creating %s reconciler: %w", name, err)
 		}
@@ -133,7 +141,7 @@ func run(ctx context.Context) error {
 	}
 
 	klog.Infof("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		return fmt.Errorf("error running manager: %w", err)
 	}
 	return nil
