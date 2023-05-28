@@ -15,8 +15,6 @@
 package client
 
 import (
-	"context"
-
 	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	configapi "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
 	coreapi "k8s.io/api/core/v1"
@@ -25,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -39,36 +36,6 @@ func CreateClient(config *rest.Config) (client.Client, error) {
 	c, err := client.New(config, client.Options{
 		Scheme: scheme,
 		Mapper: createRESTMapper(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
-}
-
-func CreateClientWithFlags(flags *genericclioptions.ConfigFlags) (client.Client, error) {
-	config, err := flags.ToRESTConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return CreateClient(config)
-}
-
-func CreateDynamicClient(flags *genericclioptions.ConfigFlags) (client.WithWatch, error) {
-	config, err := flags.ToRESTConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	scheme, err := createScheme()
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := client.NewWithWatch(config, client.Options{
-		Scheme: scheme,
 	})
 	if err != nil {
 		return nil, err
@@ -96,12 +63,26 @@ func CreateRESTClient(config *rest.Config) (rest.Interface, error) {
 	return rest.RESTClientFor(config)
 }
 
-func createScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-
+func AddToScheme(scheme *runtime.Scheme) error {
 	for _, api := range (runtime.SchemeBuilder{
 		configapi.AddToScheme,
 		porchapi.AddToScheme,
+	}) {
+		if err := api(scheme); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createScheme() (*runtime.Scheme, error) {
+	scheme := runtime.NewScheme()
+
+	if err := AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	for _, api := range (runtime.SchemeBuilder{
 		coreapi.AddToScheme,
 		metav1.AddMetaToScheme,
 	}) {
@@ -140,8 +121,4 @@ func createRESTMapper() meta.RESTMapper {
 	}
 
 	return rm
-}
-
-func Apply(ctx context.Context, api client.Client, obj client.Object) error {
-	return api.Patch(ctx, obj, client.Apply, client.FieldOwner("kubectl"))
 }

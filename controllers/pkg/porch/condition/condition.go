@@ -48,3 +48,35 @@ func HasSpecificTypeConditions(conditions []porchv1alpha1.Condition, conditionTy
 	}
 	return false
 }
+
+// Check ReadinessGates checks if the package has met all readiness gates
+func PackageRevisionIsReady(readinessGates []porchv1alpha1.ReadinessGate, conditions []porchv1alpha1.Condition) bool {
+	// Index our conditions
+	conds := make(map[string]porchv1alpha1.Condition)
+	for _, c := range conditions {
+		conds[c.Type] = c
+	}
+
+	// Check if the readiness gates are met
+	for _, g := range readinessGates {
+		if _, ok := conds[g.ConditionType]; !ok {
+			return false
+		}
+		if conds[g.ConditionType].Status != "True" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// HasReadinessGate checks if a specific gate exists
+func HasReadinessGate(gates []porchv1alpha1.ReadinessGate, gate string) bool {
+	for i := range gates {
+		g := gates[i]
+		if g.ConditionType == gate {
+			return true
+		}
+	}
+	return false
+}
