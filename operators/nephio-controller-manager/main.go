@@ -46,6 +46,8 @@ import (
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-packages"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-secret"
 )
 
 func main() {
