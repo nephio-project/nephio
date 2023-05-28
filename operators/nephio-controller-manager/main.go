@@ -19,8 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
@@ -48,6 +48,7 @@ import (
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/approval"
 )
 
 func main() {
@@ -89,7 +90,12 @@ func main() {
 	}
 
 	ctrl.SetLogger(klogr.New())
-	porchClient, err := porch.CreateClient()
+	porchClient, err := porchclient.CreateClient(ctrl.GetConfigOrDie())
+	if err != nil {
+		klog.Errorf("unable to create porch client: #{err}")
+		os.Exit(1)
+	}
+	porchRESTClient, err := porchclient.CreateRESTClient(ctrl.GetConfigOrDie())
 	if err != nil {
 		klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
@@ -124,7 +130,8 @@ func main() {
 		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
 			Address:     clientProxy,
 			PorchClient: porchClient,
-			GiteaClient: g,
+			PorchRESTClient: porchRESTClient,
+			GiteaClient:     g,
 		}); err != nil {
 			klog.Errorf("error creating %s reconciler: #{err}", r)
 			os.Exit(1)
