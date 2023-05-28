@@ -20,7 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
-	giteclient "github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
@@ -101,8 +101,17 @@ func main() {
 	}
 
 	// Start a Gitea Client
-	g := giteclient.New(resource.NewAPIPatchingApplicator(mgr.GetClient()))
-	g.Start(ctx)
+	// Prepare configuration for reconcilers
+	clientProxy := "127.0.0.1:9999"
+	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
+		clientProxy = address
+	}
+	// Sending the porchclient to getgitea, this will be used to get
+	// the secret objects for gitea client authentication. The client
+	// of the manager of this controller cannot be used at this point.
+	// Should this be conditional ? Only if we have repo/token reconciler
+	g := giteaclient.New(resource.NewAPIPatchingApplicator(porchClient))
+	go g.Start(ctx)
 
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)
 	var enabled []string
@@ -110,8 +119,8 @@ func main() {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
-			Address:     os.Getenv("CLIENT_PROXY_ADDRESS"),
+		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
+			Address:     clientProxy,
 			PorchClient: porchClient,
 			GiteaClient: g,
 		}); err != nil {
