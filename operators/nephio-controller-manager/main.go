@@ -102,7 +102,9 @@ func main() {
 
 	// Start a Gitea Client
 	g := giteclient.New(resource.NewAPIPatchingApplicator(mgr.GetClient()))
-	g.Start(ctx)
+	// TODO: We probably should consider doing the go routine inside the client start
+	// it also probably should have a proper stop channel, etc. to clean up properly
+	go g.Start(ctx)
 
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)
 	var enabled []string
