@@ -19,15 +19,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
 	giteclient "github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"k8s.io/klog/v2"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -39,9 +40,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+
 	//+kubebuilder:scaffold:imports
 
 	// Import our reconcilers
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-packages"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-secret"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
@@ -110,7 +114,7 @@ func main() {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(mgr, &ctrlrconfig.ControllerConfig{
+		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
 			Address:     os.Getenv("CLIENT_PROXY_ADDRESS"),
 			PorchClient: porchClient,
 			GiteaClient: g,
