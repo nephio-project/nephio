@@ -54,8 +54,8 @@ func init() {
 	reconcilerinterface.Register("approval", &reconciler{})
 }
 
-// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions,verbs=get;list;watch
-// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/status,verbs=get
 // +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/approval,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // SetupWithManager sets up the controller with the Manager.
