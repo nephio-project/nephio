@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -303,6 +304,14 @@ func (c *MockClient) RESTMapper() meta.RESTMapper {
 // Scheme calls MockClient's MockScheme function
 func (c *MockClient) Scheme() *runtime.Scheme {
 	return c.MockScheme()
+}
+
+func (c *MockClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+	return schema.GroupVersionKind{}, nil
+}
+
+func (c *MockClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+	return false, nil
 }
 
 // MockSubResourceClient provides mock functionality for status sub-resource
