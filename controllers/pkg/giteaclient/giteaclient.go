@@ -50,50 +50,59 @@ type gc struct {
 }
 
 func (r *gc) Start(ctx context.Context) {
-	r.l = log.FromContext(ctx)
-	//var err error
 	for {
-	LOOP:
-		time.Sleep(5 * time.Second)
+		select {
+		// The context is the one returned by ctrl.SetupSignalHandler().
+		// cancel() of this contex will trigger <- ctx.Done().
+		// The Idea for continuously retrying is for enabling the user to
+		// create a secret eventually even after the controllers are started.
+		case <-ctx.Done():
+			fmt.Printf("controller manager context cancelled: Exit\n")
+			return
+		default:
+			r.l = log.FromContext(ctx)
+			//var err error
+			time.Sleep(5 * time.Second)
 
-		gitURL, ok := os.LookupEnv("GIT_URL")
-		if !ok {
-			r.l.Error(fmt.Errorf("git url not defined"), "cannot connect to git server")
-			goto LOOP
-		}
+			gitURL, ok := os.LookupEnv("GIT_URL")
+			if !ok {
+				r.l.Error(fmt.Errorf("git url not defined"), "cannot connect to git server")
+				break
+			}
 
-		namespace := os.Getenv("POD_NAMESPACE")
-		if gitNamesapce, ok := os.LookupEnv("GIT_NAMESPACE"); ok {
-			namespace = gitNamesapce
-		}
-		secretName := "git-user-secret"
-		if gitSecretName, ok := os.LookupEnv("GIT_SECRET_NAME"); ok {
-			namespace = gitSecretName
-		}
+			namespace := os.Getenv("POD_NAMESPACE")
+			if gitNamesapce, ok := os.LookupEnv("GIT_NAMESPACE"); ok {
+				namespace = gitNamesapce
+			}
+			secretName := "git-user-secret"
+			if gitSecretName, ok := os.LookupEnv("GIT_SECRET_NAME"); ok {
+				secretName = gitSecretName
+			}
 
-		// get secret that was created when installing gitea
-		secret := &corev1.Secret{}
-		if err := r.client.Get(ctx, types.NamespacedName{
-			Namespace: namespace,
-			Name:      secretName,
-		},
-			secret); err != nil {
-			r.l.Error(err, "cannot get secret")
-			goto LOOP
-		}
+			// get secret that was created when installing gitea
+			secret := &corev1.Secret{}
+			if err := r.client.Get(ctx, types.NamespacedName{
+				Namespace: namespace,
+				Name:      secretName,
+			},
+				secret); err != nil {
+				r.l.Error(err, "Cannot get secret, please follow README and create the gitea secret")
+				break
+			}
 
-		// To create/list tokens we can only use basic authentication using username and password
-		giteaClient, err := gitea.NewClient(
-			gitURL,
-			getClientAuth(secret))
-		if err != nil {
-			r.l.Error(err, "cannot authenticate to gitea")
-			goto LOOP
-		}
+			// To create/list tokens we can only use basic authentication using username and password
+			giteaClient, err := gitea.NewClient(
+				gitURL,
+				getClientAuth(secret))
+			if err != nil {
+				r.l.Error(err, "cannot authenticate to gitea")
+				break
+			}
 
-		r.giteaClient = giteaClient
-		r.l.Info("gitea init done")
-		return
+			r.giteaClient = giteaClient
+			r.l.Info("gitea init done")
+			return
+		}
 	}
 }
 
