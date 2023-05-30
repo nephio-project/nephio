@@ -20,14 +20,16 @@ import (
 	"time"
 
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 type ControllerConfig struct {
-	PorchClient client.Client
-	GiteaClient giteaclient.GiteaClient
-	Poll        time.Duration
-	Copts       controller.Options
-	Address     string // backend server address
+	PorchClient     client.Client
+	PorchRESTClient rest.Interface
+	GiteaClient     giteaclient.GiteaClient
+	Poll            time.Duration
+	Copts           controller.Options
+	Address         string // backend server address
 }

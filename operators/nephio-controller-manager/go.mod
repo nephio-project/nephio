@@ -8,8 +8,9 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
 
 replace k8s.io/client-go => k8s.io/client-go v0.26.1
 
+replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+
 require (
-	github.com/nephio-project/nephio-controller-poc v0.0.2
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230527153803-31b37fcf142b
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2

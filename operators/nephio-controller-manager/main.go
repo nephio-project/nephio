@@ -19,8 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
@@ -42,6 +42,7 @@ import (
 	//+kubebuilder:scaffold:imports
 
 	// Import our reconcilers
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/approval"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-packages"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-secret"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
@@ -74,7 +75,12 @@ func main() {
 
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
-		klog.Errorf("error initializing scheme: #{err}")
+		klog.Errorf("error initializing scheme: %s", err.Error())
+		os.Exit(1)
+	}
+	err := porchclient.AddToScheme(scheme)
+	if err != nil {
+		klog.Errorf("error initializing scheme with Porch APIs: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -89,9 +95,15 @@ func main() {
 	}
 
 	ctrl.SetLogger(klogr.New())
-	porchClient, err := porch.CreateClient()
+	porchClient, err := porchclient.CreateClient(ctrl.GetConfigOrDie())
 	if err != nil {
 		klog.Errorf("unable to create porch client: #{err}")
+		os.Exit(1)
+	}
+
+	porchRESTClient, err := porchclient.CreateRESTClient(ctrl.GetConfigOrDie())
+	if err != nil {
+		klog.Errorf("error creating porch REST client: %s", err.Error())
 		os.Exit(1)
 	}
 	ctx := ctrl.SetupSignalHandler()
@@ -122,11 +134,12 @@ func main() {
 			continue
 		}
 		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
-			Address:     clientProxy,
-			PorchClient: porchClient,
-			GiteaClient: g,
+			Address:         clientProxy,
+			PorchClient:     porchClient,
+			PorchRESTClient: porchRESTClient,
+			GiteaClient:     g,
 		}); err != nil {
-			klog.Errorf("error creating %s reconciler: #{err}", r)
+			klog.Errorf("error creating %q reconciler: %s", name, err.Error())
 			os.Exit(1)
 		}
 		enabled = append(enabled, name)

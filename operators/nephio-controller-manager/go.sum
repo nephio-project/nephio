@@ -143,10 +143,6 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495 h1:lKibqCJw7x5XKwev43GNGeEJwbx9twlVSLu2l5nDZBo=
 github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495/go.mod h1:v2DHagSVdoKQxQXFBwGw0VWvvmw5EFNJ0JuFjhwsGwM=
-github.com/nephio-project/nephio-controller-poc v0.0.2 h1:0iSooKeWzqmcTiLLfAzA4oWTWNzvOc7qcfVN+ctYexI=
-github.com/nephio-project/nephio-controller-poc v0.0.2/go.mod h1:oE13Jb5gopskPCv0YERhXwqxWIbp6uVsma/uxuP/jKc=
-github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230527153803-31b37fcf142b h1:YqyucYOKicL5FzBZnLjo/hsuv070i3Gh2XSoXS6xkS4=
-github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230527153803-31b37fcf142b/go.mod h1:rvsHiqd0DuQiJmxlJfDQU7U8JPPdexPVn5RDs05vlgU=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6 h1:4Im540v27uiAt7pLaXsHvjq+bPjo6yW6I1cmxhqP7iA=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6/go.mod h1:f8MW/xm4uKycEAspdsVN9KBpmRbPtiTak+Kj00LGL1A=
 github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9 h1:fWHt9kSXIHLfA5rc77iiRUsmshFmm5hqWmmvsPAvVuw=
