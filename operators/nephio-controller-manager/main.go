@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nephio-project/nephio-controller-poc/pkg/porch"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
