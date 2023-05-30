@@ -8,11 +8,10 @@ go 1.20
 
 //replace k8s.io/client-go => k8s.io/client-go v0.26.1
 
-replace github.com/nephio-project/nephio/controllers/pkg/ => ../../controllers/pkg/
+replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 
 require (
-	github.com/nephio-project/nephio-controller-poc v0.0.0-20221111013453-5a31b4722094
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230527153803-31b37fcf142b
+	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530171006-1c3077369abd
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
