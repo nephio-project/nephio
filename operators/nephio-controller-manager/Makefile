@@ -7,6 +7,8 @@ KPT_BLUEPRINT_PKG_DIR ?= blueprint/${PROJECT}
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(REGISTRY)/${PROJECT}-operator:$(VERSION)
+IMGLOCAL ?= $(REGISTRY)/${PROJECT}-operator:$(USER)
+
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -64,8 +66,8 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+build: fmt vet ## Build manager binary.
+	CGO_ENABLED=0 go build -o bin/manager main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -81,6 +83,14 @@ docker-build: test ## Build docker image with the manager.
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+.PHONY: docker-build-local
+docker-build-local: test build ## Build locally, copy in manager to image
+	docker build -f Dockerfile.local -t ${IMGLOCAL} .
+
+.PHONY: docker-push-local
+docker-push-local: ## Push docker image with the manager.
+	docker push ${IMGLOCAL}
 
 .PHONY: unit_clean
 unit_clean: ## clean up the unit test artifacts created
