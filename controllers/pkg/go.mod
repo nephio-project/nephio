@@ -2,12 +2,6 @@ module github.com/nephio-project/nephio/controllers/pkg
 
 go 1.20
 
-//replace k8s.io/api => k8s.io/api v0.26.1
-
-//replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
-
-//replace k8s.io/client-go => k8s.io/client-go v0.26.1
-
 require (
 	code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
