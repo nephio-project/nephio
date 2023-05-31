@@ -2,12 +2,6 @@ module github.com/nephio-project/nephio/krm-functions/vlan-fn
 
 go 1.20
 
-//replace k8s.io/api => k8s.io/api v0.26.1
-
-//replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
-
-//replace k8s.io/client-go => k8s.io/client-go v0.26.1
-
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230505152827-3d240775bc79

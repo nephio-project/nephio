@@ -2,12 +2,6 @@ module github.com/nephio-project/nephio/krm-functions/interface-fn
 
 go 1.20
 
-//replace k8s.io/api => k8s.io/api v0.26.1
-
-//replace k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
-
-//replace k8s.io/client-go => k8s.io/client-go v0.26.1
-
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
