@@ -2,15 +2,6 @@ module github.com/nephio-project/nephio/krm-functions/pipeline-tests
 
 go 1.20
 
-// Prevents issue with k8s.io/client-go >= 0.27 and controller-runtime:
-// https://github.com/operator-framework/operator-sdk/issues/6396
-// TODO: remove after the issue is solved upstream
-replace (
-	k8s.io/api => k8s.io/api v0.26.1
-	k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
-	k8s.io/client-go => k8s.io/client-go v0.26.1
-)
-
 // always test the latest versions of all functions/libs
 replace (
 	github.com/nephio-project/nephio/krm-functions/dnn-fn => ../dnn-fn
@@ -32,7 +23,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230516034137-53f1f1859c10
-	github.com/nokia/k8s-ipam v0.0.4-0.20230508220232-534a4724d032
+	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a
 )
 
 require (
@@ -69,8 +60,8 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.15.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -82,7 +73,7 @@ require (
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
@@ -90,15 +81,15 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.27.1 // indirect
-	k8s.io/apiextensions-apiserver v0.27.1 // indirect
-	k8s.io/apimachinery v0.27.1 // indirect
-	k8s.io/client-go v0.27.1 // indirect
-	k8s.io/component-base v0.27.1 // indirect
+	k8s.io/api v0.27.2 // indirect
+	k8s.io/apiextensions-apiserver v0.27.2 // indirect
+	k8s.io/apimachinery v0.27.2 // indirect
+	k8s.io/client-go v0.27.2 // indirect
+	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
-	sigs.k8s.io/controller-runtime v0.14.6 // indirect
+	sigs.k8s.io/controller-runtime v0.15.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.2 // indirect

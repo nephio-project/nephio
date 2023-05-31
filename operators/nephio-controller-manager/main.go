@@ -19,15 +19,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"k8s.io/klog/v2"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -39,6 +40,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+
 	//+kubebuilder:scaffold:imports
 
 	// Import our reconcilers
