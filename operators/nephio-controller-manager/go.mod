@@ -11,7 +11,7 @@ go 1.20
 replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 
 require (
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530171006-1c3077369abd
+	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530181407-a74ad096acc7
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
