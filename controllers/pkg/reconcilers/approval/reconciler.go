@@ -26,12 +26,16 @@ import (
 
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"k8s.io/client-go/tools/record"
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
+	porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
+	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
 	"github.com/go-logr/logr"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
@@ -57,6 +61,8 @@ func init() {
 // +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/status,verbs=get
 // +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/approval,verbs=get;update;patch
+// +kubebuilder:rbac:groups=config.porch.kpt.dev,resources=packagevariants,verbs=get;list;watch
+// +kubebuilder:rbac:groups=config.porch.kpt.dev,resources=packagevariants/status,verbs=get
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // SetupWithManager sets up the controller with the Manager.
 func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
@@ -70,6 +76,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
 
 	return nil, ctrl.NewControllerManagedBy(mgr).
+		Named("ApprovalController").
 		For(&porchv1alpha1.PackageRevision{}).
 		Complete(r)
 }
@@ -85,6 +92,7 @@ type reconciler struct {
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.l = log.FromContext(ctx).WithValues("req", req)
+	r.l.Info("reconcile approval")
 
 	pr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
@@ -117,6 +125,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// if requeue is > 0, then we should do nothing more with this PackageRevision
 	// for at least that long
 	if requeue > 0 {
+		r.recorder.Event(pr, corev1.EventTypeNormal,
+			"NotApproved", "delay time not met")
 		return ctrl.Result{RequeueAfter: requeue}, nil
 	}
 
@@ -125,6 +135,45 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if !ok {
 		// no policy set, so just return, we are done
 		return ctrl.Result{}, nil
+	}
+
+	// If the package revision is owned by a PackageVariant, check the Ready condition
+	// of the package variant. If it is not Ready, then we should not approve yet. The
+	// lack of readiness could indicate an error which even impacts whether or not the
+	// readiness gates have been properly set.
+	//
+	for _, ownerRef := range pr.GetOwnerReferences() {
+		if ownerRef.Controller == nil || !*ownerRef.Controller {
+			continue
+		}
+		if porchconfig.GroupVersion.String() != ownerRef.APIVersion {
+			continue
+		}
+		if ownerRef.Kind != "PackageVariant" {
+			continue
+		}
+
+		var pv pvapi.PackageVariant
+		if err := r.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: ownerRef.Name}, &pv); err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning,
+				"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
+
+			return ctrl.Result{}, nil
+		}
+
+		for _, cond := range pv.Status.Conditions {
+			if cond.Type != "Ready" {
+				continue
+			}
+
+			if cond.Status != metav1.ConditionTrue {
+				r.recorder.Event(pr, corev1.EventTypeNormal,
+					"NotApproved", "owning PackageVariant not Ready")
+
+				return ctrl.Result{}, nil
+			}
+		}
+
 	}
 
 	// All policies require readiness gates to be met, so if they
@@ -184,7 +233,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *reconciler) manageDelay(ctx context.Context, pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 	delay, ok := pr.GetAnnotations()[DelayAnnotationName]
 	if !ok {
-		delay = "30s"
+		delay = "2m"
 	}
 	d, err := time.ParseDuration(delay)
 	if err != nil {

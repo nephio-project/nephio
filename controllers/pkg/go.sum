@@ -7,10 +7,12 @@ github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa/go.mod h1:eAERMIKb67/4uZU56CULVA8Pc/OQ/YWsha0ja/sFHHM=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93 h1:c1GhPzYzU2a3E+/2WB9OxoljK2pNYfsBF5Fz9GkdYXs=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93/go.mod h1:gkK43tTaPXFNASpbIbQImzhmt1hdcdin++kvzTblykc=
-github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2 h1:GDUCDAY2ijsUjg70QPMvWKezRxGKKzU07ckVc5uTgZA=
-github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
+github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=
+github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
 github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6 h1:U5QOwyapVo8PcFzMr4hSPOMIYlNRVn35tINRk9WntXQ=
 github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6/go.mod h1:xQ4kNXVytubqrhwIqABBO/Ya4/v7m6VehpKEv43gCtE=
+github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88 h1:gGboMcueEcYG7/XbV5vpjor8jD725vtOut8THRrtL3M=
+github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88/go.mod h1:u73DWUyHPj896LCaDXwxjbA1g8atK5V5k5IT3Fj+5eQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
