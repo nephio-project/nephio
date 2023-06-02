@@ -2,7 +2,7 @@ module github.com/nephio-project/nephio/operators/nephio-controller-manager
 
 go 1.20
 
-replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+//replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 
 require (
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530181407-a74ad096acc7
@@ -25,7 +25,6 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93 // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6 // indirect
-	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -89,7 +88,7 @@ require (
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
-	sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3 // indirect
+	sigs.k8s.io/cluster-api v1.4.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.2 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.2 // indirect
