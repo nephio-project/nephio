@@ -17,6 +17,7 @@ package client
 import (
 	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	configapi "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
+	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
 	coreapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,6 +68,7 @@ func AddToScheme(scheme *runtime.Scheme) error {
 	for _, api := range (runtime.SchemeBuilder{
 		configapi.AddToScheme,
 		porchapi.AddToScheme,
+		pvapi.AddToScheme,
 	}) {
 		if err := api(scheme); err != nil {
 			return err
