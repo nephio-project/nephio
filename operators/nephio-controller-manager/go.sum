@@ -11,6 +11,8 @@ github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-32
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
 github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6 h1:U5QOwyapVo8PcFzMr4hSPOMIYlNRVn35tINRk9WntXQ=
 github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6/go.mod h1:xQ4kNXVytubqrhwIqABBO/Ya4/v7m6VehpKEv43gCtE=
+github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88 h1:gGboMcueEcYG7/XbV5vpjor8jD725vtOut8THRrtL3M=
+github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88/go.mod h1:u73DWUyHPj896LCaDXwxjbA1g8atK5V5k5IT3Fj+5eQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -141,8 +143,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495 h1:lKibqCJw7x5XKwev43GNGeEJwbx9twlVSLu2l5nDZBo=
 github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495/go.mod h1:v2DHagSVdoKQxQXFBwGw0VWvvmw5EFNJ0JuFjhwsGwM=
-github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530181407-a74ad096acc7 h1:qWPXM/yFLHBmLLmZXpncLug71LceFnfsF/fmWS/et7w=
-github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230530181407-a74ad096acc7/go.mod h1:rvsHiqd0DuQiJmxlJfDQU7U8JPPdexPVn5RDs05vlgU=
+github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230602055209-50adad6b97a6 h1:G9DTP0Vv6fMG9rgJ4W/TJxPX5pv9D+lghNS2/ldz2eU=
+github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230602055209-50adad6b97a6/go.mod h1:345lkvSOfpeXvNU211kRHcMVtAJoxIU0W38X0kr4uaA=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6 h1:4Im540v27uiAt7pLaXsHvjq+bPjo6yW6I1cmxhqP7iA=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6/go.mod h1:f8MW/xm4uKycEAspdsVN9KBpmRbPtiTak+Kj00LGL1A=
 github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9 h1:fWHt9kSXIHLfA5rc77iiRUsmshFmm5hqWmmvsPAvVuw=
@@ -349,8 +351,8 @@ k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 h1:OmK1d0WrkD3IPfkskvroRy
 k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515/go.mod h1:kzo02I3kQ4BTtEfVLaPbjvCkX97YqGve33wzlb3fofQ=
 k8s.io/utils v0.0.0-20230505201702-9f6742963106 h1:EObNQ3TW2D+WptiYXlApGNLVy0zm/JIBVY9i+M4wpAU=
 k8s.io/utils v0.0.0-20230505201702-9f6742963106/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-sigs.k8s.io/cluster-api v1.4.2 h1:hdIz0Ms2j7YaU1qBK5yF2R8ii0GcGb3jQ7EO6i3tAN8=
-sigs.k8s.io/cluster-api v1.4.2/go.mod h1:IIebZTsqyXU8CHbINV2zuMh0/wykqdr+vEXxQNeteEU=
+sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3 h1:Gdw3p1nwuFft7ILVrMhbHkW1Tq2uyPjGdZuAgItK28s=
+sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3/go.mod h1:VgMs4bjc3P0igCtHAbG9+jix2gyYtECQhKfNfRedStc=
 sigs.k8s.io/controller-runtime v0.15.0 h1:ML+5Adt3qZnMSYxZ7gAverBLNPSMQEibtzAgp0UPojU=
 sigs.k8s.io/controller-runtime v0.15.0/go.mod h1:7ngYvp1MLT+9GeZ+6lH3LOlcHkp/+tzA/fmHa4iq9kk=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
