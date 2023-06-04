@@ -73,7 +73,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: myFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
-			UpdateResourceFn:     myFn.updateItfceResource,
+			UpdateResourceFn:       myFn.updateItfceResource,
 		},
 	)
 	if err != nil {
