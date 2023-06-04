@@ -8,7 +8,7 @@ spec:
   kind: pool
   selector:
     matchLabels:
-      nephio.org/site: edge1
+      nephio.org/cluster-name: cluster01
   networkInstance:
     name: vpc-internet
   prefixLength: 8

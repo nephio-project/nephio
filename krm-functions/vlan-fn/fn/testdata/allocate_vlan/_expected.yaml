@@ -1,0 +1,28 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: update done
+      status: "True"
+      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+- apiVersion: vlan.alloc.nephio.org/v1alpha1
+  kind: VLANAllocation
+  metadata:
+    name: n3
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    vlanDatabase:
+      name: cluster03
+  status:
+    vlanID: 10

@@ -72,7 +72,7 @@ func (r *sdk) generateResource() error {
 			}
 			continue
 		}
-		if r.cfg.GenerateResourceFn != nil {
+		if r.cfg.UpdateResourceFn != nil {
 			objs := fn.KubeObjects{}
 			for _, o := range readyCtx.owns {
 				x := o
@@ -98,7 +98,7 @@ func (r *sdk) generateResource() error {
 // handleGenerateUpdate performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
 func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) error {
-	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
+	newObj, err := r.cfg.UpdateResourceFn(forObj, objs)
 	if err != nil {
 		fn.Logf("error generating new resource: %v\n", err.Error())
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))

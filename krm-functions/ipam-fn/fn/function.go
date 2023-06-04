@@ -32,7 +32,7 @@ type FnR struct {
 	ClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPAllocation]
 }
 
-func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
+func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	sdk, err := condkptsdk.New(
 		rl,
 		&condkptsdk.Config{
@@ -41,7 +41,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       ipamv1alpha1.IPAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			GenerateResourceFn:     r.updateIPAllocationResource,
+			UpdateResourceFn:     f.updateIPAllocationResource,
 		},
 	)
 	if err != nil {
@@ -53,7 +53,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 
 // updateIPAllocationResource provides an ip allocation for a given IPAllocation KRM resource
 // in the package by calling the ipam backend
-func (r *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -66,7 +66,7 @@ func (r *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObje
 	if err != nil {
 		return nil, err
 	}
-	resp, err := r.ClientProxy.Allocate(context.Background(), alloc, nil)
+	resp, err := f.ClientProxy.Allocate(context.Background(), alloc, nil)
 	if err != nil {
 		return nil, err
 	}

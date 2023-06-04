@@ -2,16 +2,18 @@ apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: infra.nephio.org/v1alpha1
-  kind: ClusterContext
+  kind: WorkloadCluster
   metadata:
-    name: cluster-context
+    name: cluster01
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    cniConfig:
-      cniType: macvlan
-      masterInterface: eth1
-    siteCode: edge1
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
@@ -23,7 +25,7 @@ items:
     kind: pool
     selector:
       matchLabels:
-        nephio.org/site: edge1
+        nephio.org/cluster-name: cluster01
     networkInstance: {}
     prefixLength: 8
 - apiVersion: kpt.dev/v1

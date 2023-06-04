@@ -33,7 +33,7 @@ type PtrIsNFDeployemnt[T any] interface {
 
 type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
 	sdk                 kptcondsdk.KptCondSDK
-	clusterContext      *infrav1alpha1.ClusterContext
+	workloadCluster     *infrav1alpha1.WorkloadCluster
 	gvk                 schema.GroupVersionKind
 	capacity            *nephioreqv1alpha1.Capacity
 	pkgName             string
@@ -41,7 +41,7 @@ type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
 	interfaceConfigsMap map[string]nephiodeployv1alpha1.InterfaceConfig
 }
 
-func NewMutator[T any, PT PtrIsNFDeployemnt[T]](gvk schema.GroupVersionKind) NfDeployFn[T, PT] {
+func NewFunction[T any, PT PtrIsNFDeployemnt[T]](gvk schema.GroupVersionKind) NfDeployFn[T, PT] {
 	return NfDeployFn[T, PT]{
 		interfaceConfigsMap: make(map[string]nephiodeployv1alpha1.InterfaceConfig),
 		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),

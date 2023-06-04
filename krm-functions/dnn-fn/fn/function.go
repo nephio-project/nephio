@@ -17,6 +17,7 @@
 package fn
 
 import (
+	"reflect"
 	"strings"
 
 	"fmt"
@@ -38,16 +39,16 @@ func init() {
 	_ = ipamv1alpha1.AddToScheme(ko.TheScheme)
 }
 
-type DnnFn struct {
-	sdk            condkptsdk.KptCondSDK
-	ClusterContext *infrav1alpha1.ClusterContext
-	rl             *fn.ResourceList
+type dnnFn struct {
+	sdk             condkptsdk.KptCondSDK
+	workloadCluster *infrav1alpha1.WorkloadCluster
+	rl              *fn.ResourceList
 }
 
 // Run is the entry point of the KRM function (called by the upstream fn SDK)
 func Run(rl *fn.ResourceList) (bool, error) {
 	var err error
-	myFn := DnnFn{rl: rl}
+	myFn := dnnFn{rl: rl}
 
 	myFn.sdk, err = condkptsdk.New(
 		rl,
@@ -65,11 +66,11 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       infrav1alpha1.ClusterContextKind,
-				}: myFn.ClusterContextCallbackFn,
+					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+				}: myFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
-			GenerateResourceFn:     myFn.updateDnnResource,
+			UpdateResourceFn:       myFn.updateDnnResource,
 		},
 	)
 	if err != nil {
@@ -79,29 +80,32 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	return myFn.sdk.Run()
 }
 
-// called for all CLusterContext resources in the package
-func (f *DnnFn) ClusterContextCallbackFn(o *fn.KubeObject) error {
+// ClusterContextCallbackFn provides a callback for the cluster context
+// resources in the resourceList
+func (f *dnnFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	var err error
 
-	if f.ClusterContext != nil {
-		return fmt.Errorf("multiple ClusterContext objects found in the kpt package")
+	if f.workloadCluster != nil {
+		return fmt.Errorf("multiple WorkloadCluster objects found in the kpt package")
 	}
-	f.ClusterContext, err = KubeObjectToStruct[infrav1alpha1.ClusterContext](o)
+	f.workloadCluster, err = ko.KubeObjectToStruct[infrav1alpha1.WorkloadCluster](o)
 	if err != nil {
 		return err
 	}
-	return f.ClusterContext.Spec.Validate()
+
+	// validate check the specifics of the spec, like mandatory fields
+	return f.workloadCluster.Spec.Validate()
 }
 
 // desiredOwnedResourceList returns with the list of all KubeObjects that the DNN "for object" should own in the package
-func (f *DnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, error) {
-	if f.ClusterContext == nil {
-		// no ClusterContext in the package
-		return nil, fmt.Errorf("ClusterContext is missing from the kpt package")
+func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, error) {
+	if f.workloadCluster == nil {
+		// no WorkloadCluster resource in the package
+		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 	}
 
 	// get "parent"| DNN struct
-	dnn, err := KubeObjectToStruct[nephioreqv1alpha1.DataNetwork](o)
+	dnn, err := ko.KubeObjectToStruct[nephioreqv1alpha1.DataNetwork](o)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +124,7 @@ func (f *DnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 				AllocationLabels: ipam_common.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							ipam_common.NephioSiteKey: *f.ClusterContext.Spec.SiteCode, // NOTE: at this point ClusterContext is validated, so this is safe
+							ipam_common.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName, // NOTE: at this point ClusterContext is validated, so this is safe
 						},
 					},
 				},
@@ -138,7 +142,7 @@ func (f *DnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 }
 
 // updateDnnResource assembles the Status of the DNN "for object" from the status of the owned IPAllocations
-func (f *DnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) (*fn.KubeObject, error) {
 	dnnObj, err := ko.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](dnnObj_)
 	if err != nil {
 		return nil, err
