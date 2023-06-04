@@ -3,12 +3,12 @@ module github.com/nephio-project/nephio/krm-functions/lib
 go 1.20
 
 require (
-	github.com/GoogleContainerTools/kpt v1.0.0-beta.31
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.35
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/google/go-cmp v0.5.9
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495
-	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a
+	github.com/nephio-project/api v0.0.0-20230603150309-96ef6e574ad2
+	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 	github.com/stretchr/testify v1.8.2
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2

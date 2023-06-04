@@ -1,7 +1,7 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/GoogleContainerTools/kpt v1.0.0-beta.31 h1:vBmj2QfzjV/nXCaSvUOu3s3gnDvy+d8b5sfix15SCo0=
+github.com/GoogleContainerTools/kpt v1.0.0-beta.35 h1:mRxFelUoCQ21PC714qOQaOt/aCHsF4hDiVp0I0XohaQ=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d h1:NQFVnLXevDG7Ht9B/46X3FWHg+gEQc8Q68PlAnY0XsM=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
@@ -118,11 +118,8 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495 h1:lKibqCJw7x5XKwev43GNGeEJwbx9twlVSLu2l5nDZBo=
-github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230512102733-a986c2cde4d1 h1:gYKMLv4jzQKJoUgs7A/Z6xGo6je7RxH6z47LYGs+qY4=
-github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230512102733-a986c2cde4d1/go.mod h1:L12uPshkoGM1PtYO92qtbJFZ36NkAdpc67JknyZLE9A=
-github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a h1:PkAFQfLI5sDkrN2Rdg593q6sIPGEC/xH5zlAJ3K7v+A=
-github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a/go.mod h1:puHYNVuWM77mFqVgwJkq2NePTVScWDlZZPB45sCN21g=
+github.com/nephio-project/api v0.0.0-20230603150309-96ef6e574ad2 h1:QlMAzrAKwMcbclHBMN0bc7f+aqOxRlxhN4BJMw9t/d0=
+github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe h1:KuWS+MkomN13rhQpvHF2dbZXBv2Bbxexy95srGlsv/0=
 github.com/onsi/ginkgo/v2 v2.9.5 h1:+6Hr4uxzP4XIUyAkg61dWBw8lb/gc4/X5luuxN/EC+Q=
 github.com/onsi/gomega v1.27.7 h1:fVih9JD6ogIiHUN6ePK7HJidyEDpWGVB5mzM7cWNXoU=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
