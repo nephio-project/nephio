@@ -27,7 +27,7 @@ import (
 	dnn_fn "github.com/nephio-project/nephio/krm-functions/dnn-fn/fn"
 	if_fn "github.com/nephio-project/nephio/krm-functions/interface-fn/fn"
 	ipam_fn "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
-	nad_fn "github.com/nephio-project/nephio/krm-functions/nad-fn/mutator"
+	nad_fn "github.com/nephio-project/nephio/krm-functions/nad-fn/fn"
 	nfdeploy_fn "github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/common"
 	vlan_fn "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"

@@ -2,16 +2,18 @@ apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: infra.nephio.org/v1alpha1
-  kind: ClusterContext
+  kind: WorkloadCluster
   metadata:
-    name: cluster-context
+    name: cluster01
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    cniConfig:
-      cniType: sriov
-      masterInterface: eth1
-    siteCode: edge1
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
@@ -22,7 +24,7 @@ items:
     kind: pool
     selector:
       matchLabels:
-        nephio.org/site: edge1
+        nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-internet
     prefixLength: 8
@@ -38,7 +40,7 @@ items:
     kind: network
     selector:
       matchLabels:
-        nephio.org/site: edge1
+        nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-ran
   status:
@@ -54,7 +56,7 @@ items:
     kind: network
     selector:
       matchLabels:
-        nephio.org/site: edge1
+        nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-internal
   status:
@@ -70,7 +72,7 @@ items:
     kind: network
     selector:
       matchLabels:
-        nephio.org/site: edge1
+        nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-internet
   status:
@@ -260,7 +262,7 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     vlanDatabase:
-      name: edge1
+      name: cluster01
   status:
     vlanID: 10
 - apiVersion: vlan.alloc.nephio.org/v1alpha1
@@ -271,7 +273,7 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
     vlanDatabase:
-      name: edge1
+      name: cluster01
   status:
     vlanID: 10
 - apiVersion: vlan.alloc.nephio.org/v1alpha1
@@ -282,7 +284,7 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
     vlanDatabase:
-      name: edge1
+      name: cluster01
   status:
     vlanID: 10
 - apiVersion: workload.nephio.org/v1alpha1
