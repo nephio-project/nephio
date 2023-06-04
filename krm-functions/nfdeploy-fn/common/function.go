@@ -25,9 +25,9 @@ import (
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
+	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 )
 
 func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {

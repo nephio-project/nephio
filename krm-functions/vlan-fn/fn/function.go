@@ -41,7 +41,7 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       vlanv1alpha1.VLANAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:     f.updateVLANAllocationResource,
+			UpdateResourceFn:       f.updateVLANAllocationResource,
 		},
 	)
 	if err != nil {

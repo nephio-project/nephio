@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
@@ -30,6 +29,7 @@ import (
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	interfacelibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/interface/v1alpha1"
 	ipalloclibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/ipalloc/v1alpha1"
+	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	nadlibv1 "github.com/nephio-project/nephio/krm-functions/lib/nad/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
@@ -38,7 +38,7 @@ import (
 )
 
 type nadFn struct {
-	sdk       condkptsdk.KptCondSDK
+	sdk             condkptsdk.KptCondSDK
 	workloadCluster *infrav1alpha1.WorkloadCluster
 }
 
@@ -71,7 +71,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: nil,
 			},
 			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:     myFn.updateResourceFn,
+			UpdateResourceFn:       myFn.updateResourceFn,
 		},
 	)
 	if err != nil {
@@ -144,7 +144,7 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			if !f.IsCNITypePresent(interfaceGoStruct.Spec.CNIType) {
 				return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, interfaceGoStruct.Spec.CNIType)
 			}
-			
+
 			if err := nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType)); err != nil {
 				return nil, err
 			}

@@ -41,7 +41,7 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       ipamv1alpha1.IPAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:     f.updateIPAllocationResource,
+			UpdateResourceFn:       f.updateIPAllocationResource,
 		},
 	)
 	if err != nil {
