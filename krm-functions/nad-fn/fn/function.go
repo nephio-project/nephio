@@ -81,7 +81,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	return myFn.sdk.Run()
 }
 
-// ClusterContextCallbackFn provides a callback for the cluster context
+// WorkloadClusterCallbackFn provides a callback for the workload cluster
 // resources in the resourceList
 func (f *nadFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	var err error

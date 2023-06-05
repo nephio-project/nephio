@@ -80,7 +80,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	return myFn.sdk.Run()
 }
 
-// ClusterContextCallbackFn provides a callback for the cluster context
+// WorkloadClusterCallbackFn provides a callback for the workload cluster
 // resources in the resourceList
 func (f *dnnFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	var err error
@@ -124,7 +124,7 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 				AllocationLabels: ipam_common.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							ipam_common.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName, // NOTE: at this point ClusterContext is validated, so this is safe
+							ipam_common.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName, // NOTE: at this point WorkloadCluster is validated, so this is safe
 						},
 					},
 				},

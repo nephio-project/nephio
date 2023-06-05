@@ -17,7 +17,7 @@
 
 `dnn-fn` is primarily meant to be used declaratively, as part of the pipeline of a kpt package. It reads all of its inputs from the resources present in the package, and writes all of its outputs back into the package by creating/updating resources. It doesn't have any configuration parameters.
 
-`dnn-fn` iterates through all resources of type `DataNetwork.req.nephio.org/v1alpha1`, and creates an IPAllocation resource for each `pool` listed in the `spec` of the `DataNetwork`. It also uses information from the singleton `ClusterContext` type resource that the kpt package is expected to contain.
+`dnn-fn` iterates through all resources of type `DataNetwork.req.nephio.org/v1alpha1`, and creates an IPAllocation resource for each `pool` listed in the `spec` of the `DataNetwork`. It also uses information from the singleton `WorkloadCluster` type resource that the kpt package is expected to contain.
 
 `dnn-fn` keeps track of the resources it created by setting their `specializer.nephio.org/owner` annotation to point to the `DataNetwork` resource that it was created for. 
 
