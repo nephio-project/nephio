@@ -1,0 +1,12 @@
+{
+  "licenses": [
+    "Apache-2.0",
+    "MIT",
+    "BSD-3-Clause"
+  ],
+  "exclude": [
+    ".git/*",
+    ".prow.yaml",
+    "results/*"
+  ]
+}

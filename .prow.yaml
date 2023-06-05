@@ -4,7 +4,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:4
+      - image: nephio/gotests:7
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:4
+      - image: nephio/gotests:7
         command:
         - make
         args:
@@ -24,16 +24,48 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:4
+      - image: nephio/gotests:7
         command:
         - make
         args:
         - gosec
   - name: presubmit-nephio-license-header-check
     decorate: true
-    run_if_changed: "\\.go$"
+    always_run: true
     spec:
       containers:
-      - image: nephio/gotests:4
+      - image: nephio/gotests:7
         command:
-        - "/usr/local/bin/checklicense.sh"
+        - "/bin/sh"
+        - "-c"
+        - |
+          /usr/local/bin/checklicense.sh > ${ARTIFACTS}/license_headers_results.txt
+  - name: presubmit-nephio-scancode-toolkit
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: nephio/scancode-toolkit:v31.2.5
+        command:
+        - "/bin/sh"
+        args:
+        - "-c"
+        - |
+          /scancode-toolkit/scancode --ignore "whitelist.json" -clpeui -n 2 --html ${ARTIFACTS}/scancode_report.html . --tallies-with-details
+        resources:
+          requests:
+            cpu: 2
+            memory: 1Gi
+  - name: presubmit-nephio-fossology
+    decorate: true
+    always_run: true
+    spec:
+      containers:
+      - image: fossology/fossology:scanner
+        command:
+        - "/bin/bash"
+        args:
+        - "-c"
+        - |
+          /bin/fossologyscanner repo nomos ojo copyright keyword
+          cp -R results ${ARTIFACTS}/    
