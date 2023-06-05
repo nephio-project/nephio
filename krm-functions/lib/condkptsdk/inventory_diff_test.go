@@ -392,8 +392,8 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 		if len(diff.updateObjs) != 0 {
 			t.Errorf("TestDiffWithSpecToDelete: -want 0, +got:\n%v", len(diff.updateObjs))
 		}
-		if len(diff.createConditions) != 0 {
-			t.Errorf("TestDiffWithSameSpec: -want 0, +got:\n%v", len(diff.createConditions))
+		if len(diff.createConditions) != 2 {
+			t.Errorf("TestDiffWithSameSpec: -want 2, +got:\n%v", len(diff.createConditions))
 		}
 		if len(diff.deleteConditions) != 0 {
 			t.Errorf("TestDiffWithSameSpec: -want 0, +got:\n%v", len(diff.deleteConditions))

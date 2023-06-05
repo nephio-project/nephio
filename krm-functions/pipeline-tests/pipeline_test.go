@@ -40,6 +40,7 @@ func upfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymentGroupVersionKind)
 }
 
+/*
 func smfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.SMFDeployment](rl, nephiodeployv1alpha1.SMFDeploymentGroupVersionKind)
 }
@@ -47,6 +48,7 @@ func smfFn(rl *fn.ResourceList) (bool, error) {
 func amfFn(rl *fn.ResourceList) (bool, error) {
 	return nfdeploy_fn.Run[nephiodeployv1alpha1.AMFDeployment](rl, nephiodeployv1alpha1.AMFDeploymentGroupVersionKind)
 }
+*/
 
 var ipamFn = &ipam_fn.FnR{
 	ClientProxy: ipam.NewMock(),
@@ -68,6 +70,7 @@ func TestPipelines(t *testing.T) {
 			inputDir:        "upf_pkg",
 			expectedDataDir: "simplified_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
+				upfFn,
 				if_fn.Run,
 				dnn_fn.Run,
 
@@ -75,8 +78,8 @@ func TestPipelines(t *testing.T) {
 				vlanFn.Run,
 
 				nad_fn.Run,
-				dnn_fn.Run,
 				if_fn.Run,
+				dnn_fn.Run,
 				upfFn,
 			},
 		},
@@ -84,6 +87,7 @@ func TestPipelines(t *testing.T) {
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
+				upfFn,
 				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,
@@ -103,6 +107,7 @@ func TestPipelines(t *testing.T) {
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment_2",
 			pipeline: []fn.ResourceListProcessorFunc{
+				upfFn,
 				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,

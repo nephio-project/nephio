@@ -141,16 +141,24 @@ items:
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.dataplane
     - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
     - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n3
     - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n4
     - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n6
     - message: update done
@@ -167,13 +175,14 @@ items:
       type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
     - message: update done
       status: "True"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.pkg-upf
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
     name: dataplane
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     maxUplinkThroughput: 10G
     maxDownlinkThroughput: 10G
@@ -184,6 +193,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internet
@@ -201,6 +211,7 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-ran
@@ -218,6 +229,7 @@ items:
     name: n4
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internal
@@ -235,6 +247,7 @@ items:
     name: n6
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internet
@@ -290,7 +303,7 @@ items:
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
   metadata:
-    name: pkg-upf
+    name: upf-cluster01
   spec:
     capacity:
       maxDownlinkThroughput: 10G

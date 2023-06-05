@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	v1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -56,7 +57,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 	defer r.m.RUnlock()
 	diffMap := map[corev1.ObjectReference]*inventoryDiff{}
 
-	for forRef, resCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
+	for forRef, forResCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		diffMap[forRef] = &inventoryDiff{
 			deleteObjs:              []object{},
 			updateObjs:              []object{},
@@ -70,7 +71,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 		// if the existing for resource is not present we need to cleanup
 		// all child resources and conditions
 		//fn.Logf("diff: forRef: %v, existingResource: %v\n", forRef, resCtx.existingResource)
-		if resCtx.existingResource == nil {
+		if forResCtx.existingResource == nil {
 			for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 				fn.Logf("delete resource and conditions: forRef: %v, ownRef: %v\n", forRef, ref)
 				diffMap[forRef].deleteForCondition = true
@@ -89,26 +90,37 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				// if there is no new resource  and no existing condition, but this is an initial Child resource we need to create the conditions
 				// e.g. Interface within UPFDeployment
 				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildInitial:
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					diffMap[forRef].createInitialConditions = append(diffMap[forRef].createInitialConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				// e.g. Capacity within UPFDeployment
 				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildLocal:
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					diffMap[forRef].createTrueConditions = append(diffMap[forRef].createTrueConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				case resCtx.newResource == nil && resCtx.existingCondition == nil:
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				// if there is no new resource, but we have a condition for that resource we should delete the condition
 				// if the ownKind is not ChildInitial || ChildLocal -> this would happen in stage 2 of upf deployment
 				case resCtx.newResource == nil && resCtx.existingCondition != nil:
-					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
 						diffMap[forRef].updateForCondition = true
+					}
+					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
+
 						diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 					}
 				// if there is a new resource, but we have no condition for that resource someone deleted it
 				// and we have to recreate that condition
 				case resCtx.newResource != nil && resCtx.existingCondition == nil:
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 				}
 
@@ -117,12 +129,16 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				// if the existing resource does not exist but the new resource exist we have to create the new resource
 				case resCtx.existingResource == nil && resCtx.newResource != nil:
 					// create resource
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					diffMap[forRef].createObjs = append(diffMap[forRef].createObjs, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 				// if the new resource does not exist and but the resource exist we have to delete the exisiting resource
 				case resCtx.existingResource != nil && resCtx.newResource == nil:
 					// delete resource
-					diffMap[forRef].updateForCondition = true
+					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+						diffMap[forRef].updateForCondition = true
+					}
 					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
 						diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
 					}
@@ -145,7 +161,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 						}
 
 						if d := cmp.Diff(existingSpec, newSpec); d != "" {
-							diffMap[forRef].updateForCondition = true
+							if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
+								diffMap[forRef].updateForCondition = true
+							}
 							diffMap[forRef].updateObjs = append(diffMap[forRef].updateObjs, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 						}
 						// this is a corner case, in case for object gets deleted and recreated
@@ -155,7 +173,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 						if _, ok := a[SpecializerDelete]; ok {
 							//fn.Logf("delete annotation: %v\n", a)
 							if _, ok := a[SpecializerDelete]; ok {
-								diffMap[forRef].updateForCondition = true
+								if forResCtx.existingCondition.Status != v1.ConditionFalse {
+									diffMap[forRef].updateForCondition = true
+								}
 								diffMap[forRef].updateDeleteAnnotations = append(diffMap[forRef].updateDeleteAnnotations, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
 							}
 						}

@@ -47,17 +47,19 @@ func (r *sdk) updateResource() error {
 	}
 	// the overall status is ready, so lets check the readiness map
 	readyMap := r.inv.getReadyMap()
-	/* This should no longer be required
-	if len(readyMap) == 0 {
-		// this is when the global resource is not found
-		if err := r.handleGenerateUpdate(
-			corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
-			nil,
-			nil,
-			fn.KubeObjects{}); err != nil {
-			return err
+	// Since we now always start from a package that has the initial
+	// resources linked we no longer need to call the generate fn
+	/*
+		if len(readyMap) == 0 {
+			// this is when the global resource is not found
+			if err := r.handleGenerateUpdate(
+				corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
+				nil,
+				nil,
+				fn.KubeObjects{}); err != nil {
+				return err
+			}
 		}
-	}
 	*/
 	for forRef, readyCtx := range readyMap {
 		if r.debug {
@@ -113,7 +115,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	}
 	// if forCondition was set
 	if forCondition != nil {
-		// set annotation based on forCOndition reason if present
+		// set annotation based on forCondition reason if present
 		if forCondition.Reason != "" {
 			if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
 				fn.Logf("error setting new annotation: %v\n", err.Error())

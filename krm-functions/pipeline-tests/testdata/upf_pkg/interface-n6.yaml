@@ -4,6 +4,7 @@ metadata:
   name: n6
   annotations:
     config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 spec:
   networkInstance:
     name: vpc-internet
