@@ -38,8 +38,10 @@ const (
 	ChildRemoteCondition ResourceKind = "remoteCondition"
 	// ChildRemote defines a GVK resource for which conditions and resources need to be created
 	ChildRemote ResourceKind = "remote"
-	// ChildLocal defines a GVK resource for which no conditions need to be created
+	// ChildLocal defines a GVK resource for which conditions will be created as true
 	ChildLocal ResourceKind = "local"
+	// ChildInitial defines a GVK resource which is an initial resource part fo the package and should not be deleted
+	ChildInitial ResourceKind = "initial"
 )
 
 type Config struct {
@@ -138,7 +140,7 @@ func (r *sdk) Run() (bool, error) {
 		return false, err
 	}
 	// stage 2 of the sdk pipeline
-	if err := r.generateResource(); err != nil {
+	if err := r.updateResource(); err != nil {
 		return false, err
 	}
 

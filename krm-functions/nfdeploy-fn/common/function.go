@@ -24,7 +24,7 @@ import (
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
-	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
+	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,42 +34,46 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 	nfDeployFn := NewFunction[T, PT](gvk)
 
 	var err error
+	/*
+		kptfile := rl.Items.GetRootKptfile()
+		if kptfile == nil {
+			fn.Log("mandatory Kptfile is missing from the package")
+			rl.Results.Errorf("mandatory Kptfile is missing from the package")
+			return false, fmt.Errorf("mandatory Kptfile is missing from the package")
+		}
 
-	kptfile := rl.Items.GetRootKptfile()
-	if kptfile == nil {
-		fn.Log("mandatory Kptfile is missing from the package")
-		rl.Results.Errorf("mandatory Kptfile is missing from the package")
-		return false, fmt.Errorf("mandatory Kptfile is missing from the package")
-	}
+		nfDeployFn.pkgName = kptfile.GetName()
+	*/
 
-	nfDeployFn.pkgName = kptfile.GetName()
-
-	nfDeployFn.sdk, err = kptcondsdk.New(
+	nfDeployFn.sdk, err = condkptsdk.New(
 		rl,
-		&kptcondsdk.Config{
+		&condkptsdk.Config{
 			For: corev1.ObjectReference{
 				APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
 				Kind:       nfDeployFn.gvk.Kind,
 			},
-			Watch: map[corev1.ObjectReference]kptcondsdk.WatchCallbackFn{
+			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
+				{
+					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephioreqv1alpha1.CapacityKind,
+				}: condkptsdk.ChildLocal,
+				{
+					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephioreqv1alpha1.InterfaceKind,
+				}: condkptsdk.ChildInitial,
+				{
+					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephioreqv1alpha1.DataNetworkKind,
+				}: condkptsdk.ChildInitial,
+			},
+			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
 					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
 				}: nfDeployFn.WorkloadClusterCallbackFn,
-				{
-					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(nephioreqv1alpha1.Capacity{}).Name(),
-				}: nfDeployFn.CapacityContextCallBackFn,
-				{
-					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephioreqv1alpha1.InterfaceKind,
-				}: nfDeployFn.InterfaceCallBackFn,
-				{
-					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephioreqv1alpha1.DataNetworkKind,
-				}: nfDeployFn.DnnCallBackFn,
 			},
-			UpdateResourceFn: nfDeployFn.UpdateResourceFn,
+			PopulateOwnResourcesFn: nfDeployFn.desiredOwnedResourceList,
+			UpdateResourceFn:       nfDeployFn.UpdateResourceFn,
 		},
 	)
 
@@ -96,7 +100,17 @@ func (f *NfDeployFn[T, PT]) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	return f.workloadCluster.Spec.Validate()
 }
 
-func (f *NfDeployFn[T, PT]) CapacityContextCallBackFn(o *fn.KubeObject) error {
+// desiredOwnedResourceList returns with the list of all child KubeObjects
+// belonging to the parent Interface "for object"
+func (f *NfDeployFn[T, PT]) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, error) {
+	if f.workloadCluster == nil {
+		// no WorkloadCluster resource in the package
+		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
+	}
+	return fn.KubeObjects{}, nil
+}
+
+func (f *NfDeployFn[T, PT]) CapacityUpdate(o *fn.KubeObject) error {
 	capacityKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Capacity](o)
 	if err != nil {
 		return err
@@ -111,7 +125,7 @@ func (f *NfDeployFn[T, PT]) CapacityContextCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (f *NfDeployFn[T, PT]) InterfaceCallBackFn(o *fn.KubeObject) error {
+func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 	itfcKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
 	if err != nil {
 		return err
@@ -149,7 +163,7 @@ func (f *NfDeployFn[T, PT]) InterfaceCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (f *NfDeployFn[T, PT]) DnnCallBackFn(o *fn.KubeObject) error {
+func (f *NfDeployFn[T, PT]) DnnUpdate(o *fn.KubeObject) error {
 	dnnReqKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](o)
 	if err != nil {
 		return err
@@ -179,32 +193,39 @@ func (f *NfDeployFn[T, PT]) DnnCallBackFn(o *fn.KubeObject) error {
 	return nil
 }
 
-func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, _ fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+	if nfDeploymentObj == nil {
+		return nil, fmt.Errorf("expected a for object but got nil")
+	}
+
 	var err error
 
-	if f.workloadCluster == nil {
-		// no WorkloadCluster resource in the package
-		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
-	}
-
-	if nfDeploymentObj == nil {
-		nfDeploymentObj = fn.NewEmptyKubeObject()
-
-		err = nfDeploymentObj.SetAPIVersion(nephiodeployv1alpha1.GroupVersion.String())
-		if err != nil {
-			return nil, err
+	/*
+		if f.workloadCluster == nil {
+			// no WorkloadCluster resource in the package
+			return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 		}
+	*/
+	/*
+		if nfDeploymentObj == nil {
+			nfDeploymentObj = fn.NewEmptyKubeObject()
 
-		err = nfDeploymentObj.SetKind(f.gvk.Kind)
-		if err != nil {
-			return nil, err
-		}
+			err = nfDeploymentObj.SetAPIVersion(nephiodeployv1alpha1.GroupVersion.String())
+			if err != nil {
+				return nil, err
+			}
 
-		err = nfDeploymentObj.SetName(f.pkgName)
-		if err != nil {
-			return nil, err
+			err = nfDeploymentObj.SetKind(f.gvk.Kind)
+			if err != nil {
+				return nil, err
+			}
+
+			err = nfDeploymentObj.SetName(f.pkgName)
+			if err != nil {
+				return nil, err
+			}
 		}
-	}
+	*/
 
 	nfKoExt, err := ko.NewFromKubeObject[T](nfDeploymentObj)
 	if err != nil {
@@ -218,6 +239,25 @@ func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, _ f
 	}
 
 	nfSpec := nf.GetNFDeploymentSpec()
+
+	capObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.CapacityGroupVersionKind))
+	for _, o := range capObjs {
+		if err := f.CapacityUpdate(o); err != nil {
+			return nil, err
+		}
+	}
+	dnnObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.DataNetworkGroupVersionKind))
+	for _, o := range dnnObjs {
+		if err := f.DnnUpdate(o); err != nil {
+			return nil, err
+		}
+	}
+	itfceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
+	for _, o := range itfceObjs {
+		if err := f.InterfaceUpdate(o); err != nil {
+			return nil, err
+		}
+	}
 
 	f.FillCapacityDetails(nfSpec)
 

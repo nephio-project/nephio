@@ -5,7 +5,7 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
     prefix: 10.0.0.0/8
-    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 spec:
   networkInstance:
     name: vpc-internet
@@ -14,6 +14,6 @@ spec:
     prefixLength: 8
 status:
   pools:
-    - ipAllocation:
-        prefix: 10.0.0.3/24
-        gateway: 10.0.0.1
+  - ipAllocation:
+     prefix: 10.0.0.3/24
+     gateway: 10.0.0.1

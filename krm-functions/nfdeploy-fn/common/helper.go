@@ -32,11 +32,11 @@ type PtrIsNFDeployemnt[T any] interface {
 }
 
 type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
-	sdk                 kptcondsdk.KptCondSDK
-	workloadCluster     *infrav1alpha1.WorkloadCluster
-	gvk                 schema.GroupVersionKind
-	capacity            *nephioreqv1alpha1.Capacity
-	pkgName             string
+	sdk             kptcondsdk.KptCondSDK
+	workloadCluster *infrav1alpha1.WorkloadCluster
+	gvk             schema.GroupVersionKind
+	capacity        *nephioreqv1alpha1.Capacity
+	//pkgName             string
 	networkInstance     map[string]nephiodeployv1alpha1.NetworkInstance
 	interfaceConfigsMap map[string]nephiodeployv1alpha1.InterfaceConfig
 }

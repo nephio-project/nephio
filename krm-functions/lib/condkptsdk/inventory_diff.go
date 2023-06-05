@@ -25,13 +25,15 @@ import (
 )
 
 type inventoryDiff struct {
-	deleteForCondition bool
-	updateForCondition bool
-	deleteObjs         []object
-	updateObjs         []object
-	createObjs         []object
-	deleteConditions   []object
-	createConditions   []object
+	deleteForCondition      bool
+	updateForCondition      bool
+	deleteObjs              []object
+	updateObjs              []object
+	createObjs              []object
+	deleteConditions        []object
+	createConditions        []object
+	createTrueConditions    []object // used for resources that do not have to be acted upon
+	createInitialConditions []object // used for resources that are owned by a for resource
 	//updateConditions []*object
 	updateDeleteAnnotations []object
 }
@@ -61,6 +63,8 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 			createObjs:              []object{},
 			deleteConditions:        []object{},
 			createConditions:        []object{},
+			createInitialConditions: []object{},
+			createTrueConditions:    []object{},
 			updateDeleteAnnotations: []object{},
 		}
 		// if the existing for resource is not present we need to cleanup
@@ -82,10 +86,25 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				fn.Logf("diff: forRef: %v, ownRef: %v, existingResource: %v, newResource: %v\n", forRef, ownRef, resCtx.existingResource, resCtx.newResource)
 				// condition diff handling
 				switch {
-				// if there is no new resource, but we have a condition for that resource we should delete the condition
-				case resCtx.newResource == nil && resCtx.existingCondition != nil:
+				// if there is no new resource  and no existing condition, but this is an initial Child resource we need to create the conditions
+				// e.g. Interface within UPFDeployment
+				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildInitial:
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+					diffMap[forRef].createInitialConditions = append(diffMap[forRef].createInitialConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+				// e.g. Capacity within UPFDeployment
+				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildLocal:
+					diffMap[forRef].updateForCondition = true
+					diffMap[forRef].createTrueConditions = append(diffMap[forRef].createTrueConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+				case resCtx.newResource == nil && resCtx.existingCondition == nil:
+					diffMap[forRef].updateForCondition = true
+					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+				// if there is no new resource, but we have a condition for that resource we should delete the condition
+				// if the ownKind is not ChildInitial || ChildLocal -> this would happen in stage 2 of upf deployment
+				case resCtx.newResource == nil && resCtx.existingCondition != nil:
+					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
+						diffMap[forRef].updateForCondition = true
+						diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+					}
 				// if there is a new resource, but we have no condition for that resource someone deleted it
 				// and we have to recreate that condition
 				case resCtx.newResource != nil && resCtx.existingCondition == nil:
@@ -104,7 +123,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				case resCtx.existingResource != nil && resCtx.newResource == nil:
 					// delete resource
 					diffMap[forRef].updateForCondition = true
-					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
+						diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					}
 				// if both exisiting/new resource exists check the differences of the spec
 				// dependening on the outcome update the resource with the new information
 				case resCtx.existingResource != nil && resCtx.newResource != nil:

@@ -1,9 +1,30 @@
 apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
-  name: pkg-upf
+  name: pkg-amf
   annotations:
     config.kubernetes.io/local-config: "true"
 info:
-  description: upf package example
+  description: amf package example
 pipeline: {}
+status:
+  conditions:
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Capacity.controlplane
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.DataNetwork.internet
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.n1
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.sbi
+  - message: update for condition
+    status: "False"
+    type: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01

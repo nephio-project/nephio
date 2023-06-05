@@ -4,15 +4,15 @@ metadata:
   name: n3
   annotations:
     config.kubernetes.io/local-config: "true"
-    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 spec:
   networkInstance:
-    name: vpc-internet
+    name: vpc-ran
   cniType: sriov
   attachmentType: vlan
 status:
   ipAllocationStatus:
-    prefix: 10.0.0.4/24
-    gateway: 10.0.0.2
+    prefix: 10.0.0.3/24
+    gateway: 10.0.0.1
   vlanAllocationStatus:
-    vlanID: 101
+    vlanID: 100

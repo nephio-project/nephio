@@ -17,10 +17,10 @@
 package main
 
 import (
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
-	tst "github.com/nephio-project/nephio/krm-functions/lib/test"
 	"testing"
+
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	tst "github.com/nephio-project/nephio/krm-functions/lib/test"
 )
 
 const TestGoldenPath = "testdata/golden"
@@ -31,11 +31,11 @@ func TestGolden(t *testing.T) {
 
 	//// This golden test expects each sub-directory of `testdata` can has its input resources (in `resources.yaml`)
 	//// be modified to the output resources (in `_expected_error.txt`).
-	testhelpers.RunGoldenTests(t, TestGoldenPath, fnRunner)
+	tst.RunGoldenTests(t, TestGoldenPath, fnRunner)
 }
 
 func TestFailureCases(t *testing.T) {
 	fnRunner := fn.ResourceListProcessorFunc(Run)
 
-	tst.RunFailureCases(t, TestFailurePath, fnRunner)
+	tst.RunGoldenTests(t, TestFailurePath, fnRunner)
 }

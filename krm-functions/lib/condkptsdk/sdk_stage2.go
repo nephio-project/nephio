@@ -24,13 +24,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// generateResource updates or generates the resource when the status is declared ready
+// updateResource updates or generates the resource when the status is declared ready
 // First readiness is validated in 2 steps:
 // - global readiness: when key resources are missing
 // - per instance readiness: when certain parts of an instance readiness is missing
-func (r *sdk) generateResource() error {
+func (r *sdk) updateResource() error {
 	if r.debug {
-		fn.Logf("generateResource isReady: %t\n", r.inv.isReady())
+		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
 	}
 	if !r.ready || !r.inv.isReady() {
 		// when the overal status is not ready delete all resources
@@ -47,6 +47,7 @@ func (r *sdk) generateResource() error {
 	}
 	// the overall status is ready, so lets check the readiness map
 	readyMap := r.inv.getReadyMap()
+	/* This should no longer be required
 	if len(readyMap) == 0 {
 		// this is when the global resource is not found
 		if err := r.handleGenerateUpdate(
@@ -57,9 +58,10 @@ func (r *sdk) generateResource() error {
 			return err
 		}
 	}
+	*/
 	for forRef, readyCtx := range readyMap {
 		if r.debug {
-			fn.Logf("generateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
+			fn.Logf("updateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
 		}
 		// if the for is not ready delete the object
 		if !readyCtx.ready {

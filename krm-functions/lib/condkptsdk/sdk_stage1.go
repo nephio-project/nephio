@@ -121,7 +121,7 @@ func (r *sdk) updateChildren() error {
 			// update conditions
 			if diff.updateForCondition {
 				if r.debug {
-					fn.Logf("diff action ->  update for condition: %s\n", kptfilelibv1.GetConditionType(&forRef))
+					fn.Logf("diff action -> update for condition: %s\n", kptfilelibv1.GetConditionType(&forRef))
 				}
 				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef}, nil, kptv1.ConditionFalse, "for condition"); err != nil {
 					return err
@@ -129,15 +129,31 @@ func (r *sdk) updateChildren() error {
 			}
 			for _, obj := range diff.createConditions {
 				if r.debug {
-					fn.Logf("diff action ->  create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
 				}
 				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, nil, kptv1.ConditionFalse, "condition again as it was deleted"); err != nil {
 					return err
 				}
 			}
+			for _, obj := range diff.createInitialConditions {
+				if r.debug {
+					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+				}
+				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, nil, kptv1.ConditionFalse, "condition for initial resource"); err != nil {
+					return err
+				}
+			}
+			for _, obj := range diff.createTrueConditions {
+				if r.debug {
+					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+				}
+				if err := r.setConditionInKptFile(actionUpdate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, nil, kptv1.ConditionTrue, "condition for initial resource"); err != nil {
+					return err
+				}
+			}
 			for _, obj := range diff.deleteConditions {
 				if r.debug {
-					fn.Logf("diff action ->  delete condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+					fn.Logf("diff action -> delete condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
 				}
 				if err := r.deleteConditionInKptFile(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}); err != nil {
 					return err
