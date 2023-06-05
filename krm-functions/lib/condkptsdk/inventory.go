@@ -104,7 +104,7 @@ func (r *inv) initializeGVKInventory(cfg *Config) error {
 			return err
 		}
 	}
-	if cfg.GenerateResourceFn == nil {
+	if cfg.UpdateResourceFn == nil {
 		return fmt.Errorf("a function always needs a GenerateResource function")
 	}
 	return nil

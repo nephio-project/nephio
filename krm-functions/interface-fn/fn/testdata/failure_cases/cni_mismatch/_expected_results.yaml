@@ -1,8 +1,0 @@
-- file:
-    path: interface.yaml
-  message: 'cluster cniType not supported: cluster cniType: ipvlan, interface cniType: sriov'
-  resourceRef:
-    name: n3
-    apiVersion: req.nephio.org/v1alpha1
-    kind: Interface
-  severity: error

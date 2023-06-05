@@ -1,7 +1,7 @@
 # interface-fn
 
 The interface-fn is a KRM function leveraging the `cond sdk` using the req.nephio.org/v1alpha1.Interface as a `for` KRM resource.
-It uses the clusterContext as a `watch` to determine its ready state. If no clusterContext is present in the package or if mandatory information is missing it determines its state as not ready. The `cond sdk` will delete any child resource the interface-fn owned if the state is determined as `not ready`. On top the cluster context `watch` is used to determine information such as CNI Type, masterInterface, site code which is used when creating its child resources.
+It uses the WorkloadCluster as a `watch` to determine its ready state. If no WorkloadCluster is present in the package or if mandatory information is missing it determines its state as not ready. The `cond sdk` will delete any child resource the interface-fn owned if the state is determined as `not ready`. On top the WorkloadCluster `watch` is used to determine information such as CNI(s), masterInterface, cluster name which is used when creating its child resources.
 
 The interface function has 3 `own` resources:
 - ipam.alloc.nephio.org/v1alpha1.IPALlocation

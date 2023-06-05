@@ -37,13 +37,13 @@ func TestNewInventory(t *testing.T) {
 				Watch: map[corev1.ObjectReference]WatchCallbackFn{
 					{APIVersion: "c", Kind: "c"}: nil,
 				},
-				GenerateResourceFn: GenerateResourceFnNop,
+				UpdateResourceFn: UpdateResourceFnNop,
 			},
 			errExpected: false,
 		},
 		"NoFor": {
 			input: &Config{
-				GenerateResourceFn: GenerateResourceFnNop,
+				UpdateResourceFn: UpdateResourceFnNop,
 			},
 			errExpected: true,
 		},
@@ -62,7 +62,7 @@ func TestNewInventory(t *testing.T) {
 				Watch: map[corev1.ObjectReference]WatchCallbackFn{
 					{APIVersion: "b", Kind: "b"}: nil,
 				},
-				GenerateResourceFn: GenerateResourceFnNop,
+				UpdateResourceFn: UpdateResourceFnNop,
 			},
 			errExpected: true,
 		},

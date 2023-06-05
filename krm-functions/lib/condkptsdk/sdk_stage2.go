@@ -24,13 +24,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// generateResource updates or generates the resource when the status is declared ready
+// updateResource updates or generates the resource when the status is declared ready
 // First readiness is validated in 2 steps:
 // - global readiness: when key resources are missing
 // - per instance readiness: when certain parts of an instance readiness is missing
-func (r *sdk) generateResource() error {
+func (r *sdk) updateResource() error {
 	if r.debug {
-		fn.Logf("generateResource isReady: %t\n", r.inv.isReady())
+		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
 	}
 	if !r.ready || !r.inv.isReady() {
 		// when the overal status is not ready delete all resources
@@ -47,19 +47,23 @@ func (r *sdk) generateResource() error {
 	}
 	// the overall status is ready, so lets check the readiness map
 	readyMap := r.inv.getReadyMap()
-	if len(readyMap) == 0 {
-		// this is when the global resource is not found
-		if err := r.handleGenerateUpdate(
-			corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
-			nil,
-			nil,
-			fn.KubeObjects{}); err != nil {
-			return err
+	// Since we now always start from a package that has the initial
+	// resources linked we no longer need to call the generate fn
+	/*
+		if len(readyMap) == 0 {
+			// this is when the global resource is not found
+			if err := r.handleGenerateUpdate(
+				corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
+				nil,
+				nil,
+				fn.KubeObjects{}); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 	for forRef, readyCtx := range readyMap {
 		if r.debug {
-			fn.Logf("generateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
+			fn.Logf("updateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
 		}
 		// if the for is not ready delete the object
 		if !readyCtx.ready {
@@ -72,7 +76,7 @@ func (r *sdk) generateResource() error {
 			}
 			continue
 		}
-		if r.cfg.GenerateResourceFn != nil {
+		if r.cfg.UpdateResourceFn != nil {
 			objs := fn.KubeObjects{}
 			for _, o := range readyCtx.owns {
 				x := o
@@ -98,7 +102,7 @@ func (r *sdk) generateResource() error {
 // handleGenerateUpdate performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
 func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) error {
-	newObj, err := r.cfg.GenerateResourceFn(forObj, objs)
+	newObj, err := r.cfg.UpdateResourceFn(forObj, objs)
 	if err != nil {
 		fn.Logf("error generating new resource: %v\n", err.Error())
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
@@ -111,7 +115,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	}
 	// if forCondition was set
 	if forCondition != nil {
-		// set annotation based on forCOndition reason if present
+		// set annotation based on forCondition reason if present
 		if forCondition.Reason != "" {
 			if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
 				fn.Logf("error setting new annotation: %v\n", err.Error())

@@ -2,19 +2,21 @@ module github.com/nephio-project/nephio/krm-functions/nad-fn
 
 go 1.20
 
+replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+
 require (
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230302070146-e8e9cb3c3ae2
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/nephio-project/api v0.0.0-20230503145925-bdf80c9b1256
+	github.com/nephio-project/api v0.0.0-20230603150309-96ef6e574ad2
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230510092133-1bc78cd2f3a6
-	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a
+	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
 )
 
 require (
-	github.com/GoogleContainerTools/kpt v1.0.0-beta.30 // indirect
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230302070146-e8e9cb3c3ae2 // indirect
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.35 // indirect
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
@@ -42,7 +44,7 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/oauth2 v0.7.0 // indirect
+	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
@@ -55,12 +57,12 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v0.27.2 // indirect
-	k8s.io/klog/v2 v2.90.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
+	k8s.io/klog/v2 v2.100.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/controller-runtime v0.15.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/kustomize/api v0.13.2 // indirect
+	sigs.k8s.io/kustomize/api v0.13.3 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

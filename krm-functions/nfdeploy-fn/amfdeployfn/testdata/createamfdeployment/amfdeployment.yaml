@@ -1,0 +1,4 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: AMFDeployment
+metadata:
+  name: amf-cluster01

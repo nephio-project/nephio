@@ -5,6 +5,7 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
     prefix: 10.0.0.0/8
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
 spec:
   networkInstance:
     name: vpc-internet

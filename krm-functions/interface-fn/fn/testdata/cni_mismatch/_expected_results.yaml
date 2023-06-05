@@ -1,0 +1,8 @@
+- file:
+    path: interface.yaml
+  message: 'cniType not supported in workload cluster; workload cluster CNI(s): [macvlan ipvlan], interface cniType requested: sriov'
+  resourceRef:
+    name: n3
+    apiVersion: req.nephio.org/v1alpha1
+    kind: Interface
+  severity: error

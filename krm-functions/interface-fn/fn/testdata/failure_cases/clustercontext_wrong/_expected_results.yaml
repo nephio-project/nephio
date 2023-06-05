@@ -1,6 +1,0 @@
-- message: 'spec invalid: mandatory field siteCode is missing from ClusterContext'
-  resourceRef:
-    name: cluster-context
-    apiVersion: infra.nephio.org/v1alpha1
-    kind: ClusterContext
-  severity: error

@@ -38,8 +38,10 @@ const (
 	ChildRemoteCondition ResourceKind = "remoteCondition"
 	// ChildRemote defines a GVK resource for which conditions and resources need to be created
 	ChildRemote ResourceKind = "remote"
-	// ChildLocal defines a GVK resource for which no conditions need to be created
+	// ChildLocal defines a GVK resource for which conditions will be created as true
 	ChildLocal ResourceKind = "local"
+	// ChildInitial defines a GVK resource which is an initial resource part fo the package and should not be deleted
+	ChildInitial ResourceKind = "initial"
 )
 
 type Config struct {
@@ -47,15 +49,15 @@ type Config struct {
 	Owns                   map[corev1.ObjectReference]ResourceKind    // ResourceKind distinguishes different types of child resources.
 	Watch                  map[corev1.ObjectReference]WatchCallbackFn // Used for watches to non specific resources
 	PopulateOwnResourcesFn PopulateOwnResourcesFn
-	GenerateResourceFn     GenerateResourceFn
+	UpdateResourceFn       UpdateResourceFn
 }
 
 type PopulateOwnResourcesFn func(*fn.KubeObject) (fn.KubeObjects, error)
 
 // the list of objects contains the owns and the specific watches
-type GenerateResourceFn func(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error)
+type UpdateResourceFn func(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error)
 
-func GenerateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error) { return nil, nil }
+func UpdateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error) { return nil, nil }
 
 type WatchCallbackFn func(*fn.KubeObject) error
 
@@ -138,7 +140,7 @@ func (r *sdk) Run() (bool, error) {
 		return false, err
 	}
 	// stage 2 of the sdk pipeline
-	if err := r.generateResource(); err != nil {
+	if err := r.updateResource(); err != nil {
 		return false, err
 	}
 

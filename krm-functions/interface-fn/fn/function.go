@@ -25,7 +25,7 @@ import (
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
-	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	allocv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
@@ -38,10 +38,8 @@ import (
 const defaultPODNetwork = "default"
 
 type itfceFn struct {
-	sdk condkptsdk.KptCondSDK
-	//clusterContext *infrav1alpha1.ClusterContext
-	siteCode string
-	cniType  string
+	sdk             condkptsdk.KptCondSDK
+	workloadCluster *infrav1alpha1.WorkloadCluster
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -71,11 +69,11 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(infrav1alpha1.ClusterContext{}).Name(),
-				}: myFn.ClusterContextCallbackFn,
+					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+				}: myFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
-			GenerateResourceFn:     myFn.updateItfceResource,
+			UpdateResourceFn:       myFn.updateItfceResource,
 		},
 	)
 	if err != nil {
@@ -85,36 +83,35 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	return myFn.sdk.Run()
 }
 
-// ClusterContextCallbackFn provides a callback for the cluster context
+// WorkloadClusterCallbackFn provides a callback for the workload cluster
 // resources in the resourceList
-func (r *itfceFn) ClusterContextCallbackFn(o *fn.KubeObject) error {
-	clusterKOE, err := kubeobject.NewFromKubeObject[infrav1alpha1.ClusterContext](o)
-	if err != nil {
-		return err
+func (f *itfceFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
+	var err error
+
+	if f.workloadCluster != nil {
+		return fmt.Errorf("multiple WorkloadCluster objects found in the kpt package")
 	}
-	clusterContext, err := clusterKOE.GetGoStruct()
+	f.workloadCluster, err = ko.KubeObjectToStruct[infrav1alpha1.WorkloadCluster](o)
 	if err != nil {
 		return err
 	}
 
-	fn.Logf("clusterctxt validate:%v\n", clusterContext.Spec.Validate())
 	// validate check the specifics of the spec, like mandatory fields
-	if err := clusterContext.Spec.Validate(); err != nil {
-		return err
-	}
-	r.siteCode = *clusterContext.Spec.SiteCode
-	r.cniType = clusterContext.Spec.CNIConfig.CNIType
-	return nil
+	return f.workloadCluster.Spec.Validate()
 }
 
 // desiredOwnedResourceList returns with the list of all child KubeObjects
 // belonging to the parent Interface "for object"
-func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, error) {
+func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, error) {
+	if f.workloadCluster == nil {
+		// no WorkloadCluster resource in the package
+		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
+	}
 	// resources contain the list of child resources
 	// belonging to the parent object
 	resources := fn.KubeObjects{}
 
-	itfceKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
+	itfceKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
 	if err != nil {
 		return nil, err
 	}
@@ -137,11 +134,11 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	}
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
-		if itfce.Spec.CNIType != nephioreqv1alpha1.CNIType(r.cniType) {
-			return nil, fmt.Errorf("cluster cniType not supported: cluster cniType: %s, interface cniType: %s", r.cniType, itfce.Spec.CNIType)
+		if !f.IsCNITypePresent(itfce.Spec.CNIType) {
+			return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfce.Spec.CNIType)
 		}
 		// add IP allocation of type network
-		o, err := r.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork)
+		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +146,7 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 
 		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
 			// add VLAN allocation
-			o, err := r.getVLANAllocation(meta)
+			o, err := f.getVLANAllocation(meta)
 			if err != nil {
 				return nil, err
 			}
@@ -157,14 +154,14 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		}
 
 		// allocate nad
-		o, err = r.getNAD(meta)
+		o, err = f.getNAD(meta)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, o)
 	} else {
 		// add IP allocation of type loopback
-		o, err := r.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback)
+		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback)
 		if err != nil {
 			return nil, err
 		}
@@ -173,11 +170,11 @@ func (r *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	return resources, nil
 }
 
-func (r *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
-	itfceKOE, err := kubeobject.NewFromKubeObject[nephioreqv1alpha1.Interface](forObj)
+	itfceKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](forObj)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +186,7 @@ func (r *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
 	for _, ipalloc := range ipallocs {
 		if ipalloc.GetName() == forObj.GetName() {
-			alloc, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
+			alloc, err := ko.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
 			if err != nil {
 				return nil, err
 			}
@@ -207,10 +204,6 @@ func (r *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 			if err != nil {
 				return nil, err
 			}
-			//alloc, err := ko.NewFromKubeObject[*vlanv1alpha1.VLANAllocation](vlanalloc)
-			//if err != nil {
-			//	return nil, err
-			//}
 			allocGoStruct, err := alloc.GetGoStruct()
 			if err != nil {
 				return nil, err
@@ -223,12 +216,12 @@ func (r *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 	return &itfceKOE.KubeObject, err
 }
 
-func (r *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
+func (f *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
 	alloc := vlanv1alpha1.BuildVLANAllocation(
 		meta,
 		vlanv1alpha1.VLANAllocationSpec{
 			VLANDatabase: corev1.ObjectReference{
-				Name: r.siteCode,
+				Name: f.workloadCluster.Spec.ClusterName,
 			},
 		},
 		vlanv1alpha1.VLANAllocationStatus{},
@@ -237,7 +230,7 @@ func (r *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, err
 	return fn.NewFromTypedObject(alloc)
 }
 
-func (r *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind) (*fn.KubeObject, error) {
+func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind) (*fn.KubeObject, error) {
 	alloc := ipamv1alpha1.BuildIPAllocation(
 		meta,
 		ipamv1alpha1.IPAllocationSpec{
@@ -246,7 +239,7 @@ func (r *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectRefere
 			AllocationLabels: allocv1alpha1.AllocationLabels{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						allocv1alpha1.NephioSiteKey: r.siteCode,
+						allocv1alpha1.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName,
 					},
 				},
 			},
@@ -256,7 +249,7 @@ func (r *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectRefere
 	return fn.NewFromTypedObject(alloc)
 }
 
-func (r *itfceFn) getNAD(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
+func (f *itfceFn) getNAD(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
 	nad := BuildNetworkAttachmentDefinition(
 		meta,
 		nadv1.NetworkAttachmentDefinitionSpec{},
@@ -273,4 +266,13 @@ func BuildNetworkAttachmentDefinition(meta metav1.ObjectMeta, spec nadv1.Network
 		ObjectMeta: meta,
 		Spec:       spec,
 	}
+}
+
+func (f *itfceFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool {
+	for _, cni := range f.workloadCluster.Spec.CNIs {
+		if nephioreqv1alpha1.CNIType(cni) == itfceCNIType {
+			return true
+		}
+	}
+	return false
 }

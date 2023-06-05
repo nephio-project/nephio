@@ -1,0 +1,4 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: SMFDeployment
+metadata:
+  name: smf-cluster01

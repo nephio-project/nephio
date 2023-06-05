@@ -1,1 +1,0 @@
-expected ClusterContext object to generate the nad

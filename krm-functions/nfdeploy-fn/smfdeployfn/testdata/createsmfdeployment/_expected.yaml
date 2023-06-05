@@ -2,16 +2,18 @@ apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: infra.nephio.org/v1alpha1
-  kind: ClusterContext
+  kind: WorkloadCluster
   metadata:
-    name: cluster-context
+    name: cluster01
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    cniConfig:
-      cniType: macvlan
-      masterInterface: eth1
-    siteCode: edge1
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
 - apiVersion: kpt.dev/v1
   info:
     description: upf package example
@@ -23,15 +25,32 @@ items:
   pipeline: {}
   status:
     conditions:
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.controlplane
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n4
     - message: update done
       status: "True"
-      type: workload.nephio.org/v1alpha1.SMFDeployment.pkg-upf
+      type: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
-    name: dataplane
+    name: controlplane
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
   spec:
     maxSessions: 10000
 - apiVersion: req.nephio.org/v1alpha1
@@ -41,6 +60,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
   spec:
     networkInstance:
       name: vpc-internet
@@ -58,6 +78,7 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
   spec:
     networkInstance:
       name: vpc-internet
@@ -75,6 +96,7 @@ items:
     name: n4 # also used as pfcp
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
   spec:
     networkInstance:
       name: defaultPODNetwork
@@ -83,7 +105,7 @@ items:
 - apiVersion: workload.nephio.org/v1alpha1
   kind: SMFDeployment
   metadata:
-    name: pkg-upf
+    name: smf-cluster01
   spec:
     capacity:
       maxDownlinkThroughput: "0"

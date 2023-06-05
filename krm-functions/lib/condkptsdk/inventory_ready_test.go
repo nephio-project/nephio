@@ -78,8 +78,8 @@ func TestIsReady(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			inv, err := newInventory(&Config{
-				For:                corev1.ObjectReference{APIVersion: "a", Kind: "a"},
-				GenerateResourceFn: GenerateResourceFnNop,
+				For:              corev1.ObjectReference{APIVersion: "a", Kind: "a"},
+				UpdateResourceFn: UpdateResourceFnNop,
 			})
 			if err != nil {
 				assert.NoError(t, err)

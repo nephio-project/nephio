@@ -2,36 +2,55 @@ apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: infra.nephio.org/v1alpha1
-  kind: ClusterContext
+  kind: WorkloadCluster
   metadata:
-    name: cluster-context
+    name: cluster01
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    cniConfig:
-      cniType: macvlan
-      masterInterface: eth1
-    siteCode: edge1
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
 - apiVersion: kpt.dev/v1
   info:
-    description: upf package example
+    description: amf package example
   kind: Kptfile
   metadata:
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+    name: pkg-amf
   pipeline: {}
   status:
     conditions:
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.controlplane
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n1
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.sbi
     - message: update done
       status: "True"
-      type: workload.nephio.org/v1alpha1.AMFDeployment.pkg-upf
+      type: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
-    name: dataplane
+    name: controlplane
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
   spec:
     maxSubscribers: 10000
 - apiVersion: req.nephio.org/v1alpha1
@@ -41,6 +60,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
   spec:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -48,6 +68,7 @@ items:
     name: n1 # also used as pfcp
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
   spec:
     networkInstance:
       name: vpc-internal
@@ -59,6 +80,7 @@ items:
     name: sbi
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-cluster01
   spec:
     networkInstance:
       name: vpc-sba
@@ -67,7 +89,7 @@ items:
 - apiVersion: workload.nephio.org/v1alpha1
   kind: AMFDeployment
   metadata:
-    name: pkg-upf
+    name: amf-cluster01
   spec:
     capacity:
       maxDownlinkThroughput: "0"

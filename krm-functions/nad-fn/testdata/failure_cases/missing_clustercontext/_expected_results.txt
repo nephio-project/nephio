@@ -1,2 +1,0 @@
-- message: expected ClusterContext object to generate the nad
-  severity: error

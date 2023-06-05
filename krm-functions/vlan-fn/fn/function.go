@@ -32,7 +32,7 @@ type FnR struct {
 	ClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANDatabase, *vlanv1alpha1.VLANAllocation]
 }
 
-func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
+func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	sdk, err := condkptsdk.New(
 		rl,
 		&condkptsdk.Config{
@@ -41,7 +41,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 				Kind:       vlanv1alpha1.VLANAllocationKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			GenerateResourceFn:     r.updateVLANAllocationResource,
+			UpdateResourceFn:       f.updateVLANAllocationResource,
 		},
 	)
 	if err != nil {
@@ -53,7 +53,7 @@ func (r *FnR) Run(rl *fn.ResourceList) (bool, error) {
 
 // updateIPAllocationResource provides a VLAN allocation for a given VLANAllocation KRM resource
 // in the package by calling the vlan backend
-func (r *FnR) updateVLANAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateVLANAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -66,7 +66,7 @@ func (r *FnR) updateVLANAllocationResource(forObj *fn.KubeObject, objs fn.KubeOb
 	if err != nil {
 		return nil, err
 	}
-	resp, err := r.ClientProxy.Allocate(context.Background(), alloc, nil)
+	resp, err := f.ClientProxy.Allocate(context.Background(), alloc, nil)
 	if err != nil {
 		return nil, err
 	}

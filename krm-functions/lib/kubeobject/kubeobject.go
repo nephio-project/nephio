@@ -26,6 +26,16 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
+// KubeObjectToStruct is a lightweight wrapper around `obj.As()`, only meant to slightly improve code readability
+func KubeObjectToStruct[T any](obj *fn.KubeObject) (*T, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("cannot convert nil KubeObject")
+	}
+	var x T
+	err := obj.As(&x)
+	return &x, err
+}
+
 type KubeObjectExt[T1 any] struct {
 	fn.KubeObject
 }

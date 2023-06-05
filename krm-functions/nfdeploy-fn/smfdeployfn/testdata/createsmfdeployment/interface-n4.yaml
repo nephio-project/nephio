@@ -4,6 +4,7 @@ metadata:
   name: n4 # also used as pfcp
   annotations:
     config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
 spec:
   networkInstance:
     name: defaultPODNetwork
