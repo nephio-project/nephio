@@ -65,6 +65,7 @@ docker-build:  ## Build docker images.
 	docker buildx build --load --tag  ${VLANIMG} -f $(VLAN_DIR)/Dockerfile $(VLAN_DIR)
 	docker buildx build --load --tag  ${UPFIMG} -f $(UPF_DIR)/Dockerfile $(NFD_DIR)
 	docker buildx build --load --tag  ${AMFIMG} -f $(AMF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --push --tag  ${SMFIMG} -f $(SMF_DIR)/Dockerfile $(NFD_DIR)
 
 docker-push: ## Build docker images.
 	docker buildx build --push --tag  ${ITFIMG} -f $(ITFCE_DIR)/Dockerfile $(ITFCE_DIR)
@@ -74,4 +75,5 @@ docker-push: ## Build docker images.
 	docker buildx build --push --tag  ${VLANIMG} -f $(VLAN_DIR)/Dockerfile $(VLAN_DIR)
 	docker buildx build --push --tag  ${UPFIMG} -f $(UPF_DIR)/Dockerfile $(NFD_DIR)
 	docker buildx build --push --tag  ${AMFIMG} -f $(AMF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --push --tag  ${SMFIMG} -f $(SMF_DIR)/Dockerfile $(NFD_DIR)
 
