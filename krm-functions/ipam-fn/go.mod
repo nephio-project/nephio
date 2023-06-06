@@ -2,6 +2,8 @@ module github.com/nephio-project/nephio/krm-functions/ipam-fn
 
 go 1.20
 
+replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
@@ -10,7 +12,7 @@ require (
 )
 
 require (
-	github.com/GoogleContainerTools/kpt v1.0.0-beta.35 // indirect
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

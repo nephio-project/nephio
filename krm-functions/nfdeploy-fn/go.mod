@@ -2,6 +2,8 @@ module github.com/nephio-project/nephio/krm-functions/nfdeploy-fn
 
 go 1.20
 
+replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/nephio-project/api v0.0.0-20230605215709-2e793ab3e7f2
@@ -12,7 +14,7 @@ require (
 )
 
 require (
-	github.com/GoogleContainerTools/kpt v1.0.0-beta.35 // indirect
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
