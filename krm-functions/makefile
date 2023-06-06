@@ -13,8 +13,7 @@
 #  limitations under the License.
 GO_VERSION ?= 1.20.2
 VERSION ?= latest
-#REGISTRY ?= docker.io/nephio
-REGISTRY ?= europe-docker.pkg.dev/srlinux/eu.gcr.io
+REGISTRY ?= docker.io/nephio
 ITFIMG ?= $(REGISTRY)/interface-fn:${VERSION}
 DNNIMG ?= $(REGISTRY)/dnn-fn:${VERSION}
 NADIMG ?= $(REGISTRY)/nad-fn:${VERSION}
