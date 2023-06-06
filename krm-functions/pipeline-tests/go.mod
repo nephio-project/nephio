@@ -15,19 +15,19 @@ replace (
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v0.0.0-20230603150309-96ef6e574ad2
+	github.com/nephio-project/api v0.0.0-20230605215709-2e793ab3e7f2
 	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230516034137-53f1f1859c10
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230516034137-53f1f1859c10
-	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230516034137-53f1f1859c10
+	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
 	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 )
 
 require (
-	github.com/GoogleContainerTools/kpt v1.0.0-beta.35 // indirect
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

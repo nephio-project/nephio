@@ -11,11 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-.SHELLFLAGS = -ec
-
 GO_VERSION ?= 1.20.2
-IMG_REGISTRY ?= docker.io/nephio
+VERSION ?= latest
+REGISTRY ?= docker.io/nephio
+ITFIMG ?= $(REGISTRY)/interface-fn:${VERSION}
+DNNIMG ?= $(REGISTRY)/dnn-fn:${VERSION}
+NADIMG ?= $(REGISTRY)/nad-fn:${VERSION}
+IPAMIMG ?= $(REGISTRY)/ipam-fn:${VERSION}
+VLANIMG ?= $(REGISTRY)/vlan-fn:${VERSION}
+UPFIMG ?= $(REGISTRY)/upf-deploy-fn:${VERSION}
+AMFIMG ?= $(REGISTRY)/amf-deploy-fn:${VERSION}
+SMFIMG ?= $(REGISTRY)/smf-deploy-fn:${VERSION}
+
+ITFCE_DIR ?= ./interface-fn
+DNN_DIR ?= ./dnn-fn
+NAD_DIR ?= ./nad-fn
+IPAM_DIR ?= ./ipam-fn
+VLAN_DIR ?= ./vlan-fn
+UPF_DIR ?= ./nfdeploy-fn/upfdeployfn
+SMF_DIR ?= ./nfdeploy-fn/smfdeployfn
+AMF_DIR ?= ./nfdeploy-fn/amfdeployfn
+NFD_DIR ?= ./nfdeploy-fn
 
 # find all subdirectories with a go.mod file in them
 GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
@@ -36,10 +52,28 @@ test fmt vet:
 		$(MAKE) -C "$$dir" $@ ; \
 	done
 
-.PHONY: docker-build docker-push
-# delegate these targets to the Makefiles of individual go modules, 
-# but skip the module if the target doesn't exists, or an error happened
-docker-build docker-push: 
-	for dir in $(GO_MOD_DIRS); do \
-		$(MAKE) -C "$$dir" $@  || true ; \
-	done
+include ../default-go-test.mk
+include ../default-go-lint.mk
+include ../default-gosec.mk
+include ../default-go-misc.mk
+
+docker-build:  ## Build docker images.
+	docker buildx build --load --tag  ${ITFIMG} -f $(ITFCE_DIR)/Dockerfile $(ITFCE_DIR)
+	docker buildx build --load --tag  ${DNNIMG} -f $(DNN_DIR)/Dockerfile $(DNN_DIR)
+	docker buildx build --load --tag  ${NADIMG} -f $(NAD_DIR)/Dockerfile $(NAD_DIR)
+	docker buildx build --load --tag  ${IPAMIMG} -f $(IPAM_DIR)/Dockerfile $(IPAM_DIR)
+	docker buildx build --load --tag  ${VLANIMG} -f $(VLAN_DIR)/Dockerfile $(VLAN_DIR)
+	docker buildx build --load --tag  ${UPFIMG} -f $(UPF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --load --tag  ${AMFIMG} -f $(AMF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --push --tag  ${SMFIMG} -f $(SMF_DIR)/Dockerfile $(NFD_DIR)
+
+docker-push: ## Build docker images.
+	docker buildx build --push --tag  ${ITFIMG} -f $(ITFCE_DIR)/Dockerfile $(ITFCE_DIR)
+	docker buildx build --push --tag  ${DNNIMG} -f $(DNN_DIR)/Dockerfile $(DNN_DIR)
+	docker buildx build --push --tag  ${NADIMG} -f $(NAD_DIR)/Dockerfile $(NAD_DIR)
+	docker buildx build --push --tag  ${IPAMIMG} -f $(IPAM_DIR)/Dockerfile $(IPAM_DIR)
+	docker buildx build --push --tag  ${VLANIMG} -f $(VLAN_DIR)/Dockerfile $(VLAN_DIR)
+	docker buildx build --push --tag  ${UPFIMG} -f $(UPF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --push --tag  ${AMFIMG} -f $(AMF_DIR)/Dockerfile $(NFD_DIR)
+	docker buildx build --push --tag  ${SMFIMG} -f $(SMF_DIR)/Dockerfile $(NFD_DIR)
+
