@@ -2,13 +2,11 @@ module github.com/nephio-project/nephio/krm-functions/interface-fn
 
 go 1.20
 
-replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
-
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/nephio-project/api v0.0.0-20230603150309-96ef6e574ad2
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230510004232-e627a450f230
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
