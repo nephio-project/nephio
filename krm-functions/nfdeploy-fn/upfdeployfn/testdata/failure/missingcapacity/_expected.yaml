@@ -72,7 +72,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.3/24
+    - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
     vlanAllocationStatus:
       vlanID: 100
@@ -90,7 +90,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.3/24
+    - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
     vlanAllocationStatus:
       vlanID: 100
@@ -108,7 +108,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.4/24
+    - prefix: 10.0.0.4/24
       gateway: 10.0.0.2
     vlanAllocationStatus:
       vlanID: 101

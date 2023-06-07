@@ -107,6 +107,7 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
+	fn.Logf("nad updateResourceFn: ifObj: %d, ipAllocObj: %d, vlanAllocObj: %d\n", len(interfaceObjs), len(ipAllocationObjs), len(vlanAllocationObjs))
 	// verify all needed objects exist
 	if interfaceObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)

@@ -29,8 +29,10 @@ import (
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	ipam_common "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func init() {
@@ -113,18 +115,27 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 	// add IPAllocation for each pool
 	resources := fn.KubeObjects{}
 	for _, pool := range dnn.Spec.Pools {
+
+		af := iputil.AddressFamilyIpv4
+		if pool.IPFamily == nephioreqv1alpha1.IPFamilyIPv6 {
+			af = iputil.AddressFamilyIpv4
+		}
+
 		ipalloc := ipamv1alpha1.BuildIPAllocation(
 			metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", dnn.Name, pool.Name),
+				Name:        fmt.Sprintf("%s-%s", dnn.Name, pool.Name),
+				Annotations: getAnnotations(dnn.GetAnnotations()),
 			},
 			ipamv1alpha1.IPAllocationSpec{
 				Kind:            ipamv1alpha1.PrefixKindPool,
 				NetworkInstance: dnn.Spec.NetworkInstance,
 				PrefixLength:    &pool.PrefixLength,
+				CreatePrefix:    pointer.Bool(true),
 				AllocationLabels: ipam_common.AllocationLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							ipam_common.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName, // NOTE: at this point WorkloadCluster is validated, so this is safe
+							ipam_common.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName, // NOTE: at this point WorkloadCluster is validated, so this is safe
+							ipam_common.NephioAddressFamilyKey: af.String(),
 						},
 					},
 				},
@@ -175,4 +186,14 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 
 	err = dnnObj.SetStatus(dnn)
 	return &dnnObj.KubeObject, err
+}
+
+func getAnnotations(annotations map[string]string) map[string]string {
+	a := map[string]string{}
+	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
+		a[condkptsdk.SpecializerPurpose] = owner
+		return a
+	}
+	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
+	return a
 }

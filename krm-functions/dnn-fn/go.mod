@@ -6,11 +6,12 @@ replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v0.0.0-20230605215709-2e793ab3e7f2
+	github.com/nephio-project/api v0.0.0-20230606172212-846162fafb69
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 )
 
 require (
@@ -58,7 +59,6 @@ require (
 	k8s.io/client-go v0.27.2 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/controller-runtime v0.15.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.3 // indirect

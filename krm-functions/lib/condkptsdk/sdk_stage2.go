@@ -91,6 +91,7 @@ func (r *sdk) updateResource() error {
 				readyCtx.forObj,
 				readyCtx.forCondition,
 				objs); err != nil {
+				fn.Logf("updateResource handleGenerateUpdate: err: %v\n", err.Error())
 				return err
 			}
 		}

@@ -66,7 +66,10 @@ func (f *FnR) updateVLANAllocationResource(forObj *fn.KubeObject, objs fn.KubeOb
 	if err != nil {
 		return nil, err
 	}
-	resp, err := f.ClientProxy.Allocate(context.Background(), alloc, nil)
+	newalloc := alloc.DeepCopy()
+	newalloc.Name = alloc.GetAnnotations()[condkptsdk.SpecializervlanAllocName]
+	fn.Logf("vlanALloc newName: %s\n", newalloc.Name)
+	resp, err := f.ClientProxy.Allocate(context.Background(), newalloc, nil)
 	if err != nil {
 		return nil, err
 	}

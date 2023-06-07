@@ -24,9 +24,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const SpecializerOwner = "specializer.nephio.org/owner"
-const SpecializerDelete = "specializer.nephio.org/delete"
-const SpecializerDebug = "specializer.nephio.org/debug"
+const (
+	SpecializerOwner         = "specializer.nephio.org/owner"
+	SpecializerDelete        = "specializer.nephio.org/delete"
+	SpecializerDebug         = "specializer.nephio.org/debug"
+	SpecializerPurpose       = "specializer.nephio.org/purpose"
+	SpecializervlanAllocName = "specializer.nephio.org/vlanAllocName"
+)
 
 type KptCondSDK interface {
 	Run() (bool, error)

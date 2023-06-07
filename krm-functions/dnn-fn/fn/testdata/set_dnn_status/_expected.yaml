@@ -24,7 +24,9 @@ items:
     kind: pool
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
+    createPrefix: true
     networkInstance:
       name: vpc-internet
     prefixLength: 8

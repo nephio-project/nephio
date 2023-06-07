@@ -26,6 +26,7 @@ import (
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -150,12 +151,32 @@ func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 		return nil
 	}
 
+	var ipv4 *nephiodeployv1alpha1.IPv4
+	var ipv6 *nephiodeployv1alpha1.IPv6
+	for _, ifStatus := range itfcIPAllocStatus {
+		if ifStatus.Prefix != nil {
+			pi, err := iputil.New(*ifStatus.Prefix)
+			if err != nil {
+				return err
+			}
+			if pi.IsIpv6() {
+				ipv6 = &nephiodeployv1alpha1.IPv6{
+					Address: *ifStatus.Prefix,
+					Gateway: ifStatus.Gateway,
+				}
+			} else {
+				ipv4 = &nephiodeployv1alpha1.IPv4{
+					Address: *ifStatus.Prefix,
+					Gateway: ifStatus.Gateway,
+				}
+			}
+		}
+	}
+
 	itfcConfig := nephiodeployv1alpha1.InterfaceConfig{
-		Name: itfce.Name,
-		IPv4: &nephiodeployv1alpha1.IPv4{
-			Address: *itfcIPAllocStatus.Prefix,
-			Gateway: itfcIPAllocStatus.Gateway,
-		},
+		Name:   itfce.Name,
+		IPv4:   ipv4,
+		IPv6:   ipv6,
 		VLANID: itfcVlanAllocStatus.VLANID,
 	}
 

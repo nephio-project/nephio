@@ -127,6 +127,8 @@ func (r *sdk) setConditionInKptFile(a action, kind gvkKind, refs []corev1.Object
 }
 
 func (r *sdk) setObjectInResourceList(kind gvkKind, refs []corev1.ObjectReference, obj object) error {
+	fn.Logf("setObjectInResourceList: kind: %s, refs: %v, obj: %v\n", kind, refs, obj.obj)
+	
 	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}

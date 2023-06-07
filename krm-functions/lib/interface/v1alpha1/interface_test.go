@@ -266,9 +266,11 @@ func TestSetStatus(t *testing.T) {
 		"Override": {
 			file: itface,
 			t: nephioreqv1alpha1.InterfaceStatus{
-				IPAllocationStatus: &ipamv1alpha1.IPAllocationStatus{
-					Prefix:  pointer.String("10.0.0.2/24"),
-					Gateway: pointer.String("10.0.0.1"),
+				IPAllocationStatus: []ipamv1alpha1.IPAllocationStatus{
+					{
+						Prefix:  pointer.String("10.0.0.2/24"),
+						Gateway: pointer.String("10.0.0.1"),
+					},
 				},
 				VLANAllocationStatus: &vlanv1alpha1.VLANAllocationStatus{
 					VLANID: &x,

@@ -19,6 +19,7 @@ package fn
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
@@ -66,7 +67,10 @@ func (f *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObje
 	if err != nil {
 		return nil, err
 	}
-	resp, err := f.ClientProxy.Allocate(context.Background(), alloc, nil)
+	newalloc := alloc.DeepCopy()
+	newalloc.Name = getNewName(alloc.GetAnnotations(), alloc.GetName())
+	fn.Logf("ipalloc newName: %s\n", newalloc.Name)
+	resp, err := f.ClientProxy.Allocate(context.Background(), newalloc, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,4 +85,9 @@ func (f *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObje
 	// set the status
 	err = allocKOE.SetStatus(resp)
 	return &allocKOE.KubeObject, err
+}
+
+func getNewName(annotations map[string]string, origName string) string {
+	split := strings.Split(annotations[condkptsdk.SpecializerPurpose], ".")
+	return fmt.Sprintf("%s-%s", split[len(split)-1], origName)
 }

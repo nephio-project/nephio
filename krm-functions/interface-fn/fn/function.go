@@ -130,22 +130,43 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 
 	// meta is the generic object meta attached to all derived child objects
 	meta := metav1.ObjectMeta{
-		Name: o.GetName(),
+		Name:        o.GetName(),
+		Annotations: getAnnotations(o.GetAnnotations()),
 	}
+
+	afs := []string{}
+	switch itfce.Spec.IpFamilyPolicy {
+	case nephioreqv1alpha1.IpFamilyPolicyDualStack:
+		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
+		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv6))
+	case nephioreqv1alpha1.IpFamilyPolicyIPv6Only:
+		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv6))
+	case nephioreqv1alpha1.IpFamilyPolicyIPv4Only:
+		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
+	default:
+		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
+	}
+
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
 		if !f.IsCNITypePresent(itfce.Spec.CNIType) {
 			return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfce.Spec.CNIType)
 		}
 		// add IP allocation of type network
-		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork)
-		if err != nil {
-			return nil, err
+		for _, af := range afs {
+			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, o)
 		}
-		resources = append(resources, o)
 
 		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
 			// add VLAN allocation
+			meta := metav1.ObjectMeta{
+				Name:        o.GetName(),
+				Annotations: f.getAnnotationsWithvlanAllocName(itfce),
+			}
 			o, err := f.getVLANAllocation(meta)
 			if err != nil {
 				return nil, err
@@ -161,11 +182,14 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		resources = append(resources, o)
 	} else {
 		// add IP allocation of type loopback
-		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback)
-		if err != nil {
-			return nil, err
+		for _, af := range afs {
+			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, o)
 		}
-		resources = append(resources, o)
+
 	}
 	return resources, nil
 }
@@ -194,7 +218,7 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 			if err != nil {
 				return nil, err
 			}
-			itfce.Status.IPAllocationStatus = &allocGoStruct.Status
+			itfce.Status.IPAllocationStatus = append(itfce.Status.IPAllocationStatus, allocGoStruct.Status)
 		}
 	}
 	vlanallocs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
@@ -230,7 +254,7 @@ func (f *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, err
 	return fn.NewFromTypedObject(alloc)
 }
 
-func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind) (*fn.KubeObject, error) {
+func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af string) (*fn.KubeObject, error) {
 	alloc := ipamv1alpha1.BuildIPAllocation(
 		meta,
 		ipamv1alpha1.IPAllocationSpec{
@@ -239,7 +263,8 @@ func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectRefere
 			AllocationLabels: allocv1alpha1.AllocationLabels{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						allocv1alpha1.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName,
+						allocv1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
+						allocv1alpha1.NephioAddressFamilyKey: af,
 					},
 				},
 			},
@@ -275,4 +300,20 @@ func (f *itfceFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool 
 		}
 	}
 	return false
+}
+
+func (f *itfceFn) getAnnotationsWithvlanAllocName(itfce *nephioreqv1alpha1.Interface) map[string]string {
+	a := getAnnotations(itfce.GetAnnotations())
+	a[condkptsdk.SpecializervlanAllocName] = fmt.Sprintf("%s-%s-bd", itfce.Spec.NetworkInstance.Name, f.workloadCluster.Spec.ClusterName)
+	return a
+}
+
+func getAnnotations(annotations map[string]string) map[string]string {
+	a := map[string]string{}
+	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
+		a[condkptsdk.SpecializerPurpose] = owner
+		return a
+	}
+	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
+	return a
 }
