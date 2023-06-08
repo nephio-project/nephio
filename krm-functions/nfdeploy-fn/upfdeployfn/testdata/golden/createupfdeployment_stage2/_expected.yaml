@@ -93,6 +93,8 @@ items:
     ipAllocationStatus:
     - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
+    - prefix: 1000::2/64
+      gateway: 1000::1
     vlanAllocationStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
@@ -111,6 +113,8 @@ items:
     ipAllocationStatus:
     - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
+    - prefix: 1000::2/64
+      gateway: 1000::1
     vlanAllocationStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
@@ -129,6 +133,8 @@ items:
     ipAllocationStatus:
     - prefix: 10.0.0.4/24
       gateway: 10.0.0.2
+    - prefix: 1000::2/64
+      gateway: 1000::1
     vlanAllocationStatus:
       vlanID: 101
 - apiVersion: workload.nephio.org/v1alpha1
@@ -146,16 +152,25 @@ items:
       ipv4:
         address: 10.0.0.3/24
         gateway: 10.0.0.1
+      ipv6:
+        address: 1000::2/64
+        gateway: 1000::1
       vlanID: 100
     - name: n4
       ipv4:
         address: 10.0.0.3/24
         gateway: 10.0.0.1
+      ipv6:
+        address: 1000::2/64
+        gateway: 1000::1
       vlanID: 100
     - name: n6
       ipv4:
         address: 10.0.0.4/24
         gateway: 10.0.0.2
+      ipv6:
+        address: 1000::2/64
+        gateway: 1000::1
       vlanID: 101
     networkInstances:
     - name: vpc-internal

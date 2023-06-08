@@ -154,9 +154,11 @@ func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 	var ipv4 *nephiodeployv1alpha1.IPv4
 	var ipv6 *nephiodeployv1alpha1.IPv6
 	for _, ifStatus := range itfcIPAllocStatus {
+		fn.Logf("prefix prefix:%v\n", ifStatus)
 		if ifStatus.Prefix != nil {
 			pi, err := iputil.New(*ifStatus.Prefix)
 			if err != nil {
+				fn.Logf("prefix parsing:%v\n", err)
 				return err
 			}
 			if pi.IsIpv6() {

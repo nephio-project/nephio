@@ -122,7 +122,7 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
 			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: objs[0].GetName()},
+		ObjectMeta: metav1.ObjectMeta{Name: interfaceObjs[0].GetName()},
 	})
 	if err != nil {
 		return nil, err

@@ -29,7 +29,35 @@ items:
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-ran
-  status: {}
+  status:
+    prefix: "10.0.0.2/24"
+    gateway: 10.0.0.1
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: n3-ipv6
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv6
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-ran
+  status:
+    prefix: "1000::2/64"
+    gateway: 1000::1
+- apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
+    name: n3
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    config: '{"cniVersion":"0.3.1","vlan":100,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"13.0.0.2/24","gateway":"13.0.0.1"}]}}]}'
 - apiVersion: kpt.dev/v1
   info:
     description: upf package example
@@ -43,19 +71,23 @@ items:
     conditions:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "False"
+      status: "True"
       type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "False"
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv6
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
-    - message: update condition for initial resource
+    - message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
+      status: "True"
       type: req.nephio.org/v1alpha1.Interface.n3
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "False"
+      status: "True"
       type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
     - message: update for condition
       status: "False"
@@ -72,7 +104,15 @@ items:
       name: vpc-ran
     cniType: sriov
     attachmentType: vlan
-  status: {}
+    ipFamilyPolicy: dualstack
+  status:
+    ipAllocationStatus:
+    - prefix: 10.0.0.2/24
+      gateway: 10.0.0.1
+    - prefix: 1000::2/64
+      gateway: 1000::1
+    vlanAllocationStatus:
+      vlanID: 10
 - apiVersion: vlan.alloc.nephio.org/v1alpha1
   kind: VLANAllocation
   metadata:
@@ -84,7 +124,8 @@ items:
   spec:
     vlanDatabase:
       name: cluster01
-  status: {}
+  status:
+    vlanID: 10
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
   metadata:

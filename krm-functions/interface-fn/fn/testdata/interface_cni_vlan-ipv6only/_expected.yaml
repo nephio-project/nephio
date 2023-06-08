@@ -17,15 +17,15 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n3-ipv4
+    name: n3-ipv6
     annotations:
       specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
-    kind: loopback
+    kind: network
     selector:
       matchLabels:
-        nephio.org/address-family: ipv4
+        nephio.org/address-family: ipv6
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-ran
@@ -44,10 +44,22 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
-    - message: update for condition
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv6
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n3
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+    - message: update for condition
+      status: "False"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -58,4 +70,25 @@ items:
   spec:
     networkInstance:
       name: vpc-ran
+    cniType: sriov
+    attachmentType: vlan
+    ipFamilyPolicy: ipv6only
   status: {}
+- apiVersion: vlan.alloc.nephio.org/v1alpha1
+  kind: VLANAllocation
+  metadata:
+    name: n3
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-ran-cluster01-bd
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    vlanDatabase:
+      name: cluster01
+  status: {}
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: upf-cluster01
+    annotations:
+      specializer.nephio.org/debug: "true"

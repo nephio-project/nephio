@@ -17,7 +17,7 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n3
+    name: n3-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -33,7 +33,7 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n4
+    name: n4-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -49,7 +49,7 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n6
+    name: n6-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
@@ -100,15 +100,15 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"

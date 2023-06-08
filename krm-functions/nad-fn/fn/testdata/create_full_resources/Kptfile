@@ -17,7 +17,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "True"
-    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4
+    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4-ipv4
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "True"
@@ -36,7 +36,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n6
     status: "True"
-    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6
+    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6-ipv4
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n6
     status: "True"
@@ -51,7 +51,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n3
     status: "True"
-    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n3
     status: "True"

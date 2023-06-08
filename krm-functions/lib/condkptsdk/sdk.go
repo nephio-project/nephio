@@ -117,7 +117,6 @@ func (r *sdk) Run() (bool, error) {
 			r.debug = true
 		}
 	}
-
 	// initialize inventory
 	if err := r.populateInventory(); err != nil {
 		return false, err

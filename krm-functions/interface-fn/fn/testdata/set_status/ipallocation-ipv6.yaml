@@ -1,0 +1,18 @@
+apiVersion: ipam.alloc.nephio.org/v1alpha1
+kind: IPAllocation
+metadata:
+  name: n3-ipv6
+  annotations:
+    specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/address-family: ipv6
+      nephio.org/cluster-name: cluster01
+  networkInstance:
+    name: vpc-ran
+status:
+  prefix: "1000::2/64"
+  gateway: 1000::1

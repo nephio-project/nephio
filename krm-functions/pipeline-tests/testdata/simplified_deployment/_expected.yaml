@@ -19,12 +19,15 @@ items:
   metadata:
     name: internet-pool1
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
   spec:
     kind: pool
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
+    createPrefix: true
     networkInstance:
       name: vpc-internet
     prefixLength: 8
@@ -33,13 +36,15 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n3
+    name: n3-ipv4
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     kind: network
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-ran
@@ -49,13 +54,15 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n4
+    name: n4-ipv4
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
     kind: network
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-internal
@@ -65,13 +72,15 @@ items:
 - apiVersion: ipam.alloc.nephio.org/v1alpha1
   kind: IPAllocation
   metadata:
-    name: n6
+    name: n6-ipv4
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
     kind: network
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-internet
@@ -120,15 +129,15 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
@@ -219,7 +228,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.10/24
+    - prefix: 10.0.0.10/24
       gateway: 10.0.0.1
     vlanAllocationStatus:
       vlanID: 10
@@ -237,7 +246,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.10/24
+    - prefix: 10.0.0.10/24
       gateway: 10.0.0.1
     vlanAllocationStatus:
       vlanID: 10
@@ -255,7 +264,7 @@ items:
     attachmentType: vlan
   status:
     ipAllocationStatus:
-      prefix: 10.0.0.10/24
+    - prefix: 10.0.0.10/24
       gateway: 10.0.0.1
     vlanAllocationStatus:
       vlanID: 10
@@ -272,6 +281,8 @@ items:
   metadata:
     name: n3
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     vlanDatabase:
@@ -283,6 +294,8 @@ items:
   metadata:
     name: n4
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-internal-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
     vlanDatabase:
@@ -294,6 +307,8 @@ items:
   metadata:
     name: n6
     annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-internet-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
     vlanDatabase:

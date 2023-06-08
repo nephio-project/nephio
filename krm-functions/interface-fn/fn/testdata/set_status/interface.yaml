@@ -10,11 +10,5 @@ spec:
     name: vpc-ran
   cniType: sriov
   attachmentType: vlan
-status:
-  ipAllocationStatus:
-  - prefix: 10.0.0.3/24
-    gateway: 10.0.0.1
-  - prefix: 1000::2/64
-    gateway: 1000::1
-  vlanAllocationStatus:
-    vlanID: 100
+  ipFamilyPolicy: dualstack
+status: {}

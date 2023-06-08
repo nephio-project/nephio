@@ -118,7 +118,7 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 
 		af := iputil.AddressFamilyIpv4
 		if pool.IPFamily == nephioreqv1alpha1.IPFamilyIPv6 {
-			af = iputil.AddressFamilyIpv4
+			af = iputil.AddressFamilyIpv6
 		}
 
 		ipalloc := ipamv1alpha1.BuildIPAllocation(

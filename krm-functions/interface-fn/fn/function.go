@@ -19,6 +19,7 @@ package fn
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -31,8 +32,6 @@ import (
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	vlanlibv1alpha1 "github.com/nephio-project/nephio/krm-functions/lib/vlanalloc/v1alpha1"
 )
 
 const defaultPODNetwork = "default"
@@ -134,18 +133,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		Annotations: getAnnotations(o.GetAnnotations()),
 	}
 
-	afs := []string{}
-	switch itfce.Spec.IpFamilyPolicy {
-	case nephioreqv1alpha1.IpFamilyPolicyDualStack:
-		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
-		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv6))
-	case nephioreqv1alpha1.IpFamilyPolicyIPv6Only:
-		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv6))
-	case nephioreqv1alpha1.IpFamilyPolicyIPv4Only:
-		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
-	default:
-		afs = append(afs, string(nephioreqv1alpha1.IPFamilyIPv4))
-	}
+	afs := getAddressFamilies(itfce.Spec.IpFamilyPolicy)
 
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
@@ -154,6 +142,10 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		}
 		// add IP allocation of type network
 		for _, af := range afs {
+			meta := metav1.ObjectMeta{
+				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Annotations: getAnnotations(o.GetAnnotations()),
+			}
 			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
 			if err != nil {
 				return nil, err
@@ -183,6 +175,10 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	} else {
 		// add IP allocation of type loopback
 		for _, af := range afs {
+			meta := metav1.ObjectMeta{
+				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Annotations: getAnnotations(o.GetAnnotations()),
+			}
 			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
 			if err != nil {
 				return nil, err
@@ -208,32 +204,35 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 	}
 
 	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
+	sort.Slice(ipallocs, func(i, j int) bool {
+		return ipallocs[i].GetName() < ipallocs[j].GetName()
+	})
 	for _, ipalloc := range ipallocs {
-		if ipalloc.GetName() == forObj.GetName() {
-			alloc, err := ko.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
-			if err != nil {
-				return nil, err
-			}
-			allocGoStruct, err := alloc.GetGoStruct()
-			if err != nil {
-				return nil, err
-			}
-			itfce.Status.IPAllocationStatus = append(itfce.Status.IPAllocationStatus, allocGoStruct.Status)
+		//if ipalloc.GetName() == forObj.GetName() {
+		alloc, err := ko.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
+		if err != nil {
+			return nil, err
 		}
+		allocGoStruct, err := alloc.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		itfce.Status.UpsertIPAllocation(allocGoStruct.Status)
+		//}
 	}
 	vlanallocs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
 	for _, vlanalloc := range vlanallocs {
-		if vlanalloc.GetName() == forObj.GetName() {
-			alloc, err := vlanlibv1alpha1.NewFromKubeObject(vlanalloc)
-			if err != nil {
-				return nil, err
-			}
-			allocGoStruct, err := alloc.GetGoStruct()
-			if err != nil {
-				return nil, err
-			}
-			itfce.Status.VLANAllocationStatus = &allocGoStruct.Status
+		//if vlanalloc.GetName() == forObj.GetName() {
+		alloc, err := ko.NewFromKubeObject[vlanv1alpha1.VLANAllocation](vlanalloc)
+		if err != nil {
+			return nil, err
 		}
+		allocGoStruct, err := alloc.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		itfce.Status.VLANAllocationStatus = &allocGoStruct.Status
+		//}
 	}
 	// set the status
 	err = itfceKOE.SetStatus(itfce)
@@ -254,7 +253,7 @@ func (f *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, err
 	return fn.NewFromTypedObject(alloc)
 }
 
-func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af string) (*fn.KubeObject, error) {
+func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af nephioreqv1alpha1.IPFamily) (*fn.KubeObject, error) {
 	alloc := ipamv1alpha1.BuildIPAllocation(
 		meta,
 		ipamv1alpha1.IPAllocationSpec{
@@ -264,7 +263,7 @@ func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectRefere
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						allocv1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
-						allocv1alpha1.NephioAddressFamilyKey: af,
+						allocv1alpha1.NephioAddressFamilyKey: string(af),
 					},
 				},
 			},
@@ -316,4 +315,20 @@ func getAnnotations(annotations map[string]string) map[string]string {
 	}
 	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
 	return a
+}
+
+func getAddressFamilies(pol nephioreqv1alpha1.IpFamilyPolicy) []nephioreqv1alpha1.IPFamily {
+	afs := []nephioreqv1alpha1.IPFamily{}
+	switch pol {
+	case nephioreqv1alpha1.IpFamilyPolicyDualStack:
+		afs = append(afs, nephioreqv1alpha1.IPFamilyIPv4)
+		afs = append(afs, nephioreqv1alpha1.IPFamilyIPv6)
+	case nephioreqv1alpha1.IpFamilyPolicyIPv6Only:
+		afs = append(afs, nephioreqv1alpha1.IPFamilyIPv6)
+	case nephioreqv1alpha1.IpFamilyPolicyIPv4Only:
+		afs = append(afs, nephioreqv1alpha1.IPFamilyIPv4)
+	default:
+		afs = append(afs, nephioreqv1alpha1.IPFamilyIPv4)
+	}
+	return afs
 }

@@ -7,7 +7,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/google/go-cmp v0.5.9
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/nephio-project/api v0.0.0-20230606172212-846162fafb69
+	github.com/nephio-project/api v0.0.0-20230607190029-7207269c79df
 	github.com/nokia/k8s-ipam v0.0.4-0.20230604044109-366c07a61afe
 	github.com/stretchr/testify v1.8.2
 	k8s.io/api v0.27.2

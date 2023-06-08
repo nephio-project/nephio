@@ -36,7 +36,7 @@ func validateGVKRef(ref corev1.ObjectReference) error {
 // contain an empty string
 func validateGVKNRef(ref corev1.ObjectReference) error {
 	if ref.APIVersion == "" || ref.Kind == "" || ref.Name == "" {
-		fn.Logf("gvk or name not initialized, got: %v\n", ref)
+		//fn.Logf("gvk or name not initialized, got: %v\n", ref)
 		return fmt.Errorf("gvk or name not initialized, got: %v", ref)
 	}
 	return nil
