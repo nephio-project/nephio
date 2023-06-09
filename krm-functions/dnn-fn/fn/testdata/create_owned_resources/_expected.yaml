@@ -19,8 +19,10 @@ items:
   metadata:
     name: internet-pool1
     annotations:
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      prefix: 10.0.0.0/8
+      config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     kind: pool
     selector:
