@@ -15,7 +15,7 @@ replace (
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v0.0.0-20230605215709-2e793ab3e7f2
+	github.com/nephio-project/api v0.0.0-20230607190029-7207269c79df
 	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230516034137-53f1f1859c10
