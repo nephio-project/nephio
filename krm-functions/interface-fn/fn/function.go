@@ -307,10 +307,8 @@ func (f *itfceFn) getAnnotationsWithvlanClaimName(itfce *nephioreqv1alpha1.Inter
 
 func getAnnotations(annotations map[string]string) map[string]string {
 	a := map[string]string{}
-	if len(annotations) > 0 {
-		for k, v := range annotations {
-			a[k] = v
-		}
+	for k, v := range annotations {
+		a[k] = v
 	}
 	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
 		a[condkptsdk.SpecializerPurpose] = owner

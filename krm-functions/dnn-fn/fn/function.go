@@ -190,10 +190,8 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 
 func getAnnotations(annotations map[string]string) map[string]string {
 	a := map[string]string{}
-	if len(annotations) > 0 {
-		for k, v := range annotations {
-			a[k] = v
-		}
+	for k, v := range annotations {
+		a[k] = v
 	}
 	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
 		a[condkptsdk.SpecializerPurpose] = owner
