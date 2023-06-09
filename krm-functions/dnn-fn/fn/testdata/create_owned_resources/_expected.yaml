@@ -14,17 +14,22 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: internet-pool1
     annotations:
+      prefix: 10.0.0.0/8
+      config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     kind: pool
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
+    createPrefix: true
     networkInstance:
       name: vpc-internet
     prefixLength: 8
@@ -43,7 +48,7 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
     - message: update for condition
       status: "False"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
@@ -63,6 +68,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internet

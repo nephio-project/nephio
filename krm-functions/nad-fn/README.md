@@ -5,14 +5,14 @@ Purpose of the function
 
 The `NAD` KRM function is designed to be a part of the pipeline of a Nephio NF kpt package.
 
-Its primary purpose is to find all the `IP allocations`, `VLAN allocation`, `WorkloadCluster` and `Interfaces` in the package and expand it to a set of network attachment definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus.  
+Its primary purpose is to find all the `IP claims`, `VLAN claims`, `WorkloadCluster` and `Interfaces` in the package and expand it to a set of network attachment definition resources, i.e. `NetworkAttachmentDefinition` then to be used by container network interface (CNI) plugin e.g. Multus.  
 
 The functions and controllers are also designed to be part of the "`Condition` choreography" that is meant to synchronize the effects of multiple KRM functions and controllers acting on the same kpt package. It adds `Conditions` to the `Status` of the `Kptfile` object indicating that the `NetworkAttachmentDefinition` requests are not fulfilled yet. 
 
 Child resources generated for an `NAD` resource
 -------------------------------------------------------
 
-For each `NAD` the function will generate one `NetworkAttachmentDefinition` CR. In order to generate the `Spec` of this child resource it uses information also from the `WorkloadCluster`, `VLANAllocation`, `IPAllocation`, `Interface` resources that the kpt package assumed to also contain. 
+For each `NAD` the function will generate one `NetworkAttachmentDefinition` CR. In order to generate the `Spec` of this child resource it uses information also from the `WorkloadCluster`, `VLANClaim`, `IPClaim`, `Interface` resources that the kpt package assumed to also contain. 
 
 Let's see an example! Assuming that a kpt package contains the following three resources (among others):
 
@@ -43,8 +43,8 @@ Let's see an example! Assuming that a kpt package contains the following three r
         siteCode: edge1
         region: us-central1
     ---
-    apiVersion: ipam.nephio.org/v1alpha1
-    kind: IPAllocation
+    apiVersion: ipam.resource.nephio.org/v1alpha1
+    kind: IPClaim
     metadata:
         creationTimestamp: null
         labels:
@@ -60,8 +60,8 @@ Let's see an example! Assuming that a kpt package contains the following three r
         prefix: 13.0.0.3/24
         gateway: "13.0.0.1"
     ---
-    apiVersion: vlan.alloc.nephio.org/v1alpha1
-    kind: VLANAllocation
+    apiVersion: vlan.resource.nephio.org/v1alpha1
+    kind: VLANClaim
     metadata:
         annotations:
             specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
@@ -110,7 +110,7 @@ The function also adds the following conditions to the `Status` of the `Kptfile`
 Implementation details
 ----------------------
 
-The function ensures that the resources of an `NetworkAttachmentDefinition` (NAD) are always in sync with the `Spec` of the input resources: the `IP allocations`, `VLAN allocation`, `WorkloadCluster` and `Interfaces`. In addition, it also checks for any previous `NetworkAttachmentDefinition` that exist part of kpt package and act upon them to produce the latest on every run. 
+The function ensures that the resources of an `NetworkAttachmentDefinition` (NAD) are always in sync with the `Spec` of the input resources: the `IP claims`, `VLAN claims`, `WorkloadCluster` and `Interfaces`. In addition, it also checks for any previous `NetworkAttachmentDefinition` that exist part of kpt package and act upon them to produce the latest on every run. 
 
 The NAD fn support for various scenarios:
 ----------------------

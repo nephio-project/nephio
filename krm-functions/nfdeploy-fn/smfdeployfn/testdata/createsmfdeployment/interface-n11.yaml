@@ -11,8 +11,8 @@ spec:
   cniType: sriov
   attachmentType: vlan
 status:
-  ipAllocationStatus:
-    prefix: 10.0.0.4/24
+  ipClaimStatus:
+  - prefix: 10.0.0.4/24
     gateway: 10.0.0.2
-  vlanAllocationStatus:
+  vlanClaimStatus:
     vlanID: 101

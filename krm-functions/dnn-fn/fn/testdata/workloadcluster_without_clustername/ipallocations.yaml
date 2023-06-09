@@ -1,5 +1,5 @@
-apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
 metadata:
   name: internet-pool1
   annotations:

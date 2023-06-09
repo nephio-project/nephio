@@ -69,7 +69,7 @@ items:
       prefixLength: 8
   status:
     pools:
-    - ipAllocation:
+    - ipClaim:
         prefix: 10.0.0.3/24
         gateway: 10.0.0.1
 - apiVersion: req.nephio.org/v1alpha1
@@ -85,10 +85,10 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
-      prefix: 10.0.0.4/24
+    ipClaimStatus:
+    - prefix: 10.0.0.4/24
       gateway: 10.0.0.2
-    vlanAllocationStatus:
+    vlanClaimStatus:
       vlanID: 101
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface

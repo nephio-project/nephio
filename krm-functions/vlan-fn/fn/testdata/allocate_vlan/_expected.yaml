@@ -14,9 +14,9 @@ items:
     conditions:
     - message: update done
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     name: n3
     annotations:

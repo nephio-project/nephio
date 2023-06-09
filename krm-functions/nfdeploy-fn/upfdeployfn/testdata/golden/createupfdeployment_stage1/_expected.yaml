@@ -74,7 +74,7 @@ items:
       prefixLength: 8
   status:
     pools:
-    - ipAllocation:
+    - ipClaim:
         prefix: 10.0.0.3/24
         gateway: 10.0.0.1
 - apiVersion: req.nephio.org/v1alpha1
@@ -90,10 +90,12 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
-      prefix: 10.0.0.3/24
+    ipClaimStatus:
+    - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
-    vlanAllocationStatus:
+    - prefix: 1000::2/64
+      gateway: 1000::1
+    vlanClaimStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -108,10 +110,12 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
-      prefix: 10.0.0.3/24
+    ipClaimStatus:
+    - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
-    vlanAllocationStatus:
+    - prefix: 1000::2/64
+      gateway: 1000::1
+    vlanClaimStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -126,14 +130,14 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
-      prefix: 10.0.0.4/24
+    ipClaimStatus:
+    - prefix: 10.0.0.4/24
       gateway: 10.0.0.2
-    vlanAllocationStatus:
+    - prefix: 1000::2/64
+      gateway: 1000::1
+    vlanClaimStatus:
       vlanID: 101
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
   metadata:
     name: upf-cluster01
-    annotations:
-      specializer.nephio.org/debug: "true"

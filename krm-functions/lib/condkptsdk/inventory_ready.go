@@ -96,6 +96,7 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 				// ignore validating consition if the the owner reference is equal to the watch resource
 				// e.g. interface watch in case of nad forFilter
 				if kptfilelibv1.GetConditionType(&ref) != forResCtx.existingCondition.Reason {
+					fn.Logf("getReadyMap: watch ref: %v not ready, forOwnreason: %s, resType %s", ref, forResCtx.existingCondition.Reason, kptfilelibv1.GetConditionType(&ref))
 					readyMap[forRef].ready = false
 				}
 			}

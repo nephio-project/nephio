@@ -26,6 +26,7 @@ import (
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -142,20 +143,42 @@ func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 		return err
 	}
 
-	itfcIPAllocStatus := itfce.Status.IPAllocationStatus
-	itfcVlanAllocStatus := itfce.Status.VLANAllocationStatus
+	itfcIPAllocStatus := itfce.Status.IPClaimStatus
+	itfcVlanAllocStatus := itfce.Status.VLANClaimStatus
 
 	// validate if status is not nil
 	if itfcIPAllocStatus == nil || itfcVlanAllocStatus == nil {
 		return nil
 	}
 
+	var ipv4 *nephiodeployv1alpha1.IPv4
+	var ipv6 *nephiodeployv1alpha1.IPv6
+	for _, ifStatus := range itfcIPAllocStatus {
+		fn.Logf("prefix prefix:%v\n", ifStatus)
+		if ifStatus.Prefix != nil {
+			pi, err := iputil.New(*ifStatus.Prefix)
+			if err != nil {
+				fn.Logf("prefix parsing:%v\n", err)
+				return err
+			}
+			if pi.IsIpv6() {
+				ipv6 = &nephiodeployv1alpha1.IPv6{
+					Address: *ifStatus.Prefix,
+					Gateway: ifStatus.Gateway,
+				}
+			} else {
+				ipv4 = &nephiodeployv1alpha1.IPv4{
+					Address: *ifStatus.Prefix,
+					Gateway: ifStatus.Gateway,
+				}
+			}
+		}
+	}
+
 	itfcConfig := nephiodeployv1alpha1.InterfaceConfig{
-		Name: itfce.Name,
-		IPv4: &nephiodeployv1alpha1.IPv4{
-			Address: *itfcIPAllocStatus.Prefix,
-			Gateway: itfcIPAllocStatus.Gateway,
-		},
+		Name:   itfce.Name,
+		IPv4:   ipv4,
+		IPv6:   ipv6,
 		VLANID: itfcVlanAllocStatus.VLANID,
 	}
 
@@ -178,9 +201,13 @@ func (f *NfDeployFn[T, PT]) DnnUpdate(o *fn.KubeObject) error {
 		return nil
 	}
 
-	var pools []nephiodeployv1alpha1.Pool
-	for _, pool := range dnnReq.Status.Pools {
-		pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPAllocation.Prefix})
+	pools := []nephiodeployv1alpha1.Pool{}
+	if len(dnnReq.Status.Pools) != 0 {
+		for _, pool := range dnnReq.Status.Pools {
+			if pool.IPClaim.Prefix != nil {
+				pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPClaim.Prefix})
+			}
+		}
 	}
 
 	dnn := nephiodeployv1alpha1.DataNetwork{

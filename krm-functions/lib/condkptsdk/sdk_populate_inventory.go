@@ -124,13 +124,22 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		// if no forOwnerRef is set the watch is global
 		// if a forOwnerref is set we check if either the ownerRef or ref is match the GVK
 		// the specifics of the name is sorted out later
-		if forOwnerRef != nil && (ownerRef.APIVersion == forOwnerRef.APIVersion && ownerRef.Kind == forOwnerRef.Kind ||
-			ref.APIVersion == forOwnerRef.APIVersion && ref.Kind == forOwnerRef.Kind) {
+		if forOwnerRef != nil && (forOwnerRef.APIVersion == ownerRef.APIVersion && forOwnerRef.Kind == ownerRef.Kind ||
+			forOwnerRef.APIVersion == ref.APIVersion && forOwnerRef.Kind == ref.Kind) {
 			// this is a specific watch
-			forRef := &corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: ref.Name}
+
+			// The name is a bit complicated ->
+			// in general we take the ownerref
+			// when the forOwnerRef matches we take the name of the ref since the ownerref here is owned by another resource
+			// e.g. interface in NAD context is owned by nfdeploy, so we tak the name of the ref iso ownerref
+			name := ownerRef.Name
+			if forOwnerRef.APIVersion == ref.APIVersion && forOwnerRef.Kind == ref.Kind {
+				name = ref.Name
+			}
+			forRef := &corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: name}
 
 			if r.debug {
-				fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
+				fn.Logf("set existing object in inventory, kind %s, forRef: %v, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, forRef, ref, ownerRef)
 			}
 			if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*forRef, *ref}, x, false); err != nil {
 				fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())

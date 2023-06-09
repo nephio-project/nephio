@@ -27,10 +27,12 @@ import (
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
-	ipam_common "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	resourcev1alpha1 "github.com/nokia/k8s-ipam/apis/resource/common/v1alpha1"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
+	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func init() {
@@ -60,7 +62,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-					Kind:       ipamv1alpha1.IPAllocationKind,
+					Kind:       ipamv1alpha1.IPClaimKind,
 				}: condkptsdk.ChildRemote,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -110,38 +112,47 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 		return nil, err
 	}
 
-	// add IPAllocation for each pool
+	// add IpClaim for each pool
 	resources := fn.KubeObjects{}
 	for _, pool := range dnn.Spec.Pools {
-		ipalloc := ipamv1alpha1.BuildIPAllocation(
+
+		af := iputil.AddressFamilyIpv4
+		if pool.IPFamily == nephioreqv1alpha1.IPFamilyIPv6 {
+			af = iputil.AddressFamilyIpv6
+		}
+
+		ipClaim := ipamv1alpha1.BuildIPClaim(
 			metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-%s", dnn.Name, pool.Name),
+				Name:        fmt.Sprintf("%s-%s", dnn.Name, pool.Name),
+				Annotations: getAnnotations(dnn.GetAnnotations()),
 			},
-			ipamv1alpha1.IPAllocationSpec{
+			ipamv1alpha1.IPClaimSpec{
 				Kind:            ipamv1alpha1.PrefixKindPool,
 				NetworkInstance: dnn.Spec.NetworkInstance,
 				PrefixLength:    &pool.PrefixLength,
-				AllocationLabels: ipam_common.AllocationLabels{
+				CreatePrefix:    pointer.Bool(true),
+				ClaimLabels: resourcev1alpha1.ClaimLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							ipam_common.NephioClusterNameKey: f.workloadCluster.Spec.ClusterName, // NOTE: at this point WorkloadCluster is validated, so this is safe
+							resourcev1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName, // NOTE: at this point WorkloadCluster is validated, so this is safe
+							resourcev1alpha1.NephioAddressFamilyKey: af.String(),
 						},
 					},
 				},
 			},
-			ipamv1alpha1.IPAllocationStatus{},
+			ipamv1alpha1.IPClaimStatus{},
 		)
 
-		ipallocObj, err := fn.NewFromTypedObject(ipalloc)
+		ipClaimObj, err := fn.NewFromTypedObject(ipClaim)
 		if err != nil {
 			return nil, err
 		}
-		resources = append(resources, ipallocObj)
+		resources = append(resources, ipClaimObj)
 	}
 	return resources, nil
 }
 
-// updateDnnResource assembles the Status of the DNN "for object" from the status of the owned IPAllocations
+// updateDnnResource assembles the Status of the DNN "for object" from the status of the owned IPClaims
 func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) (*fn.KubeObject, error) {
 	dnnObj, err := ko.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](dnnObj_)
 	if err != nil {
@@ -152,27 +163,40 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 		return nil, err
 	}
 
-	// get IPAllocation status of all pools
+	// get IPClaim status of all pools
 	dnn.Status.Pools = nil
-	ipallocs, _, err := ko.FilterByType[ipamv1alpha1.IPAllocation](owned)
+	ipclaims, _, err := ko.FilterByType[ipamv1alpha1.IPClaim](owned)
 	if err != nil {
 		return nil, err
 	}
-	for _, ipalloc := range ipallocs {
-		if ipalloc.Spec.Kind == ipamv1alpha1.PrefixKindPool {
-			poolName, found := strings.CutPrefix(ipalloc.Name, dnn.Name+"-")
+	for _, ipclaim := range ipclaims {
+		if ipclaim.Spec.Kind == ipamv1alpha1.PrefixKindPool {
+			poolName, found := strings.CutPrefix(ipclaim.Name, dnn.Name+"-")
 			if found {
 				status := nephioreqv1alpha1.PoolStatus{
-					Name:         poolName,
-					IPAllocation: ipalloc.Status,
+					Name:    poolName,
+					IPClaim: ipclaim.Status,
 				}
 				dnn.Status.Pools = append(dnn.Status.Pools, status)
 			} else {
-				f.rl.Results.Warningf("found an IPAllocation owned by DNN %q with a suspicious name: %v", dnn.Name, ipalloc.Name)
+				f.rl.Results.Warningf("found an IPClaim owned by DNN %q with a suspicious name: %v", dnn.Name, ipclaim.Name)
 			}
 		}
 	}
 
 	err = dnnObj.SetStatus(dnn)
 	return &dnnObj.KubeObject, err
+}
+
+func getAnnotations(annotations map[string]string) map[string]string {
+	a := map[string]string{}
+	for k, v := range annotations {
+		a[k] = v
+	}
+	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
+		a[condkptsdk.SpecializerPurpose] = owner
+		return a
+	}
+	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
+	return a
 }

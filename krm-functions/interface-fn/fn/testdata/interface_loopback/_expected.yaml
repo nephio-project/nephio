@@ -14,16 +14,19 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
-    name: n3
+    name: n3-ipv4
     annotations:
+      config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     kind: loopback
     selector:
       matchLabels:
+        nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
     networkInstance:
       name: vpc-ran
@@ -42,7 +45,7 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
     - message: update for condition
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n3
@@ -52,6 +55,7 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-ran

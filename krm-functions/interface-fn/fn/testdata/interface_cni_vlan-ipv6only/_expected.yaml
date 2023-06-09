@@ -1,0 +1,96 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: cluster01
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: n3-ipv6
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv6
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-ran
+  status: {}
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+    - message: update for condition
+      status: "False"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: sriov
+    attachmentType: vlan
+    ipFamilyPolicy: ipv6only
+  status: {}
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
+  spec:
+    vlanDatabase:
+      name: cluster01
+  status: {}
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: upf-cluster01
+    annotations:
+      specializer.nephio.org/debug: "true"

@@ -14,10 +14,10 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
-    name: n3
+    name: n3-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -30,10 +30,10 @@ items:
   status:
     prefix: 13.0.0.2/24
     gateway: 13.0.0.1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
-    name: n4
+    name: n4-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -46,10 +46,10 @@ items:
   status:
     prefix: 14.0.0.2/24
     gateway: 14.0.0.1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
-    name: n6
+    name: n6-ipv4
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
@@ -100,15 +100,15 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
@@ -133,15 +133,15 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n4
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -178,8 +178,8 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
@@ -190,8 +190,8 @@ items:
         nephio.org/cluster-name: cluster01
   status:
     vlanID: 100
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
@@ -202,8 +202,8 @@ items:
         nephio.org/cluster-name: cluster01
   status:
     vlanID: 200
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6

@@ -1,10 +1,10 @@
 # ipam-fn
 
-The `ipam-fn` is a KRM function leveraging the `cond fn sdk`. It uses the `ipam.alloc.nephio.org/v1alpha1.IPAllocation` as a `for` KRM resource.
+The `ipam-fn` is a KRM function leveraging the `cond fn sdk`. It uses the `ipam.resource.nephio.org/v1alpha1.IPClaim` as a `for` KRM resource.
 
 ## details
 
-The function allocates IPs from a IP backend based on the content of the IPAllocation. The function is implemented to align with the `cond fn sdk` but, more importantly, the function can be used in a `kpt` pipeline without relying on porch. When used in a kpt pipeline, a stub backend can be deployed for testing purposes.
+The function claims IPs from a IP backend based on the content of the IPClaim. The function is implemented to align with the `cond fn sdk` but, more importantly, the function can be used in a `kpt` pipeline without relying on porch. When used in a kpt pipeline, a stub backend can be deployed for testing purposes.
 
 ## usage
 

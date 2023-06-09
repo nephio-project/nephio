@@ -84,7 +84,7 @@ The sdk defines different types of own resources:
     - the current/parent fn/controller defines the spec attributes of the child resource, but another child function/controller takes care of the actuation that are related to this KRM resource. Like updating the status and are deriving other child resources acting as a parent.
     - A remote function will act upon this KRM through a `for` filter and will update the status. 
     - The deletion is taken care of by the remote resource by acting on the delete annotation set by the sdk.
-    - An example use case is e.g. the interface-fn that needs an IP. The interface-fn is the parent that creates an IPAllocation on which a downstream function/controller acts and fills out the IP Allocation
+    - An example use case is e.g. the interface-fn that needs an IP. The interface-fn is the parent that creates an IPClaim on which a downstream function/controller acts and fills out the IP claim
 - childRemoteCondition: 
     - the current/parent fn/controller defines the KRM header attributes of the child resource, but another function/controller takes care of the spec and or status that are related to this KRM resource. 
     - A remote function will act upon this KRM through a `for` filter and will update the status
@@ -201,11 +201,11 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: condkptsdk.ChildRemoteCondition,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-					Kind:       ipamv1alpha1.IPAllocationKind,
+					Kind:       ipamv1alpha1.IPClaimKind,
 				}: condkptsdk.ChildRemote,
 				{
 					APIVersion: vlanv1alpha1.GroupVersion.Identifier(),
-					Kind:       vlanv1alpha1.VLANAllocationKind,
+					Kind:       vlanv1alpha1.VLANClaimKind,
 				}: condkptsdk.ChildRemote,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -272,42 +272,63 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 
 	// meta is the generic object meta attached to all derived child objects
 	meta := metav1.ObjectMeta{
-		Name: o.GetName(),
+		Name:        o.GetName(),
+		Annotations: getAnnotations(o.GetAnnotations()),
 	}
+
+	afs := getAddressFamilies(itfce.Spec.IpFamilyPolicy)
+
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
 		if !f.IsCNITypePresent(itfce.Spec.CNIType) {
 			return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfce.Spec.CNIType)
 		}
-		// add IP allocation of type network
-		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork)
-		if err != nil {
-			return nil, err
-		}
-		resources = append(resources, o)
-
-		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
-			// add VLAN allocation
-			o, err := f.getVLANAllocation(meta)
+		// add IPClaim of type network
+		for _, af := range afs {
+			meta := metav1.ObjectMeta{
+				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Annotations: getAnnotations(o.GetAnnotations()),
+			}
+			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
 			if err != nil {
 				return nil, err
 			}
 			resources = append(resources, o)
 		}
 
-		// allocate nad
+		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
+			// add VLANClaim
+			meta := metav1.ObjectMeta{
+				Name:        o.GetName(),
+				Annotations: f.getAnnotationsWithvlanClaimName(itfce),
+			}
+			o, err := f.getVLANClaim(meta)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, o)
+		}
+
+		// claim nad
 		o, err = f.getNAD(meta)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, o)
 	} else {
-		// add IP allocation of type loopback
-		o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback)
-		if err != nil {
-			return nil, err
+		// add IPClaim of type loopback
+		for _, af := range afs {
+			meta := metav1.ObjectMeta{
+				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Annotations: getAnnotations(o.GetAnnotations()),
+			}
+			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
+			if err != nil {
+				return nil, err
+			}
+			resources = append(resources, o)
 		}
-		resources = append(resources, o)
+
 	}
 	return resources, nil
 }
@@ -325,39 +346,39 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		return nil, err
 	}
 
-	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
-	for _, ipalloc := range ipallocs {
-		if ipalloc.GetName() == forObj.GetName() {
-			alloc, err := ko.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
-			if err != nil {
-				return nil, err
-			}
-			allocGoStruct, err := alloc.GetGoStruct()
-			if err != nil {
-				return nil, err
-			}
-			itfce.Status.IPAllocationStatus = &allocGoStruct.Status
+	ipclaims := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind))
+	sort.Slice(ipclaims, func(i, j int) bool {
+		return ipclaims[i].GetName() < ipclaims[j].GetName()
+	})
+	for _, ipclaim := range ipclaims {
+		// Dont care about the name since the condSDK sorts the data
+		// based on owner reference
+		claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipclaim)
+		if err != nil {
+			return nil, err
 		}
+		claimGoStruct, err := claim.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		itfce.Status.UpsertIPAllocation(claimGoStruct.Status)
 	}
-	vlanallocs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
-	for _, vlanalloc := range vlanallocs {
-		if vlanalloc.GetName() == forObj.GetName() {
-			alloc, err := vlanlibv1alpha1.NewFromKubeObject(vlanalloc)
-			if err != nil {
-				return nil, err
-			}
-			allocGoStruct, err := alloc.GetGoStruct()
-			if err != nil {
-				return nil, err
-			}
-			itfce.Status.VLANAllocationStatus = &allocGoStruct.Status
+	vlanclaims := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
+	for _, vlanclaim := range vlanclaims {
+		claim, err := ko.NewFromKubeObject[vlanv1alpha1.VLANClaim](vlanclaim)
+		if err != nil {
+			return nil, err
 		}
+		claimGoStruct, err := claim.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		itfce.Status.VLANClaimStatus = &claimGoStruct.Status
 	}
 	// set the status
 	err = itfceKOE.SetStatus(itfce)
 	return &itfceKOE.KubeObject, err
 }
-
 ```
 
 ### example without owns
@@ -385,11 +406,11 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: myFn.WorkloadClusterCallbackFn,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-					Kind:       ipamv1alpha1.IPAllocationKind,
+					Kind:       ipamv1alpha1.IPClaimKind,
 				}: nil,
 				{
 					APIVersion: vlanv1alpha1.GroupVersion.Identifier(),
-					Kind:       vlanv1alpha1.VLANAllocationKind,
+					Kind:       vlanv1alpha1.VLANClaimKind,
 				}: nil,
 				{
 					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
@@ -429,16 +450,17 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 		// no WorkloadCluster resource in the package
 		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 	}
-	ipAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind)))
-	vlanAllocationObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind)))
+	ipClaimObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind)))
+	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind)))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
+	fn.Logf("nad updateResourceFn: ifObj: %d, ipClaimObj: %d, vlanClaimObj: %d\n", len(interfaceObjs), len(ipClaimObjs), len(vlanClaimObjs))
 	// verify all needed objects exist
 	if interfaceObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
 	}
-	if ipAllocationObjs.Len() == 0 && vlanAllocationObjs.Len() == 0 {
-		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPAllocationKind, vlanv1alpha1.VLANAllocationKind)
+	if ipClaimObjs.Len() == 0 && vlanClaimObjs.Len() == 0 {
+		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPClaimKind, vlanv1alpha1.VLANClaimKind)
 	}
 
 	// generate an empty nad struct
@@ -447,31 +469,32 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
 			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: objs[0].GetName()},
+		ObjectMeta: metav1.ObjectMeta{Name: interfaceObjs[0].GetName()},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if ipAllocationObjs.Len() == 0 && vlanAllocationObjs.Len() != 0 {
-		nad.CniSpecType = nadlibv1.VlanAllocOnly
+	if ipClaimObjs.Len() == 0 && vlanClaimObjs.Len() != 0 {
+		nad.CniSpecType = nadlibv1.VlanClaimOnly
 	}
-	if nad.CniSpecType != nadlibv1.VlanAllocOnly {
+	if nad.CniSpecType != nadlibv1.VlanClaimOnly {
 		for _, itfce := range interfaceObjs {
-			i, err := interfacelibv1alpha1.NewFromKubeObject(itfce)
-			if err != nil {
-				return nil, err
-			}
-			interfaceGoStruct, err := i.GetGoStruct()
+			i, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](itfce)
 			if err != nil {
 				return nil, err
 			}
 
-			if !f.IsCNITypePresent(interfaceGoStruct.Spec.CNIType) {
-				return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, interfaceGoStruct.Spec.CNIType)
+			itfceGoStruct, err := i.GetGoStruct()
+			if err != nil {
+				return nil, err
 			}
 
-			if err := nad.SetCNIType(string(interfaceGoStruct.Spec.CNIType)); err != nil {
+			if !f.IsCNITypePresent(itfceGoStruct.Spec.CNIType) {
+				return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfceGoStruct.Spec.CNIType)
+			}
+
+			if err := nad.SetCNIType(string(itfceGoStruct.Spec.CNIType)); err != nil {
 				return nil, err
 			}
 			err = nad.SetNadMaster(*f.workloadCluster.Spec.MasterInterface) // since we validated the workload cluster before it is safe to do this
@@ -480,22 +503,23 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			}
 		}
 
-		for _, ipAllocation := range ipAllocationObjs {
-			alloc, err := ipalloclibv1alpha1.NewFromKubeObject(ipAllocation)
+		for _, ipClaim := range ipClaimObjs {
+			claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipClaim)
 			if err != nil {
 				return nil, err
 			}
-			allocGoStruct, err := alloc.GetGoStruct()
+
+			ipclaimGoStruct, err := claim.GetGoStruct()
 			if err != nil {
 				return nil, err
 			}
 			address := ""
 			gateway := ""
-			if allocGoStruct.Status.Prefix != nil {
-				address = *allocGoStruct.Status.Prefix
+			if ipclaimGoStruct.Status.Prefix != nil {
+				address = *ipclaimGoStruct.Status.Prefix
 			}
-			if allocGoStruct.Status.Gateway != nil {
-				gateway = *allocGoStruct.Status.Gateway
+			if ipclaimGoStruct.Status.Gateway != nil {
+				gateway = *ipclaimGoStruct.Status.Gateway
 			}
 			err = nad.SetIpamAddress([]nadlibv1.Addresses{{
 				Address: address,
@@ -507,8 +531,8 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 		}
 	}
 
-	for _, vlanAllocation := range vlanAllocationObjs {
-		vlanID, _, _ := vlanAllocation.NestedInt([]string{"status", "vlanID"}...)
+	for _, vlanClaim := range vlanClaimObjs {
+		vlanID, _, _ := vlanClaim.NestedInt([]string{"status", "vlanID"}...)
 		err = nad.SetVlan(vlanID)
 		if err != nil {
 			return nil, err
@@ -516,15 +540,6 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 	}
 
 	return &nad.K.KubeObject, nil
-}
-
-func (f *nadFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool {
-	for _, cni := range f.workloadCluster.Spec.CNIs {
-		if nephioreqv1alpha1.CNIType(cni) == itfceCNIType {
-			return true
-		}
-	}
-	return false
 }
 ```
 
