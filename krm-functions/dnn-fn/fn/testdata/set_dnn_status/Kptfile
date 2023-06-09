@@ -14,8 +14,8 @@ status:
   - message: update for condition
     status: "False"
     type: req.nephio.org/v1alpha1.DataNetwork.internet
-  - message: allocated
+  - message: done
     reason: req.nephio.org/v1alpha1.DataNetwork.internet
     status: "True"
-    type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
 

@@ -14,8 +14,8 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: internet-pool1
     annotations:
@@ -42,7 +42,7 @@ items:
     - message: delete resource
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
     - message: update for condition
       status: "False"
       type: req.nephio.org/v1alpha1.DataNetwork.internet

@@ -1,8 +1,8 @@
 apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3
     annotations:
@@ -30,4 +30,4 @@ items:
     conditions:
     - message: update done
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3

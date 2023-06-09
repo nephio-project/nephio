@@ -1,0 +1,131 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: cluster01
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.dataplane
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n4
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n6
+    - message: update for condition
+      status: "False"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Capacity
+  metadata:
+    name: dataplane
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    maxUplinkThroughput: 10G
+    maxDownlinkThroughput: 10G
+- apiVersion: req.nephio.org/v1alpha1
+  kind: DataNetwork
+  metadata:
+    name: internet
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    pools:
+    - name: pool1
+      prefixLength: 8
+  status:
+    pools:
+    - ipClaim:
+        prefix: 10.0.0.3/24
+        gateway: 10.0.0.1
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: sriov
+    attachmentType: vlan
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: sriov
+    attachmentType: vlan
+  status:
+    ipClaimStatus:
+    - prefix: 10.0.0.3/24
+      gateway: 10.0.0.1
+    vlanClaimStatus:
+      vlanID: 100
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n6
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    cniType: sriov
+    attachmentType: vlan
+  status:
+    ipClaimStatus:
+    - prefix: 10.0.0.4/24
+      gateway: 10.0.0.2
+    vlanClaimStatus:
+      vlanID: 101
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: upf-cluster01

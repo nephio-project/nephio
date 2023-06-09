@@ -27,9 +27,9 @@ import (
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
-	allocv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/common/v1alpha1"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
-	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
+	resourcev1alpha1 "github.com/nokia/k8s-ipam/apis/resource/common/v1alpha1"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -58,11 +58,11 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: condkptsdk.ChildRemoteCondition,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-					Kind:       ipamv1alpha1.IPAllocationKind,
+					Kind:       ipamv1alpha1.IPClaimKind,
 				}: condkptsdk.ChildRemote,
 				{
 					APIVersion: vlanv1alpha1.GroupVersion.Identifier(),
-					Kind:       vlanv1alpha1.VLANAllocationKind,
+					Kind:       vlanv1alpha1.VLANClaimKind,
 				}: condkptsdk.ChildRemote,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -140,13 +140,13 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		if !f.IsCNITypePresent(itfce.Spec.CNIType) {
 			return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfce.Spec.CNIType)
 		}
-		// add IP allocation of type network
+		// add IPClaim of type network
 		for _, af := range afs {
 			meta := metav1.ObjectMeta{
 				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
-			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
+			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
 			if err != nil {
 				return nil, err
 			}
@@ -154,32 +154,32 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		}
 
 		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
-			// add VLAN allocation
+			// add VLANClaim
 			meta := metav1.ObjectMeta{
 				Name:        o.GetName(),
-				Annotations: f.getAnnotationsWithvlanAllocName(itfce),
+				Annotations: f.getAnnotationsWithvlanClaimName(itfce),
 			}
-			o, err := f.getVLANAllocation(meta)
+			o, err := f.getVLANClaim(meta)
 			if err != nil {
 				return nil, err
 			}
 			resources = append(resources, o)
 		}
 
-		// allocate nad
+		// claim nad
 		o, err = f.getNAD(meta)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, o)
 	} else {
-		// add IP allocation of type loopback
+		// add IPClaim of type loopback
 		for _, af := range afs {
 			meta := metav1.ObjectMeta{
 				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
-			o, err := f.getIPAllocation(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
+			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
 			if err != nil {
 				return nil, err
 			}
@@ -203,74 +203,72 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		return nil, err
 	}
 
-	ipallocs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPAllocationGroupVersionKind))
-	sort.Slice(ipallocs, func(i, j int) bool {
-		return ipallocs[i].GetName() < ipallocs[j].GetName()
+	ipclaims := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind))
+	sort.Slice(ipclaims, func(i, j int) bool {
+		return ipclaims[i].GetName() < ipclaims[j].GetName()
 	})
-	for _, ipalloc := range ipallocs {
-		//if ipalloc.GetName() == forObj.GetName() {
-		alloc, err := ko.NewFromKubeObject[ipamv1alpha1.IPAllocation](ipalloc)
+	for _, ipclaim := range ipclaims {
+		// Dont care about the name since the condSDK sorts the data
+		// based on owner reference
+		claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipclaim)
 		if err != nil {
 			return nil, err
 		}
-		allocGoStruct, err := alloc.GetGoStruct()
+		claimGoStruct, err := claim.GetGoStruct()
 		if err != nil {
 			return nil, err
 		}
-		itfce.Status.UpsertIPAllocation(allocGoStruct.Status)
-		//}
+		itfce.Status.UpsertIPAllocation(claimGoStruct.Status)
 	}
-	vlanallocs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANAllocationGroupVersionKind))
-	for _, vlanalloc := range vlanallocs {
-		//if vlanalloc.GetName() == forObj.GetName() {
-		alloc, err := ko.NewFromKubeObject[vlanv1alpha1.VLANAllocation](vlanalloc)
+	vlanclaims := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
+	for _, vlanclaim := range vlanclaims {
+		claim, err := ko.NewFromKubeObject[vlanv1alpha1.VLANClaim](vlanclaim)
 		if err != nil {
 			return nil, err
 		}
-		allocGoStruct, err := alloc.GetGoStruct()
+		claimGoStruct, err := claim.GetGoStruct()
 		if err != nil {
 			return nil, err
 		}
-		itfce.Status.VLANAllocationStatus = &allocGoStruct.Status
-		//}
+		itfce.Status.VLANClaimStatus = &claimGoStruct.Status
 	}
 	// set the status
 	err = itfceKOE.SetStatus(itfce)
 	return &itfceKOE.KubeObject, err
 }
 
-func (f *itfceFn) getVLANAllocation(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
-	alloc := vlanv1alpha1.BuildVLANAllocation(
+func (f *itfceFn) getVLANClaim(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
+	claim := vlanv1alpha1.BuildVLANClaim(
 		meta,
-		vlanv1alpha1.VLANAllocationSpec{
-			VLANDatabase: corev1.ObjectReference{
+		vlanv1alpha1.VLANClaimSpec{
+			VLANIndex: corev1.ObjectReference{
 				Name: f.workloadCluster.Spec.ClusterName,
 			},
 		},
-		vlanv1alpha1.VLANAllocationStatus{},
+		vlanv1alpha1.VLANClaimStatus{},
 	)
 
-	return fn.NewFromTypedObject(alloc)
+	return fn.NewFromTypedObject(claim)
 }
 
-func (f *itfceFn) getIPAllocation(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af nephioreqv1alpha1.IPFamily) (*fn.KubeObject, error) {
-	alloc := ipamv1alpha1.BuildIPAllocation(
+func (f *itfceFn) getIPClaim(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af nephioreqv1alpha1.IPFamily) (*fn.KubeObject, error) {
+	claim := ipamv1alpha1.BuildIPClaim(
 		meta,
-		ipamv1alpha1.IPAllocationSpec{
+		ipamv1alpha1.IPClaimSpec{
 			Kind:            kind,
 			NetworkInstance: ni,
-			AllocationLabels: allocv1alpha1.AllocationLabels{
+			ClaimLabels: resourcev1alpha1.ClaimLabels{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						allocv1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
-						allocv1alpha1.NephioAddressFamilyKey: string(af),
+						resourcev1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
+						resourcev1alpha1.NephioAddressFamilyKey: string(af),
 					},
 				},
 			},
 		},
-		ipamv1alpha1.IPAllocationStatus{},
+		ipamv1alpha1.IPClaimStatus{},
 	)
-	return fn.NewFromTypedObject(alloc)
+	return fn.NewFromTypedObject(claim)
 }
 
 func (f *itfceFn) getNAD(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
@@ -301,9 +299,9 @@ func (f *itfceFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool 
 	return false
 }
 
-func (f *itfceFn) getAnnotationsWithvlanAllocName(itfce *nephioreqv1alpha1.Interface) map[string]string {
+func (f *itfceFn) getAnnotationsWithvlanClaimName(itfce *nephioreqv1alpha1.Interface) map[string]string {
 	a := getAnnotations(itfce.GetAnnotations())
-	a[condkptsdk.SpecializervlanAllocName] = fmt.Sprintf("%s-%s-bd", itfce.Spec.NetworkInstance.Name, f.workloadCluster.Spec.ClusterName)
+	a[condkptsdk.SpecializervlanClaimName] = fmt.Sprintf("%s-%s-bd", itfce.Spec.NetworkInstance.Name, f.workloadCluster.Spec.ClusterName)
 	return a
 }
 

@@ -24,13 +24,13 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type FnR struct {
-	ClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPAllocation]
+	ClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 }
 
 func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
@@ -39,10 +39,10 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 		&condkptsdk.Config{
 			For: corev1.ObjectReference{
 				APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-				Kind:       ipamv1alpha1.IPAllocationKind,
+				Kind:       ipamv1alpha1.IPClaimKind,
 			},
 			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:       f.updateIPAllocationResource,
+			UpdateResourceFn:       f.updateIPClaimResource,
 		},
 	)
 	if err != nil {
@@ -52,39 +52,39 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	return sdk.Run()
 }
 
-// updateIPAllocationResource provides an ip allocation for a given IPAllocation KRM resource
+// updateIPClaimResource provides an ip claim for a given KRM resource
 // in the package by calling the ipam backend
-func (f *FnR) updateIPAllocationResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
-	fn.Logf("ipalloc: %v\n", forObj)
-	allocKOE, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPAllocation](forObj)
+	fn.Logf("ipclaim: %v\n", forObj)
+	claimKOE, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPClaim](forObj)
 	if err != nil {
 		return nil, err
 	}
-	alloc, err := allocKOE.GetGoStruct()
+	claim, err := claimKOE.GetGoStruct()
 	if err != nil {
 		return nil, err
 	}
-	newalloc := alloc.DeepCopy()
-	newalloc.Name = getNewName(alloc.GetAnnotations(), alloc.GetName())
-	fn.Logf("ipalloc newName: %s\n", newalloc.Name)
-	resp, err := f.ClientProxy.Allocate(context.Background(), newalloc, nil)
+	newclaim := claim.DeepCopy()
+	newclaim.Name = getNewName(claim.GetAnnotations(), claim.GetName())
+	fn.Logf("ipclaim newName: %s\n", newclaim.Name)
+	resp, err := f.ClientProxy.Claim(context.Background(), newclaim, nil)
 	if err != nil {
 		return nil, err
 	}
-	alloc.Status = resp.Status
+	claim.Status = resp.Status
 
-	if alloc.Status.Prefix != nil {
-		fn.Logf("ipalloc resp prefix: %v\n", *resp.Status.Prefix)
+	if claim.Status.Prefix != nil {
+		fn.Logf("claim resp prefix: %v\n", *resp.Status.Prefix)
 	}
-	if alloc.Status.Gateway != nil {
-		fn.Logf("ipalloc resp gateway: %v\n", *resp.Status.Gateway)
+	if claim.Status.Gateway != nil {
+		fn.Logf("claim resp gateway: %v\n", *resp.Status.Gateway)
 	}
 	// set the status
-	err = allocKOE.SetStatus(resp)
-	return &allocKOE.KubeObject, err
+	err = claimKOE.SetStatus(resp)
+	return &claimKOE.KubeObject, err
 }
 
 func getNewName(annotations map[string]string, origName string) string {

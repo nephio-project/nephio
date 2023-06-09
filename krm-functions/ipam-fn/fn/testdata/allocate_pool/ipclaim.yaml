@@ -1,0 +1,14 @@
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
+metadata:
+  name: internet-pool
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+spec:
+  kind: pool
+  selector:
+    matchLabels:
+      nephio.org/cluster-name: cluster01
+  networkInstance:
+    name: vpc
+  prefixLength: 8

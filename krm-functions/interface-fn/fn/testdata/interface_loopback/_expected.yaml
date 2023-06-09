@@ -14,8 +14,8 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3-ipv4
     annotations:
@@ -44,7 +44,7 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
     - message: update for condition
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n3

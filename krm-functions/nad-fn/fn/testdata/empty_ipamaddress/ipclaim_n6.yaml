@@ -1,0 +1,16 @@
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
+metadata:
+  name: n6
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/cluster-name: cluster01
+  networkInstance:
+    name: vpc-internet
+status:
+  prefix: 16.0.0.2/24
+  gateway: 16.0.0.1

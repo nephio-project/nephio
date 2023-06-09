@@ -14,8 +14,8 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: internet-pool1
     annotations:
@@ -43,10 +43,10 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: allocated
+    - message: done
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
     - message: update done
       status: "True"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
@@ -75,5 +75,5 @@ items:
   status:
     pools:
     - name: pool1
-      ipAllocation:
+      ipClaim:
         prefix: 1.1.1.1/24

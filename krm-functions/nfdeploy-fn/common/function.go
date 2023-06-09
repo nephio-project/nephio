@@ -143,8 +143,8 @@ func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 		return err
 	}
 
-	itfcIPAllocStatus := itfce.Status.IPAllocationStatus
-	itfcVlanAllocStatus := itfce.Status.VLANAllocationStatus
+	itfcIPAllocStatus := itfce.Status.IPClaimStatus
+	itfcVlanAllocStatus := itfce.Status.VLANClaimStatus
 
 	// validate if status is not nil
 	if itfcIPAllocStatus == nil || itfcVlanAllocStatus == nil {
@@ -201,9 +201,13 @@ func (f *NfDeployFn[T, PT]) DnnUpdate(o *fn.KubeObject) error {
 		return nil
 	}
 
-	var pools []nephiodeployv1alpha1.Pool
-	for _, pool := range dnnReq.Status.Pools {
-		pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPAllocation.Prefix})
+	pools := []nephiodeployv1alpha1.Pool{}
+	if len(dnnReq.Status.Pools) != 0 {
+		for _, pool := range dnnReq.Status.Pools {
+			if pool.IPClaim.Prefix != nil {
+				pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPClaim.Prefix})
+			}
+		}
 	}
 
 	dnn := nephiodeployv1alpha1.DataNetwork{

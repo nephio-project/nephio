@@ -14,8 +14,8 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3-ipv4
     annotations:
@@ -30,8 +30,8 @@ items:
     networkInstance:
       name: vpc-ran
   status: {}
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3-ipv6
     annotations:
@@ -60,11 +60,11 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv6
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
@@ -76,7 +76,7 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: update for condition
       status: "False"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
@@ -94,13 +94,13 @@ items:
     attachmentType: vlan
     ipFamilyPolicy: dualstack
   status: {}
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     name: n3
     annotations:
       specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      specializer.nephio.org/vlanAllocName: vpc-ran-cluster01-bd
+      specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     vlanDatabase:

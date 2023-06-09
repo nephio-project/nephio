@@ -1,0 +1,18 @@
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
+metadata:
+  name: internet-pool1
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+spec:
+  kind: pool
+  selector:
+    matchLabels:
+      nephio.org/address-family: ipv4
+      nephio.org/cluster-name: cluster01
+  createPrefix: true
+  networkInstance:
+    name: vpc-internet
+  prefixLength: 8
+status:
+  prefix: "1.1.1.1/24"

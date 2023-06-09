@@ -1,4 +1,4 @@
-apiVersion: ipam.alloc.nephio.org/v1alpha1
+apiVersion: ipam.resource.nephio.org/v1alpha1
 kind: IPAllocation
 metadata:
   name: internet-pool1

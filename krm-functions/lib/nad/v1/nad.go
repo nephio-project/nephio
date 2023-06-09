@@ -69,7 +69,7 @@ type CniSpecType int64
 
 const (
 	OtherType CniSpecType = iota // 0
-	VlanAllocOnly
+	VlanClaimOnly
 	IpVlanType
 	SriovType
 	MacVlanType
@@ -121,7 +121,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 	}
 	nadConfigStruct.CniVersion = CniVersion
 	switch cniSpecType := r.CniSpecType; cniSpecType {
-	case VlanAllocOnly:
+	case VlanClaimOnly:
 		return nadConfigStruct, nil
 	case IpVlanType:
 		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {

@@ -14,8 +14,8 @@ items:
     - ipvlan
     - sriov
     masterInterface: eth1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3-ipv4
     annotations:
@@ -32,8 +32,8 @@ items:
   status:
     prefix: "10.0.0.2/24"
     gateway: 10.0.0.1
-- apiVersion: ipam.alloc.nephio.org/v1alpha1
-  kind: IPAllocation
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
   metadata:
     name: n3-ipv6
     annotations:
@@ -72,11 +72,11 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv6
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
@@ -88,7 +88,7 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: update for condition
       status: "False"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
@@ -106,20 +106,20 @@ items:
     attachmentType: vlan
     ipFamilyPolicy: dualstack
   status:
-    ipAllocationStatus:
+    ipClaimStatus:
     - prefix: 10.0.0.2/24
       gateway: 10.0.0.1
     - prefix: 1000::2/64
       gateway: 1000::1
-    vlanAllocationStatus:
+    vlanClaimStatus:
       vlanID: 10
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     name: n3
     annotations:
       specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      specializer.nephio.org/vlanAllocName: vpc-ran-cluster01-bd
+      specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     vlanDatabase:

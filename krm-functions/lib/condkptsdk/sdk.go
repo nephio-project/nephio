@@ -29,7 +29,7 @@ const (
 	SpecializerDelete        = "specializer.nephio.org/delete"
 	SpecializerDebug         = "specializer.nephio.org/debug"
 	SpecializerPurpose       = "specializer.nephio.org/purpose"
-	SpecializervlanAllocName = "specializer.nephio.org/vlanAllocName"
+	SpecializervlanClaimName = "specializer.nephio.org/vlanClaimName"
 )
 
 type KptCondSDK interface {

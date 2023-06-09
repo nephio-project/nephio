@@ -71,10 +71,10 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
+    ipClaimStatus:
     - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
-    vlanAllocationStatus:
+    vlanClaimStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -89,10 +89,10 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
+    ipClaimStatus:
     - prefix: 10.0.0.3/24
       gateway: 10.0.0.1
-    vlanAllocationStatus:
+    vlanClaimStatus:
       vlanID: 100
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -107,10 +107,10 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-    ipAllocationStatus:
+    ipClaimStatus:
     - prefix: 10.0.0.4/24
       gateway: 10.0.0.2
-    vlanAllocationStatus:
+    vlanClaimStatus:
       vlanID: 101
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
