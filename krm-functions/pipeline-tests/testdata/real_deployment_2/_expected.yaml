@@ -1,0 +1,355 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: cluster01
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: internet-pool1
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+  spec:
+    kind: pool
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv4
+        nephio.org/cluster-name: cluster01
+    createPrefix: true
+    networkInstance:
+      name: vpc-internet
+    prefixLength: 8
+  status:
+    prefix: 172.0.0.0/8
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: n3-ipv4
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv4
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-ran
+  status:
+    prefix: 10.0.0.10/24
+    gateway: 10.0.0.1
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: n4-ipv4
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv4
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-internal
+  status:
+    prefix: 10.0.0.10/24
+    gateway: 10.0.0.1
+- apiVersion: ipam.alloc.nephio.org/v1alpha1
+  kind: IPAllocation
+  metadata:
+    name: n6-ipv4
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv4
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-internet
+  status:
+    prefix: 10.0.0.10/24
+    gateway: 10.0.0.1
+- apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
+    name: n3
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+- apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
+    name: n4
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
+  spec:
+    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+- apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
+    name: n6
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+  spec:
+    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+- apiVersion: kpt.dev/v1
+  info:
+    description: upf package example
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-upf
+  pipeline: {}
+  status:
+    conditions:
+    - message: update done
+      reason: req.nephio.org/v1alpha1.DataNetwork.internet
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.internet-pool1
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n3-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n4-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: ipam.alloc.nephio.org/v1alpha1.IPAllocation.n6-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.dataplane
+    - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n4
+    - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.n6
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
+    - message: update done
+      status: "True"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Capacity
+  metadata:
+    name: dataplane
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    maxUplinkThroughput: 10G
+    maxDownlinkThroughput: 10G
+- apiVersion: req.nephio.org/v1alpha1
+  kind: DataNetwork
+  metadata:
+    name: internet
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    pools:
+    - name: pool1
+      prefixLength: 8
+  status:
+    pools:
+    - name: pool1
+      ipAllocation:
+        prefix: 172.0.0.0/8
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: sriov
+    attachmentType: vlan
+  status:
+    ipAllocationStatus:
+    - prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: sriov
+    attachmentType: vlan
+  status:
+    ipAllocationStatus:
+    - prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n6
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    cniType: sriov
+    attachmentType: vlan
+  status:
+    ipAllocationStatus:
+    - prefix: 10.0.0.10/24
+      gateway: 10.0.0.1
+    vlanAllocationStatus:
+      vlanID: 10
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  data:
+    name: example
+- apiVersion: vlan.alloc.nephio.org/v1alpha1
+  kind: VLANAllocation
+  metadata:
+    name: n3
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-ran-cluster01-bd
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    vlanDatabase:
+      name: cluster01
+  status:
+    vlanID: 10
+- apiVersion: vlan.alloc.nephio.org/v1alpha1
+  kind: VLANAllocation
+  metadata:
+    name: n4
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-internal-cluster01-bd
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
+  spec:
+    vlanDatabase:
+      name: cluster01
+  status:
+    vlanID: 10
+- apiVersion: vlan.alloc.nephio.org/v1alpha1
+  kind: VLANAllocation
+  metadata:
+    name: n6
+    annotations:
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/vlanAllocName: vpc-internet-cluster01-bd
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+  spec:
+    vlanDatabase:
+      name: cluster01
+  status:
+    vlanID: 10
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: upf-cluster01
+  spec:
+    capacity:
+      maxDownlinkThroughput: 10G
+      maxUplinkThroughput: 10G
+    interfaces:
+    - name: n3
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    - name: n4
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    - name: n6
+      ipv4:
+        address: 10.0.0.10/24
+        gateway: 10.0.0.1
+      vlanID: 10
+    networkInstances:
+    - name: vpc-internal
+      interfaces:
+      - n4
+    - name: vpc-internet
+      dataNetworks:
+      - name: vpc-internet
+        pool:
+        - prefix: 172.0.0.0/8
+      interfaces:
+      - n6
+    - name: vpc-ran
+      interfaces:
+      - n3
