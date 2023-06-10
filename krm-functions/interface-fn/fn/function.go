@@ -218,7 +218,7 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		if err != nil {
 			return nil, err
 		}
-		itfce.Status.UpsertIPAllocation(claimGoStruct.Status)
+		itfce.Status.UpsertIPClaim(claimGoStruct.Status)
 	}
 	vlanclaims := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
 	for _, vlanclaim := range vlanclaims {
