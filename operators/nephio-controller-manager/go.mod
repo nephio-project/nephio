@@ -6,6 +6,7 @@ go 1.20
 
 require (
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230602055209-50adad6b97a6
+	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
@@ -61,7 +62,6 @@ require (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6 // indirect
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9 // indirect
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230519080401-f95bbb7f58a6 // indirect
-	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect

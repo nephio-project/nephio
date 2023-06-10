@@ -27,6 +27,9 @@ import (
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
+	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -118,9 +121,9 @@ func main() {
 
 	// Start a Gitea Client
 	// Prepare configuration for reconcilers
-	clientProxy := "127.0.0.1:9999"
+	clientProxyAddress := "127.0.0.1:9999"
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
-		clientProxy = address
+		clientProxyAddress = address
 	}
 	// Sending the porchclient to getgitea, this will be used to get
 	// the secret objects for gitea client authentication. The client
@@ -136,7 +139,12 @@ func main() {
 			continue
 		}
 		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
-			Address:         clientProxy,
+			IpamClientProxy: ipam.New(ctx, clientproxy.Config{
+				Address: clientProxyAddress,
+			}),
+			VlanClientProxy: vlan.New(ctx, clientproxy.Config{
+				Address: clientProxyAddress,
+			}),
 			PorchClient:     porchClient,
 			PorchRESTClient: porchRESTClient,
 			GiteaClient:     g,
