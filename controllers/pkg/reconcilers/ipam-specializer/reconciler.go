@@ -34,7 +34,7 @@ import (
 	function "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	"github.com/pkg/errors"
