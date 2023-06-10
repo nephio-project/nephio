@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/kustomize/kyaml/kio/filters"
 )
 
 func init() {
@@ -191,7 +192,9 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 func getAnnotations(annotations map[string]string) map[string]string {
 	a := map[string]string{}
 	for k, v := range annotations {
-		a[k] = v
+		if k == filters.LocalConfigAnnotation {
+			a[k] = v
+		}
 	}
 	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
 		a[condkptsdk.SpecializerPurpose] = owner
