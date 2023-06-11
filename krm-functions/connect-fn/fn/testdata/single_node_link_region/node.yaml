@@ -1,0 +1,10 @@
+apiVersion: inv.nephio.org/v1alpha1
+kind: Node
+metadata:
+  name: srl
+  labels:
+    nephio.org/node-name: srl
+    nephio.org/provider: srl.nokia.com
+    nephio.org/topology: nephio
+spec:
+  provider: srl.nokia.com

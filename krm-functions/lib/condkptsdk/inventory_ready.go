@@ -42,9 +42,13 @@ func (r *inv) isReady() bool {
 	ready := true
 	// the readiness is determined by the global watch resources
 	for watchRef, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{{}}) {
-		fn.Logf("isReady: watchRef: %v, resCtx: %#v\n", watchRef, *resCtx)
+		if r.debug {
+			fn.Logf("isReady: watchRef: %v, resCtx: %#v\n", watchRef, *resCtx)
+		}
 		if resCtx.existingCondition != nil {
-			fn.Logf("isReady: watchRef: %v, condition: %#v\n", watchRef, resCtx.existingCondition)
+			if r.debug {
+				fn.Logf("isReady: watchRef: %v, condition: %#v\n", watchRef, resCtx.existingCondition)
+			}
 		}
 		// if global watched resource does not exist we fail readiness
 		// if the condition is present and the status is False something is pending, so we
@@ -80,7 +84,10 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 			forCondition: forResCtx.existingCondition,
 		}
 		for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
-			fn.Logf("getReadyMap: own ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
+			if r.debug {
+				fn.Logf("getReadyMap: own ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
+			}
+
 			if resCtx.existingCondition == nil ||
 				resCtx.existingCondition.Status == kptv1.ConditionFalse {
 				readyMap[forRef].ready = false
@@ -91,12 +98,16 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 		}
 		for ref, resCtx := range r.get(watchGVKKind, []corev1.ObjectReference{forRef, {}}) {
 			// TBD we need to look at some watches that we want to check the condition for and others not
-			fn.Logf("getReadyMap: watch ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
+			if r.debug {
+				fn.Logf("getReadyMap: watch ref: %v, resCtx condition %v\n", ref, resCtx.existingCondition)
+			}
 			if resCtx.existingCondition == nil || resCtx.existingCondition.Status == kptv1.ConditionFalse {
 				// ignore validating consition if the the owner reference is equal to the watch resource
 				// e.g. interface watch in case of nad forFilter
 				if kptfilelibv1.GetConditionType(&ref) != forResCtx.existingCondition.Reason {
-					fn.Logf("getReadyMap: watch ref: %v not ready, forOwnreason: %s, resType %s", ref, forResCtx.existingCondition.Reason, kptfilelibv1.GetConditionType(&ref))
+					if r.debug {
+						fn.Logf("getReadyMap: watch ref: %v not ready, forOwnreason: %s, resType %s", ref, forResCtx.existingCondition.Reason, kptfilelibv1.GetConditionType(&ref))
+					}
 					readyMap[forRef].ready = false
 				}
 			}

@@ -115,6 +115,7 @@ func (r *sdk) Run() (bool, error) {
 	for _, forObj := range forObjs {
 		if forObj.GetAnnotation(SpecializerDebug) != "" {
 			r.debug = true
+			r.inv.setdebug()
 		}
 	}
 	// initialize inventory
