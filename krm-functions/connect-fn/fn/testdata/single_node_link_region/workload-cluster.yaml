@@ -6,7 +6,7 @@ metadata:
     config.kubernetes.io/local-config: "true"
     kpt.dev/config-injection: required
 spec:
-  clusterName: region01
+  clusterName: regional
   cnis:
   - macvlan
   - ipvlan

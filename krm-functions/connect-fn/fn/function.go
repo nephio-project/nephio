@@ -344,7 +344,7 @@ func getLinkId(labels map[string]string) (int, error) {
 }
 
 const edge = "edge"
-const region = "region"
+const region = "regional"
 
 // This is specific for a lab environment. In reality we dont need this
 // but in a lab we connect multiple clusters to the same device

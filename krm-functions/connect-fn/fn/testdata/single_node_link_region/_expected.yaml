@@ -47,7 +47,7 @@ items:
       config.kubernetes.io/local-config: "true"
       kpt.dev/config-injection: required
   spec:
-    clusterName: region01
+    clusterName: regional
     cnis:
     - macvlan
     - ipvlan
@@ -59,7 +59,7 @@ items:
     name: srl-e1-17
     labels:
       nephio.org/interface-name: e1-17
-      nephio.org/link-name: region01-node1-eth1-srl-e1-17
+      nephio.org/link-name: regional-node1-eth1-srl-e1-17
       nephio.org/node-name: srl
       nephio.org/provider: srl.nokia.com
       nephio.org/topology: nephio
@@ -76,7 +76,7 @@ items:
     name: srl-e1-18
     labels:
       nephio.org/interface-name: e1-18
-      nephio.org/link-name: region01-node2-eth1-srl-e1-18
+      nephio.org/link-name: regional-node2-eth1-srl-e1-18
       nephio.org/node-name: srl
       nephio.org/provider: srl.nokia.com
       nephio.org/topology: nephio
@@ -90,15 +90,15 @@ items:
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Link
   metadata:
-    name: region01-node1-eth1-srl-e1-17
+    name: regional-node1-eth1-srl-e1-17
     labels:
-      nephio.org/link-name: region01-node1-eth1-srl-e1-17
+      nephio.org/link-name: regional-node1-eth1-srl-e1-17
       nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
     endpoints:
-    - nodeName: region01-node1
+    - nodeName: regional-node1
       interfaceName: eth1
     - nodeName: srl
       interfaceName: e1-17
@@ -106,15 +106,15 @@ items:
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Link
   metadata:
-    name: region01-node2-eth1-srl-e1-18
+    name: regional-node2-eth1-srl-e1-18
     labels:
-      nephio.org/link-name: region01-node2-eth1-srl-e1-18
+      nephio.org/link-name: regional-node2-eth1-srl-e1-18
       nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
     endpoints:
-    - nodeName: region01-node2
+    - nodeName: regional-node2
       interfaceName: eth1
     - nodeName: srl
       interfaceName: e1-18
@@ -154,11 +154,11 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Link.region01-node1-eth1-srl-e1-17
+      type: inv.nephio.org/v1alpha1.Link.regional-node1-eth1-srl-e1-17
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Link.region01-node2-eth1-srl-e1-18
+      type: inv.nephio.org/v1alpha1.Link.regional-node2-eth1-srl-e1-18
     - message: update done
       status: "True"
       type: req.nephio.org/v1alpha1.Link.link1
