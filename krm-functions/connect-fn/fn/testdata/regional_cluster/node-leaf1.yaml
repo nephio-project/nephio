@@ -1,0 +1,12 @@
+apiVersion: inv.nephio.org/v1alpha1
+kind: Node
+metadata: # kpt-merge: /leaf1
+  name: leaf1
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    kpt.dev/config-injection: required
+    internal.kpt.dev/upstream-identifier: 'inv.nephio.org|Node|default|leaf1'
+    kpt.dev/injected-resource: leaf1
+    nephio.org/cluster-name: regional
+spec:
+  provider: srl.nokia.com

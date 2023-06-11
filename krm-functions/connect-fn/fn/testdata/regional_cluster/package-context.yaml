@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: # kpt-merge: /kptfile.kpt.dev
+  name: kptfile.kpt.dev
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    internal.kpt.dev/upstream-identifier: '|ConfigMap|default|kptfile.kpt.dev'
+    nephio.org/cluster-name: regional
+data:
+  name: regional-cluster
+  package-path: regional-cluster

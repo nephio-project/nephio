@@ -256,6 +256,7 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 				invv1alpha1.NephioProviderKey:      provider,
 				invv1alpha1.NephioInterfaceNameKey: netwNodeIfName,
 				invv1alpha1.NephioLinkNameKey:      linkName,
+				invv1alpha1.NephioClusterNameKey:   clusterName,
 			},
 		}
 		obj, err = f.getEndpoint(epMeta, invv1alpha1.EndpointSpec{

@@ -1,0 +1,9 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Link
+metadata:
+  name: link1
+  labels:
+    nephio.org/nodeId: "0" # can be 0 or 1
+    nephio.org/linkId: "1" # can be 1 or 2
+    nephio.org/interfaceName: "eth1"
+spec:

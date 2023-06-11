@@ -1,0 +1,18 @@
+apiVersion: fn.kpt.dev/v1alpha1
+kind: ApplyReplacements
+metadata: # kpt-merge: /propagate-values
+  name: propagate-values
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    internal.kpt.dev/upstream-identifier: 'fn.kpt.dev|ApplyReplacements|default|propagate-values'
+    nephio.org/cluster-name: regional
+replacements:
+- source:
+    kind: WorkloadCluster
+    name: workload-cluster
+    fieldPath: spec.clusterName
+  targets:
+  - select:
+      kind: Cluster
+    fieldPaths:
+    - metadata.name

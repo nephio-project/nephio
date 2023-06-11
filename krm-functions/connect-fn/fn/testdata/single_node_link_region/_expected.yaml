@@ -58,6 +58,7 @@ items:
   metadata:
     name: srl-e1-17
     labels:
+      nephio.org/cluster-name: regional
       nephio.org/interface-name: e1-17
       nephio.org/link-name: regional-node1-eth1-srl-e1-17
       nephio.org/node-name: srl
@@ -75,6 +76,7 @@ items:
   metadata:
     name: srl-e1-18
     labels:
+      nephio.org/cluster-name: regional
       nephio.org/interface-name: e1-18
       nephio.org/link-name: regional-node2-eth1-srl-e1-18
       nephio.org/node-name: srl

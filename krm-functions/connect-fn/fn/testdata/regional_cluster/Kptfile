@@ -1,0 +1,45 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata: # kpt-merge: /regional-cluster
+  name: regional-cluster
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    internal.kpt.dev/upstream-identifier: kpt.dev|Kptfile|default|regional-cluster
+    nephio.org/cluster-name: regional
+upstream:
+  type: git
+  git:
+    repo: https://github.com/henderiw-nephio/blueprints-manifests.git
+    directory: cluster-capi-kind
+    ref: main
+upstreamLock:
+  type: git
+  git:
+    repo: https://github.com/henderiw-nephio/blueprints-manifests.git
+    directory: cluster-capi-kind
+    ref: main
+    commit: 16d4d84d2a9f4bcba11b65c1717beacee658a054
+info:
+  readinessGates:
+  - conditionType: config.injection.Node.leaf1
+  - conditionType: config.injection.WorkloadCluster.workload-cluster
+  description: This package provides a blueprint for deploying a capi cluster using the capi kind docker templates
+pipeline:
+  mutators:
+  - name: PackageVariant.regional-cluster..0
+    image: gcr.io/kpt-fn/set-annotations:v0.1.4
+    configMap:
+      nephio.org/cluster-name: regional
+  - image: gcr.io/kpt-fn/apply-replacements:v0.1.1
+    configPath: apply-replacements.yaml
+  - image: docker.io/nephio/connect-fn:latest
+status:
+  conditions:
+  - type: config.injection.Node.leaf1
+    status: "True"
+    message: injected resource "leaf1" from cluster
+    reason: ConfigInjected
+  - type: config.injection.WorkloadCluster.workload-cluster
+    status: "True"
+    message: injected resource "regional" from cluster
+    reason: ConfigInjected

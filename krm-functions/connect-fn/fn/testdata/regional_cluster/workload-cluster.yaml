@@ -1,0 +1,17 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: WorkloadCluster
+metadata: # kpt-merge: /workload-cluster
+  name: workload-cluster
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    kpt.dev/config-injection: required
+    internal.kpt.dev/upstream-identifier: 'infra.nephio.org|WorkloadCluster|default|workload-cluster'
+    kpt.dev/injected-resource: regional
+    nephio.org/cluster-name: regional
+spec:
+  clusterName: regional
+  cnis:
+  - macvlan
+  - ipvlan
+  - sriov
+  masterInterface: eth1

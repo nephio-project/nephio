@@ -1,0 +1,243 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: cluster.x-k8s.io/v1beta1
+  kind: Cluster
+  metadata: # kpt-merge: default/workload
+    name: regional
+    namespace: default
+    annotations:
+      internal.kpt.dev/upstream-identifier: 'cluster.x-k8s.io|Cluster|default|workload'
+      nephio.org/cluster-name: regional
+  spec:
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+        - 192.168.0.0/16
+      serviceDomain: cluster.local
+      services:
+        cidrBlocks:
+        - 10.128.0.0/12
+    topology:
+      class: docker
+      controlPlane:
+        metadata: {}
+        replicas: 1
+      variables:
+      - name: imageRepository
+        value: ""
+      - name: etcdImageTag
+        value: ""
+      - name: coreDNSImageTag
+        value: ""
+      - name: podSecurityStandard
+        value:
+          audit: restricted
+          enabled: true
+          enforce: baseline
+          warn: restricted
+      version: v1.26.3
+      workers:
+        machineDeployments:
+        - class: docker-default-worker
+          name: md-0
+          replicas: 1
+- apiVersion: fn.kpt.dev/v1alpha1
+  kind: ApplyReplacements
+  metadata: # kpt-merge: /propagate-values
+    name: propagate-values
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      internal.kpt.dev/upstream-identifier: 'fn.kpt.dev|ApplyReplacements|default|propagate-values'
+      nephio.org/cluster-name: regional
+  replacements:
+  - source:
+      kind: WorkloadCluster
+      name: workload-cluster
+      fieldPath: spec.clusterName
+    targets:
+    - select:
+        kind: Cluster
+      fieldPaths:
+      - metadata.name
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata: # kpt-merge: /workload-cluster
+    name: workload-cluster
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      kpt.dev/config-injection: required
+      internal.kpt.dev/upstream-identifier: 'infra.nephio.org|WorkloadCluster|default|workload-cluster'
+      kpt.dev/injected-resource: regional
+      nephio.org/cluster-name: regional
+  spec:
+    clusterName: regional
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: inv.nephio.org/v1alpha1
+  kind: Endpoint
+  metadata:
+    name: leaf1-e1-17
+    labels:
+      nephio.org/cluster-name: regional
+      nephio.org/interface-name: e1-17
+      nephio.org/link-name: regional-node1-eth1-leaf1-e1-17
+      nephio.org/node-name: leaf1
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: ""
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
+  spec:
+    nodeName: leaf1
+    interfaceName: e1-17
+    provider: srl.nokia.com
+  status: {}
+- apiVersion: inv.nephio.org/v1alpha1
+  kind: Endpoint
+  metadata:
+    name: leaf1-e1-18
+    labels:
+      nephio.org/cluster-name: regional
+      nephio.org/interface-name: e1-18
+      nephio.org/link-name: regional-node2-eth1-leaf1-e1-18
+      nephio.org/node-name: leaf1
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: ""
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
+  spec:
+    nodeName: leaf1
+    interfaceName: e1-18
+    provider: srl.nokia.com
+  status: {}
+- apiVersion: inv.nephio.org/v1alpha1
+  kind: Link
+  metadata:
+    name: regional-node1-eth1-leaf1-e1-17
+    labels:
+      nephio.org/link-name: regional-node1-eth1-leaf1-e1-17
+      nephio.org/topology: ""
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
+  spec:
+    endpoints:
+    - nodeName: regional-node1
+      interfaceName: eth1
+    - nodeName: leaf1
+      interfaceName: e1-17
+  status: {}
+- apiVersion: inv.nephio.org/v1alpha1
+  kind: Link
+  metadata:
+    name: regional-node2-eth1-leaf1-e1-18
+    labels:
+      nephio.org/link-name: regional-node2-eth1-leaf1-e1-18
+      nephio.org/topology: ""
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
+  spec:
+    endpoints:
+    - nodeName: regional-node2
+      interfaceName: eth1
+    - nodeName: leaf1
+      interfaceName: e1-18
+  status: {}
+- apiVersion: inv.nephio.org/v1alpha1
+  kind: Node
+  metadata: # kpt-merge: /leaf1
+    name: leaf1
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      kpt.dev/config-injection: required
+      internal.kpt.dev/upstream-identifier: 'inv.nephio.org|Node|default|leaf1'
+      kpt.dev/injected-resource: leaf1
+      nephio.org/cluster-name: regional
+  spec:
+    provider: srl.nokia.com
+- apiVersion: kpt.dev/v1
+  info:
+    description: This package provides a blueprint for deploying a capi cluster using the capi kind docker templates
+    readinessGates:
+    - conditionType: config.injection.Node.leaf1
+    - conditionType: config.injection.WorkloadCluster.workload-cluster
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      internal.kpt.dev/upstream-identifier: kpt.dev|Kptfile|default|regional-cluster
+      nephio.org/cluster-name: regional
+    name: regional-cluster
+  pipeline:
+    mutators:
+    - configMap:
+        nephio.org/cluster-name: regional
+      image: gcr.io/kpt-fn/set-annotations:v0.1.4
+      name: PackageVariant.regional-cluster..0
+    - configPath: apply-replacements.yaml
+      image: gcr.io/kpt-fn/apply-replacements:v0.1.1
+    - image: docker.io/nephio/connect-fn:latest
+  status:
+    conditions:
+    - message: injected resource "leaf1" from cluster
+      reason: ConfigInjected
+      status: "True"
+      type: config.injection.Node.leaf1
+    - message: injected resource "regional" from cluster
+      reason: ConfigInjected
+      status: "True"
+      type: config.injection.WorkloadCluster.workload-cluster
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Link.link1
+      status: "True"
+      type: inv.nephio.org/v1alpha1.Endpoint.leaf1-e1-17
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Link.link1
+      status: "True"
+      type: inv.nephio.org/v1alpha1.Endpoint.leaf1-e1-18
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Link.link1
+      status: "True"
+      type: inv.nephio.org/v1alpha1.Link.regional-node1-eth1-leaf1-e1-17
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Link.link1
+      status: "True"
+      type: inv.nephio.org/v1alpha1.Link.regional-node2-eth1-leaf1-e1-18
+    - message: update done
+      status: "True"
+      type: req.nephio.org/v1alpha1.Link.link1
+  upstream:
+    git:
+      directory: cluster-capi-kind
+      ref: main
+      repo: https://github.com/henderiw-nephio/blueprints-manifests.git
+    type: git
+  upstreamLock:
+    git:
+      commit: 16d4d84d2a9f4bcba11b65c1717beacee658a054
+      directory: cluster-capi-kind
+      ref: main
+      repo: https://github.com/henderiw-nephio/blueprints-manifests.git
+    type: git
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Link
+  metadata:
+    name: link1
+    labels:
+      nephio.org/nodeId: "0" # can be 0 or 1
+      nephio.org/linkId: "1" # can be 1 or 2
+      nephio.org/interfaceName: "eth1"
+  spec:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata: # kpt-merge: /kptfile.kpt.dev
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      internal.kpt.dev/upstream-identifier: '|ConfigMap|default|kptfile.kpt.dev'
+      nephio.org/cluster-name: regional
+  data:
+    name: regional-cluster
+    package-path: regional-cluster
