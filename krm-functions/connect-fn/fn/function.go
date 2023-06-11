@@ -226,8 +226,8 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 			Name:      linkName,
 			Namespace: o.GetNamespace(),
 			Labels: map[string]string{
-				invv1alpha1.NephioTopologyKey:      topologyName,
-				invv1alpha1.NephioLinkNameKey:      linkName,
+				invv1alpha1.NephioTopologyKey: topologyName,
+				invv1alpha1.NephioLinkNameKey: linkName,
 			},
 		}
 		obj, err := f.getLink(linkMeta, invv1alpha1.LinkSpec{
