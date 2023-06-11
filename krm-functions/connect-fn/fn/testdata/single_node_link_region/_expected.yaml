@@ -57,6 +57,12 @@ items:
   kind: Endpoint
   metadata:
     name: srl-e1-17
+    labels:
+      nephio.org/interface-name: e1-17
+      nephio.org/link-name: region01-node1-eth1-srl-e1-17
+      nephio.org/node-name: srl
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -68,6 +74,12 @@ items:
   kind: Endpoint
   metadata:
     name: srl-e1-18
+    labels:
+      nephio.org/interface-name: e1-18
+      nephio.org/link-name: region01-node2-eth1-srl-e1-18
+      nephio.org/node-name: srl
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -79,6 +91,9 @@ items:
   kind: Link
   metadata:
     name: region01-node1-eth1-srl-e1-17
+    labels:
+      nephio.org/link-name: region01-node1-eth1-srl-e1-17
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -92,6 +107,9 @@ items:
   kind: Link
   metadata:
     name: region01-node2-eth1-srl-e1-18
+    labels:
+      nephio.org/link-name: region01-node2-eth1-srl-e1-18
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -151,4 +169,5 @@ items:
     labels:
       nephio.org/nodeId: "0" # can be 0 or 1
       nephio.org/linkId: "1" # can be 1 or 2
+      nephio.org/interfaceName: "eth1"
   spec:

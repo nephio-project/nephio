@@ -57,6 +57,12 @@ items:
   kind: Endpoint
   metadata:
     name: srl-e1-10
+    labels:
+      nephio.org/interface-name: e1-10
+      nephio.org/link-name: edge03-node2-eth1-srl-e1-10
+      nephio.org/node-name: srl
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -68,6 +74,12 @@ items:
   kind: Endpoint
   metadata:
     name: srl-e1-9
+    labels:
+      nephio.org/interface-name: e1-9
+      nephio.org/link-name: edge03-node1-eth1-srl-e1-9
+      nephio.org/node-name: srl
+      nephio.org/provider: srl.nokia.com
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -79,6 +91,9 @@ items:
   kind: Link
   metadata:
     name: edge03-node1-eth1-srl-e1-9
+    labels:
+      nephio.org/link-name: edge03-node1-eth1-srl-e1-9
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -92,6 +107,9 @@ items:
   kind: Link
   metadata:
     name: edge03-node2-eth1-srl-e1-10
+    labels:
+      nephio.org/link-name: edge03-node2-eth1-srl-e1-10
+      nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
@@ -149,6 +167,7 @@ items:
   metadata:
     name: link1
     labels:
-      nephio.org/nodeId: "0"
-      nephio.org/linkId: "1"
+      nephio.org/nodeId: "0" # can be 0 or 1
+      nephio.org/linkId: "1" # can be 1 or 2
+      nephio.org/interfaceName: "eth1"
   spec:

@@ -190,7 +190,9 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 	if err != nil {
 		return nil, err
 	}
+	serverItfceName := o.GetLabels()["nephio.org/interfaceName"]
 	provider := f.nodes[linkNodeId].Spec.Provider
+	topologyName := f.nodes[linkNodeId].GetLabels()[invv1alpha1.NephioTopologyKey]
 	linkId, err := getLinkId(o.GetLabels())
 	if err != nil {
 		return nil, err
@@ -216,12 +218,17 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 		ifNbr := offset + linkId + i
 		netwNodeIfName := fmt.Sprintf("e1-%d", ifNbr)
 		netwNodeName := f.nodes[linkNodeId].Name
-		clusterNodeIfName := "eth1"
+		clusterNodeIfName := serverItfceName
 		clusterNodeName := fmt.Sprintf("%s-node%d", clusterName, i+1)
+		linkName := fmt.Sprintf("%s-%s-%s-%s", clusterNodeName, clusterNodeIfName, netwNodeName, netwNodeIfName)
 
 		linkMeta := metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s-%s-%s", clusterNodeName, clusterNodeIfName, netwNodeName, netwNodeIfName),
+			Name:      linkName,
 			Namespace: o.GetNamespace(),
+			Labels: map[string]string{
+				invv1alpha1.NephioTopologyKey:      topologyName,
+				invv1alpha1.NephioLinkNameKey:      linkName,
+			},
 		}
 		obj, err := f.getLink(linkMeta, invv1alpha1.LinkSpec{
 			Endpoints: []invv1alpha1.LinkEndpoint{
@@ -243,6 +250,13 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 		epMeta := metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", netwNodeName, netwNodeIfName),
 			Namespace: o.GetNamespace(),
+			Labels: map[string]string{
+				invv1alpha1.NephioTopologyKey:      topologyName,
+				invv1alpha1.NephioNodeNameKey:      netwNodeName,
+				invv1alpha1.NephioProviderKey:      provider,
+				invv1alpha1.NephioInterfaceNameKey: netwNodeIfName,
+				invv1alpha1.NephioLinkNameKey:      linkName,
+			},
 		}
 		obj, err = f.getEndpoint(epMeta, invv1alpha1.EndpointSpec{
 			Provider: invv1alpha1.Provider{
