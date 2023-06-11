@@ -157,11 +157,11 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 	workerNodePrefix := ""
 	if f.cluster.Spec.Topology != nil {
 		/*
-		WE DONT WIRE THE CONTROL PLANE AS IT IS CONNECTED VIA THE DOCKER BRIDGE
-		if f.cluster.Spec.Topology.ControlPlane.Replicas != nil {
-			totalClusterNodes += int(*f.cluster.Spec.Topology.ControlPlane.Replicas)
-			controlPlaneNodes = int(*f.cluster.Spec.Topology.ControlPlane.Replicas)
-		}
+			WE DONT WIRE THE CONTROL PLANE AS IT IS CONNECTED VIA THE DOCKER BRIDGE
+			if f.cluster.Spec.Topology.ControlPlane.Replicas != nil {
+				totalClusterNodes += int(*f.cluster.Spec.Topology.ControlPlane.Replicas)
+				controlPlaneNodes = int(*f.cluster.Spec.Topology.ControlPlane.Replicas)
+			}
 		*/
 		if f.cluster.Spec.Topology.Workers != nil {
 			for _, m := range f.cluster.Spec.Topology.Workers.MachineDeployments {
@@ -221,19 +221,19 @@ func (f *connectFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, 
 	resources := fn.KubeObjects{}
 
 	for i := 0; i < totalWorkerNodes; i++ {
-		/* example naming bu capi kind 
-			test-2r75l-8sgzr -> CP
-			test-2r75l-99p9w -> CP
-			test-md-0-c5zs2-599ff4b546x89n6j-sj6zg -> Worker
-			test-md-0-c5zs2-599ff4b546x89n6j-sq4r6 -> Worker
-			test-lb
+		/* example naming bu capi kind
+		test-2r75l-8sgzr -> CP
+		test-2r75l-99p9w -> CP
+		test-md-0-c5zs2-599ff4b546x89n6j-sj6zg -> Worker
+		test-md-0-c5zs2-599ff4b546x89n6j-sq4r6 -> Worker
+		test-lb
 		*/
 		clusterNodeName := fmt.Sprintf("%s-%s-%d", clusterName, workerNodePrefix, i)
 		ifNbr := offset + linkId + i
 		netwNodeIfName := fmt.Sprintf("e1-%d", ifNbr)
 		netwNodeName := fmt.Sprintf("clab-%s-%s", topologyName, f.nodes[linkNodeId].Name)
 		clusterNodeIfName := serverItfceName
-		
+
 		linkName := fmt.Sprintf("%s-%s-%s-%s", clusterNodeName, clusterNodeIfName, netwNodeName, netwNodeIfName)
 
 		linkMeta := metav1.ObjectMeta{
