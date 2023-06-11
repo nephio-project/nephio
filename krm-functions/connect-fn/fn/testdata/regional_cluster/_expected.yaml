@@ -80,70 +80,36 @@ items:
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Endpoint
   metadata:
-    name: leaf1-e1-17
+    name: clab--leaf1-e1-17
     labels:
       nephio.org/cluster-name: regional
       nephio.org/interface-name: e1-17
-      nephio.org/link-name: regional-node1-eth1-leaf1-e1-17
-      nephio.org/node-name: leaf1
+      nephio.org/link-name: regional-md-0-0-eth1-clab--leaf1-e1-17
+      nephio.org/node-name: clab--leaf1
       nephio.org/provider: srl.nokia.com
       nephio.org/topology: ""
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
-    nodeName: leaf1
+    nodeName: clab--leaf1
     interfaceName: e1-17
     provider: srl.nokia.com
   status: {}
 - apiVersion: inv.nephio.org/v1alpha1
-  kind: Endpoint
-  metadata:
-    name: leaf1-e1-18
-    labels:
-      nephio.org/cluster-name: regional
-      nephio.org/interface-name: e1-18
-      nephio.org/link-name: regional-node2-eth1-leaf1-e1-18
-      nephio.org/node-name: leaf1
-      nephio.org/provider: srl.nokia.com
-      nephio.org/topology: ""
-    annotations:
-      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
-  spec:
-    nodeName: leaf1
-    interfaceName: e1-18
-    provider: srl.nokia.com
-  status: {}
-- apiVersion: inv.nephio.org/v1alpha1
   kind: Link
   metadata:
-    name: regional-node1-eth1-leaf1-e1-17
+    name: regional-md-0-0-eth1-clab--leaf1-e1-17
     labels:
-      nephio.org/link-name: regional-node1-eth1-leaf1-e1-17
+      nephio.org/link-name: regional-md-0-0-eth1-clab--leaf1-e1-17
       nephio.org/topology: ""
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
     endpoints:
-    - nodeName: regional-node1
+    - nodeName: regional-md-0-0
       interfaceName: eth1
-    - nodeName: leaf1
+    - nodeName: clab--leaf1
       interfaceName: e1-17
-  status: {}
-- apiVersion: inv.nephio.org/v1alpha1
-  kind: Link
-  metadata:
-    name: regional-node2-eth1-leaf1-e1-18
-    labels:
-      nephio.org/link-name: regional-node2-eth1-leaf1-e1-18
-      nephio.org/topology: ""
-    annotations:
-      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
-  spec:
-    endpoints:
-    - nodeName: regional-node2
-      interfaceName: eth1
-    - nodeName: leaf1
-      interfaceName: e1-18
   status: {}
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Node
@@ -192,19 +158,11 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Endpoint.leaf1-e1-17
+      type: inv.nephio.org/v1alpha1.Endpoint.clab--leaf1-e1-17
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Endpoint.leaf1-e1-18
-    - message: create resource
-      reason: req.nephio.org/v1alpha1.Link.link1
-      status: "True"
-      type: inv.nephio.org/v1alpha1.Link.regional-node1-eth1-leaf1-e1-17
-    - message: create resource
-      reason: req.nephio.org/v1alpha1.Link.link1
-      status: "True"
-      type: inv.nephio.org/v1alpha1.Link.regional-node2-eth1-leaf1-e1-18
+      type: inv.nephio.org/v1alpha1.Link.regional-md-0-0-eth1-clab--leaf1-e1-17
     - message: update done
       status: "True"
       type: req.nephio.org/v1alpha1.Link.link1

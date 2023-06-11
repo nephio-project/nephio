@@ -56,70 +56,36 @@ items:
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Endpoint
   metadata:
-    name: srl-e1-10
-    labels:
-      nephio.org/cluster-name: edge03
-      nephio.org/interface-name: e1-10
-      nephio.org/link-name: edge03-node2-eth1-srl-e1-10
-      nephio.org/node-name: srl
-      nephio.org/provider: srl.nokia.com
-      nephio.org/topology: nephio
-    annotations:
-      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
-  spec:
-    nodeName: srl
-    interfaceName: e1-10
-    provider: srl.nokia.com
-  status: {}
-- apiVersion: inv.nephio.org/v1alpha1
-  kind: Endpoint
-  metadata:
-    name: srl-e1-9
+    name: clab-nephio-srl-e1-9
     labels:
       nephio.org/cluster-name: edge03
       nephio.org/interface-name: e1-9
-      nephio.org/link-name: edge03-node1-eth1-srl-e1-9
-      nephio.org/node-name: srl
+      nephio.org/link-name: edge03-md-0-0-eth1-clab-nephio-srl-e1-9
+      nephio.org/node-name: clab-nephio-srl
       nephio.org/provider: srl.nokia.com
       nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
-    nodeName: srl
+    nodeName: clab-nephio-srl
     interfaceName: e1-9
     provider: srl.nokia.com
   status: {}
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Link
   metadata:
-    name: edge03-node1-eth1-srl-e1-9
+    name: edge03-md-0-0-eth1-clab-nephio-srl-e1-9
     labels:
-      nephio.org/link-name: edge03-node1-eth1-srl-e1-9
+      nephio.org/link-name: edge03-md-0-0-eth1-clab-nephio-srl-e1-9
       nephio.org/topology: nephio
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
   spec:
     endpoints:
-    - nodeName: edge03-node1
+    - nodeName: edge03-md-0-0
       interfaceName: eth1
-    - nodeName: srl
+    - nodeName: clab-nephio-srl
       interfaceName: e1-9
-  status: {}
-- apiVersion: inv.nephio.org/v1alpha1
-  kind: Link
-  metadata:
-    name: edge03-node2-eth1-srl-e1-10
-    labels:
-      nephio.org/link-name: edge03-node2-eth1-srl-e1-10
-      nephio.org/topology: nephio
-    annotations:
-      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Link.link1
-  spec:
-    endpoints:
-    - nodeName: edge03-node2
-      interfaceName: eth1
-    - nodeName: srl
-      interfaceName: e1-10
   status: {}
 - apiVersion: inv.nephio.org/v1alpha1
   kind: Node
@@ -148,19 +114,11 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Endpoint.srl-e1-10
+      type: inv.nephio.org/v1alpha1.Endpoint.clab-nephio-srl-e1-9
     - message: create resource
       reason: req.nephio.org/v1alpha1.Link.link1
       status: "True"
-      type: inv.nephio.org/v1alpha1.Endpoint.srl-e1-9
-    - message: create resource
-      reason: req.nephio.org/v1alpha1.Link.link1
-      status: "True"
-      type: inv.nephio.org/v1alpha1.Link.edge03-node1-eth1-srl-e1-9
-    - message: create resource
-      reason: req.nephio.org/v1alpha1.Link.link1
-      status: "True"
-      type: inv.nephio.org/v1alpha1.Link.edge03-node2-eth1-srl-e1-10
+      type: inv.nephio.org/v1alpha1.Link.edge03-md-0-0-eth1-clab-nephio-srl-e1-9
     - message: update done
       status: "True"
       type: req.nephio.org/v1alpha1.Link.link1
