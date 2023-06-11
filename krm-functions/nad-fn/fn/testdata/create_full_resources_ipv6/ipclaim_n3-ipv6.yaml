@@ -1,0 +1,16 @@
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
+metadata:
+  name: n3-ipv6
+  annotations:
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+spec:
+  kind: network
+  selector:
+    matchLabels:
+      nephio.org/cluster-name: cluster01
+  networkInstance:
+    name: vpc-ran
+status:
+  prefix: 2001:db8:abcd:0012::0/64
+  gateway: 2001:db8::1
