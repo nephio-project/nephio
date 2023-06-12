@@ -22,7 +22,7 @@ require (
 require (
 	github.com/davidmz/go-pageant v1.0.2 // indirect
 	github.com/go-fed/httpsig v1.1.0 // indirect
-	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/crypto v0.9.0 // indirect
 )
 
 require (
@@ -45,6 +45,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
@@ -52,11 +53,13 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
-	github.com/hashicorp/go-version v1.5.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/henderiw-nephio/network v0.0.0-20230612044926-c94a9728b432 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kentik/patricia v1.2.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -67,12 +70,16 @@ require (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230609191131-85aa39064ef8 // indirect
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 // indirect
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230609191131-85aa39064ef8 // indirect
+	github.com/openconfig/gnmi v0.9.1 // indirect
+	github.com/openconfig/goyang v1.4.0 // indirect
+	github.com/openconfig/ygot v0.28.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/srl-labs/ygotsrl/v22 v22.11.1 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/net v0.10.0 // indirect
@@ -83,7 +90,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
