@@ -19,7 +19,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230516034137-53f1f1859c10
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230610150432-d22180c74d94
 	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
