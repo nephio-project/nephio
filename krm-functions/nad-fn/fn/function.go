@@ -19,8 +19,7 @@ package fn
 import (
 	"fmt"
 	"reflect"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -96,13 +95,13 @@ func (f *nadFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	return f.workloadCluster.Spec.Validate()
 }
 
-func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if f.workloadCluster == nil {
 		// no WorkloadCluster resource in the package
 		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 	}
-	ipClaimObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind)))
-	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(schema.GroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind)))
+	ipClaimObjs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind))
+	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
 	fn.Logf("nad updateResourceFn: ifObj: %d, ipClaimObj: %d, vlanClaimObj: %d\n", len(interfaceObjs), len(ipClaimObjs), len(vlanClaimObjs))
@@ -154,7 +153,7 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			}
 		}
 
-		nadAddresses := []nadlibv1.Addresses{}
+		var nadAddresses []nadlibv1.Addresses
 		for _, ipClaim := range ipClaimObjs {
 			claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipClaim)
 			if err != nil {
@@ -173,11 +172,16 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			if ipclaimGoStruct.Status.Gateway != nil {
 				gateway = *ipclaimGoStruct.Status.Gateway
 			}
-			nadAddresses = append(nadAddresses, nadlibv1.Addresses{
-				Address: address,
-				Gateway: gateway,
-			})
+			if !contains(nadAddresses, address) {
+				nadAddresses = append(nadAddresses, nadlibv1.Addresses{
+					Address: address,
+					Gateway: gateway,
+				})
+			}
 		}
+		sort.Slice(nadAddresses, func(i, j int) bool {
+			return nadAddresses[i].Address < nadAddresses[j].Address
+		})
 		err = nad.SetIpamAddress(nadAddresses)
 		if err != nil {
 			return nil, err
@@ -198,6 +202,15 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 func (f *nadFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool {
 	for _, cni := range f.workloadCluster.Spec.CNIs {
 		if nephioreqv1alpha1.CNIType(cni) == itfceCNIType {
+			return true
+		}
+	}
+	return false
+}
+
+func contains(s []nadlibv1.Addresses, e string) bool {
+	for _, a := range s {
+		if a.Address == e {
 			return true
 		}
 	}
