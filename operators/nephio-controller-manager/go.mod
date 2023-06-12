@@ -2,9 +2,12 @@ module github.com/nephio-project/nephio/operators/nephio-controller-manager
 
 go 1.20
 
-replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+replace (
+	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
+	github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 
-replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515
+)
 
 require (
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230602055209-50adad6b97a6

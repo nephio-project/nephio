@@ -3,6 +3,7 @@ module github.com/nephio-project/nephio/controllers/pkg
 go 1.20
 
 replace (
+	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
