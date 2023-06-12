@@ -19,12 +19,14 @@ package ipamspecializer
 import (
 	"context"
 	"fmt"
+
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -34,9 +36,7 @@ import (
 	function "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
-	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/ipam/v1alpha1"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -64,15 +64,12 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
 
-	f := &function.FnR{ClientProxy: ipam.New(
-		//cfg.Ctx, clientproxy.Config{Address: cfg.Address},
-		ctx, clientproxy.Config{Address: cfg.Address},
-	)}
+	f := &function.FnR{ClientProxy: cfg.IpamClientProxy}
 
 	r.Client = mgr.GetClient()
 	r.For = corev1.ObjectReference{
 		APIVersion: ipamv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-		Kind:       ipamv1alpha1.IPAllocationKind,
+		Kind:       ipamv1alpha1.IPClaimKind,
 	}
 	r.porchClient = cfg.PorchClient
 	r.krmfn = fn.ResourceListProcessorFunc(f.Run)

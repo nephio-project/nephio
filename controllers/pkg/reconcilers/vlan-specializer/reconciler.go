@@ -19,11 +19,12 @@ package vlanspecializer
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -33,9 +34,7 @@ import (
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
 	function "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
-	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/alloc/vlan/v1alpha1"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
-	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
+	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -63,12 +62,11 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
 
-	f := &function.FnR{ClientProxy: vlan.New(
-		ctx, clientproxy.Config{Address: cfg.Address})}
+	f := &function.FnR{ClientProxy: cfg.VlanClientProxy}
 
 	r.For = corev1.ObjectReference{
 		APIVersion: vlanv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-		Kind:       vlanv1alpha1.VLANAllocationKind,
+		Kind:       vlanv1alpha1.VLANClaimKind,
 	}
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient

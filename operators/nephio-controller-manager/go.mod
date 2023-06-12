@@ -2,10 +2,16 @@ module github.com/nephio-project/nephio/operators/nephio-controller-manager
 
 go 1.20
 
-//replace github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+replace (
+	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
+	github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515
+)
 
 require (
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230602055209-50adad6b97a6
+	github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.2
 	k8s.io/client-go v0.27.2
@@ -22,7 +28,7 @@ require (
 require (
 	code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9 // indirect
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa // indirect
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93 // indirect
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6 // indirect
 	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88 // indirect
@@ -57,18 +63,17 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nephio-project/api v0.0.0-20230522173958-63a41669b495 // indirect
-	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230519080401-f95bbb7f58a6 // indirect
-	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230508215739-b13457eda5c9 // indirect
-	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230519080401-f95bbb7f58a6 // indirect
-	github.com/nokia/k8s-ipam v0.0.4-0.20230530110122-75deb73d617a // indirect
+	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0 // indirect
+	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230609191131-85aa39064ef8 // indirect
+	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 // indirect
+	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230609191131-85aa39064ef8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/xlab/treeprint v1.1.0 // indirect
+	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
@@ -87,11 +92,11 @@ require (
 	k8s.io/api v0.27.2 // indirect
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
-	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
+	k8s.io/kube-openapi v0.0.0-20230606174411-725288a7abf1 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/kustomize/api v0.13.2 // indirect
+	sigs.k8s.io/kustomize/api v0.13.4 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.14.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
