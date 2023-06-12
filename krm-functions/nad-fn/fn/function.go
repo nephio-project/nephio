@@ -154,6 +154,7 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			}
 		}
 
+		nadAddresses := []nadlibv1.Addresses{}
 		for _, ipClaim := range ipClaimObjs {
 			claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipClaim)
 			if err != nil {
@@ -172,13 +173,14 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 			if ipclaimGoStruct.Status.Gateway != nil {
 				gateway = *ipclaimGoStruct.Status.Gateway
 			}
-			err = nad.SetIpamAddress([]nadlibv1.Addresses{{
+			nadAddresses = append(nadAddresses, nadlibv1.Addresses{
 				Address: address,
 				Gateway: gateway,
-			}})
-			if err != nil {
-				return nil, err
-			}
+			})
+		}
+		err = nad.SetIpamAddress(nadAddresses)
+		if err != nil {
+			return nil, err
 		}
 	}
 

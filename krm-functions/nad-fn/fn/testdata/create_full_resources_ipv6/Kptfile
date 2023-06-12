@@ -17,7 +17,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "True"
-    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv6
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "True"
@@ -36,7 +36,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n6
     status: "True"
-    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv6
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n6
     status: "True"
@@ -51,7 +51,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n3
     status: "True"
-    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n3
     status: "True"
