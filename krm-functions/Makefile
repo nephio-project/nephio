@@ -16,10 +16,8 @@ VERSION ?= latest
 REGISTRY ?= docker.io/nephio
 
 # find all subdirectories with a go.mod file in them
-GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
-# NOTE: the above line is complicated due to the limited capabilities of busybox's `find`.
-# It meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
-
+GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
+# find all subdirectories with a Dockerfile in them
 DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
 
