@@ -39,6 +39,7 @@ import (
 	"github.com/go-logr/logr"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
+	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -142,38 +143,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// lack of readiness could indicate an error which even impacts whether or not the
 	// readiness gates have been properly set.
 	//
-	for _, ownerRef := range pr.GetOwnerReferences() {
-		if ownerRef.Controller == nil || !*ownerRef.Controller {
-			continue
-		}
-		if porchconfig.GroupVersion.String() != ownerRef.APIVersion {
-			continue
-		}
-		if ownerRef.Kind != "PackageVariant" {
-			continue
-		}
+	//
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.Client)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning,
+			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
 
-		var pv pvapi.PackageVariant
-		if err := r.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: ownerRef.Name}, &pv); err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning,
-				"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
+		return ctrl.Result{}, nil
+	}
 
-			return ctrl.Result{}, nil
-		}
+	if !pvReady {
+		r.recorder.Event(pr, corev1.EventTypeNormal,
+			"NotApproved", "owning PackageVariant not Ready")
 
-		for _, cond := range pv.Status.Conditions {
-			if cond.Type != "Ready" {
-				continue
-			}
-
-			if cond.Status != metav1.ConditionTrue {
-				r.recorder.Event(pr, corev1.EventTypeNormal,
-					"NotApproved", "owning PackageVariant not Ready")
-
-				return ctrl.Result{}, nil
-			}
-		}
-
+		return ctrl.Result{}, nil
 	}
 
 	// All policies require readiness gates to be met, so if they
