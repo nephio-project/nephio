@@ -110,9 +110,18 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 		return err
 	}
 	if newObj == nil {
-		fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
-		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
-		return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
+		// this happens right now because the NAD gets an interface and the interface can have a default pod network
+		// for which no nad is to be created. hende the nil object
+		// once we do the intelligent diff this can be changed back to an error, since NAD does not have to watch the interface
+		if r.debug {
+			fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
+		}
+		return nil
+		/*
+			fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
+			r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
+			return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
+		*/
 	}
 	// if forCondition was set
 	if forCondition != nil {
