@@ -28,6 +28,7 @@ import (
 	"github.com/go-logr/logr"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
+	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
@@ -41,6 +42,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -67,6 +69,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
+	r.recorder = mgr.GetEventRecorderFor("generic-specializer")
 
 	ipamf := &ipamfn.FnR{ClientProxy: cfg.IpamClientProxy}
 	r.ipamFor = corev1.ObjectReference{
@@ -97,13 +100,14 @@ type reconciler struct {
 	vlanFor     corev1.ObjectReference
 	vlankrmfn   fn.ResourceListProcessor
 	porchClient client.Client
+	recorder    record.EventRecorder
 
 	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.l = log.FromContext(ctx).WithValues("req", req)
-	//r.l.Info("reconcile specializer")
+	r.l.Info("reconcile genericspecializer")
 
 	pr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
@@ -115,6 +119,23 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return ctrl.Result{}, nil
 	}
+
+	// check if the PackageVariant has done its work
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning,
+			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
+
+		return ctrl.Result{}, nil
+	}
+
+	if !pvReady {
+		r.recorder.Event(pr, corev1.EventTypeNormal,
+			"Waiting", "owning PackageVariant not Ready")
+
+		return ctrl.Result{}, nil
+	}
+
 	// we just check for forResource conditions and we dont care if it is satisfied already
 	// this allows us to refresh the allocation.
 	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) ||
@@ -123,12 +144,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
 		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
 			r.l.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
 		// get resourceList from resources
 		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
 		if err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
 			r.l.Error(err, "cannot get resourceList")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
@@ -137,9 +160,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// run the function SDK
 			_, err = r.ipamkrmfn.Process(rl)
 			if err != nil {
-				r.l.Error(err, "function run failed")
-				// TBD if we need to return here + check if kptfile is set
-				//return ctrl.Result{}, errors.Wrap(err, "function run failed")
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
+				r.l.Error(err, "ipam function run failed")
+				return ctrl.Result{}, nil
 			}
 			r.l.Info("ipam specializer fn run successfull")
 		}
@@ -147,9 +170,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// run the function SDK
 			_, err = r.vlankrmfn.Process(rl)
 			if err != nil {
-				r.l.Error(err, "function run failed")
-				// TBD if we need to return here + check if kptfile is set
-				//return ctrl.Result{}, errors.Wrap(err, "function run failed")
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
+				r.l.Error(err, "vlan function run failed")
+				return ctrl.Result{}, nil
 			}
 			r.l.Info("vlan specializer fn run successfull")
 		}
@@ -160,6 +183,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
+			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
 			r.l.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
@@ -185,7 +209,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					r.l.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				r.l.Info("generic specializer ip allocation", "cluserName", clusterName, "status", ipAlloc.Status)
+				r.l.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
 			}
 			if o.GetAPIVersion() == r.vlanFor.APIVersion && o.GetKind() == r.vlanFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
@@ -225,12 +249,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
 			r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
 			return ctrl.Result{}, nil
 		}
 
 		kptf, err := kptfilelibv1.New(rl.Items.GetRootKptfile().String())
 		if err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot unmarshal Kptfile")
 			r.l.Error(err, "cannot unmarshal kptfile")
 			return ctrl.Result{}, nil
 		}

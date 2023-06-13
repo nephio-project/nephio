@@ -26,19 +26,16 @@ import (
 
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"k8s.io/client-go/tools/record"
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
 	"github.com/go-logr/logr"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
+	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -72,6 +69,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	}
 
 	r.Client = mgr.GetClient()
+	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
 
@@ -84,6 +82,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 // reconciler reconciles a NetworkInstance object
 type reconciler struct {
 	client.Client
+	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
 
@@ -142,38 +141,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// lack of readiness could indicate an error which even impacts whether or not the
 	// readiness gates have been properly set.
 	//
-	for _, ownerRef := range pr.GetOwnerReferences() {
-		if ownerRef.Controller == nil || !*ownerRef.Controller {
-			continue
-		}
-		if porchconfig.GroupVersion.String() != ownerRef.APIVersion {
-			continue
-		}
-		if ownerRef.Kind != "PackageVariant" {
-			continue
-		}
+	//
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning,
+			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
 
-		var pv pvapi.PackageVariant
-		if err := r.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: ownerRef.Name}, &pv); err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning,
-				"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
+		return ctrl.Result{}, nil
+	}
 
-			return ctrl.Result{}, nil
-		}
+	if !pvReady {
+		r.recorder.Event(pr, corev1.EventTypeNormal,
+			"NotApproved", "owning PackageVariant not Ready")
 
-		for _, cond := range pv.Status.Conditions {
-			if cond.Type != "Ready" {
-				continue
-			}
-
-			if cond.Status != metav1.ConditionTrue {
-				r.recorder.Event(pr, corev1.EventTypeNormal,
-					"NotApproved", "owning PackageVariant not Ready")
-
-				return ctrl.Result{}, nil
-			}
-		}
-
+		return ctrl.Result{}, nil
 	}
 
 	// All policies require readiness gates to be met, so if they

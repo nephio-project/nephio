@@ -99,6 +99,7 @@ func createRESTMapper() meta.RESTMapper {
 	rm := meta.NewDefaultRESTMapper([]schema.GroupVersion{
 		configapi.GroupVersion,
 		porchapi.SchemeGroupVersion,
+		pvapi.GroupVersion,
 		coreapi.SchemeGroupVersion,
 		metav1.SchemeGroupVersion,
 	})
@@ -111,6 +112,7 @@ func createRESTMapper() meta.RESTMapper {
 		{kind: porchapi.SchemeGroupVersion.WithKind("PackageRevision"), plural: "packagerevisions", singular: "packagerevision"},
 		{kind: porchapi.SchemeGroupVersion.WithKind("PackageRevisionResources"), plural: "packagerevisionresources", singular: "packagerevisionresources"},
 		{kind: porchapi.SchemeGroupVersion.WithKind("Function"), plural: "functions", singular: "function"},
+		{kind: pvapi.GroupVersion.WithKind("PackageVariant"), plural: "packagevariants", singular: "packagevariant"},
 		{kind: coreapi.SchemeGroupVersion.WithKind("Secret"), plural: "secrets", singular: "secret"},
 		{kind: metav1.SchemeGroupVersion.WithKind("Table"), plural: "tables", singular: "table"},
 	} {
