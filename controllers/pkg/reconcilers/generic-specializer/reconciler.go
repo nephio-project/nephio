@@ -149,7 +149,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
 
-		beforeHash, err := util.PackageRevisionResourcesHash(prr)
+		beforeHash, err := porchutil.PackageRevisionResourcesHash(prr)
 		if err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate pre-reconcile hash: %s", err.Error()))
 			r.l.Error(err, "cannot calculate pre-reconcile hash")
@@ -270,7 +270,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
 
-		afterHash, err := util.PackageRevisionResourcesHash(prr)
+		afterHash, err := porchutil.PackageRevisionResourcesHash(prr)
 		if err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate post-reconcile hash: %s", err.Error()))
 			r.l.Error(err, "cannot calculate post-reconcile hash")

@@ -17,7 +17,6 @@
 package util
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/hex"
 
