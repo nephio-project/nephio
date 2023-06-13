@@ -183,7 +183,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", fmt.Sprintf("package is published, no update possible"))
+			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
 			r.l.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
