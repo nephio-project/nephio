@@ -23,8 +23,7 @@ modsync:
 
 
 .PHONY: build-image
-build-image:
-	docker buildx build --load --tag $(IMG) -f Dockerfile ../..
+build-image: docker-build
 
 .PHONY: push-image
 push-image:
