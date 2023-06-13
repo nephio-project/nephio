@@ -125,7 +125,7 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 	// nothing to be done
 	if itfce.Spec.NetworkInstance.Name == defaultPODNetwork {
 		return nil, nil
-	}	
+	}
 
 	if ipClaimObjs.Len() == 0 && vlanClaimObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPClaimKind, vlanv1alpha1.VLANClaimKind)
