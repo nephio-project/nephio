@@ -69,7 +69,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
-	r.recorder = mgr.GetEventRecorderFor("approval-controller")
+	r.recorder = mgr.GetEventRecorderFor("generic-specializer")
 
 	ipamf := &ipamfn.FnR{ClientProxy: cfg.IpamClientProxy}
 	r.ipamFor = corev1.ObjectReference{
