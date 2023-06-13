@@ -16,6 +16,7 @@ FROM golang:1.20-alpine
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
 COPY . .
+WORKDIR /go/src/ipam-fn
 RUN go install
 RUN go build -o /usr/local/bin/function ./
 

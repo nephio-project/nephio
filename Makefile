@@ -33,17 +33,17 @@ GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")
 # It meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
 
 
-.PHONY: unit lint gosec test
+.PHONY: unit lint gosec test unit-clean
 # delegate these targets to the Makefiles of individual go modules
-unit lint gosec test: 
+unit lint gosec test unit-clean:
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done
 
-.PHONY: unit-clean docker-build docker-push
+.PHONY: docker-build docker-push
 # delegate these targets to the Makefiles of individual go modules, 
 # but skip the module if the target doesn't exists, or an error happened
-docker-build docker-push unit-clean: 
-	for dir in $(GO_MOD_DIRS); do \
+docker-build docker-push:
+	for dir in krm-functions operators/nephio-controller-manager; do \
 		$(MAKE) -C "$$dir" $@  || true ; \
 	done

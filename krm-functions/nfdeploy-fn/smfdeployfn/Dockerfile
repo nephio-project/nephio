@@ -16,7 +16,7 @@ FROM golang:1.20-alpine
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
 COPY . .
-WORKDIR /go/src/smfdeployfn
+WORKDIR /go/src/nfdeploy-fn/smfdeployfn
 RUN go install 
 RUN go build -o /usr/local/bin/function ./
 
