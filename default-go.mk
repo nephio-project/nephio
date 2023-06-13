@@ -17,4 +17,3 @@ include $(self_dir)/default-go-misc.mk
 include $(self_dir)/default-go-test.mk 
 include $(self_dir)/default-go-lint.mk 
 include $(self_dir)/default-gosec.mk
-include $(self_dir)/default-docker.mk

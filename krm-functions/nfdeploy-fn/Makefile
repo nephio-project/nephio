@@ -1,6 +1,14 @@
 DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
-include ../../default-all.mk
+# This includes the following targets:
+#   test, unit, unit-clean,
+#   gosec, lint,
+#   fmt, vet
+include ../../default-go.mk
+
+# This includes the following targets:
+#   docker-build, docker-push
+include ../../default-docker.mk
 
 .PHONY: all
 all: modsync fmt test docker-build docker-push
