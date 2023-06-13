@@ -23,6 +23,11 @@ endif
 #   gosec, lint,
 #   fmt, vet,
 include ../../default-go.mk
+
+# This includes the following targets:
+#   docker-build, docker-push
+include ../../default-docker.mk
+
 all: build
 
 ##@ General
@@ -77,14 +82,6 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-.PHONY: docker-build
-docker-build: #test ## Build docker image with the manager.
-	docker build -t ${IMG} -f ./Dockerfile ../..
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-
 .PHONY: docker-build-local
 docker-build-local: test build ## Build locally, copy in manager to image
 	docker build -f Dockerfile.local -t ${IMGLOCAL} .

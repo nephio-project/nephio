@@ -6,21 +6,13 @@ DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 #   fmt, vet
 include ../../default-go.mk
 
-# This includes the following targets:
-#   docker-build, docker-push
-include ../../default-docker.mk
-
 .PHONY: all
-all: modsync fmt test docker-build docker-push
+all: fmt test docker-build docker-push
 
-.PHONY: modsync
-modsync: 
-	go mod tidy
-	go mod vendor
 
 
 .PHONY: docker-build docker-push
-docker-build: modsync fmt test
+docker-build: fmt test
 	for dir in $(DOCKERFILE_DIRS); do \
 		$(MAKE) -C "$$dir" $@  ; \
 	done
