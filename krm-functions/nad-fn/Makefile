@@ -13,10 +13,10 @@ modsync:
 	go mod tidy
 	go mod vendor
 
-.PHONY: docker-build
+.PHONY: build-image
 build-image:
-	docker buildx build --load --tag $(IMG) -f Dockerfile .
+	docker buildx build --load --tag $(IMG) -f Dockerfile ../..
 
-.PHONY: docker-push
+.PHONY: push-image
 push-image:
-    docker buildx build --push --tag $(IMG) -f Dockerfile .
+    docker buildx build --push --tag $(IMG) -f Dockerfile ../..
