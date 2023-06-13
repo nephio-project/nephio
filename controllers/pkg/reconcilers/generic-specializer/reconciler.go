@@ -144,14 +144,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
 		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
-			r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
 			r.l.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
 		// get resourceList from resources
 		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
 		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
 			r.l.Error(err, "cannot get resourceList")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
@@ -160,7 +160,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// run the function SDK
 			_, err = r.ipamkrmfn.Process(rl)
 			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
 				r.l.Error(err, "ipam function run failed")
 				return ctrl.Result{}, nil
 			}
@@ -170,7 +170,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// run the function SDK
 			_, err = r.vlankrmfn.Process(rl)
 			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
 				r.l.Error(err, "vlan function run failed")
 				return ctrl.Result{}, nil
 			}
@@ -183,7 +183,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			r.recorder.Event(pr, corev1.EventTypeInfo, "CannotRefreshClaims", fmt.Sprintf("package is published, no update possible"))
+			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", fmt.Sprintf("package is published, no update possible"))
 			r.l.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
@@ -249,14 +249,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
-			r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", "mandatory Kptfile is missing")
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
 			r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
 			return ctrl.Result{}, nil
 		}
 
 		kptf, err := kptfilelibv1.New(rl.Items.GetRootKptfile().String())
 		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeError, "ReconcileError", "cannot unmarshal Kptfile")
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot unmarshal Kptfile")
 			r.l.Error(err, "cannot unmarshal kptfile")
 			return ctrl.Result{}, nil
 		}

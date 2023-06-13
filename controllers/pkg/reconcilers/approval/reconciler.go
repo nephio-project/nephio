@@ -26,16 +26,12 @@ import (
 
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"k8s.io/client-go/tools/record"
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
 	"github.com/go-logr/logr"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
@@ -73,6 +69,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	}
 
 	r.Client = mgr.GetClient()
+	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
 
@@ -85,6 +82,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 // reconciler reconciles a NetworkInstance object
 type reconciler struct {
 	client.Client
+	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
 
@@ -144,7 +142,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// readiness gates have been properly set.
 	//
 	//
-	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.Client)
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
