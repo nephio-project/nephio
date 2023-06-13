@@ -1,6 +1,6 @@
 VERSION ?= latest
 REGISTRY ?= docker.io/nephio
-PROJECT ?= nephio-network
+PROJECT ?= nephio
 
 KPT_BLUEPRINT_CFG_DIR ?= blueprint/fn-config
 KPT_BLUEPRINT_PKG_DIR ?= blueprint/${PROJECT}
