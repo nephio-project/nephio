@@ -34,6 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultPODNetwork = "default"
+
 type nadFn struct {
 	sdk             condkptsdk.KptCondSDK
 	workloadCluster *infrav1alpha1.WorkloadCluster
@@ -109,6 +111,22 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 	if interfaceObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
 	}
+
+	itfceKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](interfaceObjs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	itfce, err := itfceKOE.GetGoStruct()
+	if err != nil {
+		return nil, err
+	}
+
+	// nothing to be done
+	if itfce.Spec.NetworkInstance.Name == defaultPODNetwork {
+		return nil, nil
+	}
+
 	if ipClaimObjs.Len() == 0 && vlanClaimObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPClaimKind, vlanv1alpha1.VLANClaimKind)
 	}
