@@ -30,8 +30,10 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
-	"k8s.io/klog/v2"
+	"go.uber.org/zap/zapcore"
+	//"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -51,10 +53,16 @@ import (
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-packages"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-secret"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/generic-specializer"
+	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/network"
+
 	//_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
 	//_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
+)
+
+var (
+	setupLog = ctrl.Log.WithName("setup")
 )
 
 func main() {
@@ -63,7 +71,7 @@ func main() {
 	var probeAddr string
 	var enabledReconcilersString string
 
-	klog.InitFlags(nil)
+	//klog.InitFlags(nil)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -72,21 +80,32 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&enabledReconcilersString, "reconcilers", "", "reconcilers that should be enabled; use * to mean 'enable all'")
 
+	opts := zap.Options{
+		Development: true,
+		TimeEncoder: zapcore.ISO8601TimeEncoder,
+	}
+	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	if len(flag.Args()) != 0 {
-		klog.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
-		os.Exit(1)
-	}
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	/*
+		if len(flag.Args()) != 0 {
+			setupLog.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
+			os.Exit(1)
+		}
+	*/
 
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
-		klog.Errorf("error initializing scheme: %s", err.Error())
+		setupLog.Error(err, "cannot initializer schema")
+		//klog.Errorf("error initializing scheme: %s", err.Error())
 		os.Exit(1)
 	}
 	err := porchclient.AddToScheme(scheme)
 	if err != nil {
-		klog.Errorf("error initializing scheme with Porch APIs: %s", err.Error())
+		setupLog.Error(err, "cannot initializer schema with porch API(s)")
+		//	klog.Errorf("error initializing scheme with Porch APIs: %s", err.Error())
 		os.Exit(1)
 	}
 
@@ -103,28 +122,31 @@ func main() {
 	ctrl.SetLogger(klogr.New())
 	porchClient, err := porchclient.CreateClient(ctrl.GetConfigOrDie())
 	if err != nil {
-		klog.Errorf("unable to create porch client: #{err}")
+		setupLog.Error(err, "cannot create porch client")
+		//klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
 	}
 
 	porchRESTClient, err := porchclient.CreateRESTClient(ctrl.GetConfigOrDie())
 	if err != nil {
-		klog.Errorf("error creating porch REST client: %s", err.Error())
+		setupLog.Error(err, "cannot create porch REST client")
+		//klog.Errorf("error creating porch REST client: %s", err.Error())
 		os.Exit(1)
 	}
 	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
-		klog.Errorf("error creating manager: #{err}")
+		setupLog.Error(err, "cannot create manager")
+		//klog.Errorf("error creating manager: #{err}")
 		os.Exit(1)
 	}
 
 	// Start a Gitea Client
 	// Prepare configuration for reconcilers
-	clientProxyAddress := "127.0.0.1:9999"
+	backendAddress := "127.0.0.1:9999"
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
-		clientProxyAddress = address
+		backendAddress = address
 	}
 	// Sending the porchclient to getgitea, this will be used to get
 	// the secret objects for gitea client authentication. The client
@@ -133,48 +155,54 @@ func main() {
 	g := giteaclient.New(resource.NewAPIPatchingApplicator(porchClient))
 	go g.Start(ctx)
 
+	ctrlCfg := &ctrlrconfig.ControllerConfig{
+		Address:         backendAddress,
+		GiteaClient:     g,
+		PorchClient:     porchClient,
+		PorchRESTClient: porchRESTClient,
+		IpamClientProxy: ipam.New(ctx, clientproxy.Config{
+			Address: backendAddress,
+		}),
+		VlanClientProxy: vlan.New(ctx, clientproxy.Config{
+			Address: backendAddress,
+		}),
+	}
+
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)
 	var enabled []string
 	for name, r := range reconciler.Reconcilers {
 		if !reconcilerIsEnabled(enabledReconcilers, name) {
 			continue
 		}
-		if _, err = r.SetupWithManager(ctx, mgr, &ctrlrconfig.ControllerConfig{
-			IpamClientProxy: ipam.New(ctx, clientproxy.Config{
-				Address: clientProxyAddress,
-			}),
-			VlanClientProxy: vlan.New(ctx, clientproxy.Config{
-				Address: clientProxyAddress,
-			}),
-			PorchClient:     porchClient,
-			PorchRESTClient: porchRESTClient,
-			GiteaClient:     g,
-		}); err != nil {
-			klog.Errorf("error creating %q reconciler: %s", name, err.Error())
+		if _, err = r.SetupWithManager(ctx, mgr, ctrlCfg); err != nil {
+			setupLog.Error(err, "cannot setup with manager", "reconciler", name)
+			//klog.Errorf("error creating %q reconciler: %s", name, err.Error())
 			os.Exit(1)
 		}
 		enabled = append(enabled, name)
 	}
 
 	if len(enabled) == 0 {
-		klog.Warningf("no reconcilers are enabled; did you forget to pass the --reconcilers flag?")
+		setupLog.Info("no reconcilers are enabled; did you forget to pass the --reconcilers flag?")
+		//klog.Warningf("no reconcilers are enabled; did you forget to pass the --reconcilers flag?")
 	} else {
-		klog.Infof("enabled reconcilers: %v", strings.Join(enabled, ","))
+		setupLog.Info("enabled reconcilers", "reconcilers", strings.Join(enabled, ","))
+		//klog.Infof("enabled reconcilers: %v", strings.Join(enabled, ","))
 	}
 
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		klog.Errorf("error adding health check: #{err}")
+		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		klog.Errorf("error adding ready check: #{err}")
+		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	klog.Infof("starting manager")
+	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {
-		klog.Errorf("error running manager: #{err}")
+		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }
