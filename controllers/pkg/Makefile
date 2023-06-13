@@ -2,7 +2,8 @@
 .PHONY: all
 all: fmt test
 
-include ../../default-go-test.mk
-include ../../default-go-lint.mk
-include ../../default-gosec.mk
-include ../../default-go-misc.mk
+# This includes the following targets:
+#   test, unit, unit-clean,
+#   gosec, lint,
+#   fmt, vet,
+include ../../default-go.mk

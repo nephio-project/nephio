@@ -15,8 +15,8 @@
 FROM golang:1.20-alpine
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
-COPY . .
-WORKDIR /go/src/amfdeployfn
+COPY krm-functions/ krm-functions/
+WORKDIR /go/src/krm-functions/nfdeploy-fn/amfdeployfn
 RUN go install 
 RUN go build -o /usr/local/bin/function ./
 

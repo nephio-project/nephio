@@ -18,10 +18,16 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 .PHONY: all
-include ../../default-go-test.mk
-include ../../default-go-lint.mk
-include ../../default-gosec.mk
-include ../../default-go-misc.mk
+# This includes the following targets:
+#   test, unit, unit-clean,
+#   gosec, lint,
+#   fmt, vet,
+include ../../default-go.mk
+
+# This includes the following targets:
+#   docker-build, docker-push
+include ../../default-docker.mk
+
 all: build
 
 ##@ General
@@ -76,15 +82,6 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-.PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
-	go mod vendor
-	docker build -t ${IMG} .
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-
 .PHONY: docker-build-local
 docker-build-local: test build ## Build locally, copy in manager to image
 	docker build -f Dockerfile.local -t ${IMGLOCAL} .
@@ -126,7 +123,7 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- docker buildx create --name project-v3-builder
 	docker buildx use project-v3-builder
-	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
+	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross ../..
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
 
