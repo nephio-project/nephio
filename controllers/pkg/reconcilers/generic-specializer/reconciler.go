@@ -148,12 +148,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			r.l.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
+
+		beforeHash, err := util.PackageRevisionResourcesHash(prr)
+		if err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate pre-reconcile hash: %s", err.Error()))
+			r.l.Error(err, "cannot calculate pre-reconcile hash")
+			return ctrl.Result{}, nil
+		}
+
 		// get resourceList from resources
 		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
 		if err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
 			r.l.Error(err, "cannot get resourceList")
-			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
+			return ctrl.Result{}, nil
 		}
 
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) {
@@ -261,6 +269,19 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+
+		afterHash, err := util.PackageRevisionResourcesHash(prr)
+		if err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate post-reconcile hash: %s", err.Error()))
+			r.l.Error(err, "cannot calculate post-reconcile hash")
+			return ctrl.Result{}, nil
+		}
+
+		if beforeHash == afterHash {
+			r.recorder.Event(pr, corev1.EventTypeNormal, "Skipping", "no change needed")
+			return ctrl.Result{}, nil
+		}
+
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			return ctrl.Result{}, err
 		}
