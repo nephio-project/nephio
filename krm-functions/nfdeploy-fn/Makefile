@@ -1,45 +1,47 @@
-IMAGE_TAG ?= latest
-REGISTRY ?= docker.io/nephio
-UPFIMG ?= $(REGISTRY)/upf-deploy-fn:${IMAGE_TAG}
-AMFIMG ?= $(REGISTRY)/amf-deploy-fn:${IMAGE_TAG}
-SMFIMG ?= $(REGISTRY)/smf-deploy-fn:${IMAGE_TAG}
+DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
 include ../../default-all.mk
 
 .PHONY: all
-all: modsync fmt test upf-docker-build smf-docker-build amf-docker-build upf-docker-push smf-docker-push amf-docker-push
+all: modsync fmt test docker-build docker-push
 
 .PHONY: modsync
 modsync: 
 	go mod tidy
 	go mod vendor
 
-.PHONY: docker-build
-docker-build: modsync fmt test upf-docker-build smf-docker-build amf-docker-build
 
-.PHONY: docker-push
-docker-push: upf-docker-push smf-docker-push amf-docker-push
+.PHONY: docker-build docker-push
+docker-build: modsync fmt test
+	for dir in $(DOCKERFILE_DIRS); do \
+		$(MAKE) -C "$$dir" $@  ; \
+	done
+
+docker-push: 
+	for dir in $(DOCKERFILE_DIRS); do \
+		$(MAKE) -C "$$dir" $@  ; \
+	done
 
 .PHONY: upf-docker-build
 upf-docker-build:  ## Build docker images.
-	docker buildx build --load --tag  ${UPFIMG} -f ./upfdeployfn/Dockerfile .
+	$(MAKE) -C upfdeployfn docker-build
 
 .PHONY: upf-docker-push
 upf-docker-push: ## Build docker images.
-	docker buildx build --push --tag  ${UPFIMG} -f ./upfdeployfn/Dockerfile .
+	$(MAKE) -C upfdeployfn docker-push
 
 .PHONY: smf-docker-build
 smf-docker-build:  ## Build docker images.
-	docker buildx build --load --tag  ${SMFIMG} -f ./smfdeployfn/Dockerfile .
+	$(MAKE) -C smfdeployfn docker-build
 
 .PHONY: smf-docker-push
 smf-docker-push: ## Build docker images.
-	docker buildx build --push --tag  ${SMFIMG} -f ./smfdeployfn/Dockerfile .
+	$(MAKE) -C smfdeployfn docker-push
 
 .PHONY: amf-docker-build
 amf-docker-build:  ## Build docker images.
-	docker buildx build --load --tag  ${AMFIMG} -f ./amfdeployfn/Dockerfile .
+	$(MAKE) -C amfdeployfn docker-build
 
 .PHONY: amf-docker-push
 amf-docker-push: ## Build docker images.
-	docker buildx build --push --tag  ${AMFIMG} -f amfdeployfn/Dockerfile .
+	$(MAKE) -C amfdeployfn docker-push

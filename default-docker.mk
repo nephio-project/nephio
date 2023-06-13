@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+self_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 
 ifeq ($(CONTAINER_RUNTIME),)
 
@@ -25,7 +26,7 @@ endif
 
 .PHONY: docker-build
 docker-build:  ## Build docker image
-	$(CONTAINER_RUNTIME) buildx build --load --tag  ${IMG} -f ./Dockerfile .
+	$(CONTAINER_RUNTIME) buildx build --load --tag  ${IMG} -f ./Dockerfile "$(self_dir)"
 
 .PHONY: docker-push
 docker-push: docker-build ## Build and push docker image

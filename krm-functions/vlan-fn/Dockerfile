@@ -15,7 +15,8 @@
 FROM golang:1.20-alpine
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
-COPY . .
+COPY krm-functions/ krm-functions/
+WORKDIR /go/src/krm-functions/vlan-fn
 RUN go install
 RUN go build -o /usr/local/bin/function ./
 
