@@ -98,7 +98,7 @@ func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListPro
 }
 
 // RunFailureCases is an alias of RunGoldenTests.
-// This is kept here only temporarily for backward compatiblity reasons.
+// This is kept here only temporarily for backward compatibility reasons.
 func RunFailureCases(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
 	RunGoldenTests(t, basedir, krmFunction)
 }

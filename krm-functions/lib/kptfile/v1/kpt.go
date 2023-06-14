@@ -44,9 +44,9 @@ type KptFile interface {
 	// otherwise returns nil
 	GetCondition(ct string) *kptv1.Condition
 	// GetConditions returns all the conditions in the kptfile. if not initialized it
-	// returns an emoty slice
+	// returns an empty slice
 	GetConditions() []kptv1.Condition
-	// Sort Conditions sorts the consition in the kptfile
+	// Sort Conditions sorts the conditions in the kptfile
 	SortConditions()
 }
 
@@ -71,7 +71,7 @@ type kptFile struct {
 // The structure of the generated document will reflect the structure of the value itself.
 func (r *kptFile) Marshal() ([]byte, error) {
 	if r.kptfile == nil {
-		return nil, errors.New("cannot marshal unitialized kptfile")
+		return nil, errors.New("cannot marshal uninitialized kptfile")
 	}
 	return yaml.Marshal(r.kptfile)
 }
@@ -164,7 +164,7 @@ func (r *kptFile) GetCondition(ct string) *kptv1.Condition {
 }
 
 // GetConditions returns all the conditions in the kptfile. if not initialized it
-// returns an emoty slice
+// returns an empty slice
 func (r *kptFile) GetConditions() []kptv1.Condition {
 	r.m.RLock()
 	defer r.m.RUnlock()

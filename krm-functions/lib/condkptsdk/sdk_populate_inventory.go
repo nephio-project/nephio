@@ -29,7 +29,7 @@ func (r *sdk) populateInventory() error {
 	// versus specific resources associated to a forInstance (specified through the SDK Config).
 	// To perform this filtering we use the concept of the forOwnerRef, which is
 	// an ownerReference associated to the forGVK
-	// A watchedResource matching the forOwnerRef is assocatiated to the specific
+	// A watchedResource matching the forOwnerRef is associated to the specific
 	// forInventory context. If no match was found to the forOwnerRef the watchedResource is associated
 	// to the global context
 	var forOwnerRef *corev1.ObjectReference
@@ -97,7 +97,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
 		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
-			fn.Logf("error setting exisiting object in the inventory: %v\n", err.Error())
+			fn.Logf("error setting existing object in the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
 			return err
 		}
@@ -105,7 +105,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		ownerKindCtx, ok := r.inv.isGVKMatch(ownerRef)
 		if !ok || ownerKindCtx.gvkKind != forGVKKind {
 			// this means the resource was added from a different kind
-			// we dont need to add this to the inventory
+			// we don't need to add this to the inventory
 			if r.debug {
 				fn.Logf("populate ownkind different owner, ownerRef %v, ownKind: %v ref: %v \n", ownerRef, ownerKindCtx, ref)
 			}
@@ -115,7 +115,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, ownerRef)
 		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ownerRef, *ref}, x, false); err != nil {
-			fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
+			fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
 			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
 			return err
 		}
@@ -142,21 +142,21 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 				fn.Logf("set existing object in inventory, kind %s, forRef: %v, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, forRef, ref, ownerRef)
 			}
 			if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*forRef, *ref}, x, false); err != nil {
-				fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
+				fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
 				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
 				return err
 			}
 		} else {
-			// dont add a resource to the global watch if the ownref was set, sicne this would be an intermediate
-			// resource owned by another for. Since we aggergate the status back we dont care about this and hence
-			// we dont add the object to the inventory
-			if validateGVKNRef(*ownerRef) != nil { // this mean onwerref is empty
+			// don't add a resource to the global watch if the ownerref was set, since this would be an intermediate
+			// resource owned by another for. Since we aggregate the status back we don't care about this and hence
+			// we don't add the object to the inventory
+			if validateGVKNRef(*ownerRef) != nil { // this mean ownerref is empty
 				// this is a global watch
 				if r.debug {
 					fn.Logf("set existing object in inventory, kind %s, ref: %v ownerRef: %v\n", gvkKindCtx.gvkKind, ref, nil)
 				}
 				if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
-					fn.Logf("error setting exisiting resource to the inventory: %v\n", err.Error())
+					fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
 					r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
 					return err
 				}
