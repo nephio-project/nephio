@@ -97,16 +97,11 @@ func (kpc *KptPackageConditions) Set(condition kptv1.Condition) error {
 	conds := kpc.conditions()
 	for _, conditionSubObj := range conds {
 		if conditionSubObj.GetString("type") == condition.Type {
-			if err := UpdateStringField(conditionSubObj, string(condition.Status), "status"); err != nil {
-				return err
-			}
-			if err := UpdateStringField(conditionSubObj, condition.Reason, "reason"); err != nil {
-				return err
-			}
-			if err := UpdateStringField(conditionSubObj, condition.Message, "message"); err != nil {
-				return err
-			}
-			return nil
+			return UpdateStringFields(conditionSubObj, map[string]string{
+				"status":  string(condition.Status),
+				"reason":  condition.Reason,
+				"message": condition.Message,
+			})
 		}
 	}
 	ko, err := fn.NewFromTypedObject(condition)
