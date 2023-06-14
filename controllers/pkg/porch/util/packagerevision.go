@@ -17,7 +17,7 @@
 package util
 
 import (
-	"crypto/sha1"
+	"crypto/sha512"
 	"encoding/hex"
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
@@ -29,6 +29,6 @@ func PackageRevisionResourcesHash(prr *porchv1alpha1.PackageRevisionResources) (
 	if err != nil {
 		return "", err
 	}
-	hash := sha1.Sum(b)
+	hash := sha512.Sum512(b)
 	return hex.EncodeToString(hash[:]), nil
 }
