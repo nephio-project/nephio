@@ -131,13 +131,21 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPClaimKind, vlanv1alpha1.VLANClaimKind)
 	}
 
+	// the various source objects are generally local-config and will not have a namespace
+	// set. However, NAD is namespaced and therefore should have one set to allow set-namespace
+	// to act upon it.
+	ns := "default"
+	if interfaceObjs[0].GetNamespace() != "" {
+		ns = interfaceObjs[0].GetNamespace()
+	}
+
 	// generate an empty nad struct
 	nad, err := nadlibv1.NewFromGoStruct(&nadv1.NetworkAttachmentDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
 			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: interfaceObjs[0].GetName()},
+		ObjectMeta: metav1.ObjectMeta{Name: interfaceObjs[0].GetName(), Namespace: ns},
 	})
 	if err != nil {
 		return nil, err

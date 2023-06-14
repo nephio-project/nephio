@@ -40,6 +40,7 @@ items:
   kind: NetworkAttachmentDefinition
   metadata:
     name: n1
+    namespace: default
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n1
   spec:
