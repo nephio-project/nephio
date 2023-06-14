@@ -97,12 +97,6 @@ func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListPro
 	}
 }
 
-// RunFailureCases is an alias of RunGoldenTests.
-// This is kept here only temporarily for backward compatibility reasons.
-func RunFailureCases(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
-	RunGoldenTests(t, basedir, krmFunction)
-}
-
 // RunGoldenTestForPipeline tests a sequence (pipeline) of KRM functions that are applied to a kpt package one after the other,
 // and the final output is tested against some expected output.
 // RunGoldenTestForPipeline behaves similar to RunGoldenTests, but it runs only one testcase whose data is in `dir`.
