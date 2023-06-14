@@ -138,154 +138,159 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// we just check for forResource conditions and we dont care if it is satisfied already
 	// this allows us to refresh the allocation.
-	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) ||
-		porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor)) {
+	hasIpam := porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor))
+	hasVlan := porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor))
 
-		// get package revision resourceList
-		prr := &porchv1alpha1.PackageRevisionResources{}
-		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
-			r.l.Error(err, "cannot get package revision resources")
-			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
-		}
+	if !hasIpam && !hasVlan {
+		// we do not care about it
+		return ctrl.Result{}, nil
+	}
 
-		beforeHash, err := porchutil.PackageRevisionResourcesHash(prr)
+	// get package revision resourceList
+	prr := &porchv1alpha1.PackageRevisionResources{}
+	if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
+		r.l.Error(err, "cannot get package revision resources")
+		return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
+	}
+
+	beforeHash, err := porchutil.PackageRevisionResourcesHash(prr)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate pre-reconcile hash: %s", err.Error()))
+		r.l.Error(err, "cannot calculate pre-reconcile hash")
+		return ctrl.Result{}, nil
+	}
+
+	// get resourceList from resources
+	rl, err := kptrl.GetResourceList(prr.Spec.Resources)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
+		r.l.Error(err, "cannot get resourceList")
+		return ctrl.Result{}, nil
+	}
+
+	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) {
+		// run the function SDK
+		_, err = r.ipamkrmfn.Process(rl)
 		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate pre-reconcile hash: %s", err.Error()))
-			r.l.Error(err, "cannot calculate pre-reconcile hash")
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
+			r.l.Error(err, "ipam function run failed")
 			return ctrl.Result{}, nil
 		}
-
-		// get resourceList from resources
-		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
+		r.l.Info("ipam specializer fn run successfull")
+	}
+	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor)) {
+		// run the function SDK
+		_, err = r.vlankrmfn.Process(rl)
 		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
-			r.l.Error(err, "cannot get resourceList")
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
+			r.l.Error(err, "vlan function run failed")
 			return ctrl.Result{}, nil
 		}
+		r.l.Info("vlan specializer fn run successfull")
+	}
+	workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
+	clusterName := r.getClusterName(workloadClusterObjs)
 
-		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) {
-			// run the function SDK
-			_, err = r.ipamkrmfn.Process(rl)
+	// We want to process the functions to refresh the claims
+	// but if the package is in publish state the updates cannot be done
+	// so we stop here
+	if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
+		r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
+		r.l.Info("package is published, no updates possible",
+			"repo", pr.Spec.RepositoryName,
+			"package", pr.Spec.PackageName,
+			"rev", pr.Spec.Revision,
+			"clusterName", clusterName,
+		)
+		return ctrl.Result{}, nil
+	}
+
+	for _, o := range rl.Items {
+		// TBD what if we create new resources
+		// update only the resource we act upon
+		if o.GetAPIVersion() == r.ipamFor.APIVersion && o.GetKind() == r.ipamFor.Kind {
+			prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+			// Debug
+			alloc, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
 			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
-				r.l.Error(err, "ipam function run failed")
-				return ctrl.Result{}, nil
+				r.l.Error(err, "cannot get extended kubeobject")
+				continue
 			}
-			r.l.Info("ipam specializer fn run successfull")
-		}
-		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor)) {
-			// run the function SDK
-			_, err = r.vlankrmfn.Process(rl)
+			ipAlloc, err := alloc.GetGoStruct()
 			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
-				r.l.Error(err, "vlan function run failed")
-				return ctrl.Result{}, nil
+				r.l.Error(err, "cannot get gostruct from kubeobject")
+				continue
 			}
-			r.l.Info("vlan specializer fn run successfull")
+			r.l.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
 		}
-		workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
-		clusterName := r.getClusterName(workloadClusterObjs)
-
-		// We want to process the functions to refresh the claims
-		// but if the package is in publish state the updates cannot be done
-		// so we stop here
-		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
-			r.l.Info("package is published, no updates possible",
-				"repo", pr.Spec.RepositoryName,
-				"package", pr.Spec.PackageName,
-				"rev", pr.Spec.Revision,
-				"clusterName", clusterName,
-			)
-			return ctrl.Result{}, nil
+		if o.GetAPIVersion() == r.vlanFor.APIVersion && o.GetKind() == r.vlanFor.Kind {
+			prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+			// Debug
+			alloc, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANClaim](o)
+			if err != nil {
+				r.l.Error(err, "cannot get extended kubeobject")
+				continue
+			}
+			vlanAlloc, err := alloc.GetGoStruct()
+			if err != nil {
+				r.l.Error(err, "cannot get gostruct from kubeobject")
+				continue
+			}
+			r.l.Info("generic specializer vlan allocation", "cluserName", clusterName, "status", vlanAlloc.Status)
 		}
-
-		for _, o := range rl.Items {
-			// TBD what if we create new resources
-			// update only the resource we act upon
-			if o.GetAPIVersion() == r.ipamFor.APIVersion && o.GetKind() == r.ipamFor.Kind {
-				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				// Debug
-				alloc, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
-				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
-					continue
-				}
-				ipAlloc, err := alloc.GetGoStruct()
-				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
-					continue
-				}
-				r.l.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
+		if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
+			prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+			kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
+			if err != nil {
+				r.l.Error(err, "cannot get extended kubeobject")
+				continue
 			}
-			if o.GetAPIVersion() == r.vlanFor.APIVersion && o.GetKind() == r.vlanFor.Kind {
-				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				// Debug
-				alloc, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANClaim](o)
-				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
-					continue
-				}
-				vlanAlloc, err := alloc.GetGoStruct()
-				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
-					continue
-				}
-				r.l.Info("generic specializer vlan allocation", "cluserName", clusterName, "status", vlanAlloc.Status)
+			kptfile, err := kptf.GetGoStruct()
+			if err != nil {
+				r.l.Error(err, "cannot get gostruct from kubeobject")
+				continue
 			}
-			if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
-				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
-				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
-					continue
-				}
-				kptfile, err := kptf.GetGoStruct()
-				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
-					continue
-				}
-				for _, c := range kptfile.Status.Conditions {
-					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.vlanFor)+".") ||
-						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.ipamFor)+".") {
-						r.l.Info("generic specializer conditions", "cluserName", clusterName, "status", c.Status, "condition", c.Type)
-					}
+			for _, c := range kptfile.Status.Conditions {
+				if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.vlanFor)+".") ||
+					strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.ipamFor)+".") {
+					r.l.Info("generic specializer conditions", "cluserName", clusterName, "status", c.Status, "condition", c.Type)
 				}
 			}
-		}
-
-		kptfile := rl.Items.GetRootKptfile()
-		if kptfile == nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
-			r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
-			return ctrl.Result{}, nil
-		}
-
-		kptf, err := kptfilelibv1.New(rl.Items.GetRootKptfile().String())
-		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot unmarshal Kptfile")
-			r.l.Error(err, "cannot unmarshal kptfile")
-			return ctrl.Result{}, nil
-		}
-		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
-
-		afterHash, err := porchutil.PackageRevisionResourcesHash(prr)
-		if err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate post-reconcile hash: %s", err.Error()))
-			r.l.Error(err, "cannot calculate post-reconcile hash")
-			return ctrl.Result{}, nil
-		}
-
-		if beforeHash == afterHash {
-			r.recorder.Event(pr, corev1.EventTypeNormal, "Skipping", "no change needed")
-			return ctrl.Result{}, nil
-		}
-
-		if err = r.porchClient.Update(ctx, prr); err != nil {
-			return ctrl.Result{}, err
 		}
 	}
+
+	kptfile := rl.Items.GetRootKptfile()
+	if kptfile == nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
+		r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
+		return ctrl.Result{}, nil
+	}
+
+	kptf, err := kptfilelibv1.New(rl.Items.GetRootKptfile().String())
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot unmarshal Kptfile")
+		r.l.Error(err, "cannot unmarshal kptfile")
+		return ctrl.Result{}, nil
+	}
+	pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+
+	afterHash, err := porchutil.PackageRevisionResourcesHash(prr)
+	if err != nil {
+		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot calculate post-reconcile hash: %s", err.Error()))
+		r.l.Error(err, "cannot calculate post-reconcile hash")
+		return ctrl.Result{}, nil
+	}
+
+	if beforeHash == afterHash {
+		r.recorder.Event(pr, corev1.EventTypeNormal, "Skipping", "no change needed")
+		return ctrl.Result{}, nil
+	}
+
+	if err = r.porchClient.Update(ctx, prr); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
