@@ -32,7 +32,7 @@ import (
 // github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers
 
 // RunGoldenTests provides the functionality of its upstream counterpart: testhelpers.RunGoldenTests, but with
-// some extra functionality (i.e. _expected_error.txt, _expected_results.yaml, _expected.yaml).
+// some extra functionality (i.e. _expected_error.txt, _expected_results.yaml, _actual_output.yaml).
 //
 // RunGoldenTests provides the test infra to run golden test.
 // "basedir" should be the parent directory, under where each sub-directory contains data for a test case.
@@ -69,7 +69,7 @@ import (
 // After running a testcase RunGoldenTests creates a file named _expected.yaml in its subdirectory,
 // containing the actual output of the KRM function. This file can be used to compare with _expected.yaml by an external diff (GUI) tool.
 //
-// If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _expected.yaml file is overwritten with
+// If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _actual_output.yaml file is overwritten with
 // actual output of the KRM function.
 func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
 	err := filepath.WalkDir(basedir, func(path string, d fs.DirEntry, err error) error {
@@ -202,6 +202,6 @@ func CheckExpectedOutput(t *testing.T, dir string, rl *fn.ResourceList) {
 	if err != nil {
 		t.Fatalf("failed to convert resource list to yaml: %v", err)
 	}
-	_ = os.WriteFile(filepath.Join(dir, "_expected.yaml"), rlYAML, 0600)
+	_ = os.WriteFile(filepath.Join(dir, "_actual_output.yaml"), rlYAML, 0600)
 	testhelpers.CompareGoldenFile(t, p, rlYAML)
 }
