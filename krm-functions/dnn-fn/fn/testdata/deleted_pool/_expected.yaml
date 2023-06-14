@@ -29,23 +29,25 @@ items:
     networkInstance: {}
     prefixLength: 8
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
+  # comment A
   metadata:
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
+    - message: update for condition
+      status: "False"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
     - message: delete resource
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
       type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
-    - message: update for condition
-      status: "False"
-      type: req.nephio.org/v1alpha1.DataNetwork.internet
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

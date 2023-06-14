@@ -15,20 +15,19 @@ items:
     - sriov
     masterInterface: eth1
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
   metadata:
+    name: cluster01-upf
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: cluster01-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "True"
-      type: req.nephio.org/v1alpha1.Capacity.dataplane
+    - message: update for condition
+      status: "False"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     - message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "False"
@@ -45,9 +44,10 @@ items:
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n6
-    - message: update for condition
-      status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.dataplane
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

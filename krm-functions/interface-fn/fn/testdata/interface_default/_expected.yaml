@@ -15,13 +15,15 @@ items:
     - sriov
     masterInterface: eth1
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
+  # comment A
   metadata:
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
