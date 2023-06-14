@@ -2,6 +2,7 @@ apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
   name: n3
+  namespace: default
   annotations:
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
 spec:

@@ -114,6 +114,7 @@ items:
   kind: NetworkAttachmentDefinition
   metadata:
     name: n3
+    namespace: default
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -122,6 +123,7 @@ items:
   kind: NetworkAttachmentDefinition
   metadata:
     name: n4
+    namespace: default
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -130,6 +132,7 @@ items:
   kind: NetworkAttachmentDefinition
   metadata:
     name: n6
+    namespace: default
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
