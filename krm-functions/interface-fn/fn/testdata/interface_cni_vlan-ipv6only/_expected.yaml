@@ -54,15 +54,15 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
-    - message: create resource
-      reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "False"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv6
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:

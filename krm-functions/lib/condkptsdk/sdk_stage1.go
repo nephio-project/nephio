@@ -18,6 +18,7 @@ package condkptsdk
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
@@ -117,7 +118,8 @@ func (r *sdk) updateChildren() error {
 		}
 	} else {
 		// act upon the diff
-		for forRef, diff := range diffMap {
+		for _, forRef := range diffMapKeysInDeterministicOrder(diffMap) {
+			diff := diffMap[forRef]
 			// update conditions
 			if diff.updateForCondition {
 				if r.debug {
@@ -127,6 +129,7 @@ func (r *sdk) updateChildren() error {
 					return err
 				}
 			}
+			sortObjects(diff.createConditions)
 			for _, obj := range diff.createConditions {
 				if r.debug {
 					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
@@ -135,6 +138,7 @@ func (r *sdk) updateChildren() error {
 					return err
 				}
 			}
+			sortObjects(diff.createInitialConditions)
 			for _, obj := range diff.createInitialConditions {
 				if r.debug {
 					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
@@ -143,6 +147,7 @@ func (r *sdk) updateChildren() error {
 					return err
 				}
 			}
+			sortObjects(diff.createTrueConditions)
 			for _, obj := range diff.createTrueConditions {
 				if r.debug {
 					fn.Logf("diff action -> create condition: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
@@ -160,6 +165,7 @@ func (r *sdk) updateChildren() error {
 				}
 			}
 			// update resources
+			sortObjects(diff.createObjs)
 			for _, obj := range diff.createObjs {
 				if r.debug {
 					fn.Logf("diff action -> create obj: ref: %s, ownkind: %s\n", kptfilelibv1.GetConditionType(&obj.ref), obj.ownKind)
@@ -168,6 +174,7 @@ func (r *sdk) updateChildren() error {
 					return err
 				}
 			}
+			sortObjects(diff.updateObjs)
 			for _, obj := range diff.updateObjs {
 				if r.debug {
 					fn.Logf("diff action -> update obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
@@ -198,4 +205,21 @@ func (r *sdk) updateChildren() error {
 		}
 	}
 	return nil
+}
+
+func diffMapKeysInDeterministicOrder(diffMap map[corev1.ObjectReference]*inventoryDiff) []corev1.ObjectReference {
+	keys := make([]corev1.ObjectReference, 0, len(diffMap))
+	for k := range diffMap {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].String() < keys[j].String()
+	})
+	return keys
+}
+
+func sortObjects(objs []object) {
+	sort.Slice(objs, func(i, j int) bool {
+		return objs[i].ref.String() < objs[j].ref.String()
+	})
 }
