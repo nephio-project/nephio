@@ -119,6 +119,7 @@ func (r *sdk) updateChildren() error {
 	} else {
 		// act upon the diff
 		for _, forRef := range diffMapKeysInDeterministicOrder(diffMap) {
+			forRef := forRef // to get rid of the gosec error: G601 (CWE-118): Implicit memory aliasing in for loop.
 			diff := diffMap[forRef]
 			// update conditions
 			if diff.updateForCondition {
