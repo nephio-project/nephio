@@ -1,0 +1,1 @@
+cniType not supported in workload cluster; workload cluster CNI(s): [macvlan ipvlan sriov], interface cniType requested:

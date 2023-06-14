@@ -12,6 +12,19 @@ items:
       cniType: sriov
       masterInterface: eth1
     siteCode: edge1
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: cluster01
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
@@ -71,15 +84,15 @@ items:
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n4
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -116,8 +129,8 @@ items:
     cniType: sriov
     attachmentType: vlan
   status:
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
@@ -128,8 +141,8 @@ items:
         nephio.org/site: edge1
   status:
     vlanID: 100
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
@@ -140,8 +153,8 @@ items:
         nephio.org/site: edge1
   status:
     vlanID: 200
-- apiVersion: vlan.alloc.nephio.org/v1alpha1
-  kind: VLANAllocation
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
   metadata:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6

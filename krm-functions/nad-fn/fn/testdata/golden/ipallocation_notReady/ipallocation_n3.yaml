@@ -1,7 +1,7 @@
-apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+apiVersion: ipam.resource.nephio.org/v1alpha1
+kind: IPClaim
 metadata:
-  name: n3
+  name: n3-ipv4
   annotations:
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
 spec:

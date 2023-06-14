@@ -1,5 +1,5 @@
-apiVersion: vlan.alloc.nephio.org/v1alpha1
-kind: VLANAllocation
+apiVersion: vlan.resource.nephio.org/v1alpha1
+kind: VLANClaim
 metadata:
   annotations:
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6

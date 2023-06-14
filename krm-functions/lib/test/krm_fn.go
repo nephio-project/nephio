@@ -17,6 +17,7 @@ package test
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,26 +72,28 @@ import (
 // If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _expected.yaml file is overwritten with
 // actual output of the KRM function.
 func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
-	dirEntries, err := os.ReadDir(basedir)
-	if err != nil {
-		t.Fatalf("ReadDir(%q) failed: %v", basedir, err)
-	}
-
-	for _, dirEntry := range dirEntries {
-		dir := filepath.Join(basedir, dirEntry.Name())
-		if !dirEntry.IsDir() {
-			t.Errorf("expected directory, found %s", dir)
-			continue
+	err := filepath.WalkDir(basedir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("ReadDir(%q) failed: %v", path, err)
+		}
+		if fileInfo.IsDir() {
+			t.Run(path, func(t *testing.T) {
+				rl := ParseResourceListFromDir(t, path)
+				_, processErr := krmFunction.Process(rl)
 
-		t.Run(dir, func(t *testing.T) {
-			rl := ParseResourceListFromDir(t, dir)
-			_, processErr := krmFunction.Process(rl)
-
-			CheckRunError(t, dir, processErr)
-			CheckResults(t, dir, rl)
-			CheckExpectedOutput(t, dir, rl)
-		})
+				CheckRunError(t, path, processErr)
+				CheckResults(t, path, rl)
+				CheckExpectedOutput(t, path, rl)
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("File Walk Dir(%q) failed: %v", basedir, err)
 	}
 }
 

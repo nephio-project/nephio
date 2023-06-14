@@ -17,7 +17,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "True"
-    type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n4
+    type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
   - message: update done
     reason: req.nephio.org/v1alpha1.Interface.n4
     status: "False"
@@ -32,7 +32,7 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n6
     status: "True"
-    type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n6
+    type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
   - message: update for condition
     status: "False"
     type: req.nephio.org/v1alpha1.Interface.n3
@@ -43,4 +43,4 @@ status:
   - message: create resource
     reason: req.nephio.org/v1alpha1.Interface.n3
     status: "True"
-    type: vlan.alloc.nephio.org/v1alpha1.VLANAllocation.n3
+    type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
