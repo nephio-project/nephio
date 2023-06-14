@@ -17,6 +17,7 @@ package test
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,7 @@ import (
 // github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers
 
 // RunGoldenTests provides the functionality of its upstream counterpart: testhelpers.RunGoldenTests, but with
-// some extra functionality (i.e. _expected_error.txt, _expected_results.yaml, _actual_output.yaml).
+// some extra functionality (i.e. _expected_error.txt, _expected_results.yaml, _expected.yaml).
 //
 // RunGoldenTests provides the test infra to run golden test.
 // "basedir" should be the parent directory, under where each sub-directory contains data for a test case.
@@ -65,32 +66,34 @@ import (
 //     If this file is not present in a test case's subdirectory, and the KRM function returns with an error, then the test
 //     is considered failed.
 //
-// After running a testcase RunGoldenTests creates a file named _actual_output.yaml in its subdirectory,
+// After running a testcase RunGoldenTests creates a file named _expected.yaml in its subdirectory,
 // containing the actual output of the KRM function. This file can be used to compare with _expected.yaml by an external diff (GUI) tool.
 //
 // If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _expected.yaml file is overwritten with
 // actual output of the KRM function.
 func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
-	dirEntries, err := os.ReadDir(basedir)
-	if err != nil {
-		t.Fatalf("ReadDir(%q) failed: %v", basedir, err)
-	}
-
-	for _, dirEntry := range dirEntries {
-		dir := filepath.Join(basedir, dirEntry.Name())
-		if !dirEntry.IsDir() {
-			t.Errorf("expected directory, found %s", dir)
-			continue
+	err := filepath.WalkDir(basedir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("ReadDir(%q) failed: %v", path, err)
+		}
+		if fileInfo.IsDir() {
+			t.Run(path, func(t *testing.T) {
+				rl := ParseResourceListFromDir(t, path)
+				_, processErr := krmFunction.Process(rl)
 
-		t.Run(dir, func(t *testing.T) {
-			rl := ParseResourceListFromDir(t, dir)
-			_, processErr := krmFunction.Process(rl)
-
-			CheckRunError(t, dir, processErr)
-			CheckResults(t, dir, rl)
-			CheckExpectedOutput(t, dir, rl)
-		})
+				CheckRunError(t, path, processErr)
+				CheckResults(t, path, rl)
+				CheckExpectedOutput(t, path, rl)
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("File Walk Dir(%q) failed: %v", basedir, err)
 	}
 }
 
@@ -199,6 +202,6 @@ func CheckExpectedOutput(t *testing.T, dir string, rl *fn.ResourceList) {
 	if err != nil {
 		t.Fatalf("failed to convert resource list to yaml: %v", err)
 	}
-	_ = os.WriteFile(filepath.Join(dir, "_actual_output.yaml"), rlYAML, 0600)
+	_ = os.WriteFile(filepath.Join(dir, "_expected.yaml"), rlYAML, 0600)
 	testhelpers.CompareGoldenFile(t, p, rlYAML)
 }
