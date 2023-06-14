@@ -19,6 +19,9 @@ GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
 # find all subdirectories with a Dockerfile in them
 DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include ../../default-help.mk
+
 .PHONY: docker-build docker-push
 docker-build docker-push:  ## Build docker images.
 	for dir in $(DOCKERFILE_DIRS); do \

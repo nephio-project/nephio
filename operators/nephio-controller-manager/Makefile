@@ -17,7 +17,6 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-.PHONY: all
 # This includes the following targets:
 #   test, unit, unit-clean,
 #   gosec, lint,
@@ -28,6 +27,7 @@ include ../../default-go.mk
 #   docker-build, docker-push
 include ../../default-docker.mk
 
+.PHONY: all
 all: build
 
 ##@ General
