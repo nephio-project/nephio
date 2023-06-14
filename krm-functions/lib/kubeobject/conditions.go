@@ -18,6 +18,7 @@ package kubeobject
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
@@ -59,6 +60,17 @@ func (kpc *KptPackageConditions) status() *fn.SubObject {
 	return kpc.kptfile.UpsertMap(statusFieldName)
 }
 
+func (kpc *KptPackageConditions) conditions() fn.SliceSubObjects {
+	return kpc.status().GetSlice(conditionsFieldName)
+}
+
+func (kpc *KptPackageConditions) setConditions(conditions fn.SliceSubObjects) error {
+	sort.SliceStable(conditions, func(i, j int) bool {
+		return conditions[i].GetString("type") < conditions[j].GetString("type")
+	})
+	return kpc.status().SetSlice(conditions, conditionsFieldName)
+}
+
 // AsStructs returns with (a copy of) the list of current conditions of the kpt package
 func (kpc *KptPackageConditions) AsStructs() []kptv1.Condition {
 	var status kptv1.Status
@@ -82,37 +94,39 @@ func (kpc *KptPackageConditions) Get(conditionType string) (kptv1.Condition, boo
 
 // Set creates or updates the given condition using the Type field as the primary key
 func (kpc *KptPackageConditions) Set(condition kptv1.Condition) error {
-	conds := kpc.status().GetSlice(conditionsFieldName)
-	found := false
+	conds := kpc.conditions()
 	for _, conditionSubObj := range conds {
 		if conditionSubObj.GetString("type") == condition.Type {
-			UpdateStringField(conditionSubObj, string(condition.Status), "status")
-			UpdateStringField(conditionSubObj, condition.Reason, "reason")
-			UpdateStringField(conditionSubObj, condition.Message, "message")
-			found = true
-			break
+			if err := UpdateStringField(conditionSubObj, string(condition.Status), "status"); err != nil {
+				return err
+			}
+			if err := UpdateStringField(conditionSubObj, condition.Reason, "reason"); err != nil {
+				return err
+			}
+			if err := UpdateStringField(conditionSubObj, condition.Message, "message"); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
-	if !found {
-		ko, err := fn.NewFromTypedObject(condition)
-		if err != nil {
-			return err
-		}
-		conds = append(conds, &ko.SubObject)
+	ko, err := fn.NewFromTypedObject(condition)
+	if err != nil {
+		return err
 	}
-	return kpc.status().SetSlice(conds, conditionsFieldName)
+	conds = append(conds, &ko.SubObject)
+	return kpc.setConditions(conds)
 }
 
 // DeleteByTpe deletes all conditions with the given type
 func (kpc *KptPackageConditions) DeleteByType(conditionType string) error {
-	oldConditions := kpc.status().GetSlice(conditionsFieldName)
+	oldConditions := kpc.conditions()
 	newConditions := make([]*fn.SubObject, 0, len(oldConditions))
 	for _, c := range oldConditions {
 		if c.GetString("type") != conditionType {
 			newConditions = append(newConditions, c)
 		}
 	}
-	return kpc.status().SetSlice(newConditions, conditionsFieldName)
+	return kpc.setConditions(newConditions)
 }
 
 // DeleteByObjectReference deletes the condition belonging to the referenced object

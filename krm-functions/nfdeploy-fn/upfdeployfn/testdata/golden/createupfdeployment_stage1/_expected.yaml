@@ -25,9 +25,10 @@ items:
   pipeline: {}
   status:
     conditions:
-    - type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      message: update for condition
+    - type: req.nephio.org/v1alpha1.Capacity.dataplane
+      status: "True"
+      message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     - type: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
       message: update condition for initial resource
@@ -44,10 +45,9 @@ items:
       status: "False"
       message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - type: req.nephio.org/v1alpha1.Capacity.dataplane
-      status: "True"
-      message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      message: update for condition
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
