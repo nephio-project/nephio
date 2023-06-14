@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
+##@ Go tests & formatting
+
 self_dir := $(dir $(lastword $(MAKEFILE_LIST)))
 include $(self_dir)/default-go-misc.mk 
 include $(self_dir)/default-go-test.mk 

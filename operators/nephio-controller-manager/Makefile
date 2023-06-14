@@ -90,26 +90,6 @@ docker-build-local: test build ## Build locally, copy in manager to image
 docker-push-local: ## Push docker image with the manager.
 	docker push ${IMGLOCAL}
 
-.PHONY: unit_clean
-unit_clean: ## clean up the unit test artifacts created
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) system prune -f
-endif
-		rm ${TEST_COVERAGE_FILE} ${TEST_COVERAGE_HTML_FILE} ${TEST_COVERAGE_FUNC_FILE} > /dev/null 2>&1
-
-.PHONY: unit
-unit: ## Run unit tests against code.
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v ${PWD}:/go/src -w /go/src docker.io/library/golang:${GO_VERSION}-alpine3.17 \
-         go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
-         go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
-         go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
-else
-		go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}
-		go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE} 
-		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
-endif
-
 # PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
 # - able to use docker buildx . More info: https://docs.docker.com/build/buildx/

@@ -21,7 +21,7 @@ TEST_COVERAGE_FUNC_FILE=func_coverage.out
 unit: test
 
 .PHONY: test
-test: ## Run unit tests against code.
+test: ## Run unit tests (go test)
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) run -it -v "$(CURDIR):/go/src" -w /go/src docker.io/library/golang:${GO_VERSION}-alpine3.17 \
          sh -e -c "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
@@ -34,7 +34,7 @@ else
 endif
 
 .PHONY: unit-clean
-unit-clean: ## clean up the unit test artifacts created
+unit-clean: ## Clean up the artifacts created by the unit tests
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) system prune -f
 endif
