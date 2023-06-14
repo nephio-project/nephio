@@ -1,0 +1,119 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata: # kpt-merge: /workload-cluster
+    name: workload-cluster
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      kpt.dev/config-injection: required
+      internal.kpt.dev/upstream-identifier: 'infra.nephio.org|WorkloadCluster|default|workload-cluster'
+      kpt.dev/injected-resource: edge02
+  spec:
+    clusterName: edge02
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: n1-ipv4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n1
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/address-family: ipv4
+        nephio.org/cluster-name: edge02
+    networkInstance:
+      name: vpc-ran
+  status:
+    prefix: 10.0.0.10/24
+    gateway: 10.0.0.1
+- apiVersion: k8s.cni.cncf.io/v1
+  kind: NetworkAttachmentDefinition
+  metadata:
+    name: n1
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n1
+  spec:
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"macvlan","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}},{"type":"tuning","capabilities":{"mac":true},"ipam":{}}]}'
+- apiVersion: kpt.dev/v1
+  info:
+    description: example amf blueprint package
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: pkg-amf
+  pipeline:
+    mutators:
+    - configPath: apply-replacements.yaml
+      image: gcr.io/kpt-fn/apply-replacements:v0.1.1
+    - configPath: package-context.yaml
+      image: gcr.io/kpt-fn/set-namespace:v0.4.1
+    - image: docker.io/nephio/amf-deploy-fn:latest
+    - image: docker.io/nephio/interface-fn:latest
+    - image: docker.io/nephio/dnn-fn:latest
+    - image: docker.io/nephio/vlan-fn:latest
+    - image: docker.io/nephio/ipam-fn:latest
+  status:
+    conditions:
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n1
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n1-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n1
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n1
+    - message: update done
+      status: "True"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: update for condition
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n1
+    - message: update done
+      status: "True"
+      type: req.nephio.org/v1alpha1.Interface.sbi
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n1
+      status: "True"
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n1
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n1
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: macvlan
+    attachmentType: vlan
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: sbi
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+  spec:
+    networkInstance:
+      name: default
+  status: {}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  data:
+    name: example

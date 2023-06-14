@@ -1,0 +1,50 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: pkg-amf
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: example amf blueprint package
+pipeline:
+  mutators:
+  - image: gcr.io/kpt-fn/apply-replacements:v0.1.1
+    configPath: apply-replacements.yaml
+  - image: gcr.io/kpt-fn/set-namespace:v0.4.1
+    configPath: package-context.yaml
+  - image: docker.io/nephio/amf-deploy-fn:latest
+  - image: docker.io/nephio/interface-fn:latest
+  - image: docker.io/nephio/dnn-fn:latest
+  - image: docker.io/nephio/vlan-fn:latest
+  - image: docker.io/nephio/ipam-fn:latest
+    #- image: docker.io/nephio/nad-fn:latest
+    #- image: docker.io/nephio/dnn-fn:latest
+    #- image: docker.io/nephio/interface-fn:latest
+    #- image: docker.io/nephio/amf-deploy-fn:latest
+  #- image: docker.io/nephio/nad-fn:latest
+  #- image: docker.io/nephio/dnn-fn:latest
+  #- image: docker.io/nephio/interface-fn:latest
+  #- image: docker.io/nephio/amf-deploy-fn:latest
+status:
+  conditions:
+  - message: update done
+    reason: req.nephio.org/v1alpha1.Interface.n1
+    status: "True"
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.n1-ipv4
+  - message: create resource
+    reason: req.nephio.org/v1alpha1.Interface.n1
+    status: "False"
+    type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n1
+  - message: update done
+    status: "True"
+    type: req.nephio.org/v1alpha1.DataNetwork.internet
+  - message: update for condition
+    status: "False"
+    type: req.nephio.org/v1alpha1.Interface.n1
+  - message: update done
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.sbi
+  - message: update done
+    reason: req.nephio.org/v1alpha1.Interface.n1
+    status: "True"
+    type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n1

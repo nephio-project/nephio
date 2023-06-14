@@ -1,0 +1,12 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Interface
+metadata:
+  name: n1
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+spec:
+  networkInstance:
+    name: vpc-ran
+  cniType: macvlan
+  attachmentType: vlan
