@@ -158,15 +158,15 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
@@ -174,7 +174,7 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
@@ -182,11 +182,11 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
     - message: update done
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
