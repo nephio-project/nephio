@@ -75,21 +75,32 @@ func (r *sdk) deleteConditionInKptFile(kind gvkKind, refs []corev1.ObjectReferen
 	forRef := refs[0]
 	if len(refs) == 1 {
 		// delete condition
-		r.conditions.DeleteByObjectReference(forRef)
+		err := r.conditions.DeleteByObjectReference(forRef)
+		if err != nil {
+			fn.Logf("error deleting condition from Kptfile: %v\n", err.Error())
+			r.rl.Results.ErrorE(err)
+			return err
+		}
+
 		// update the status back in the inventory
 		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef}); err != nil {
-			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
+			fn.Logf("error deleting condition from inventory: %v\n", err.Error())
 			r.rl.Results.ErrorE(err)
 			return err
 		}
 	} else {
 		objRef := refs[1]
 		// delete condition
-		r.conditions.DeleteByObjectReference(objRef)
+		err := r.conditions.DeleteByObjectReference(objRef)
+		if err != nil {
+			fn.Logf("error deleting condition from Kptfile: %v\n", err.Error())
+			r.rl.Results.ErrorE(err)
+			return err
+		}
 		// update the status back in the inventory
 		if err := r.inv.delete(&gvkKindCtx{gvkKind: kind}, []corev1.ObjectReference{forRef, objRef}); err != nil {
-			fn.Logf("error deleting stage1 resource to the inventory: %v\n", err.Error())
-			r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
+			fn.Logf("error deleting condition from inventory: %v\n", err.Error())
+			r.rl.Results.ErrorE(err)
 			return err
 		}
 	}
