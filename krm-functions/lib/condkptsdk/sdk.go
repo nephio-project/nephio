@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
+	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -80,31 +80,32 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 }
 
 type sdk struct {
-	cfg   *Config
-	inv   inventory
-	rl    *fn.ResourceList
-	kptf  kptfilelibv1.KptFile
-	ready bool // tracks the overall ready state
-	debug bool // set based on for annotation
+	cfg        *Config
+	inv        inventory
+	rl         *fn.ResourceList
+	conditions *ko.KptPackageConditions
+	kptfile    *fn.KubeObject
+	ready      bool // tracks the overall ready state
+	debug      bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
 	if r.rl.Items.Len() == 0 {
-		r.rl.Results = append(r.rl.Results, fn.GeneralResult("no resources present in the resource list", fn.Info))
+		r.rl.Results.Infof("no resources present in the resourcelist")
 		return true, nil
 	}
 	// get the kptfile first as we need it in various places
-	kptfile := r.rl.Items.GetRootKptfile()
-	if kptfile == nil {
+	r.kptfile = r.rl.Items.GetRootKptfile()
+	if r.kptfile == nil {
 		fn.Log("mandatory Kptfile is missing from the package")
 		r.rl.Results.Errorf("mandatory Kptfile is missing from the package")
 		return false, fmt.Errorf("mandatory Kptfile is missing from the package")
 	}
 
 	var err error
-	r.kptf, err = kptfilelibv1.New(kptfile.String())
+	r.conditions, err = ko.NewKptPackageConditions(r.rl.Items)
 	if err != nil {
-		fn.Logf("cannot unmarshal kptfile, err: %v\n", err)
+		fn.Logf("cannot parse Kpf package conditions: %v\n", err)
 		r.rl.Results = append(r.rl.Results, fn.ErrorResult(err))
 		return false, err
 	}

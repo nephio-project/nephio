@@ -38,7 +38,7 @@ func (r *sdk) populateInventory() error {
 	// to the for resource objects. We call this the forOwnerRef
 	// When a forOwnerRef exists it is used to associate a watch resource to the
 	// inventory specific to the for resource or globally.
-	for _, c := range r.kptf.GetConditions() {
+	for _, c := range r.conditions.AsStructs() {
 		// get the specific inventory context from the conditionType
 		ref := kptfilelibv1.GetGVKNFromConditionType(c.Type)
 		// check if the conditionType is coming from a for KRM resource
@@ -55,15 +55,11 @@ func (r *sdk) populateInventory() error {
 	}
 	// Now we have the forOwnerRef we run through the condition again to populate the remaining
 	// resources in the inventory
-	for _, c := range r.kptf.GetConditions() {
+	for _, c := range r.conditions.AsStructs() {
 		ref := kptfilelibv1.GetGVKNFromConditionType(c.Type)
 		ownerRef := kptfilelibv1.GetGVKNFromConditionType(c.Reason)
-		o, err := r.kptf.ParseKubeObject()
-		if err != nil {
-			return err
-		}
 		x := c
-		if err := r.populate(forOwnerRef, ref, ownerRef, &x, o); err != nil {
+		if err := r.populate(forOwnerRef, ref, ownerRef, &x, r.kptfile); err != nil {
 			return err
 		}
 	}
@@ -77,7 +73,7 @@ func (r *sdk) populateInventory() error {
 	return nil
 }
 
-func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any, o *fn.KubeObject) error {
+func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any, relatedObject *fn.KubeObject) error {
 	// we lookup in the GVK context we initialized in the beginning to validate
 	// if the gvk is relevant for this fn/controller
 	// what the gvk Kind is about through the kindContext
@@ -98,7 +94,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
 			fn.Logf("error setting existing object in the inventory: %v\n", err.Error())
-			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
+			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, relatedObject))
 			return err
 		}
 	case ownGVKKind:
@@ -116,7 +112,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 		}
 		if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ownerRef, *ref}, x, false); err != nil {
 			fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
-			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
+			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, relatedObject))
 			return err
 		}
 	case watchGVKKind:
@@ -143,7 +139,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			}
 			if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*forRef, *ref}, x, false); err != nil {
 				fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
-				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
+				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, relatedObject))
 				return err
 			}
 		} else {
@@ -157,7 +153,7 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 				}
 				if err := r.inv.set(gvkKindCtx, []corev1.ObjectReference{*ref}, x, false); err != nil {
 					fn.Logf("error setting existing resource to the inventory: %v\n", err.Error())
-					r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, o))
+					r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, relatedObject))
 					return err
 				}
 			}

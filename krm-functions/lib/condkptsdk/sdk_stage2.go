@@ -33,7 +33,7 @@ func (r *sdk) updateResource() error {
 		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
 	}
 	if !r.ready || !r.inv.isReady() {
-		// when the overal status is not ready delete all resources
+		// when the overall status is not ready delete all resources
 		// TBD if we need to check the delete annotation
 		readyMap := r.inv.getReadyMap()
 		for _, readyCtx := range readyMap {
@@ -96,8 +96,7 @@ func (r *sdk) updateResource() error {
 			}
 		}
 	}
-	// update the kptfile with the latest conditions
-	return r.updateKptFile()
+	return nil
 }
 
 // handleGenerateUpdate performs the fn/controller callback and handles the response
@@ -111,7 +110,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 	}
 	if newObj == nil {
 		// this happens right now because the NAD gets an interface and the interface can have a default pod network
-		// for which no nad is to be created. hende the nil object
+		// for which no nad is to be created. hence the nil object
 		// once we do the intelligent diff this can be changed back to an error, since NAD does not have to watch the interface
 		if r.debug {
 			fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
@@ -135,7 +134,7 @@ func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.Kub
 		}
 	}
 	//}
-	// add the resource to the kptfile and updates the resource in the resourcelist
+	// add the resource to the kptfile and updates the resource in the resource list
 
 	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
 }
