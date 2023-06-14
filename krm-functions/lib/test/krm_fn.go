@@ -66,10 +66,10 @@ import (
 //     If this file is not present in a test case's subdirectory, and the KRM function returns with an error, then the test
 //     is considered failed.
 //
-// After running a testcase RunGoldenTests creates a file named _expected.yaml in its subdirectory,
+// After running a testcase RunGoldenTests creates a file named _actual_output.yaml in its subdirectory,
 // containing the actual output of the KRM function. This file can be used to compare with _expected.yaml by an external diff (GUI) tool.
 //
-// If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _actual_output.yaml file is overwritten with
+// If the `WRITE_GOLDEN_OUTPUT` environment variable is set with a non-empty value, then the _expected.yaml file is overwritten with
 // actual output of the KRM function.
 func RunGoldenTests(t *testing.T, basedir string, krmFunction fn.ResourceListProcessor) {
 	err := filepath.WalkDir(basedir, func(path string, d fs.DirEntry, err error) error {
