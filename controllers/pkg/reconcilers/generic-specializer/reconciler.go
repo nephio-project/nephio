@@ -254,12 +254,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			for _, c := range kptfile.Status.Conditions {
 				if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.vlanFor)+".") ||
 					strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.ipamFor)+".") {
-					r.l.Info("generic specializer conditions", "cluserName", clusterName, "status", c.Status, "condition", c.Type)
+					r.l.Info("generic specializer conditions", "clusterName", clusterName, "status", c.Status, "condition", c.Type)
 				}
 			}
 		}
 	}
 
+	/*
+	* jbelamaric: Since we never save the PR, I don't think this does anything?
+	*
 	kptfile := rl.Items.GetRootKptfile()
 	if kptfile == nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
@@ -274,6 +277,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 	pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+	*/
 
 	afterHash, err := porchutil.PackageRevisionResourcesHash(prr)
 	if err != nil {
