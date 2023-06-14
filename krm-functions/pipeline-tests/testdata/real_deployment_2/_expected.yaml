@@ -131,69 +131,69 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update done
+    - type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - message: update done
+      message: update done
+    - type: req.nephio.org/v1alpha1.DataNetwork.internet
+      status: "True"
+      message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: update done
+      message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: req.nephio.org/v1alpha1.Interface.n3
-    - message: update done
+      message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: req.nephio.org/v1alpha1.Interface.n4
-    - message: update done
+      message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Capacity.dataplane
       status: "True"
-      type: req.nephio.org/v1alpha1.Interface.n6
-    - message: update condition for initial resource
+      message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
       status: "True"
-      type: req.nephio.org/v1alpha1.Capacity.dataplane
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
+    - type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
+    - type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
+    - type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
+    - type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
+    - type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
+    - type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
-    - message: update done
+      message: update done
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
-      status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

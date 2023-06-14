@@ -143,6 +143,13 @@ func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields 
 	return setYamlNodeOf(obj, newNode)
 }
 
+func UpdateStringField(obj *fn.SubObject, value string, field string) error {
+	if obj.GetString(field) == value {
+		return nil
+	}
+	return obj.SetNestedField(value, field)
+}
+
 ///////////////// internals
 
 func (o *KubeObjectExt[T1]) getFieldOrPanic(value *T1, fieldName string) interface{} {

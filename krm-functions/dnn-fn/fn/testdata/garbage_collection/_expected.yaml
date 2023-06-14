@@ -41,10 +41,10 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: delete resource
-      reason: req.nephio.org/v1alpha1.DataNetwork.internet
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
       status: "False"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
+      message: delete resource
+      reason: req.nephio.org/v1alpha1.DataNetwork.internet
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

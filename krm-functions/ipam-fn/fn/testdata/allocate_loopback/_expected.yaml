@@ -29,6 +29,6 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update done
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3
+      message: update done

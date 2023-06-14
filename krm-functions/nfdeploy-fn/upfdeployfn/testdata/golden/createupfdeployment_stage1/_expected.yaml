@@ -25,29 +25,29 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update for condition
+    - type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      message: update for condition
+    - type: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
-      type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: update condition for initial resource
+      message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n3
-    - message: update condition for initial resource
+      message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n4
       status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n4
-    - message: update condition for initial resource
+      message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Interface.n6
       status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n6
-    - message: update condition for initial resource
+      message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - type: req.nephio.org/v1alpha1.Capacity.dataplane
       status: "True"
-      type: req.nephio.org/v1alpha1.Capacity.dataplane
+      message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

@@ -44,17 +44,17 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update for condition
+    - type: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n3
-    - message: create resource
+      message: update for condition
+    - type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
+      status: "False"
+      message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
+    - type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
       status: "False"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
-    - message: create resource
+      message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "False"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:

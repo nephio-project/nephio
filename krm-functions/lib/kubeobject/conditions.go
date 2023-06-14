@@ -80,38 +80,39 @@ func (kpc *KptPackageConditions) Get(conditionType string) (kptv1.Condition, boo
 	return kptv1.Condition{}, false
 }
 
-// SetAll overwrites the whole list of conditions with the given list
-func (kpc *KptPackageConditions) SetAll(conds []kptv1.Condition) error {
-	return setNestedFieldKeepFormatting(kpc.kptfile, conds, statusFieldName, conditionsFieldName)
-}
-
 // Set creates or updates the given condition using the Type field as the primary key
 func (kpc *KptPackageConditions) Set(condition kptv1.Condition) error {
-	conds := kpc.AsStructs()
+	conds := kpc.status().GetSlice(conditionsFieldName)
 	found := false
-	for i, c := range conds {
-		if c.Type == condition.Type {
-			conds[i] = condition
+	for _, conditionSubObj := range conds {
+		if conditionSubObj.GetString("type") == condition.Type {
+			UpdateStringField(conditionSubObj, string(condition.Status), "status")
+			UpdateStringField(conditionSubObj, condition.Reason, "reason")
+			UpdateStringField(conditionSubObj, condition.Message, "message")
 			found = true
 			break
 		}
 	}
 	if !found {
-		conds = append(conds, condition)
+		ko, err := fn.NewFromTypedObject(condition)
+		if err != nil {
+			return err
+		}
+		conds = append(conds, &ko.SubObject)
 	}
-	return kpc.SetAll(conds)
+	return kpc.status().SetSlice(conds, conditionsFieldName)
 }
 
 // DeleteByTpe deletes all conditions with the given type
 func (kpc *KptPackageConditions) DeleteByType(conditionType string) error {
-	oldConditions := kpc.AsStructs()
-	newConditions := make([]kptv1.Condition, 0, len(oldConditions))
+	oldConditions := kpc.status().GetSlice(conditionsFieldName)
+	newConditions := make([]*fn.SubObject, 0, len(oldConditions))
 	for _, c := range oldConditions {
-		if c.Type != conditionType {
+		if c.GetString("type") != conditionType {
 			newConditions = append(newConditions, c)
 		}
 	}
-	return kpc.SetAll(newConditions)
+	return kpc.status().SetSlice(newConditions, conditionsFieldName)
 }
 
 // DeleteByObjectReference deletes the condition belonging to the referenced object
