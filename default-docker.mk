@@ -23,11 +23,12 @@ endif
 
 endif
 
+##@ Container images
 
 .PHONY: docker-build
-docker-build:  ## Build docker image
+docker-build:  ## Build a container image from the local Dockerfile
 	$(CONTAINER_RUNTIME) buildx build --load --tag  ${IMG} -f ./Dockerfile "$(self_dir)"
 
 .PHONY: docker-push
-docker-push: docker-build ## Build and push docker image
+docker-push: docker-build ## Build and push the container image
 	$(CONTAINER_RUNTIME) push ${IMG}

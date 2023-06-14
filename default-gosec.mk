@@ -16,7 +16,7 @@ GOSEC_VER ?= 2.15.0
 
 # Install link at https://github.com/securego/gosec#install if not running inside a container
 .PHONY: gosec
-gosec: ## inspects source code for security problem by scanning the Go Abstract Syntax Tree
+gosec: ## Inspect the source code for security problems by scanning the Go Abstract Syntax Tree
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) run -it -v "$(CURDIR):/go/src" -w /go/src docker.io/securego/gosec:${GOSEC_VER} ./...
 else

@@ -13,9 +13,9 @@
 #  limitations under the License.
 
 .PHONY: fmt
-fmt: ## Run go fmt against code.
+fmt: ## Run go fmt against the codebase
 	go fmt ./...
 
 .PHONY: vet
-vet: ## Run go vet against code.
+vet: ## Run go vet against the codebase
 	go vet ./...

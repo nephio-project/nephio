@@ -13,5 +13,8 @@ include ../../default-go.mk
 #   docker-build, docker-push
 include ../../default-docker.mk
 
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include ../../default-help.mk
+
 .PHONY: all
 all: fmt test docker-build docker-push

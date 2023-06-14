@@ -32,24 +32,30 @@ GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
 # find all subdirectories with a Dockerfile in them
 DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include default-help.mk
+
+
+##@ Go tests & formatting
 
 .PHONY: unit lint gosec test unit-clean 
-# delegate these targets to the Makefiles of individual go modules
-unit lint gosec test: 
+unit lint gosec test: ## These targets are delegated to the Makefiles of individual Go modules
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done
 
 # delegate these targets to the Makefiles of individual go modules, 
-# but skip the module if the target doesn't exists, or an error happened
-unit-clean : 
+# but simply skip the module if the target doesn't exists, or if an error happened
+unit-clean: ## These targets are delegated to the Makefiles of individual Go modules
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ || true ; \
 	done
 
+
+##@ Container images
+
 .PHONY: docker-build docker-push
-# delegate these targets to the Makefiles next to Dockerfiles
-docker-build docker-push: 
+docker-build docker-push: ## These targets are delegated to the Makefiles next to Dockerfiles
 	for dir in $(DOCKERFILE_DIRS); do \
 		$(MAKE) -C "$$dir" $@  ; \
 	done

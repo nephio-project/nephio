@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-GO_VERSION ?= 1.20.2
-VERSION ?= latest
-REGISTRY ?= docker.io/nephio
+
+.SHELLFLAGS = -ec
 
 # find all subdirectories with a go.mod file in them
 GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
 # find all subdirectories with a Dockerfile in them
 DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
 
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include ../../default-help.mk
 
 .PHONY: docker-build docker-push
 docker-build docker-push:  ## Build docker images.
