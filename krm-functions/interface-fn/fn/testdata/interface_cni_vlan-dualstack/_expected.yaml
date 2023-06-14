@@ -49,16 +49,25 @@ items:
       name: vpc-ran
   status: {}
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
+  # comment A
   metadata:
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: update for condition
+      status: "False"
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
@@ -71,17 +80,10 @@ items:
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n3
     - message: create resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
-    - message: update for condition
-      status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:

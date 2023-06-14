@@ -116,48 +116,21 @@ items:
   spec:
     config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
+  # comment A
   metadata:
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
     - message: update done
-      reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n4
-      status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n6
-      status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n3
-      status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n4
-      status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
-    - message: update done
-      reason: req.nephio.org/v1alpha1.Interface.n6
-      status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "True"
-      type: req.nephio.org/v1alpha1.Capacity.dataplane
+      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     - message: update done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
@@ -174,6 +147,18 @@ items:
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n6
+    - message: update condition for initial resource
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "True"
+      type: req.nephio.org/v1alpha1.Capacity.dataplane
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
@@ -181,14 +166,31 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
+    - message: update done
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
     - message: update done
+      reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

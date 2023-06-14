@@ -25,7 +25,7 @@ import (
 )
 
 // GetConditionType returns a string based on the KRM object Reference
-// It acts on APIVersion, Kind and Name. if these parameters dont exist
+// It acts on APIVersion, Kind and Name. if these parameters don't exist
 // the string does not contain these parameters
 func GetConditionType(o *corev1.ObjectReference) string {
 	var sb strings.Builder
@@ -53,7 +53,7 @@ func GetConditionType(o *corev1.ObjectReference) string {
 
 // GetGVKNFromConditionType return a KRM ObjectReference from a string
 // It expects an APIVersion with a / as a.b/c and a kind + name
-// if not it retruns an empty ObjectReference
+// if not it returns an empty ObjectReference
 func GetGVKNFromConditionType(ct string) (o *corev1.ObjectReference) {
 	split := strings.Split(ct, "/")
 	group := ""

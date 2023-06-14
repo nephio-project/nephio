@@ -59,13 +59,15 @@ items:
   spec:
     config: '{"cniVersion":"0.3.1","vlan":100,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"13.0.0.2/24","gateway":"13.0.0.1"}]}}]}'
 - apiVersion: kpt.dev/v1
-  info:
-    description: upf package example
   kind: Kptfile
+  # comment A
   metadata:
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
-    name: pkg-upf
+  info:
+    description: upf package example
   pipeline: {}
   status:
     conditions:
