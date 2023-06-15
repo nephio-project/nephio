@@ -14,9 +14,9 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update done
+    - type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+      message: update done
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim
   metadata:
