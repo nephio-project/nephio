@@ -23,7 +23,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/nad-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/nfdeploy-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
-	github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48
+	github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c
 )
 
 require (

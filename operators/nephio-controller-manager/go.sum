@@ -156,6 +156,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0 h1:QCs3VbGQqMb1l/248mLEfvsLgBOHFzx+VHGWPYLhz8s=
 github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
+github.com/nephio-project/nephio-controller-poc v0.0.0-20221111013453-5a31b4722094 h1:oHjcKSeHB2s/ahYNvqFPZbekUBCrA1rMO7wmaw+O6Y0=
+github.com/nephio-project/nephio-controller-poc v0.0.0-20221111013453-5a31b4722094/go.mod h1:oE13Jb5gopskPCv0YERhXwqxWIbp6uVsma/uxuP/jKc=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230609191131-85aa39064ef8 h1:RbaoJkIwKuYr+W36pVbsdRUZKOMWWtqiGbXhD74PYfM=
 github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230609191131-85aa39064ef8/go.mod h1:eNUp8L7Lhc+Hs/ktSKBFWNCYhU2RQNNijedhmR9HD+U=
 github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 h1:aQb0HNxJFJi80mPUJ9xYc8GlQo/GMPu0n9dFFdveLh0=
@@ -164,6 +166,8 @@ github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230609191131-85a
 github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-20230609191131-85aa39064ef8/go.mod h1:DUhYTKG6xcIrORwq7WqwKzWmqVQzvyNQ2FNpT/5TTlY=
 github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48 h1:qK7+KVRf6iz0Z0/j1RlJh6DMsoSE2ygwgDaWCj7nFM4=
 github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
+github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c h1:zNeqCNUXERQOPbFvcDv8zbEGtZSpTWar/fgqwvKKklo=
+github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
 github.com/onsi/ginkgo v1.16.5 h1:8xi0RTUf59SOSfEtZMvwTvXYMzG4gV23XVHOZiXNtnE=
 github.com/onsi/ginkgo/v2 v2.9.5 h1:+6Hr4uxzP4XIUyAkg61dWBw8lb/gc4/X5luuxN/EC+Q=
 github.com/onsi/gomega v1.27.7 h1:fVih9JD6ogIiHUN6ePK7HJidyEDpWGVB5mzM7cWNXoU=
@@ -279,6 +283,8 @@ golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.2.0 h1:PUR+T4wwASmuSTYdKjYHI5TD22Wy5ogLU5qZCOLxBrI=
+golang.org/x/sync v0.2.0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
