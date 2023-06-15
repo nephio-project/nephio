@@ -8,4 +8,4 @@ IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 include ../../../default-docker.mk
 
 # This includes the 'help' target that prints out all targets with their descriptions organized by categories
-include ../../default-help.mk
+include ../../../default-help.mk

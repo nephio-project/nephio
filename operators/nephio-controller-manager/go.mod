@@ -5,11 +5,15 @@ go 1.20
 replace (
 	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
 	github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
+	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
+	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
+	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
 
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515
 )
 
 require (
+	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230614145853-715bffbbfc2d
 	github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
@@ -31,6 +35,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6 // indirect
+	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230608012444-ee7c8cf378e9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -54,6 +59,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/henderiw-nephio/network v0.0.0-20230615061333-1031589193d0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -66,8 +72,9 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0 // indirect
-	github.com/nephio-project/nephio-controller-poc v0.0.0-20221111013453-5a31b4722094 // indirect
+	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 // indirect
+	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/openconfig/gnmi v0.9.1 // indirect
 	github.com/openconfig/goyang v1.4.0 // indirect
 	github.com/openconfig/ygot v0.28.3 // indirect
@@ -84,7 +91,6 @@ require (
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
