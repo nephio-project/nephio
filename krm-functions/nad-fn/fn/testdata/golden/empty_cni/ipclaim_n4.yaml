@@ -1,5 +1,5 @@
 apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+kind: IPClaim
 metadata:
   name: n4
   annotations:

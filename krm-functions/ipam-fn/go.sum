@@ -128,8 +128,8 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48 h1:qK7+KVRf6iz0Z0/j1RlJh6DMsoSE2ygwgDaWCj7nFM4=
-github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
+github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c h1:zNeqCNUXERQOPbFvcDv8zbEGtZSpTWar/fgqwvKKklo=
+github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
 github.com/onsi/ginkgo/v2 v2.9.5 h1:+6Hr4uxzP4XIUyAkg61dWBw8lb/gc4/X5luuxN/EC+Q=
 github.com/onsi/gomega v1.27.7 h1:fVih9JD6ogIiHUN6ePK7HJidyEDpWGVB5mzM7cWNXoU=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

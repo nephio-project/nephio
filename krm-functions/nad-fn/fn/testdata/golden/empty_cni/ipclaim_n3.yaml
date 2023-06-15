@@ -1,16 +1,16 @@
 apiVersion: ipam.alloc.nephio.org/v1alpha1
-kind: IPAllocation
+kind: IPClaim
 metadata:
-  name: n6
+  name: n3
   annotations:
-    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
 spec:
   kind: network
   selector:
     matchLabels:
       nephio.org/cluster-name: cluster01
   networkInstance:
-    name: vpc-internet
+    name: vpc-ran
 status:
-  prefix: 16.0.0.2/24
-  gateway: 16.0.0.1
+  prefix: 13.0.0.2/24
+  gateway: 13.0.0.1

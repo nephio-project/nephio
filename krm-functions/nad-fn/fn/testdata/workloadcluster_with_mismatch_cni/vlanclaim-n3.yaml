@@ -5,8 +5,7 @@ metadata:
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   name: n3
 spec:
-  selector:
-    matchLabels:
-      nephio.org/site: edge1
+  vlanIndex:
+    name: cluster01
 status:
   vlanID: 100
