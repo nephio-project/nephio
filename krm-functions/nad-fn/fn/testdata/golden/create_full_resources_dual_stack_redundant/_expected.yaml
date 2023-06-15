@@ -282,9 +282,8 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
     name: n3
   spec:
-    selector:
-      matchLabels:
-        nephio.org/cluster-name: cluster01
+    vlanIndex:
+      name: cluster01
   status:
     vlanID: 100
 - apiVersion: vlan.resource.nephio.org/v1alpha1
@@ -294,9 +293,8 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
     name: n4
   spec:
-    selector:
-      matchLabels:
-        nephio.org/cluster-name: cluster01
+    vlanIndex:
+      name: cluster01
   status:
     vlanID: 200
 - apiVersion: vlan.resource.nephio.org/v1alpha1
@@ -306,8 +304,7 @@ items:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
     name: n6
   spec:
-    selector:
-      matchLabels:
-        nephio.org/cluster-name: cluster01
+    vlanIndex:
+      name: cluster01
   status:
     vlanID: 300

@@ -124,7 +124,7 @@ items:
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
-    vlanDatabase:
+    vlanIndex:
       name: cluster01
   status:
     vlanID: 10

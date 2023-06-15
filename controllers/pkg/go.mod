@@ -15,15 +15,15 @@ require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6
-	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230526213300-77a54e3b8e88
+	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230608012444-ee7c8cf378e9
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
-	github.com/henderiw-nephio/network v0.0.0-20230612202035-8a499d1a01e4
+	github.com/henderiw-nephio/network v0.0.0-20230615061333-1031589193d0
 	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
-	github.com/nokia/k8s-ipam v0.0.4-0.20230609040755-456d5caf8e48
+	github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c
 	github.com/openconfig/ygot v0.28.3
 	github.com/pkg/errors v0.9.1
 	github.com/srl-labs/ygotsrl/v22 v22.11.1

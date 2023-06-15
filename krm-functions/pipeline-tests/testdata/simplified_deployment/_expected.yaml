@@ -295,7 +295,7 @@ items:
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
-    vlanDatabase:
+    vlanIndex:
       name: cluster01
   status:
     vlanID: 10
@@ -309,7 +309,7 @@ items:
       specializer.nephio.org/vlanClaimName: vpc-internal-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
-    vlanDatabase:
+    vlanIndex:
       name: cluster01
   status:
     vlanID: 10
@@ -323,7 +323,7 @@ items:
       specializer.nephio.org/vlanClaimName: vpc-internet-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
-    vlanDatabase:
+    vlanIndex:
       name: cluster01
   status:
     vlanID: 10
