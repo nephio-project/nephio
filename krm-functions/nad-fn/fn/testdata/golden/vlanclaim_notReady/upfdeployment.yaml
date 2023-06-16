@@ -1,0 +1,7 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: UPFDeployment
+metadata: # kpt-merge: upf-example/upf-example
+  name: upf-edge01
+  namespace: pkg-example-upf-bp
+  annotations:
+    internal.kpt.dev/upstream-identifier: 'workload.nephio.org|UPFDeployment|upf-example|upf-example'

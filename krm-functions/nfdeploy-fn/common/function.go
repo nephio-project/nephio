@@ -154,7 +154,7 @@ func (f *NfDeployFn[T, PT]) InterfaceUpdate(o *fn.KubeObject) error {
 	var ipv4 *nephiodeployv1alpha1.IPv4
 	var ipv6 *nephiodeployv1alpha1.IPv6
 	for _, ifStatus := range itfcIPAllocStatus {
-		fn.Logf("prefix prefix:%v\n", ifStatus)
+		//fn.Logf("prefix prefix:%v\n", ifStatus)
 		if ifStatus.Prefix != nil {
 			pi, err := iputil.New(*ifStatus.Prefix)
 			if err != nil {
@@ -226,33 +226,6 @@ func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, obj
 	}
 
 	var err error
-
-	/*
-		if f.workloadCluster == nil {
-			// no WorkloadCluster resource in the package
-			return nil, fmt.Errorf("workload cluster is missing from the kpt package")
-		}
-	*/
-	/*
-		if nfDeploymentObj == nil {
-			nfDeploymentObj = fn.NewEmptyKubeObject()
-
-			err = nfDeploymentObj.SetAPIVersion(nephiodeployv1alpha1.GroupVersion.String())
-			if err != nil {
-				return nil, err
-			}
-
-			err = nfDeploymentObj.SetKind(f.gvk.Kind)
-			if err != nil {
-				return nil, err
-			}
-
-			err = nfDeploymentObj.SetName(f.pkgName)
-			if err != nil {
-				return nil, err
-			}
-		}
-	*/
 
 	nfKoExt, err := ko.NewFromKubeObject[T](nfDeploymentObj)
 	if err != nil {

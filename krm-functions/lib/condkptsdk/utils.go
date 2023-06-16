@@ -62,8 +62,8 @@ func isRefsValid(refs []corev1.ObjectReference) bool {
 func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
 	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
 		curobj.GetKind() == newobj.GetKind() &&
-		curobj.GetName() == newobj.GetName() &&
-		curobj.GetNamespace() == newobj.GetNamespace() {
+		curobj.GetName() == newobj.GetName() {
+		//curobj.GetNamespace() == newobj.GetNamespace() {
 		return true
 	}
 	return false

@@ -12,10 +12,10 @@ pipeline: {}
 status:
   conditions:
   - message: update for condition
+    reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     status: "False"
     type: req.nephio.org/v1alpha1.DataNetwork.internet
   - message: done
     reason: req.nephio.org/v1alpha1.DataNetwork.internet
     status: "True"
-    type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
-
+    type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-internet-pool1

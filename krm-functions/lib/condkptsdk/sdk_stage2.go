@@ -30,9 +30,9 @@ import (
 // - per instance readiness: when certain parts of an instance readiness is missing
 func (r *sdk) updateResource() error {
 	if r.debug {
-		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
+		fn.Logf("updateResource isReady: %t\n", r.ready)
 	}
-	if !r.ready || !r.inv.isReady() {
+	if !r.ready {
 		// when the overall status is not ready delete all resources
 		// TBD if we need to check the delete annotation
 		readyMap := r.inv.getReadyMap()
@@ -47,20 +47,6 @@ func (r *sdk) updateResource() error {
 	}
 	// the overall status is ready, so lets check the readiness map
 	readyMap := r.inv.getReadyMap()
-	// Since we now always start from a package that has the initial
-	// resources linked we no longer need to call the generate fn
-	/*
-		if len(readyMap) == 0 {
-			// this is when the global resource is not found
-			if err := r.handleGenerateUpdate(
-				corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: r.kptf.GetKptFile().Name},
-				nil,
-				nil,
-				fn.KubeObjects{}); err != nil {
-				return err
-			}
-		}
-	*/
 	for forRef, readyCtx := range readyMap {
 		if r.debug {
 			fn.Logf("updateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
@@ -71,7 +57,6 @@ func (r *sdk) updateResource() error {
 				// TBD if this is the right approach -> avoids deleting interface
 				if len(r.cfg.Owns) == 0 {
 					r.deleteObjFromResourceList(readyCtx.forObj)
-
 				}
 			}
 			continue

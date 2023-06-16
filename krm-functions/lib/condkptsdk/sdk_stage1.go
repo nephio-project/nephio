@@ -33,7 +33,7 @@ func (r *sdk) populateChildren() error {
 	}
 	// validate if we are ready, if not we return
 	// TBD if we need to cleanup own resources
-	if !r.ready || !r.inv.isReady() {
+	if !r.ready {
 		// TBD cleanup own resources
 		return nil
 	}
@@ -95,7 +95,7 @@ func (r *sdk) updateChildren() error {
 	}
 
 	// if the fn is not ready to act we stop immediately
-	if !r.ready || !r.inv.isReady() {
+	if !r.ready {
 		for forRef, diff := range diffMap {
 			// delete the overall condition for the object
 			if diff.deleteForCondition {

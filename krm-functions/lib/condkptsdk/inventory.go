@@ -37,10 +37,11 @@ type inventory interface {
 	get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx
 	list() [][]sdkObjectReference
 	// readiness
-	isReady() bool
 	getReadyMap() map[corev1.ObjectReference]*readyCtx
 	// diff
 	diff() (map[corev1.ObjectReference]*inventoryDiff, error)
+	// debug
+	setdebug()
 }
 
 func newInventory(cfg *Config) (inventory, error) {
@@ -66,6 +67,7 @@ type inv struct {
 	// resources contain the runtime resources collected and updated
 	// during the execution
 	resources *resources
+	debug bool
 }
 
 type action string
@@ -133,4 +135,8 @@ func (r *inv) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
 		return nil, false
 	}
 	return kindCtx, true
+}
+
+func (r *inv) setdebug() {
+	r.debug = true
 }

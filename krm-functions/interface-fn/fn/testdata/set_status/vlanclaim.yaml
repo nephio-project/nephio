@@ -1,9 +1,10 @@
 apiVersion: vlan.resource.nephio.org/v1alpha1
 kind: VLANClaim
 metadata:
-  name: n3
+  name: upf-cluster01-n3
   annotations:
-    specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
 spec:

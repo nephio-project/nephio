@@ -17,8 +17,10 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: internet-pool1
+    name: upf-cluster01-internet-pool1
     annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
   spec:
     kind: pool
@@ -46,12 +48,13 @@ items:
   status:
     conditions:
     - message: update done
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
     - message: done
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-internet-pool1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -67,7 +70,9 @@ items:
     name: internet
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       prefix: 10.0.0.0/8
+      specializer.nephio.org/debug: "true"
   spec:
     networkInstance:
       name: vpc-internet

@@ -73,7 +73,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 		//fn.Logf("diff: forRef: %v, existingResource: %v\n", forRef, resCtx.existingResource)
 		if forResCtx.existingResource == nil {
 			for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
-				fn.Logf("delete resource and conditions: forRef: %v, ownRef: %v\n", forRef, ref)
+				if r.debug {
+					fn.Logf("delete resource and conditions: forRef: %v, ownRef: %v\n", forRef, ref)
+				}
 				diffMap[forRef].deleteForCondition = true
 				if resCtx.existingCondition != nil {
 					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ref, ownKind: resCtx.ownKind})
@@ -84,7 +86,9 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 			}
 		} else {
 			for ownRef, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
-				fn.Logf("diff: forRef: %v, ownRef: %v, existingResource: %v, newResource: %v\n", forRef, ownRef, resCtx.existingResource, resCtx.newResource)
+				if r.debug {
+					fn.Logf("diff: forRef: %v, ownRef: %v, existingResource: %v, newResource: %v\n", forRef, ownRef, resCtx.existingResource, resCtx.newResource)
+				}
 				// condition diff handling
 				switch {
 				// if there is no new resource  and no existing condition, but this is an initial Child resource we need to create the conditions

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -128,12 +129,6 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		return fn.KubeObjects{}, nil
 	}
 
-	// meta is the generic object meta attached to all derived child objects
-	meta := metav1.ObjectMeta{
-		Name:        o.GetName(),
-		Annotations: getAnnotations(o.GetAnnotations()),
-	}
-
 	afs := getAddressFamilies(itfce.Spec.IpFamilyPolicy)
 
 	// When the CNIType is not set this is a loopback interface
@@ -144,30 +139,34 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		// add IPClaim of type network
 		for _, af := range afs {
 			meta := metav1.ObjectMeta{
-				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Name:        fmt.Sprintf("%s-%s-%s", getForName(o.GetAnnotations()), o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
-			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
+			obj, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
 			if err != nil {
 				return nil, err
 			}
-			resources = append(resources, o)
+			resources = append(resources, obj)
 		}
 
 		if itfce.Spec.AttachmentType == nephioreqv1alpha1.AttachmentTypeVLAN {
 			// add VLANClaim
 			meta := metav1.ObjectMeta{
-				Name:        o.GetName(),
+				Name:        fmt.Sprintf("%s-%s", getForName(o.GetAnnotations()), o.GetName()),
 				Annotations: f.getAnnotationsWithvlanClaimName(itfce),
 			}
-			o, err := f.getVLANClaim(meta)
+			obj, err := f.getVLANClaim(meta)
 			if err != nil {
 				return nil, err
 			}
-			resources = append(resources, o)
+			resources = append(resources, obj)
 		}
 
 		// claim nad
+		meta := metav1.ObjectMeta{
+			Name:        fmt.Sprintf("%s-%s", getForName(o.GetAnnotations()), o.GetName()),
+			Annotations: getAnnotations(o.GetAnnotations()),
+		}
 		o, err = f.getNAD(meta)
 		if err != nil {
 			return nil, err
@@ -177,7 +176,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 		// add IPClaim of type loopback
 		for _, af := range afs {
 			meta := metav1.ObjectMeta{
-				Name:        fmt.Sprintf("%s-%s", o.GetName(), string(af)),
+				Name:        fmt.Sprintf("%s-%s-%s", getForName(o.GetAnnotations()), o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
 			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
@@ -313,12 +312,23 @@ func getAnnotations(annotations map[string]string) map[string]string {
 			a[k] = v
 		}
 	}
-	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
-		a[condkptsdk.SpecializerPurpose] = owner
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		a[condkptsdk.SpecializerFor] = owner
 		return a
 	}
-	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
+	a[condkptsdk.SpecializerFor] = annotations[condkptsdk.SpecializerOwner]
 	return a
+}
+
+func getForName(annotations map[string]string) string {
+	// forName is the resource that is the root resource of the specialization
+	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	forFullName := annotations[condkptsdk.SpecializerOwner]
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		forFullName = owner
+	}
+	split := strings.Split(forFullName, ".")
+	return split[len(split)-1]
 }
 
 func getAddressFamilies(pol nephioreqv1alpha1.IpFamilyPolicy) []nephioreqv1alpha1.IPFamily {

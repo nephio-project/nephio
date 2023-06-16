@@ -5,6 +5,7 @@ metadata:
   annotations:
     config.kubernetes.io/local-config: "true"
     specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    specializer.nephio.org/debug: "true"
 spec:
   networkInstance:
     name: vpc-ran
