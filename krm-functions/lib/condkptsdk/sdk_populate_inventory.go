@@ -36,7 +36,7 @@ func (r *sdk) populateInventory() error {
 	// keeps track a map to link the forOnwer name to the specific for resourceName
 	// used by NAD since we dont do the intelligent diff, we need to handle the mapping
 	// used only to populate the inventory for specific watches
-	forOwnerRefNameMap := map[string]string{} 
+	forOwnerRefNameMap := map[string]string{}
 
 	// We first run through the conditions to check if an ownRef is associated
 	// to the for resource objects. We call this the forOwnerRef
@@ -139,7 +139,7 @@ func (r *sdk) populate(forOwnerRefNameMap map[string]string, forOwnerRef, ref, o
 			name := forOwnerRefNameMap[ownerRef.Name]
 			if forOwnerRef.APIVersion == ref.APIVersion && forOwnerRef.Kind == ref.Kind {
 				name = forOwnerRefNameMap[ref.Name]
-			} 
+			}
 			forRef := &corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: name}
 
 			if r.debug {

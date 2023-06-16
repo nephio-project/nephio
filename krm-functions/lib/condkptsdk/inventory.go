@@ -67,7 +67,7 @@ type inv struct {
 	// resources contain the runtime resources collected and updated
 	// during the execution
 	resources *resources
-	debug bool
+	debug     bool
 }
 
 type action string
