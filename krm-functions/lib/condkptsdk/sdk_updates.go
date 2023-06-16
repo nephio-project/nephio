@@ -57,7 +57,7 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference
 			return err
 		}
 	} else {
-		if obj.ownKind == ChildRemote {
+		if obj.ownKind == ChildRemote || obj.ownKind == ChildLocal {
 			if err := r.setObjectInResourceList(kind, refs, obj); err != nil {
 				fn.Logf("error setting resource in resourceList: %v\n", err.Error())
 				r.rl.Results.ErrorE(err)
