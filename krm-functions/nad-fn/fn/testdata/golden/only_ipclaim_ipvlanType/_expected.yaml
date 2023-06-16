@@ -76,8 +76,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n3
-    namespace: default
+    name: upf-edge01-n3
+    namespace: pkg-example-upf-bp
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -85,8 +85,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n4
-    namespace: default
+    name: upf-edge01-n4
+    namespace: pkg-example-upf-bp
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -94,8 +94,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n6
-    namespace: default
+    name: upf-edge01-n6
+    namespace: pkg-example-upf-bp
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
@@ -182,3 +182,10 @@ items:
     cniType: ipvlan
     attachmentType: vlan
   status:
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata: # kpt-merge: upf-example/upf-example
+    name: upf-edge01
+    namespace: pkg-example-upf-bp
+    annotations:
+      internal.kpt.dev/upstream-identifier: 'workload.nephio.org|UPFDeployment|upf-example|upf-example'

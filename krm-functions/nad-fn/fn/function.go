@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
+	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
@@ -39,6 +40,8 @@ const defaultPODNetwork = "default"
 type nadFn struct {
 	sdk             condkptsdk.KptCondSDK
 	workloadCluster *infrav1alpha1.WorkloadCluster
+	forName         string
+	forNamespace    string
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -54,8 +57,20 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+					Kind:       infrav1alpha1.WorkloadClusterKind,
 				}: myFn.WorkloadClusterCallbackFn,
+				{
+					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephiodeployv1alpha1.UPFDeploymentKind,
+				}: myFn.DeploymentCallbackFn,
+				{
+					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephiodeployv1alpha1.SMFDeploymentKind,
+				}: myFn.DeploymentCallbackFn,
+				{
+					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
+					Kind:       nephiodeployv1alpha1.AMFDeploymentKind,
+				}: myFn.DeploymentCallbackFn,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
 					Kind:       ipamv1alpha1.IPClaimKind,
@@ -97,11 +112,28 @@ func (f *nadFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	return f.workloadCluster.Spec.Validate()
 }
 
+func (f *nadFn) DeploymentCallbackFn(o *fn.KubeObject) error {
+	f.forName = o.GetName()
+	f.forNamespace = o.GetNamespace()
+
+	fn.Logf("deployment callback: kind: %s, name: %s, namespace: %s\n", o.GetKind(), o.GetName(), o.GetNamespace())
+	return nil
+}
+
 func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if f.workloadCluster == nil {
 		// no WorkloadCluster resource in the package
 		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 	}
+
+	// the NAD needs a prefix equal to the owner of the deployment and it needs a namespace aligned with the deployment
+	// Given we dont do the intelligent diff we need to look for the owner resource
+	// With the intelligent diff this will be propagated via the annotations.
+	if f.forName == "" || f.forNamespace == "" {
+		// no for name or for namespace present
+		return nil, fmt.Errorf("expecting a for name and for namespace, got forName: %s, forNamespace: %s", f.forName, f.forNamespace)
+	}
+
 	ipClaimObjs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind))
 	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
@@ -131,21 +163,13 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 		return nil, fmt.Errorf("expected one of %s or %s objects to generate the nad", ipamv1alpha1.IPClaimKind, vlanv1alpha1.VLANClaimKind)
 	}
 
-	// the various source objects are generally local-config and will not have a namespace
-	// set. However, NAD is namespaced and therefore should have one set to allow set-namespace
-	// to act upon it.
-	ns := "default"
-	if interfaceObjs[0].GetNamespace() != "" {
-		ns = interfaceObjs[0].GetNamespace()
-	}
-
 	// generate an empty nad struct
 	nad, err := nadlibv1.NewFromGoStruct(&nadv1.NetworkAttachmentDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
 			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 		},
-		ObjectMeta: metav1.ObjectMeta{Name: interfaceObjs[0].GetName(), Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s", f.forName, interfaceObjs[0].GetName()), Namespace: f.forNamespace},
 	})
 	if err != nil {
 		return nil, err

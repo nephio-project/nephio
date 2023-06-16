@@ -1,7 +1,7 @@
 apiVersion: ipam.resource.nephio.org/v1alpha1
 kind: IPClaim
 metadata:
-  name: n3
+  name: upf-cluster01-n3
   annotations:
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
 spec:

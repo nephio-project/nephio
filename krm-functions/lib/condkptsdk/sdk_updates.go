@@ -57,7 +57,7 @@ func (r *sdk) handleUpdate(a action, kind gvkKind, refs []corev1.ObjectReference
 			return err
 		}
 	} else {
-		if obj.ownKind == ChildRemote {
+		if obj.ownKind == ChildRemote || obj.ownKind == ChildLocal {
 			if err := r.setObjectInResourceList(kind, refs, obj); err != nil {
 				fn.Logf("error setting resource in resourceList: %v\n", err.Error())
 				r.rl.Results.ErrorE(err)
@@ -148,7 +148,9 @@ func (r *sdk) setConditionByRef(a action, kind gvkKind, refs []corev1.ObjectRefe
 }
 
 func (r *sdk) setObjectInResourceList(kind gvkKind, refs []corev1.ObjectReference, obj object) error {
-	fn.Logf("setObjectInResourceList: kind: %s, refs: %v, obj: %v\n", kind, refs, obj.obj)
+	if r.debug {
+		fn.Logf("setObjectInResourceList: kind: %s, refs: %v, obj: %v\n", kind, refs, obj.obj)
+	}
 	if !isRefsValid(refs) {
 		return fmt.Errorf("cannot set resource in resourcelist as the object has no valid refs: %v", refs)
 	}

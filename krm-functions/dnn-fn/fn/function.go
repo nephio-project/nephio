@@ -124,7 +124,7 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 
 		ipClaim := ipamv1alpha1.BuildIPClaim(
 			metav1.ObjectMeta{
-				Name:        fmt.Sprintf("%s-%s", dnn.Name, pool.Name),
+				Name:        fmt.Sprintf("%s-%s-%s", getForName(o.GetAnnotations()), dnn.Name, pool.Name),
 				Annotations: getAnnotations(dnn.GetAnnotations()),
 			},
 			ipamv1alpha1.IPClaimSpec{
@@ -172,7 +172,7 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 	}
 	for _, ipclaim := range ipclaims {
 		if ipclaim.Spec.Kind == ipamv1alpha1.PrefixKindPool {
-			poolName, found := strings.CutPrefix(ipclaim.Name, dnn.Name+"-")
+			poolName, found := strings.CutPrefix(ipclaim.Name, fmt.Sprintf("%s-%s-", getForName(dnn.Annotations), dnn.Name))
 			if found {
 				status := nephioreqv1alpha1.PoolStatus{
 					Name:    poolName,
@@ -196,10 +196,22 @@ func getAnnotations(annotations map[string]string) map[string]string {
 			a[k] = v
 		}
 	}
-	if owner, ok := annotations[condkptsdk.SpecializerPurpose]; ok {
-		a[condkptsdk.SpecializerPurpose] = owner
+	if rootOwner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		a[condkptsdk.SpecializerFor] = rootOwner
 		return a
 	}
-	a[condkptsdk.SpecializerPurpose] = annotations[condkptsdk.SpecializerOwner]
+	a[condkptsdk.SpecializerFor] = annotations[condkptsdk.SpecializerOwner]
 	return a
+}
+
+func getForName(annotations map[string]string) string {
+	// forName is the resource that is the root resource of the specialization
+	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	forFullName := annotations[condkptsdk.SpecializerOwner]
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		forFullName = owner
+	}
+	split := strings.Split(forFullName, ".")
+
+	return split[len(split)-1]
 }

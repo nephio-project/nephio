@@ -17,10 +17,10 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: internet-pool1
+    name: upf-cluster01-internet-pool1
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
   spec:
     kind: pool
@@ -37,10 +37,10 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: n3-ipv4
+    name: upf-cluster01-n3-ipv4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     kind: network
@@ -56,10 +56,10 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: n4-ipv4
+    name: upf-cluster01-n4-ipv4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
     kind: network
@@ -75,10 +75,10 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: n6-ipv4
+    name: upf-cluster01-n6-ipv4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
     kind: network
@@ -94,8 +94,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n3
-    namespace: default
+    name: upf-cluster01-n3
+    namespace: dummy
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -103,8 +103,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n4
-    namespace: default
+    name: upf-cluster01-n4
+    namespace: dummy
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -112,8 +112,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: n6
-    namespace: default
+    name: upf-cluster01-n6
+    namespace: dummy
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
@@ -157,43 +157,43 @@ items:
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-n3-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.upf-cluster01-n3
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.upf-cluster01-n3
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-n4-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.upf-cluster01-n4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n4
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.upf-cluster01-n4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-n6-ipv4
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.upf-cluster01-n6
     - message: update done
       reason: req.nephio.org/v1alpha1.Interface.n6
       status: "True"
-      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.upf-cluster01-n6
     - message: update done
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "True"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-internet-pool1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -288,10 +288,10 @@ items:
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim
   metadata:
-    name: n3
+    name: upf-cluster01-n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -302,10 +302,10 @@ items:
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim
   metadata:
-    name: n4
+    name: upf-cluster01-n4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-internal-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
@@ -316,10 +316,10 @@ items:
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim
   metadata:
-    name: n6
+    name: upf-cluster01-n6
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/purpose: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-internet-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
@@ -331,6 +331,7 @@ items:
   kind: UPFDeployment
   metadata:
     name: upf-cluster01
+    namespace: dummy
   spec:
     capacity:
       maxDownlinkThroughput: 10G

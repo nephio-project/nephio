@@ -19,7 +19,6 @@ package fn
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
@@ -68,8 +67,6 @@ func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) 
 		return nil, err
 	}
 	newclaim := claim.DeepCopy()
-	newclaim.Name = getNewName(claim.GetAnnotations(), claim.GetName())
-	fn.Logf("ipclaim newName: %s\n", newclaim.Name)
 	resp, err := f.ClientProxy.Claim(context.Background(), newclaim, nil)
 	if err != nil {
 		return nil, err
@@ -87,7 +84,9 @@ func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) 
 	return &claimKOE.KubeObject, err
 }
 
+/*
 func getNewName(annotations map[string]string, origName string) string {
-	split := strings.Split(annotations[condkptsdk.SpecializerPurpose], ".")
+	split := strings.Split(annotations[condkptsdk.SpecializerFor], ".")
 	return fmt.Sprintf("%s-%s", split[len(split)-1], origName)
 }
+*/

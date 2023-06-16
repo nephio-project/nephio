@@ -28,7 +28,7 @@ const (
 	SpecializerOwner         = "specializer.nephio.org/owner"
 	SpecializerDelete        = "specializer.nephio.org/delete"
 	SpecializerDebug         = "specializer.nephio.org/debug"
-	SpecializerPurpose       = "specializer.nephio.org/purpose"
+	SpecializerFor           = "specializer.nephio.org/for"
 	SpecializervlanClaimName = "specializer.nephio.org/vlanClaimName"
 )
 
@@ -116,6 +116,7 @@ func (r *sdk) Run() (bool, error) {
 	for _, forObj := range forObjs {
 		if forObj.GetAnnotation(SpecializerDebug) != "" {
 			r.debug = true
+			r.inv.setdebug()
 		}
 	}
 	// initialize inventory

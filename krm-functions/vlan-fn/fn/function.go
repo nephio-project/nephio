@@ -68,7 +68,6 @@ func (f *FnR) updateVLANClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects
 	}
 	newclaim := claim.DeepCopy()
 	newclaim.Name = claim.GetAnnotations()[condkptsdk.SpecializervlanClaimName]
-	fn.Logf("vlanclaim newName: %s\n", newclaim.Name)
 	resp, err := f.ClientProxy.Claim(context.Background(), newclaim, nil)
 	if err != nil {
 		return nil, err

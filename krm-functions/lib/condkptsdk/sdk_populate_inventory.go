@@ -33,6 +33,10 @@ func (r *sdk) populateInventory() error {
 	// forInventory context. If no match was found to the forOwnerRef the watchedResource is associated
 	// to the global context
 	var forOwnerRef *corev1.ObjectReference
+	// keeps track a map to link the forOnwer name to the specific for resourceName
+	// used by NAD since we dont do the intelligent diff, we need to handle the mapping
+	// used only to populate the inventory for specific watches
+	forOwnerRefNameMap := map[string]string{}
 
 	// We first run through the conditions to check if an ownRef is associated
 	// to the for resource objects. We call this the forOwnerRef
@@ -50,6 +54,10 @@ func (r *sdk) populateInventory() error {
 			ownerRef := kptfilelibv1.GetGVKNFromConditionType(c.Reason)
 			if err := validateGVKRef(*ownerRef); err == nil {
 				forOwnerRef = &corev1.ObjectReference{APIVersion: ownerRef.APIVersion, Kind: ownerRef.Kind}
+				forOwnerRefNameMap[ownerRef.Name] = ref.Name
+				if r.debug {
+					fn.Logf("forOwnerRefNameMap: refKind: %s, refName: %s, forOwnRefName: %s\n", ref.Kind, ref.Name, ownerRef.Name)
+				}
 			}
 		}
 	}
@@ -59,21 +67,21 @@ func (r *sdk) populateInventory() error {
 		ref := kptfilelibv1.GetGVKNFromConditionType(c.Type)
 		ownerRef := kptfilelibv1.GetGVKNFromConditionType(c.Reason)
 		x := c
-		if err := r.populate(forOwnerRef, ref, ownerRef, &x, r.kptfile); err != nil {
+		if err := r.populate(forOwnerRefNameMap, forOwnerRef, ref, ownerRef, &x, r.kptfile); err != nil {
 			return err
 		}
 	}
 	for _, o := range r.rl.Items {
 		ref := &corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind(), Name: o.GetName()}
 		ownerRef := kptfilelibv1.GetGVKNFromConditionType(o.GetAnnotation(SpecializerOwner))
-		if err := r.populate(forOwnerRef, ref, ownerRef, o, o); err != nil {
+		if err := r.populate(forOwnerRefNameMap, forOwnerRef, ref, ownerRef, o, o); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any, relatedObject *fn.KubeObject) error {
+func (r *sdk) populate(forOwnerRefNameMap map[string]string, forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any, relatedObject *fn.KubeObject) error {
 	// we lookup in the GVK context we initialized in the beginning to validate
 	// if the gvk is relevant for this fn/controller
 	// what the gvk Kind is about through the kindContext
@@ -127,10 +135,10 @@ func (r *sdk) populate(forOwnerRef, ref, ownerRef *corev1.ObjectReference, x any
 			// The name is a bit complicated ->
 			// in general we take the ownerref
 			// when the forOwnerRef matches we take the name of the ref since the ownerref here is owned by another resource
-			// e.g. interface in NAD context is owned by nfdeploy, so we tak the name of the ref iso ownerref
-			name := ownerRef.Name
+			// e.g. interface in NAD context is owned by nfdeploy, so we take the name of the ref iso ownerref
+			name := forOwnerRefNameMap[ownerRef.Name]
 			if forOwnerRef.APIVersion == ref.APIVersion && forOwnerRef.Kind == ref.Kind {
-				name = ref.Name
+				name = forOwnerRefNameMap[ref.Name]
 			}
 			forRef := &corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind, Name: name}
 

@@ -1,8 +1,10 @@
 apiVersion: ipam.resource.nephio.org/v1alpha1
 kind: IPClaim
 metadata:
-  name: internet-pool1
+  name: upf-cluster01-internet-pool1
   annotations:
+    config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
     specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
 spec:
   kind: pool

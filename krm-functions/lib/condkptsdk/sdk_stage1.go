@@ -33,7 +33,7 @@ func (r *sdk) populateChildren() error {
 	}
 	// validate if we are ready, if not we return
 	// TBD if we need to cleanup own resources
-	if !r.ready || !r.inv.isReady() {
+	if !r.ready {
 		// TBD cleanup own resources
 		return nil
 	}
@@ -95,7 +95,7 @@ func (r *sdk) updateChildren() error {
 	}
 
 	// if the fn is not ready to act we stop immediately
-	if !r.ready || !r.inv.isReady() {
+	if !r.ready {
 		for forRef, diff := range diffMap {
 			// delete the overall condition for the object
 			if diff.deleteForCondition {
@@ -171,7 +171,12 @@ func (r *sdk) updateChildren() error {
 				if r.debug {
 					fn.Logf("diff action -> create obj: ref: %s, ownkind: %s\n", kptfilelibv1.GetConditionType(&obj.ref), obj.ownKind)
 				}
-				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, kptv1.ConditionFalse, "resource", false); err != nil {
+				status := kptv1.ConditionFalse
+				if obj.ownKind == ChildLocal {
+					// For local resources the condition can be set to true upon create
+					status = kptv1.ConditionTrue
+				}
+				if err := r.handleUpdate(actionCreate, ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, status, "resource", false); err != nil {
 					return err
 				}
 			}
