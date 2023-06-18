@@ -8,7 +8,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    clusterName: cluster01
+    clusterName: ""
     cnis:
     - macvlan
     - ipvlan
@@ -17,22 +17,17 @@ items:
 - apiVersion: ipam.resource.nephio.org/v1alpha1
   kind: IPClaim
   metadata:
-    name: upf-cluster01-internet-pool1
+    name: internet-pool1
     annotations:
-      config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
+      specializer.nephio.org/delete: "true"
   spec:
     kind: pool
     selector:
       matchLabels:
-        nephio.org/address-family: ipv4
-        nephio.org/cluster-name: cluster01
-    createPrefix: true
-    networkInstance:
-      name: vpc-internet
+        nephio.org/site: edge1
+    networkInstance: {}
     prefixLength: 8
-  status: {}
 - apiVersion: kpt.dev/v1
   kind: Kptfile
   # comment A
@@ -46,13 +41,13 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: update for condition
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
       status: "False"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: create initial resource
+    - message: not ready
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
-      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-internet-pool1
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.internet-pool1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -69,7 +64,6 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internet

@@ -1,6 +1,0 @@
-- message: mandatory field ClusterName is missing from WorkloadCluster
-  resourceRef:
-    name: cluster01
-    apiVersion: infra.nephio.org/v1alpha1
-    kind: WorkloadCluster
-  severity: error

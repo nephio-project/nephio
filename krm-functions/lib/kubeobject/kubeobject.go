@@ -85,35 +85,35 @@ func NewFromGoStruct[T1 any](x *T1) (*KubeObjectExt[T1], error) {
 // UnsafeSetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) UnsafeSetSpec(newSpec interface{}) error {
-	return setNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
+	return SetNestedFieldKeepFormatting(&(o.KubeObject), newSpec, "spec")
 }
 
 // UnsafeSetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) UnsafeSetStatus(newStatus interface{}) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
+	return SetNestedFieldKeepFormatting(&o.KubeObject, newStatus, "status")
 }
 
 // SetFromTypedObject sets the value of `o` to `value`, while keeping most of the YAML formatting.
 // It can be seen as an in-place version of fn.NewFromTypedObject
 func (o *KubeObjectExt[T1]) SetFromTypedObject(value *T1) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject, value)
+	return SetNestedFieldKeepFormatting(&o.KubeObject, value)
 }
 
 // SetSpec sets the `spec` field of a KubeObjectExt to the value of `newSpec`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetSpec(value *T1) error {
-	return setNestedFieldKeepFormatting(&(o.KubeObject), o.getFieldOrPanic(value, "Spec"), "spec")
+	return SetNestedFieldKeepFormatting(&(o.KubeObject), o.getFieldOrPanic(value, "Spec"), "spec")
 }
 
 // SetStatus sets the `status` field of a KubeObjectExt to the value of `newStatus`,
 // while trying to keep as much formatting as possible
 func (o *KubeObjectExt[T1]) SetStatus(value *T1) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject, o.getFieldOrPanic(value, "Status"), "status")
+	return SetNestedFieldKeepFormatting(&o.KubeObject, o.getFieldOrPanic(value, "Status"), "status")
 }
 
 func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, fields ...string) error {
-	return setNestedFieldKeepFormatting(&o.KubeObject, value, fields...)
+	return SetNestedFieldKeepFormatting(&o.KubeObject, value, fields...)
 }
 
 // setNestedFieldKeepFormatting is similar to KubeObject.SetNestedField(), but keeps the
@@ -122,7 +122,7 @@ func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, fiel
 // NOTE: This functionality should be solved in the upstream SDK.
 // Merging the code below to the upstream SDK is in progress and tracked in this issue:
 // https://github.com/GoogleContainerTools/kpt/issues/3923
-func setNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
+func SetNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
 	oldNode := yamlNodeOf(&obj.SubObject)
 	if len(fields) == 0 {
 		obj2, err := fn.NewFromTypedObject(value)

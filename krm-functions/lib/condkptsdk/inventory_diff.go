@@ -32,9 +32,7 @@ type inventoryDiff struct {
 	updateObjs              []object
 	createObjs              []object
 	deleteConditions        []object
-	createConditions        []object
-	createTrueConditions    []object // used for resources that do not have to be acted upon
-	createInitialConditions []object // used for resources that are owned by a for resource
+	createConditions        []object // different types exist here based on childResource Type (childInitial, childLocal)
 	//updateConditions []*object
 	updateDeleteAnnotations []object
 }
@@ -52,7 +50,7 @@ type object struct {
 // the diff compares the eixisiting resource/condition inventory
 // against the new resource/condition inventory and provide CRUD operation
 // based on that comparisons.
-func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
+func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	diffMap := map[corev1.ObjectReference]*inventoryDiff{}
@@ -64,8 +62,8 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 			createObjs:              []object{},
 			deleteConditions:        []object{},
 			createConditions:        []object{},
-			createInitialConditions: []object{},
-			createTrueConditions:    []object{},
+			//createInitialConditions: []object{},
+			//createTrueConditions:    []object{},
 			updateDeleteAnnotations: []object{},
 		}
 		// if the existing for resource is not present we need to cleanup
@@ -91,19 +89,6 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 				}
 				// condition diff handling
 				switch {
-				// if there is no new resource  and no existing condition, but this is an initial Child resource we need to create the conditions
-				// e.g. Interface within UPFDeployment
-				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildInitial:
-					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
-						diffMap[forRef].updateForCondition = true
-					}
-					diffMap[forRef].createInitialConditions = append(diffMap[forRef].createInitialConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
-				// e.g. Capacity within UPFDeployment
-				case resCtx.newResource == nil && resCtx.existingCondition == nil && resCtx.ownKind == ChildLocal:
-					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
-						diffMap[forRef].updateForCondition = true
-					}
-					diffMap[forRef].createTrueConditions = append(diffMap[forRef].createTrueConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				case resCtx.newResource == nil && resCtx.existingCondition == nil:
 					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
 						diffMap[forRef].updateForCondition = true
@@ -188,7 +173,7 @@ func (r *inv) diff() (map[corev1.ObjectReference]*inventoryDiff, error) {
 			}
 		}
 	}
-	return diffMap, nil
+	return diffMap
 }
 
 func getSpec(o *fn.KubeObject) (map[string]any, error) {

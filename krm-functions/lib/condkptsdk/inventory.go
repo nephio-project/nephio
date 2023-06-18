@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -32,14 +33,14 @@ type inventory interface {
 	addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectReference) error
 	isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool)
 	// runtime crud operations on the inventory
-	set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error
+	set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, newResource, failed bool) error
 	delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error
 	get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx
 	list() [][]sdkObjectReference
 	// readiness
 	getReadyMap() map[corev1.ObjectReference]*readyCtx
 	// diff
-	diff() (map[corev1.ObjectReference]*inventoryDiff, error)
+	diff() map[corev1.ObjectReference]*inventoryDiff
 	// debug
 	setdebug()
 }
@@ -70,39 +71,30 @@ type inv struct {
 	debug     bool
 }
 
-type action string
-
-const (
-	actionCreate action = "create"
-	actionDelete action = "delete"
-	actionUpdate action = "update"
-	actionGet    action = "get"
-)
-
 // initializeGVKInventory initializes the GVK with the generic GVK
 // resources as specified in the SDKConfig
 // used to provide faster lookup if the GVK is relevant for the fn/controller
 // and to provide context if there is a match
 func (r *inv) initializeGVKInventory(cfg *Config) error {
-	if err := validateGVKRef(cfg.For); err != nil {
+	if err := ref.ValidateGVKRef(cfg.For); err != nil {
 		return err
 	}
 	if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: forGVKKind}, cfg.For); err != nil {
 		return err
 	}
-	for ref, ok := range cfg.Owns {
-		if err := validateGVKRef(ref); err != nil {
+	for objRef, ok := range cfg.Owns {
+		if err := ref.ValidateGVKRef(objRef); err != nil {
 			return err
 		}
-		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: ownGVKKind, ownKind: ok}, ref); err != nil {
+		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: ownGVKKind, ownKind: ok}, objRef); err != nil {
 			return err
 		}
 	}
-	for ref, cb := range cfg.Watch {
-		if err := validateGVKRef(ref); err != nil {
+	for objRef, cb := range cfg.Watch {
+		if err := ref.ValidateGVKRef(objRef); err != nil {
 			return err
 		}
-		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: watchGVKKind, callbackFn: cb}, ref); err != nil {
+		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: watchGVKKind, callbackFn: cb}, objRef); err != nil {
 			return err
 		}
 	}

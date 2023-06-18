@@ -1,6 +1,0 @@
-- message: "cannot generate resource GenerateResourceFn returned nil, for: {NetworkAttachmentDefinition  n4  k8s.cni.cncf.io/v1  }"
-  severity: error
-- message: "cannot generate resource GenerateResourceFn returned nil, for: {NetworkAttachmentDefinition  n3  k8s.cni.cncf.io/v1  }"
-  severity: error
-- message: "cannot generate resource GenerateResourceFn returned nil, for: {NetworkAttachmentDefinition  n6  k8s.cni.cncf.io/v1  }"
-  severity: error

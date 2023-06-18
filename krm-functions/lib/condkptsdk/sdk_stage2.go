@@ -17,10 +17,9 @@ limitations under the License.
 package condkptsdk
 
 import (
-	"fmt"
-
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
+	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -28,13 +27,14 @@ import (
 // First readiness is validated in 2 steps:
 // - global readiness: when key resources are missing
 // - per instance readiness: when certain parts of an instance readiness is missing
-func (r *sdk) updateResource() error {
+func (r *sdk) updateResource() {
 	if r.debug {
 		fn.Logf("updateResource isReady: %t\n", r.ready)
 	}
 	if !r.ready {
 		// when the overall status is not ready delete all resources
-		// TBD if we need to check the delete annotation
+		// TODO if we need to check the delete annotation
+		// TODO check if the owned resources were dynamic or static
 		readyMap := r.inv.getReadyMap()
 		for _, readyCtx := range readyMap {
 			if readyCtx.forObj != nil {
@@ -43,22 +43,19 @@ func (r *sdk) updateResource() error {
 				}
 			}
 		}
-		return nil
+		return
 	}
 	// the overall status is ready, so lets check the readiness map
 	readyMap := r.inv.getReadyMap()
 	for forRef, readyCtx := range readyMap {
 		if r.debug {
-			fn.Logf("updateResource readyMap: forRef %v, readyCtx: %v\n", forRef, readyCtx)
+			fn.Logf("updateResource readyMap: objRef %s, readyCtx: %v\n", ref.GetRefsString(forRef), readyCtx)
 		}
 		// if the for is not ready delete the object
-		if !readyCtx.ready {
-			if readyCtx.forObj != nil {
-				// TBD if this is the right approach -> avoids deleting interface
-				if len(r.cfg.Owns) == 0 {
-					r.deleteObjFromResourceList(readyCtx.forObj)
-				}
-			}
+		if !readyCtx.ready || readyCtx.failed {
+			/*
+				TODO defines what to do here
+			*/
 			continue
 		}
 		if r.cfg.UpdateResourceFn != nil {
@@ -71,55 +68,51 @@ func (r *sdk) updateResource() error {
 				x := o
 				objs = append(objs, &x)
 			}
-			if err := r.handleGenerateUpdate(
-				forRef,
-				readyCtx.forObj,
-				readyCtx.forCondition,
-				objs); err != nil {
-				fn.Logf("updateResource handleGenerateUpdate: err: %v\n", err.Error())
-				return err
+			forObj, err := r.handleUpdateResource(forRef, readyCtx.forObj, readyCtx.forCondition, objs)
+			if err != nil {
+				fn.Logf("cannot handleUpdateResource objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
+				r.kptfile.SetConditionRefFailed(forRef, err.Error())
+				continue
+			}
+			if forObj != nil {
+				if err := r.upsertChildObject(forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *forObj}, readyCtx.forCondition, "update done", kptv1.ConditionTrue, true); err != nil {
+					fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
+				}
 			}
 		}
 	}
-	return nil
 }
 
-// handleGenerateUpdate performs the fn/controller callback and handles the response
+// updateResource performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
-func (r *sdk) handleGenerateUpdate(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) error {
+func (r *sdk) handleUpdateResource(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	newObj, err := r.cfg.UpdateResourceFn(forObj, objs)
 	if err != nil {
-		fn.Logf("error generating new resource: %v\n", err.Error())
-		r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
-		return err
+		return newObj, err
 	}
 	if newObj == nil {
 		// this happens right now because the NAD gets an interface and the interface can have a default pod network
 		// for which no nad is to be created. hence the nil object
 		// once we do the intelligent diff this can be changed back to an error, since NAD does not have to watch the interface
 		if r.debug {
-			fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
+			fn.Logf("cannot generate resource GenerateResourceFn returned nil, objRef: %s\n", ref.GetRefsString(forRef))
 		}
-		return nil
+		return nil, nil
 		/*
 			fn.Logf("cannot generate resource GenerateResourceFn returned nil, for: %v\n", forRef)
 			r.rl.Results = append(r.rl.Results, fn.ErrorResult(fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)))
 			return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
 		*/
 	}
-	// if forCondition was set
-	if forCondition != nil {
-		// set annotation based on forCondition reason if present
-		if forCondition.Reason != "" {
-			if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
-				fn.Logf("error setting new annotation: %v\n", err.Error())
-				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
-				return err
-			}
+	// if forCondition reason was set, set the annotation back with the owner
+	if forCondition != nil && forCondition.Reason != "" {
+		if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
+			fn.Logf("error setting new annotation: %v\n", err.Error())
+			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
+			return newObj, err
 		}
-	}
-	//}
-	// add the resource to the kptfile and updates the resource in the resource list
 
-	return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
+	}
+	return newObj, nil
+	//return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
 }

@@ -1,0 +1,198 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: cluster01
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: cluster01
+    cnis:
+    - macvlan
+    - ipvlan
+    - sriov
+    masterInterface: eth1
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: n3-ipv4
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-ran
+  status:
+    prefix: 13.0.0.2/24
+    gateway: 13.0.0.1
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: n4-ipv4
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-internal
+  status:
+    prefix: 14.0.0.2/24
+    gateway: 14.0.0.1
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: n6-ipv4
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc-internet
+  status:
+    prefix: 16.0.0.2/24
+    gateway: 16.0.0.1
+- apiVersion: kpt.dev/v1
+  kind: Kptfile
+  # comment A
+  metadata:
+    name: pkg-upf
+    #commentB
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  info:
+    description: upf package example
+  pipeline: {}
+  status:
+    conditions:
+    - message: update for condition
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n4
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n4-ipv4
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "True"
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n4
+    - message: 'cniType not supported in workload cluster; workload cluster CNI(s): [macvlan ipvlan sriov], interface cniType requested: '
+      reason: req.nephio.org/v1alpha1.Interface.n4
+      status: "False"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n4
+    - message: update for condition
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n6
+    - message: 'cniType not supported in workload cluster; workload cluster CNI(s): [macvlan ipvlan sriov], interface cniType requested: '
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "False"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n6
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n6-ipv4
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n6
+      status: "True"
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n6
+    - message: update for condition
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: 'cniType not supported in workload cluster; workload cluster CNI(s): [macvlan ipvlan sriov], interface cniType requested: '
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "False"
+      type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.n3
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.n3-ipv4
+    - message: create resource
+      reason: req.nephio.org/v1alpha1.Interface.n3
+      status: "True"
+      type: vlan.resource.nephio.org/v1alpha1.VLANClaim.n3
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: ""
+    attachmentType: vlan
+  status:
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: ""
+    attachmentType: vlan
+  status:
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n6
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    networkInstance:
+      name: vpc-internet
+    cniType: ""
+    attachmentType: vlan
+  status:
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
+  metadata:
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+    name: n3
+  spec:
+    vlanIndex:
+      name: cluster01
+  status:
+    vlanID: 100
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
+  metadata:
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
+    name: n4
+  spec:
+    vlanIndex:
+      name: cluster01
+  status:
+    vlanID: 200
+- apiVersion: vlan.resource.nephio.org/v1alpha1
+  kind: VLANClaim
+  metadata:
+    annotations:
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
+    name: n6
+  spec:
+    vlanIndex:
+      name: cluster01
+  status:
+    vlanID: 300
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata: # kpt-merge: upf-example/upf-example
+    name: upf-edge01
+    namespace: pkg-example-upf-bp
+    annotations:
+      internal.kpt.dev/upstream-identifier: 'workload.nephio.org|UPFDeployment|upf-example|upf-example'

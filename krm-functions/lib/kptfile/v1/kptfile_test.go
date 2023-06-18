@@ -19,65 +19,13 @@ package v1
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew(t *testing.T) {
-	f1 := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-  name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-`
-	f2 := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-    name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-`
-
-	cases := map[string]struct {
-		testInput        []byte
-		errExpected      bool
-		kptfileGenerated bool
-	}{
-		"NewSucceeds": {
-			[]byte(f1), false, true,
-		},
-		"NewFails": {
-			[]byte(f2), true, false,
-		},
-		"NewNil": {
-			nil, false, true,
-		},
-	}
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			kf, err := New(string(tc.testInput))
-			if tc.errExpected {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			if tc.kptfileGenerated {
-				assert.NotNil(t, kf)
-			} else {
-				assert.Nil(t, kf)
-			}
-		})
-	}
-}
-
-func TestParseKubeObject(t *testing.T) {
-	f := `apiVersion: kpt.dev/v1
+var f1 = `apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
   name: xxx
@@ -87,232 +35,7 @@ info:
   description: xxx
 `
 
-	kf, err := New(f)
-	if err != nil {
-		t.Errorf("cannot unmarshal file: %s", err.Error())
-	}
-
-	cases := map[string]struct {
-		wantKind string
-		wantName string
-	}{
-		"ParseObject": {
-			wantKind: "Kptfile",
-			wantName: "xxx",
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			o, err := kf.ParseKubeObject()
-			if err != nil {
-				t.Errorf("cannot parse object: %s", err.Error())
-			}
-
-			if diff := cmp.Diff(tc.wantKind, o.GetKind()); diff != "" {
-				t.Errorf("TestParseObjectKind: -want, +got:\n%s", diff)
-			}
-			if diff := cmp.Diff(tc.wantName, o.GetName()); diff != "" {
-				t.Errorf("TestParseObjectName: -want, +got:\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestMarshal(t *testing.T) {
-	f := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-  name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-`
-
-	kf, err := New(f)
-	if err != nil {
-		t.Errorf("cannot unmarshal file: %s", err.Error())
-	}
-
-	cases := map[string]struct {
-	}{
-		"Marshal": {},
-	}
-
-	for name := range cases {
-		t.Run(name, func(t *testing.T) {
-			_, err := kf.Marshal()
-			if err != nil {
-				t.Errorf("cannot parse object: %s", err.Error())
-			}
-		})
-	}
-}
-
-func TestGetCondition(t *testing.T) {
-
-	f := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-  name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-`
-
-	kf, err := New(f)
-	if err != nil {
-		t.Errorf("cannot unmarshal file: %s", err.Error())
-	}
-
-	cases := map[string]struct {
-		cs   []kptv1.Condition
-		t    string
-		want *kptv1.Condition
-	}{
-		"ConditionExists": {
-			cs: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-			t:    "a",
-			want: &kptv1.Condition{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-		},
-		"ConditionDoesNotExist": {
-			cs: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-			t:    "x",
-			want: nil,
-		},
-		"ConditionEmptyList": {
-			cs:   nil,
-			t:    "x",
-			want: nil,
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			if tc.cs != nil {
-				kf.SetConditions(tc.cs...)
-			}
-			got := kf.GetCondition(tc.t)
-			if got == nil || tc.want == nil {
-				if got != tc.want {
-					t.Errorf("TestGetCondition: -want%s, +got:\n%s", tc.want, got)
-				}
-			} else {
-				if diff := cmp.Diff(tc.want, got); diff != "" {
-					t.Errorf("TestGetCondition: -want, +got:\n%s", diff)
-				}
-			}
-
-		})
-	}
-}
-
-func TestSetConditions(t *testing.T) {
-
-	f := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-  name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-`
-
-	cases := map[string]struct {
-		cs   []kptv1.Condition
-		t    []kptv1.Condition
-		want []kptv1.Condition
-	}{
-		"SetConditionsEmpty": {
-			cs: nil,
-			t: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-			want: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-		},
-		"SetConditionsNonEmpty": {
-			cs: []kptv1.Condition{
-				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
-				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
-			},
-			t: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-			want: []kptv1.Condition{
-				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
-				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-		},
-		"SetConditionsOverlap": {
-			cs: []kptv1.Condition{
-				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
-				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
-			},
-			t: []kptv1.Condition{
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "y", Status: kptv1.ConditionFalse, Reason: "ynew", Message: "ynew"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-			want: []kptv1.Condition{
-				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
-				{Type: "y", Status: kptv1.ConditionFalse, Reason: "ynew", Message: "ynew"},
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-			},
-		},
-	}
-
-	for name, tc := range cases {
-		kf, err := New(f)
-		if err != nil {
-			t.Errorf("cannot unmarshal file: %s", err.Error())
-		}
-		t.Run(name, func(t *testing.T) {
-			if tc.cs != nil {
-				kf.SetConditions(tc.cs...)
-			}
-			if tc.t != nil {
-				kf.SetConditions(tc.t...)
-			}
-			gots := kf.GetConditions()
-			if len(gots) != len(tc.want) {
-				t.Errorf("TestSetConditions: got: %v, want: %v", gots, tc.want)
-			} else {
-				for idx, got := range gots {
-					if diff := cmp.Diff(tc.want[idx], got); diff != "" {
-						t.Errorf("TestSetCondition: -want, +got:\n%s", diff)
-					}
-				}
-			}
-		})
-	}
-}
-
-func TestDeleteCondition(t *testing.T) {
-
-	f := `apiVersion: kpt.dev/v1
+var f2 = `apiVersion: kpt.dev/v1
 kind: Kptfile
 metadata:
   name: xxx
@@ -332,27 +55,304 @@ status:
     message: b
 `
 
+func TestGetReadinessGates(t *testing.T) {
+	cases := map[string]struct {
+		rg   []string
+		want []kptv1.ReadinessGate
+	}{
+		"Exists": {
+			rg: []string{"a"},
+			want: []kptv1.ReadinessGate{
+				{ConditionType: "a"},
+			},
+		},
+		"Empty": {
+			rg:   nil,
+			want: nil,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(f1))
+			if err != nil {
+				assert.Error(t, err)
+			}
+			kf := KptFile{Kptfile: ko}
+
+			if tc.rg != nil {
+				if err := kf.SetReadinessGates(tc.rg...); err != nil {
+					assert.Error(t, err)
+				}
+			}
+			got := kf.GetReadinessGates()
+
+			if got == nil || tc.want == nil {
+				if len(got) != len(tc.want) {
+					t.Errorf("-want%s, +got:\n%s", tc.want, got)
+				}
+			} else {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
+					t.Errorf("-want, +got:\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestHasReadinessGates(t *testing.T) {
+	cases := map[string]struct {
+		rg   []string
+		ct   string
+		want bool
+	}{
+		"Has": {
+			rg:   []string{"a"},
+			ct:   "a",
+			want: true,
+		},
+		"HasNot": {
+			rg:   []string{"a"},
+			ct:   "b",
+			want: false,
+		},
+		"Empty": {
+			rg:   nil,
+			ct:   "a",
+			want: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(f1))
+			if err != nil {
+				assert.Error(t, err)
+			}
+			kf := KptFile{Kptfile: ko}
+
+			if tc.rg != nil {
+				if err := kf.SetReadinessGates(tc.rg...); err != nil {
+					assert.Error(t, err)
+				}
+			}
+			got := kf.HasReadinessGate(tc.ct)
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSetReadinessGates(t *testing.T) {
+	cases := map[string]struct {
+		rg   []string
+		want []kptv1.ReadinessGate
+	}{
+		"Exists": {
+			rg: []string{"a", "b", "c"},
+			want: []kptv1.ReadinessGate{
+				{ConditionType: "a"},
+				{ConditionType: "b"},
+				{ConditionType: "c"},
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(f1))
+			if err != nil {
+				assert.Error(t, err)
+			}
+			kf := KptFile{Kptfile: ko}
+
+			for _, rg := range tc.rg {
+				if err := kf.SetReadinessGates(rg); err != nil {
+					assert.Error(t, err)
+				}
+			}
+
+			got := kf.GetReadinessGates()
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCondition(t *testing.T) {
+	cases := map[string]struct {
+		cs   []kptv1.Condition
+		t    string
+		want *kptv1.Condition
+	}{
+		"Exists": {
+			cs: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+			t:    "a",
+			want: &kptv1.Condition{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+		},
+		"NotExists": {
+			cs: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+			t:    "x",
+			want: nil,
+		},
+		"EmptyList": {
+			cs:   nil,
+			t:    "x",
+			want: nil,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(f1))
+			if err != nil {
+				assert.Error(t, err)
+			}
+			kf := KptFile{Kptfile: ko}
+			if tc.cs != nil {
+				if err := kf.SetConditions(tc.cs...); err != nil {
+					assert.Error(t, err)
+				}
+			}
+			got := kf.GetCondition(tc.t)
+			if err != nil {
+				assert.Error(t, err)
+			}
+			if got == nil || tc.want == nil {
+				if got != tc.want {
+					t.Errorf("-want%s, +got:\n%s", tc.want, got)
+				}
+			} else {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
+					t.Errorf("-want, +got:\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestSetConditions(t *testing.T) {
+	cases := map[string]struct {
+		cs   []kptv1.Condition
+		t    []kptv1.Condition
+		want []kptv1.Condition
+	}{
+		"StartEmpty": {
+			cs: nil,
+			t: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+			want: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+		},
+		"StartNonEmpty": {
+			cs: []kptv1.Condition{
+				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
+				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
+			},
+			t: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+			want: []kptv1.Condition{
+				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
+				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+		},
+		"Overlap": {
+			cs: []kptv1.Condition{
+				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
+				{Type: "y", Status: kptv1.ConditionFalse, Reason: "y", Message: "y"},
+			},
+			t: []kptv1.Condition{
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "y", Status: kptv1.ConditionFalse, Reason: "ynew", Message: "ynew"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+			want: []kptv1.Condition{
+				{Type: "x", Status: kptv1.ConditionFalse, Reason: "x", Message: "x"},
+				{Type: "y", Status: kptv1.ConditionFalse, Reason: "ynew", Message: "ynew"},
+				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
+				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(f1))
+			if err != nil {
+				assert.Error(t, err)
+			}
+			kf := KptFile{Kptfile: ko}
+			if tc.cs != nil {
+				if err := kf.SetConditions(tc.cs...); err != nil {
+					assert.Error(t, err)
+				}
+			}
+			if tc.cs != nil {
+				kf.SetConditions(tc.cs...)
+			}
+			if tc.t != nil {
+				kf.SetConditions(tc.t...)
+			}
+
+			got := kf.GetConditions()
+			if len(got) != len(tc.want) {
+				t.Errorf("want: %v, got: %v", tc.want, got)
+			} else {
+				if diff := cmp.Diff(tc.want, got); diff != "" {
+					t.Errorf("-want, +got:\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+
+func TestDeleteCondition(t *testing.T) {
 	cases := map[string]struct {
 		t    []string
 		want []kptv1.Condition
 	}{
-		"DeleteConditionFirst": {
+		"First": {
 			t: []string{"a"},
 			want: []kptv1.Condition{
 				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
 			},
 		},
-		"DeleteConditionLast": {
+		"Last": {
 			t: []string{"b"},
 			want: []kptv1.Condition{
 				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
 			},
 		},
-		"DeleteConditionAll": {
+		"All": {
 			t:    []string{"b", "a"},
 			want: []kptv1.Condition{},
 		},
-		"DeleteConditionUnknown": {
+		"Unknown": {
 			t: []string{"c"},
 			want: []kptv1.Condition{
 				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
@@ -363,10 +363,12 @@ status:
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			kf, err := New(f)
+			ko, err := fn.ParseKubeObject([]byte(f2))
 			if err != nil {
-				t.Errorf("cannot unmarshal file: %s", err.Error())
+				assert.Error(t, err)
 			}
+			kf := KptFile{Kptfile: ko}
+
 			for _, t := range tc.t {
 				kf.DeleteCondition(t)
 			}
@@ -378,59 +380,6 @@ status:
 					if diff := cmp.Diff(tc.want[idx], got); diff != "" {
 						t.Errorf("TestDeleteCondition: -want, +got:\n%s", diff)
 					}
-				}
-			}
-		})
-	}
-}
-
-func TestSortCondition(t *testing.T) {
-
-	f := `apiVersion: kpt.dev/v1
-kind: Kptfile
-metadata:
-  name: xxx
-  annotations:
-    config.kubernetes.io/local-config: "true"
-info:
-  description: xxx
-status:
-`
-
-	cases := map[string]struct {
-		set  []kptv1.Condition
-		want []kptv1.Condition
-	}{
-		"Normal": {
-			set: []kptv1.Condition{
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-				{Type: "aa", Status: kptv1.ConditionFalse, Reason: "aa", Message: "aa"},
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-			},
-			want: []kptv1.Condition{
-				{Type: "a", Status: kptv1.ConditionFalse, Reason: "a", Message: "a"},
-				{Type: "aa", Status: kptv1.ConditionFalse, Reason: "aa", Message: "aa"},
-				{Type: "b", Status: kptv1.ConditionFalse, Reason: "b", Message: "b"},
-				{Type: "c", Status: kptv1.ConditionFalse, Reason: "c", Message: "c"},
-			},
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			kf, err := New(f)
-			if err != nil {
-				t.Errorf("cannot unmarshal file: %s", err.Error())
-			}
-			kf.SetConditions(tc.set...)
-			kf.SortConditions()
-			if len(kf.GetConditions()) != len(tc.want) {
-				assert.NoError(t, err)
-			}
-			for i, want := range tc.want {
-				if diff := cmp.Diff(want, kf.GetConditions()[i]); diff != "" {
-					t.Errorf("-want, +got:\n%s", diff)
 				}
 			}
 		})

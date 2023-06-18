@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package condkptsdk
+package ref
 
 import (
 	"testing"
@@ -46,7 +46,7 @@ func TestValidateGVKRef(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := validateGVKRef(tc.input)
+		err := ValidateGVKRef(tc.input)
 
 		if tc.errExpected {
 			assert.Error(t, err)
@@ -80,7 +80,7 @@ func TestValidateGVKNRef(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := validateGVKNRef(tc.input)
+		err := ValidateGVKNRef(tc.input)
 
 		if tc.errExpected {
 			assert.Error(t, err)
@@ -100,7 +100,7 @@ func TestGetGVKRefFromGVKNref(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		got := getGVKRefFromGVKNref(tc.input)
+		got := GetGVKRefFromGVKNref(tc.input)
 
 		if diff := cmp.Diff(&corev1.ObjectReference{APIVersion: tc.input.APIVersion, Kind: tc.input.Kind}, got); diff != "" {
 			t.Errorf("TestGetKubeObject: -want, +got:\n%s", diff)
@@ -155,7 +155,7 @@ func TestIsRefsValid(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		ok := isRefsValid(tc.input)
+		ok := IsRefsValid(tc.input)
 
 		if tc.isValid != ok {
 			t.Errorf("%s expected %t, got %t", name, tc.isValid, ok)
@@ -216,7 +216,7 @@ func TestIsGVKNNEqual(t *testing.T) {
 	for name, tc := range cases {
 		o1, _ := fn.NewFromTypedObject(tc.input1)
 		o2, _ := fn.NewFromTypedObject(tc.input2)
-		ok := isGVKNNEqual(o1, o2)
+		ok := IsGVKNNEqual(o1, o2)
 
 		if tc.isEqual != ok {
 			t.Errorf("%s expected %t, got %t", name, tc.isEqual, ok)

@@ -22,32 +22,38 @@ items:
       config.kubernetes.io/local-config: "true"
   info:
     description: upf package example
+    readinessGates:
+    - conditionType: nephio.org.Specilizer.specialize
   pipeline: {}
   status:
     conditions:
+    - message: initialized
+      reason: Specialize
+      status: "False"
+      type: nephio.org.Specilizer.specialize
     - message: update for condition
       status: "False"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n3
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n4
-    - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.Interface.n6
-    - message: update condition for initial resource
+    - message: child local resource -> done
       reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Capacity.dataplane
+    - message: create initial resource condition
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
+    - message: create initial resource condition
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: create initial resource condition
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n4
+    - message: create initial resource condition
+      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n6
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

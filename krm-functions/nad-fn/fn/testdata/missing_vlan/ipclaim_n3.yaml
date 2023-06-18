@@ -11,6 +11,4 @@ spec:
       nephio.org/site: edge1
   networkInstance:
     name: vpc-ran
-status:
-  prefix: 13.0.0.2/24
-  gateway: 13.0.0.1
+status: {}

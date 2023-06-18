@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package condkptsdk
+package ref
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +26,7 @@ import (
 
 // validateGVKRef returns an error if the ApiVersion or Kind
 // contain an empty string
-func validateGVKRef(ref corev1.ObjectReference) error {
+func ValidateGVKRef(ref corev1.ObjectReference) error {
 	if ref.APIVersion == "" || ref.Kind == "" {
 		return fmt.Errorf("gvk not initialized, got: %v", ref)
 	}
@@ -34,7 +35,7 @@ func validateGVKRef(ref corev1.ObjectReference) error {
 
 // validateGVKNRef returns an error if the ApiVersion or Kind or Name
 // contain an empty string
-func validateGVKNRef(ref corev1.ObjectReference) error {
+func ValidateGVKNRef(ref corev1.ObjectReference) error {
 	if ref.APIVersion == "" || ref.Kind == "" || ref.Name == "" {
 		//fn.Logf("gvk or name not initialized, got: %v\n", ref)
 		return fmt.Errorf("gvk or name not initialized, got: %v", ref)
@@ -43,15 +44,15 @@ func validateGVKNRef(ref corev1.ObjectReference) error {
 }
 
 // getGVKRefFromGVKNref return a new objectReference with only APIVersion and Kind
-func getGVKRefFromGVKNref(ref *corev1.ObjectReference) *corev1.ObjectReference {
+func GetGVKRefFromGVKNref(ref *corev1.ObjectReference) *corev1.ObjectReference {
 	return &corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}
 }
 
 // isRefsValid validates if the references are initialized
-func isRefsValid(refs []corev1.ObjectReference) bool {
+func IsRefsValid(refs []corev1.ObjectReference) bool {
 	if len(refs) == 0 ||
-		(len(refs) == 1 && validateGVKNRef(refs[0]) != nil) ||
-		(len(refs) == 2 && (validateGVKNRef(refs[0]) != nil || validateGVKNRef(refs[1]) != nil)) ||
+		(len(refs) == 1 && ValidateGVKNRef(refs[0]) != nil) ||
+		(len(refs) == 2 && (ValidateGVKNRef(refs[0]) != nil || ValidateGVKNRef(refs[1]) != nil)) ||
 		len(refs) > 2 {
 		return false
 	}
@@ -59,7 +60,7 @@ func isRefsValid(refs []corev1.ObjectReference) bool {
 }
 
 // isGVKNEqual validates if the APIVersion, Kind, Name and Namespace of both fn.KubeObject are equal
-func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
+func IsGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
 	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
 		curobj.GetKind() == newobj.GetKind() &&
 		curobj.GetName() == newobj.GetName() {
@@ -67,4 +68,16 @@ func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
 		return true
 	}
 	return false
+}
+
+func GetRefsString(refs ...corev1.ObjectReference) string {
+	var sb strings.Builder
+	for i, ref := range refs {
+		if i == 0 {
+			sb.WriteString(fmt.Sprintf("forKind: %s forName: %s", ref.Kind, ref.Name))
+		} else {
+			sb.WriteString(fmt.Sprintf("ownKind: %s ownName: %s", ref.Kind, ref.Name))
+		}	
+	}
+	return sb.String()
 }

@@ -24,17 +24,21 @@ import (
 // call the global watch callbacks to provide info to the fns in a generic way
 // so they dont have to parse the complete resourcelist
 // Also it provide readiness feedback when an error is returned
-func (r *sdk) callGlobalWatches() {
+func (r *sdk) callGlobalWatches() error {
 	for _, resCtx := range r.inv.get(watchGVKKind, []corev1.ObjectReference{{}}) {
 		if r.debug {
-			fn.Logf("run watch: %v\n", resCtx.existingResource)
+			fn.Logf("stage1: global watch: %v\n", resCtx.existingResource)
 		}
 		if resCtx.gvkKindCtx.callbackFn != nil {
 			if err := resCtx.gvkKindCtx.callbackFn(resCtx.existingResource); err != nil {
-				fn.Logf("populatechildren not ready: watch callback failed: %v\n", err.Error())
-				r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, resCtx.existingResource))
+				if r.debug {
+					fn.Logf("stage1: global watch returned an error %v\n", err.Error())
+				}
+				//r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, resCtx.existingResource))
 				r.ready = false
+				return err
 			}
 		}
 	}
+	return nil
 }

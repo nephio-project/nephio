@@ -141,11 +141,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 
-		kptf, err := kptfilelibv1.New(rl.Items.GetRootKptfile().String())
-		if err != nil {
-			r.l.Error(err, "cannot unmarshal kptfile")
-			return ctrl.Result{}, nil
-		}
+		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			return ctrl.Result{}, err
