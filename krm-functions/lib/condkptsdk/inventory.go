@@ -79,20 +79,31 @@ func (r *inv) initializeGVKInventory(cfg *Config) error {
 	if err := ref.ValidateGVKRef(cfg.For); err != nil {
 		return err
 	}
+	if ref.IsWildCardRef(cfg.For) {
+		return fmt.Errorf("no wildcard refs allowed in for reference")
+	}
 	if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: forGVKKind}, cfg.For); err != nil {
 		return err
 	}
-	for objRef, ok := range cfg.Owns {
+	for objRef, rk := range cfg.Owns {
 		if err := ref.ValidateGVKRef(objRef); err != nil {
 			return err
 		}
-		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: ownGVKKind, ownKind: ok}, objRef); err != nil {
+		if ref.IsWildCardRef(objRef) {
+			if rk != ChildInitial {
+				return fmt.Errorf("only childLocal wildcard refs allowed in own reference")
+			}
+		}
+		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: ownGVKKind, ownKind: rk}, objRef); err != nil {
 			return err
 		}
 	}
 	for objRef, cb := range cfg.Watch {
 		if err := ref.ValidateGVKRef(objRef); err != nil {
 			return err
+		}
+		if ref.IsWildCardRef(objRef) {
+			return fmt.Errorf("no wirlcard refs allowed in watch resource reference")
 		}
 		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: watchGVKKind, callbackFn: cb}, objRef); err != nil {
 			return err
@@ -124,7 +135,11 @@ func (r *inv) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
 	}
 	kindCtx, ok := r.gvkResources[corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}]
 	if !ok {
-		return nil, false
+		// check wildcard match
+		kindCtx, ok = r.gvkResources[corev1.ObjectReference{APIVersion: "*", Kind: "*"}] 
+		if !ok {
+			return nil, false
+		}
 	}
 	return kindCtx, true
 }

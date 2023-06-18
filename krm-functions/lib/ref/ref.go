@@ -33,6 +33,15 @@ func ValidateGVKRef(ref corev1.ObjectReference) error {
 	return nil
 }
 
+// IsWildCardRef return true if the ref is a wildcard (apiVersion = "*", kind = "*"),
+// otherwise false
+func IsWildCardRef(ref corev1.ObjectReference) bool {
+	if ref.APIVersion == "*" && ref.Kind == "*" {
+		return true
+	}
+	return false
+}
+
 // validateGVKNRef returns an error if the ApiVersion or Kind or Name
 // contain an empty string
 func ValidateGVKNRef(ref corev1.ObjectReference) error {
