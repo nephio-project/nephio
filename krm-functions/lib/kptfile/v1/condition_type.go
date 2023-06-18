@@ -78,7 +78,7 @@ func GetGVKNFromConditionType(ct string) (o *corev1.ObjectReference) {
 func GetConditionByRef(refs []corev1.ObjectReference, msg string, status kptv1.ConditionStatus, ec *kptv1.Condition) (kptv1.Condition, error) {
 	if !ref.IsRefsValid(refs) {
 		return kptv1.Condition{}, fmt.Errorf("cannot set resource in resource list as the object has no valid refs: %v", refs)
-	}	
+	}
 	// item 0 is the forRef
 	condType := GetConditionType(&refs[0])
 	condReason := ""

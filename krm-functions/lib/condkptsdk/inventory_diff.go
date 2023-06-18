@@ -26,13 +26,13 @@ import (
 )
 
 type inventoryDiff struct {
-	deleteForCondition      bool
-	updateForCondition      bool
-	deleteObjs              []object
-	updateObjs              []object
-	createObjs              []object
-	deleteConditions        []object
-	createConditions        []object // different types exist here based on childResource Type (childInitial, childLocal)
+	deleteForCondition bool
+	updateForCondition bool
+	deleteObjs         []object
+	updateObjs         []object
+	createObjs         []object
+	deleteConditions   []object
+	createConditions   []object // different types exist here based on childResource Type (childInitial, childLocal)
 	//updateConditions []*object
 	updateDeleteAnnotations []object
 }
@@ -57,11 +57,11 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 
 	for forRef, forResCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		diffMap[forRef] = &inventoryDiff{
-			deleteObjs:              []object{},
-			updateObjs:              []object{},
-			createObjs:              []object{},
-			deleteConditions:        []object{},
-			createConditions:        []object{},
+			deleteObjs:       []object{},
+			updateObjs:       []object{},
+			createObjs:       []object{},
+			deleteConditions: []object{},
+			createConditions: []object{},
 			//createInitialConditions: []object{},
 			//createTrueConditions:    []object{},
 			updateDeleteAnnotations: []object{},

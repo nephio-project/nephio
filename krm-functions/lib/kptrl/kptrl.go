@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
-
 func includeFile(path string, match []string) bool {
 	for _, m := range match {
 		file := filepath.Base(path)

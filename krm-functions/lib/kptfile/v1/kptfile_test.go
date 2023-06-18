@@ -330,7 +330,6 @@ func TestSetConditions(t *testing.T) {
 	}
 }
 
-
 func TestDeleteCondition(t *testing.T) {
 	cases := map[string]struct {
 		t    []string

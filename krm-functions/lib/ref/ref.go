@@ -77,7 +77,7 @@ func GetRefsString(refs ...corev1.ObjectReference) string {
 			sb.WriteString(fmt.Sprintf("forKind: %s forName: %s", ref.Kind, ref.Name))
 		} else {
 			sb.WriteString(fmt.Sprintf("ownKind: %s ownName: %s", ref.Kind, ref.Name))
-		}	
+		}
 	}
 	return sb.String()
 }
