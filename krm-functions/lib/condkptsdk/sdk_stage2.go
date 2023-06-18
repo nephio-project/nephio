@@ -71,7 +71,10 @@ func (r *sdk) updateResource() {
 			forObj, err := r.handleUpdateResource(forRef, readyCtx.forObj, readyCtx.forCondition, objs)
 			if err != nil {
 				fn.Logf("cannot handleUpdateResource objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
-				r.kptfile.SetConditionRefFailed(forRef, err.Error())
+				if err := r.kptfile.SetConditionRefFailed(forRef, err.Error()); err != nil {
+					fn.Logf("set condition failed error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 				continue
 			}
 			if forObj != nil {
