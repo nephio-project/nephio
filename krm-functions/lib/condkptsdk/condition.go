@@ -62,6 +62,9 @@ func ready() kptv1.Condition {
 func (r *sdk) failForConditions(msg string) {
 	forObjs := r.rl.Items.Where(fn.IsGroupVersionKind(r.cfg.For.GroupVersionKind()))
 	for _, forObj := range forObjs {
-		r.kptfile.SetConditionRefFailed(corev1.ObjectReference{APIVersion: forObj.GetAPIVersion(), Kind: forObj.GetKind(), Name: forObj.GetName()}, msg)
+		if err := r.kptfile.SetConditionRefFailed(corev1.ObjectReference{APIVersion: forObj.GetAPIVersion(), Kind: forObj.GetKind(), Name: forObj.GetName()}, msg); err != nil {
+			fn.Logf("set fail for condition failed, err: %s\n", err.Error())
+			r.rl.Results.ErrorE(err)
+		}
 	}
 }
