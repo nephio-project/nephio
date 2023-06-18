@@ -129,13 +129,13 @@ items:
   info:
     description: upf package example
     readinessGates:
-    - conditionType: nephio.org.Specilizer.specialize
+    - conditionType: nephio.org.Specializer.specialize
   pipeline: {}
   status:
     conditions:
     - reason: Ready
       status: "True"
-      type: nephio.org.Specilizer.specialize
+      type: nephio.org.Specializer.specialize
     - message: update done
       status: "True"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01

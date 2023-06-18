@@ -34,7 +34,7 @@ const (
 func getSpecializationConditionType() string {
 	return kptfilev1.GetConditionType(&corev1.ObjectReference{
 		APIVersion: "nephio.org",
-		Kind:       "Specilizer",
+		Kind:       "Specializer",
 		Name:       "specialize",
 	})
 }
