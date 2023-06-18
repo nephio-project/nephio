@@ -163,7 +163,10 @@ func (r *sdk) Run() (bool, error) {
 	if r.cfg.Root {
 		ctPrefix := kptfilev1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
 		if r.kptfile.IsReady(ctPrefix) {
-			r.kptfile.SetConditions(ready())
+			if err := r.kptfile.SetConditions(ready()); err != nil {
+				fn.Logf("set conditions, err: %s\n", err.Error())
+				r.rl.Results.ErrorE(err)
+			}
 		}
 	}
 	return true, nil
@@ -189,7 +192,10 @@ func (r *sdk) ensureConditionsAndGates() error {
 	// if the specialization condition type is not set set it
 	// if set dont touch it
 	if r.kptfile.GetCondition(specializeCTType) == nil {
-		r.kptfile.SetConditions(initialize())
+		if err := r.kptfile.SetConditions(initialize()); err != nil {
+			fn.Logf("set conditions, err: %s\n", err.Error())
+			r.rl.Results.ErrorE(err)
+		}
 	}
 	return nil
 }

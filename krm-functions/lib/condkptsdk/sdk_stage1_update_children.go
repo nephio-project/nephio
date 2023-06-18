@@ -47,7 +47,10 @@ func (r *sdk) updateChildren() {
 				// deletes the for condition from the kptfile and inventory
 				if err := r.deleteCondition(forGVKKind, []corev1.ObjectReference{forRef}); err != nil {
 					// the errors are already logged, we set the result in the for condition
-					errors.Join(e, err)
+					if err := errors.Join(e, err); err != nil {
+						fn.Logf("join error, err: %s\n", err.Error())
+						r.rl.Results.ErrorE(err)
+					}
 				}
 			}
 			// delete all child resources by setting the annotation and set the condition to false
@@ -57,7 +60,10 @@ func (r *sdk) updateChildren() {
 				}
 				if err := r.deleteChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, "not ready"); err != nil {
 					// the errors are already logged, we set the result in the for condition
-					errors.Join(e, err)
+					if err := errors.Join(e, err); err != nil {
+						fn.Logf("join error, err: %s\n", err.Error())
+						r.rl.Results.ErrorE(err)
+					}
 				}
 			}
 			// handle all errors and set them in the condition
@@ -84,7 +90,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.setCondition(forGVKKind, []corev1.ObjectReference{forRef}, "update for condition", kptv1.ConditionFalse, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 
 		}
@@ -105,7 +114,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.setCondition(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, msg, status, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		for _, obj := range diff.deleteConditions {
@@ -114,7 +126,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.deleteCondition(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		// update resources
@@ -130,7 +145,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.upsertChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, "create initial resource", status, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		sortObjects(diff.updateObjs)
@@ -140,7 +158,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.upsertChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, "update resource", kptv1.ConditionFalse, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		for _, obj := range diff.deleteObjs {
@@ -149,7 +170,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.deleteChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, "delete resource"); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		// this is a corner case, in case for object gets deleted and recreated
@@ -161,7 +185,10 @@ func (r *sdk) updateChildren() {
 			}
 			if err := r.upsertChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, "update resource", kptv1.ConditionFalse, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
-				errors.Join(e, err)
+				if err := errors.Join(e, err); err != nil {
+					fn.Logf("join error, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 		// handle all errors and set them in the condition
