@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	v1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -85,7 +86,7 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 		} else {
 			for ownRef, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 				if r.debug {
-					fn.Logf("diff: forRef: %v, ownRef: %v, existingResource: %v, newResource: %v\n", forRef, ownRef, resCtx.existingResource, resCtx.newResource)
+					fn.Logf("diff: objRef: %s, existingResource: %v, newResource: %v, existing condition: %v\n", ref.GetRefsString(forRef, ownRef), resCtx.existingResource != nil, resCtx.newResource != nil, resCtx.existingCondition != nil)
 				}
 				// condition diff handling
 				switch {

@@ -38,6 +38,8 @@ type inventory interface {
 	get(k gvkKind, refs []corev1.ObjectReference) map[corev1.ObjectReference]*resourceCtx
 	list() [][]sdkObjectReference
 	// readiness
+	setReady(bool)
+	isReady() bool
 	getReadyMap() map[corev1.ObjectReference]*readyCtx
 	// diff
 	diff() map[corev1.ObjectReference]*inventoryDiff
@@ -68,6 +70,7 @@ type inv struct {
 	// resources contain the runtime resources collected and updated
 	// during the execution
 	resources *resources
+	ready     bool
 	debug     bool
 }
 

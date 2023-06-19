@@ -31,12 +31,8 @@ import (
 func (r *sdk) updateChildren() {
 	// perform a diff to validate the existing resource against the new resources
 	diffMap := r.inv.diff()
-	if r.debug {
-		fn.Logf("stage1: diff: %v\n", diffMap)
-	}
-
 	// if the fn is not ready we delete the for condition and its children
-	if !r.ready {
+	if !r.inv.isReady() {
 		for forRef, diff := range diffMap {
 			var e error
 			// delete the overall condition for the object

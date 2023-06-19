@@ -74,9 +74,9 @@ func GetRefsString(refs ...corev1.ObjectReference) string {
 	var sb strings.Builder
 	for i, ref := range refs {
 		if i == 0 {
-			sb.WriteString(fmt.Sprintf("forKind: %s forName: %s", ref.Kind, ref.Name))
+			sb.WriteString(fmt.Sprintf("%s/%s", ref.Kind, ref.Name))
 		} else {
-			sb.WriteString(fmt.Sprintf("ownKind: %s ownName: %s", ref.Kind, ref.Name))
+			sb.WriteString(fmt.Sprintf(" %s/%s", ref.Kind, ref.Name))
 		}
 	}
 	return sb.String()

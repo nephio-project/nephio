@@ -75,7 +75,7 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 		cfg:   cfg,
 		inv:   inv,
 		rl:    rl,
-		ready: true,
+		//ready: true,
 	}
 	return r, nil
 }
@@ -87,7 +87,7 @@ type sdk struct {
 	//conditions *ko.KptPackageConditions
 	//kptfile    *fn.KubeObject
 	kptfile kptfilelibv1.KptFile
-	ready   bool // tracks the overall ready state
+	//ready   bool // tracks the overall ready state
 	debug   bool // set based on for annotation
 }
 
@@ -135,14 +135,18 @@ func (r *sdk) Run() (bool, error) {
 	if err := r.callGlobalWatches(); err != nil {
 		// the for condition status is updated but we dont return since
 		// we might act upon the readiness status, set by the global watch return status
-		r.failForConditions(err.Error())
+		//r.failForConditions(err.Error())
+		if err := r.kptfile.SetConditions(failed(err.Error())); err != nil {
+			fn.Logf("set conditions, err: %s\n", err.Error())
+			r.rl.Results.ErrorE(err)
+		}
 
 	}
 	// stage 1 of the sdk pipeline
 	// populate the child resources as if nothing existed; errors are put in the conditions of the for resources
 	// we only call the populate children if we are in ready status and if there are own resources. As such
 	// we dont populate the children and the next part in stage 1 will act upon the result
-	if r.ready && len(r.cfg.Owns) > 0 {
+	if r.inv.isReady() && len(r.cfg.Owns) > 0 {
 		r.populateChildren()
 	}
 
@@ -182,6 +186,8 @@ func (r *sdk) setDebug() {
 			r.inv.setdebug()
 		}
 	}
+	r.debug = true
+	r.inv.setdebug()
 }
 
 func (r *sdk) ensureConditionsAndGates() error {

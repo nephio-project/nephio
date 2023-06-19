@@ -32,6 +32,14 @@ type readyCtx struct {
 	watches      map[corev1.ObjectReference]fn.KubeObject
 }
 
+func (r *inv) setReady(b bool) {
+	r.ready = b
+}
+
+func (r *inv) isReady() bool {
+	return r.ready
+}
+
 // getReadyMap provides a readyMap based on the information of the children
 // of the forResource
 // Both own and watches that are dependent on the forResource are validated for

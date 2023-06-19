@@ -49,7 +49,17 @@ func initialize() kptv1.Condition {
 	}
 }
 
-// Failed returns a condition that indicates the specialization failed
+// failed returns a condition that indicates the specialization has failed with a msg
+func failed(msg string) kptv1.Condition {
+	return kptv1.Condition{
+		Type:    getSpecializationConditionType(),
+		Status:  kptv1.ConditionFalse,
+		Reason:  string(ConditionReasonFailed),
+		Message: msg,
+	}
+}
+
+// ready returns a condition that indicates the specialization is ready
 func ready() kptv1.Condition {
 	return kptv1.Condition{
 		Type:    getSpecializationConditionType(),
