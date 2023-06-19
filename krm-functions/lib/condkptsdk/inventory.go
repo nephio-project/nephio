@@ -53,6 +53,7 @@ func newInventory(cfg *Config) (inventory, error) {
 		resources: &resources{
 			resources: map[sdkObjectReference]*resources{},
 		},
+		ready: true,
 	}
 	if err := r.initializeGVKInventory(cfg); err != nil {
 		return nil, err
