@@ -141,6 +141,10 @@ func (r *sdk) Run() (bool, error) {
 				r.rl.Results.ErrorE(err)
 			}
 		} else {
+			// only add a fail condition for a for that exists for the particular function
+			// the challange here is if the name get changed e.g. AMF example to AMF amf-cluster01
+			// the conditon does not clear -> this could be solved with a generic specialize condition
+			// where the name is turned into a generic specializer name
 			r.failForConditions(err.Error())
 		}
 	}
