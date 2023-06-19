@@ -27,7 +27,7 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: initialized
+    - message: not ready
       reason: Specialize
       status: "False"
       type: nephio.org.Specializer.specialize

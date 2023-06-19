@@ -64,8 +64,8 @@ func notReady() kptv1.Condition {
 	return kptv1.Condition{
 		Type:    getSpecializationConditionType(),
 		Status:  kptv1.ConditionFalse,
-		Reason:  string(ConditionReasonReady),
-		Message: "",
+		Reason:  string(ConditionReasonSpecialize),
+		Message: "not ready",
 	}
 }
 
