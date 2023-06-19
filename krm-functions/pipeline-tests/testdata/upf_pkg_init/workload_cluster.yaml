@@ -1,0 +1,8 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: WorkloadCluster
+metadata:
+  name: example
+  annotations:
+    config.kubernetes.io/local-config: "true"
+spec:
+  clusterName: example

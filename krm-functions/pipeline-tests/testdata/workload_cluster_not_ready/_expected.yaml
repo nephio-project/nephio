@@ -1,0 +1,106 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: WorkloadCluster
+  metadata:
+    name: example
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  spec:
+    clusterName: example
+- apiVersion: kpt.dev/v1
+  kind: Kptfile
+  # comment A
+  metadata:
+    name: pkg-upf
+    #commentB
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  info:
+    description: upf package example
+    readinessGates:
+    - conditionType: nephio.org.Specializer.specialize
+  pipeline: {}
+  status:
+    conditions:
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      reason: Failed
+      status: "False"
+      type: nephio.org.Specializer.specialize
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Capacity
+  metadata:
+    name: dataplane
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    maxUplinkThroughput: 10G
+    maxDownlinkThroughput: 10G
+- apiVersion: req.nephio.org/v1alpha1
+  kind: DataNetwork
+  metadata:
+    name: internet
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      prefix: 10.0.0.0/8
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    pools:
+    - name: pool1
+      prefixLength: 8
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n3
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-ran
+    cniType: sriov
+    attachmentType: vlan
+  status: {}
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n4
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internal
+    cniType: sriov
+    attachmentType: vlan
+  status: {}
+- apiVersion: req.nephio.org/v1alpha1
+  kind: Interface
+  metadata:
+    name: n6
+    annotations:
+      config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+  spec:
+    networkInstance:
+      name: vpc-internet
+    cniType: sriov
+    attachmentType: vlan
+  status: {}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  data:
+    name: example
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: UPFDeployment
+  metadata:
+    name: upf-cluster01
+    namespace: dummy
