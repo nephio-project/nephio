@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptfilev1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
+	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -86,7 +86,7 @@ type sdk struct {
 	rl  *fn.ResourceList
 	//conditions *ko.KptPackageConditions
 	//kptfile    *fn.KubeObject
-	kptfile kptfilev1.KptFile
+	kptfile kptfilelibv1.KptFile
 	ready   bool // tracks the overall ready state
 	debug   bool // set based on for annotation
 }
@@ -106,7 +106,7 @@ func (r *sdk) Run() (bool, error) {
 		r.rl.Results.Errorf(msg)
 		return false, fmt.Errorf(msg)
 	}
-	r.kptfile = kptfilev1.KptFile{Kptfile: kfko}
+	r.kptfile = kptfilelibv1.KptFile{Kptfile: kfko}
 
 	if r.cfg.Root {
 		if err := r.ensureConditionsAndGates(); err != nil {
@@ -161,7 +161,7 @@ func (r *sdk) Run() (bool, error) {
 
 	// handle readiness condition -> if all conditions of the for resource are true we can declare readiness
 	if r.cfg.Root {
-		ctPrefix := kptfilev1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
+		ctPrefix := kptfilelibv1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
 		if r.kptfile.IsReady(ctPrefix) {
 			if err := r.kptfile.SetConditions(ready()); err != nil {
 				fn.Logf("set conditions, err: %s\n", err.Error())
