@@ -72,9 +72,9 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 		return nil, err
 	}
 	r := &sdk{
-		cfg:   cfg,
-		inv:   inv,
-		rl:    rl,
+		cfg: cfg,
+		inv: inv,
+		rl:  rl,
 		//ready: true,
 	}
 	return r, nil
@@ -88,7 +88,7 @@ type sdk struct {
 	//kptfile    *fn.KubeObject
 	kptfile kptfilelibv1.KptFile
 	//ready   bool // tracks the overall ready state
-	debug   bool // set based on for annotation
+	debug bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
@@ -135,12 +135,14 @@ func (r *sdk) Run() (bool, error) {
 	if err := r.callGlobalWatches(); err != nil {
 		// the for condition status is updated but we dont return since
 		// we might act upon the readiness status, set by the global watch return status
-		//r.failForConditions(err.Error())
-		if err := r.kptfile.SetConditions(failed(err.Error())); err != nil {
-			fn.Logf("set conditions, err: %s\n", err.Error())
-			r.rl.Results.ErrorE(err)
+		if r.cfg.Root {
+			if err := r.kptfile.SetConditions(failed(err.Error())); err != nil {
+				fn.Logf("set conditions, err: %s\n", err.Error())
+				r.rl.Results.ErrorE(err)
+			}
+		} else {
+			r.failForConditions(err.Error())
 		}
-
 	}
 	// stage 1 of the sdk pipeline
 	// populate the child resources as if nothing existed; errors are put in the conditions of the for resources
@@ -186,8 +188,6 @@ func (r *sdk) setDebug() {
 			r.inv.setdebug()
 		}
 	}
-	r.debug = true
-	r.inv.setdebug()
 }
 
 func (r *sdk) ensureConditionsAndGates() error {

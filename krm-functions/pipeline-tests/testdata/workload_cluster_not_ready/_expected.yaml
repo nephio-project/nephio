@@ -28,6 +28,18 @@ items:
       reason: Failed
       status: "False"
       type: nephio.org.Specializer.specialize
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n3
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n4
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      status: "False"
+      type: req.nephio.org/v1alpha1.Interface.n6
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      status: "False"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
