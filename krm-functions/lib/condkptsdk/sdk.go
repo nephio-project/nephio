@@ -167,13 +167,22 @@ func (r *sdk) Run() (bool, error) {
 
 	// handle readiness condition -> if all conditions of the for resource are true we can declare readiness
 	if r.cfg.Root {
-		ctPrefix := kptfilelibv1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
-		if r.kptfile.IsReady(ctPrefix) {
-			if err := r.kptfile.SetConditions(ready()); err != nil {
-				fn.Logf("set conditions, err: %s\n", err.Error())
-				r.rl.Results.ErrorE(err)
+		// when not ready leave the condition as is
+		if r.inv.isReady() {
+			ctPrefix := kptfilelibv1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
+			if r.kptfile.IsReady(ctPrefix) {
+				if err := r.kptfile.SetConditions(ready()); err != nil {
+					fn.Logf("set conditions, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
+			} else {
+				if err := r.kptfile.SetConditions(notReady()); err != nil {
+					fn.Logf("set conditions, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
+		
 	}
 	return true, nil
 }

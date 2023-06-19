@@ -59,6 +59,16 @@ func failed(msg string) kptv1.Condition {
 	}
 }
 
+// notReady returns a condition that indicates the specialization is notReady
+func notReady() kptv1.Condition {
+	return kptv1.Condition{
+		Type:    getSpecializationConditionType(),
+		Status:  kptv1.ConditionFalse,
+		Reason:  string(ConditionReasonReady),
+		Message: "",
+	}
+}
+
 // ready returns a condition that indicates the specialization is ready
 func ready() kptv1.Condition {
 	return kptv1.Condition{
