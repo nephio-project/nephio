@@ -182,7 +182,6 @@ func (r *sdk) Run() (bool, error) {
 				}
 			}
 		}
-		
 	}
 	return true, nil
 }
