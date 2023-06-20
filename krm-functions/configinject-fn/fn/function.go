@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
+	porchconfigv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
 	configv1alpha1 "github.com/henderiw-nephio/network/apis/config/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
@@ -129,14 +130,31 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	if err := f.List(ctx, prl); err != nil {
 		return nil, err
 	}
+
+	repos := &porchconfigv1alpha1.RepositoryList{}
+	if err := f.List(ctx, repos); err != nil {
+		return nil, err
+	}
+
+	repomap := map[string]porchconfigv1alpha1.Repository{}
+	for _, repo := range repos.Items {
+		repomap[repo.Name] = repo
+	}
+
+
 	resources := fn.KubeObjects{}
 	// walk through all the package revisions and check if the dependent resources are ready
 	// we assume there needs to be 1 dependency that resolves
 	found := false
 	for _, pr := range prl.Items {
+		repo, ok := repomap[pr.Spec.RepositoryName]
+		if !ok {
+			return nil, fmt.Errorf("configinject repo name not found: %s", pr.Spec.RepositoryName)
+		}
 		// only analyse the packages with the packageName contained in the dependency requirement resource
 		// TBD: do we need to check the latest revision ?
-		if pr.Spec.PackageName == depPackageName {
+		if pr.Spec.PackageName == depPackageName && repo.Spec.Deployment {
+			fn.Logf("configinject repo %s\n", pr.Spec.RepositoryName)
 			// get the package resources of the revision
 			prr := &porchv1alpha1.PackageRevisionResources{}
 			if err := f.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: pr.Name}, prr); err != nil {
@@ -160,8 +178,13 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 				Version: nephiodeployv1alpha1.GroupVersion.Version,
 				Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
 			}
+			for _, o := range rl.Items {
+				fn.Logf("configinject resource apiVersion: %s kind: %s\n", o.GetAPIVersion(), o.GetKind())
+			}
+
 			depObjs := rl.Items.Where(fn.IsGroupVersionKind(gvk))
 			if len(depObjs) == 0 {
+				fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
 				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
 			}
 			for _, o := range depObjs {
@@ -172,10 +195,12 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 				})
 				c := kf.GetCondition(ct)
 				if c == nil {
+					fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a condition for %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
 					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
 				}
 				if c.Status != kptv1.ConditionTrue {
 					// we fail fast if the condition is not true
+					fn.Logf("configinject dependency not ready: the package %s in repo %s has a condition which is False for: %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
 					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
 				}
 				// encapsulates the resource in another CR
@@ -183,12 +208,14 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 				if err != nil {
 					return nil, err
 				}
+				fn.Logf("configinject newObj : %v\n", newObj.String())
 				found = true
 				resources = append(resources, newObj)
 			}
 		}
 	}
 	if !found {
+		fn.Logf("configinject dependency not ready: expecting at least 1 package %s with the corresponding reference\n", depPackageName)
 		return nil, fmt.Errorf("dependency not ready: expecting at least 1 package %s with the corresponding reference", depPackageName)
 	}
 	return resources, nil
@@ -234,9 +261,10 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 		return nil, err
 	}
 
+
 	newCfgObj := configv1alpha1.BuildNetworkConfig(metav1.ObjectMeta{
 		Name:      o.GetName(),
-		Namespace: forObj.GetNamespace(),
+		Namespace: forObj.GetAnnotation(condkptsdk.SpecializerNamespace),
 	},
 		configv1alpha1.NetworkSpec{
 			Config: runtime.RawExtension{Object: u},
