@@ -32,6 +32,7 @@ import (
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	configinjectfn "github.com/nephio-project/nephio/krm-functions/configinject-fn/fn"
 	ipamfn "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
@@ -71,19 +72,14 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	r.porchClient = cfg.PorchClient
 	r.recorder = mgr.GetEventRecorderFor("generic-specializer")
 
-	ipamf := &ipamfn.FnR{ClientProxy: cfg.IpamClientProxy}
-	r.ipamFor = corev1.ObjectReference{
-		APIVersion: ipamv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-		Kind:       ipamv1alpha1.IPClaimKind,
-	}
-	r.ipamkrmfn = fn.ResourceListProcessorFunc(ipamf.Run)
+	r.ipamf = ipamfn.New(cfg.IpamClientProxy)
+	r.ipamkrmfn = fn.ResourceListProcessorFunc(r.ipamf.Run)
 
-	vlanf := &vlanfn.FnR{ClientProxy: cfg.VlanClientProxy}
-	r.vlanFor = corev1.ObjectReference{
-		APIVersion: vlanv1alpha1.SchemeBuilder.GroupVersion.Identifier(),
-		Kind:       vlanv1alpha1.VLANClaimKind,
-	}
-	r.vlankrmfn = fn.ResourceListProcessorFunc(vlanf.Run)
+	r.vlanf = vlanfn.New(cfg.VlanClientProxy)
+	r.vlankrmfn = fn.ResourceListProcessorFunc(r.vlanf.Run)
+
+	r.configInjectf = configinjectfn.New(cfg.PorchClient)
+	r.configInjectkrmfn = fn.ResourceListProcessorFunc(r.configInjectf.Run)
 
 	// TBD how does the proxy cache work with the injector for updates
 	return nil, ctrl.NewControllerManagedBy(mgr).
@@ -95,12 +91,14 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 // reconciler reconciles a NetworkInstance object
 type reconciler struct {
 	client.Client
-	ipamFor     corev1.ObjectReference
-	ipamkrmfn   fn.ResourceListProcessor
-	vlanFor     corev1.ObjectReference
-	vlankrmfn   fn.ResourceListProcessor
-	porchClient client.Client
-	recorder    record.EventRecorder
+	ipamf             *ipamfn.FnR
+	ipamkrmfn         fn.ResourceListProcessor
+	vlanf             *vlanfn.FnR
+	vlankrmfn         fn.ResourceListProcessor
+	configInjectf     *configinjectfn.FnR
+	configInjectkrmfn fn.ResourceListProcessor
+	porchClient       client.Client
+	recorder          record.EventRecorder
 
 	l logr.Logger
 }
@@ -136,10 +134,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
+	ipamFor := r.ipamf.GetConfig().For
+	vlanFor := r.vlanf.GetConfig().For
+	configInjectFor := r.configInjectf.GetConfig().For
+
 	// we just check for forResource conditions and we dont care if it is satisfied already
 	// this allows us to refresh the allocation.
-	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) ||
-		porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor)) {
+	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&ipamFor)) ||
+		porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) ||
+		porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&configInjectFor)) {
 
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
@@ -156,7 +159,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
 
-		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.ipamFor)) {
+		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&ipamFor)) {
 			// run the function SDK
 			_, err = r.ipamkrmfn.Process(rl)
 			if err != nil {
@@ -166,7 +169,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			}
 			r.l.Info("ipam specializer fn run successfull")
 		}
-		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&r.vlanFor)) {
+		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) {
 			// run the function SDK
 			_, err = r.vlankrmfn.Process(rl)
 			if err != nil {
@@ -175,6 +178,16 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				return ctrl.Result{}, nil
 			}
 			r.l.Info("vlan specializer fn run successfull")
+		}
+		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&configInjectFor)) {
+			// run the function SDK
+			_, err = r.configInjectkrmfn.Process(rl)
+			if err != nil {
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
+				r.l.Error(err, "configInject function run failed")
+				return ctrl.Result{}, nil
+			}
+			r.l.Info("configInject specializer fn run successfull")
 		}
 		workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
 		clusterName := r.getClusterName(workloadClusterObjs)
@@ -196,7 +209,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		for _, o := range rl.Items {
 			// TBD what if we create new resources
 			// update only the resource we act upon
-			if o.GetAPIVersion() == r.ipamFor.APIVersion && o.GetKind() == r.ipamFor.Kind {
+			if o.GetAPIVersion() == ipamFor.APIVersion && o.GetKind() == ipamFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				// Debug
 				alloc, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
@@ -211,7 +224,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				}
 				r.l.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
 			}
-			if o.GetAPIVersion() == r.vlanFor.APIVersion && o.GetKind() == r.vlanFor.Kind {
+			if o.GetAPIVersion() == vlanFor.APIVersion && o.GetKind() == vlanFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				// Debug
 				alloc, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANClaim](o)
@@ -226,6 +239,17 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				}
 				r.l.Info("generic specializer vlan allocation", "cluserName", clusterName, "status", vlanAlloc.Status)
 			}
+			if o.GetAPIVersion() == configInjectFor.APIVersion && o.GetKind() == configInjectFor.Kind {
+				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+				r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
+			}
+			for own := range r.configInjectf.GetConfig().Owns {
+				if o.GetAPIVersion() == own.APIVersion && o.GetKind() == own.Kind {
+					prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+					r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
+				}
+			}
+
 			if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
@@ -239,8 +263,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					continue
 				}
 				for _, c := range kptfile.Status.Conditions {
-					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.vlanFor)+".") ||
-						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&r.ipamFor)+".") {
+					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
+						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
+						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
 						r.l.Info("generic specializer conditions", "cluserName", clusterName, "status", c.Status, "condition", c.Type)
 					}
 				}

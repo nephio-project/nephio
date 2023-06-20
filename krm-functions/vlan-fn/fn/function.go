@@ -30,19 +30,32 @@ import (
 
 type FnR struct {
 	ClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
+	sdkConfig   *condkptsdk.Config
+}
+
+func New(c clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]) *FnR {
+	f := &FnR{
+		ClientProxy: c,
+	}
+	f.sdkConfig = &condkptsdk.Config{
+		For: corev1.ObjectReference{
+			APIVersion: vlanv1alpha1.GroupVersion.Identifier(),
+			Kind:       vlanv1alpha1.VLANClaimKind,
+		},
+		PopulateOwnResourcesFn: nil,
+		UpdateResourceFn:       f.updateVLANClaimResource,
+	}
+	return f
+}
+
+func (f *FnR) GetConfig() condkptsdk.Config {
+	return *f.sdkConfig
 }
 
 func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	sdk, err := condkptsdk.New(
 		rl,
-		&condkptsdk.Config{
-			For: corev1.ObjectReference{
-				APIVersion: vlanv1alpha1.GroupVersion.Identifier(),
-				Kind:       vlanv1alpha1.VLANClaimKind,
-			},
-			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:       f.updateVLANClaimResource,
-		},
+		f.sdkConfig,
 	)
 	if err != nil {
 		rl.Results.ErrorE(err)

@@ -4,6 +4,7 @@ go 1.20
 
 replace (
 	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
+	github.com/nephio-project/nephio/krm-functions/configinject-fn => ../../krm-functions/configinject-fn
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
@@ -20,6 +21,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/henderiw-nephio/network v0.0.0-20230615061333-1031589193d0
 	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0
+	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000

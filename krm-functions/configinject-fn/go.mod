@@ -1,4 +1,4 @@
-module github.com/nephio-project/nephio/krm-functions/inject-fn
+module github.com/nephio-project/nephio/krm-functions/configinject-fn
 
 go 1.20
 

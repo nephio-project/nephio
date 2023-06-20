@@ -43,31 +43,47 @@ import (
 type FnR struct {
 	client.Client
 	workloadCluster *infrav1alpha1.WorkloadCluster
+	sdkConfig       *condkptsdk.Config
+}
+
+func New(c client.Client) *FnR {
+	f := &FnR{
+		Client: c,
+	}
+	f.sdkConfig = &condkptsdk.Config{
+		For: corev1.ObjectReference{
+			APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+			Kind:       "Dependency",
+			//Kind:       nephioreqv1alpha1.DependencyKind, // TO BE CHANGED TO DEPENDENCY
+		},
+		Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
+			{
+				APIVersion: configv1alpha1.GroupVersion.Identifier(),
+				Kind:       configv1alpha1.NetworkKind,
+				//APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
+				//Kind:       nephiodeployv1alpha1.ConfigKind, // TO BE CHANGED TO CONFIG
+			}: condkptsdk.ChildLocal,
+		},
+		Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
+			{
+				APIVersion: infrav1alpha1.GroupVersion.Identifier(),
+				Kind:       infrav1alpha1.WorkloadClusterKind,
+			}: f.WorkloadClusterCallbackFn,
+		},
+		PopulateOwnResourcesFn: f.desiredOwnedResourceList,
+		UpdateResourceFn:       f.updateDependencyResource,
+	}
+	return f
+}
+
+func (f *FnR) GetConfig() condkptsdk.Config {
+	return *f.sdkConfig
 }
 
 func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	sdk, err := condkptsdk.New(
 		rl,
-		&condkptsdk.Config{
-			For: corev1.ObjectReference{
-				APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-				Kind:       nephioreqv1alpha1.DependencyKind, // TO BE CHANGED TO DEPENDENCY
-			},
-			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
-				{
-					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephiodeployv1alpha1.ConfigKind, // TO BE CHANGED TO CONFIG
-				}: condkptsdk.ChildLocal,
-			},
-			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
-				{
-					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       infrav1alpha1.WorkloadClusterKind,
-				}: f.WorkloadClusterCallbackFn,
-			},
-			PopulateOwnResourcesFn: f.desiredOwnedResourceList,
-			UpdateResourceFn:       f.updateDependencyResource,
-		},
+		f.sdkConfig,
 	)
 	if err != nil {
 		rl.Results.ErrorE(err)
@@ -100,10 +116,12 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	}
 
 	// get "parent"| Dependency struct
-	dep, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
-	if err != nil {
-		return nil, err
-	}
+	//dep, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
+	//if err != nil {
+	//	return nil, err
+	//}
+	//depPackageName := dep.PackageName
+	depPackageName := "free5gc-upf"
 
 	ctx := context.Background()
 	// list the package revisions
@@ -113,10 +131,12 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	}
 	resources := fn.KubeObjects{}
 	// walk through all the package revisions and check if the dependent resources are ready
+	// we assume there needs to be 1 dependency that resolves
+	found := false
 	for _, pr := range prl.Items {
 		// only analyse the packages with the packageName contained in the dependency requirement resource
 		// TBD: do we need to check the latest revision ?
-		if pr.Spec.PackageName == dep.Name {
+		if pr.Spec.PackageName == depPackageName {
 			// get the package resources of the revision
 			prr := &porchv1alpha1.PackageRevisionResources{}
 			if err := f.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: pr.Name}, prr); err != nil {
@@ -130,14 +150,19 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 			// get the kptfile from the resourcelist to check condition status
 			kfko := rl.Items.GetRootKptfile()
 			if kfko == nil {
-				return nil, fmt.Errorf("mandatory Kptfile is missing from the package")
+				return nil, fmt.Errorf("mandatory Kptfile is missing from the package %s, repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
 			}
 			kf := kptfilelibv1.KptFile{Kptfile: kfko}
 
 			// get the dependency objects in the package and check its status
-			depObjs := rl.Items.Where(fn.IsGroupVersionKind(schema.GroupVersionKind{}))
+			gvk := schema.GroupVersionKind{
+				Group:   nephiodeployv1alpha1.GroupVersion.Group,
+				Version: nephiodeployv1alpha1.GroupVersion.Version,
+				Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
+			}
+			depObjs := rl.Items.Where(fn.IsGroupVersionKind(gvk))
 			if len(depObjs) == 0 {
-				return nil, fmt.Errorf("dependency not ready: the package does not contain a resource with %s", schema.GroupVersionKind{}.String())
+				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
 			}
 			for _, o := range depObjs {
 				ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
@@ -147,20 +172,24 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 				})
 				c := kf.GetCondition(ct)
 				if c == nil {
-					return nil, fmt.Errorf("dependency not ready: no condition for %s", ct)
+					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
 				}
 				if c.Status != kptv1.ConditionTrue {
 					// we fail fast if the condition is not true
-					return nil, fmt.Errorf("dependency not ready: the condition is not true for: %s", c.Type)
+					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
 				}
-				// append the resource to the resources
+				// encapsulates the resource in another CR
 				newObj, err := GetConfigKubeObject(forObj, o)
 				if err != nil {
 					return nil, err
 				}
+				found = true
 				resources = append(resources, newObj)
 			}
 		}
+	}
+	if !found {
+		return nil, fmt.Errorf("dependency not ready: expecting at least 1 package %s with the corresponding reference", depPackageName)
 	}
 	return resources, nil
 }
@@ -171,24 +200,27 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
 
-	configRefs := []corev1.ObjectReference{}
-	for _, o := range objs {
-		configRefs = append(configRefs, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind})
-	}
+	/*
+		configRefs := []corev1.ObjectReference{}
+		for _, o := range objs {
+			configRefs = append(configRefs, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind})
+		}
 
-	// get "parent"| Dependency struct
-	depObj, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
-	if err != nil {
-		return nil, err
-	}
-	dep, err := depObj.GetGoStruct()
-	if err != nil {
-		return nil, err
-	}
-	dep.Status.injected = configRefs
-	depObj.SetStatus(dep)
+		// get "parent"| Dependency struct
+		depObj, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
+		if err != nil {
+			return nil, err
+		}
+		dep, err := depObj.GetGoStruct()
+		if err != nil {
+			return nil, err
+		}
+		dep.Status.injected = configRefs
+		depObj.SetStatus(dep)
 
-	return &depObj.KubeObject, err
+		return &depObj.KubeObject, err
+	*/
+	return forObj, nil
 }
 
 func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
