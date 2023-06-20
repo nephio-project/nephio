@@ -140,7 +140,7 @@ func (r *inv) isGVKMatch(ref *corev1.ObjectReference) (*gvkKindCtx, bool) {
 	kindCtx, ok := r.gvkResources[corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind}]
 	if !ok {
 		// check wildcard match
-		kindCtx, ok = r.gvkResources[corev1.ObjectReference{APIVersion: "*", Kind: "*"}] 
+		kindCtx, ok = r.gvkResources[corev1.ObjectReference{APIVersion: "*", Kind: "*"}]
 		if !ok {
 			return nil, false
 		}
