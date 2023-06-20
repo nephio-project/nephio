@@ -30,7 +30,7 @@ import (
 
 type FnR struct {
 	ClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
-	sdkConfig       *condkptsdk.Config
+	sdkConfig   *condkptsdk.Config
 }
 
 func New(c clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]) *FnR {
