@@ -29,9 +29,9 @@ import (
 // - per instance readiness: when certain parts of an instance readiness is missing
 func (r *sdk) updateResource() {
 	if r.debug {
-		fn.Logf("updateResource isReady: %t\n", r.ready)
+		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
 	}
-	if !r.ready {
+	if !r.inv.isReady() {
 		// when the overall status is not ready delete all resources
 		// TODO if we need to check the delete annotation
 		// TODO check if the owned resources were dynamic or static

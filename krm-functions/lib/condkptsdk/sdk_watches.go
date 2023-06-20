@@ -35,7 +35,7 @@ func (r *sdk) callGlobalWatches() error {
 					fn.Logf("stage1: global watch returned an error %v\n", err.Error())
 				}
 				//r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, resCtx.existingResource))
-				r.ready = false
+				r.inv.setReady(false)
 				return err
 			}
 		}

@@ -18,7 +18,7 @@ package condkptsdk
 import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
-	kptfilev1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
+	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -32,9 +32,9 @@ const (
 )
 
 func getSpecializationConditionType() string {
-	return kptfilev1.GetConditionType(&corev1.ObjectReference{
+	return kptfilelibv1.GetConditionType(&corev1.ObjectReference{
 		APIVersion: "nephio.org",
-		Kind:       "Specilizer",
+		Kind:       "Specializer",
 		Name:       "specialize",
 	})
 }
@@ -49,7 +49,27 @@ func initialize() kptv1.Condition {
 	}
 }
 
-// Failed returns a condition that indicates the specialization failed
+// failed returns a condition that indicates the specialization has failed with a msg
+func failed(msg string) kptv1.Condition {
+	return kptv1.Condition{
+		Type:    getSpecializationConditionType(),
+		Status:  kptv1.ConditionFalse,
+		Reason:  string(ConditionReasonFailed),
+		Message: msg,
+	}
+}
+
+// notReady returns a condition that indicates the specialization is notReady
+func notReady() kptv1.Condition {
+	return kptv1.Condition{
+		Type:    getSpecializationConditionType(),
+		Status:  kptv1.ConditionFalse,
+		Reason:  string(ConditionReasonSpecialize),
+		Message: "not ready",
+	}
+}
+
+// ready returns a condition that indicates the specialization is ready
 func ready() kptv1.Condition {
 	return kptv1.Condition{
 		Type:    getSpecializationConditionType(),

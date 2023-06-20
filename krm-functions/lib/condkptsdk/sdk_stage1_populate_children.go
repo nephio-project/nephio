@@ -28,7 +28,7 @@ import (
 
 func (r *sdk) populateChildren() {
 	if r.debug {
-		fn.Log("stage1: populate children: ready:", r.ready)
+		fn.Log("stage1: populate children")
 	}
 	for forRef, resCtx := range r.inv.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		forObj := resCtx.existingResource

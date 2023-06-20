@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	v1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -70,22 +71,24 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 		// all child resources and conditions
 		//fn.Logf("diff: forRef: %v, existingResource: %v\n", forRef, resCtx.existingResource)
 		if forResCtx.existingResource == nil {
-			for ref, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
+			for ownRef, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 				if r.debug {
-					fn.Logf("delete resource and conditions: forRef: %v, ownRef: %v\n", forRef, ref)
+					fn.Logf("delete resource and conditions: objRef: %s\n", ref.GetRefsString(forRef, ownRef))
 				}
 				diffMap[forRef].deleteForCondition = true
 				if resCtx.existingCondition != nil {
-					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ref, ownKind: resCtx.ownKind})
+					diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 				}
 				if resCtx.existingResource != nil {
-					diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ref, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					if resCtx.ownKind != ChildInitial {
+						diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
+					}
 				}
 			}
 		} else {
 			for ownRef, resCtx := range r.get(ownGVKKind, []corev1.ObjectReference{forRef, {}}) {
 				if r.debug {
-					fn.Logf("diff: forRef: %v, ownRef: %v, existingResource: %v, newResource: %v\n", forRef, ownRef, resCtx.existingResource, resCtx.newResource)
+					fn.Logf("diff: objRef: %s, existingResource: %v, newResource: %v, existing condition: %v\n", ref.GetRefsString(forRef, ownRef), resCtx.existingResource != nil, resCtx.newResource != nil, resCtx.existingCondition != nil)
 				}
 				// condition diff handling
 				switch {
@@ -93,7 +96,9 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
 						diffMap[forRef].updateForCondition = true
 					}
-					diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+					if r.ready {
+						diffMap[forRef].createConditions = append(diffMap[forRef].createConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
+					}
 				// if there is no new resource, but we have a condition for that resource we should delete the condition
 				// if the ownKind is not ChildInitial || ChildLocal -> this would happen in stage 2 of upf deployment
 				case resCtx.newResource == nil && resCtx.existingCondition != nil:
@@ -101,7 +106,6 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 						diffMap[forRef].updateForCondition = true
 					}
 					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
-
 						diffMap[forRef].deleteConditions = append(diffMap[forRef].deleteConditions, object{ref: ownRef, ownKind: resCtx.ownKind})
 					}
 				// if there is a new resource, but we have no condition for that resource someone deleted it

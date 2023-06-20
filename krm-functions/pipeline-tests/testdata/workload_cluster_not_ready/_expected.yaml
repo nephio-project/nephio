@@ -4,20 +4,17 @@ items:
 - apiVersion: infra.nephio.org/v1alpha1
   kind: WorkloadCluster
   metadata:
-    name: cluster01
+    name: example
     annotations:
       config.kubernetes.io/local-config: "true"
   spec:
-    clusterName: cluster01
-    cnis:
-    - macvlan
-    - ipvlan
-    - sriov
-    masterInterface: eth1
+    clusterName: example
 - apiVersion: kpt.dev/v1
   kind: Kptfile
+  # comment A
   metadata:
-    name: cluster01-upf
+    name: pkg-upf
+    #commentB
     annotations:
       config.kubernetes.io/local-config: "true"
   info:
@@ -27,33 +24,22 @@ items:
   pipeline: {}
   status:
     conditions:
-    - message: not ready
-      reason: Specialize
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      reason: Failed
       status: "False"
       type: nephio.org.Specializer.specialize
-    - message: update for condition
-      status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - message: child local resource -> done
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "True"
-      type: req.nephio.org/v1alpha1.Capacity.dataplane
-    - message: create initial resource condition
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-      status: "False"
-      type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: create initial resource condition
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n3
-    - message: create initial resource condition
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n4
-    - message: create initial resource condition
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n6
+    - message: 'spec invalid: mandatory field ClusterName is missing from WorkloadCluster'
+      status: "False"
+      type: req.nephio.org/v1alpha1.DataNetwork.internet
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -78,11 +64,6 @@ items:
     pools:
     - name: pool1
       prefixLength: 8
-  status:
-    pools:
-    - ipClaim:
-        prefix: 10.0.0.3/24
-        gateway: 10.0.0.1
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -95,14 +76,7 @@ items:
       name: vpc-ran
     cniType: sriov
     attachmentType: vlan
-  status:
-    ipClaimStatus:
-    - prefix: 10.0.0.3/24
-      gateway: 10.0.0.1
-    - prefix: 1000::2/64
-      gateway: 1000::1
-    vlanClaimStatus:
-      vlanID: 100
+  status: {}
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -115,14 +89,7 @@ items:
       name: vpc-internal
     cniType: sriov
     attachmentType: vlan
-  status:
-    ipClaimStatus:
-    - prefix: 10.0.0.3/24
-      gateway: 10.0.0.1
-    - prefix: 1000::2/64
-      gateway: 1000::1
-    vlanClaimStatus:
-      vlanID: 100
+  status: {}
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
@@ -135,15 +102,17 @@ items:
       name: vpc-internet
     cniType: sriov
     attachmentType: vlan
-  status:
-    ipClaimStatus:
-    - prefix: 10.0.0.4/24
-      gateway: 10.0.0.2
-    - prefix: 1000::2/64
-      gateway: 1000::1
-    vlanClaimStatus:
-      vlanID: 101
+  status: {}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  data:
+    name: example
 - apiVersion: workload.nephio.org/v1alpha1
   kind: UPFDeployment
   metadata:
     name: upf-cluster01
+    namespace: dummy

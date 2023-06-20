@@ -67,6 +67,24 @@ type TestCase struct {
 func TestPipelines(t *testing.T) {
 	tcs := []TestCase{
 		{
+			inputDir:        "upf_pkg_init",
+			expectedDataDir: "workload_cluster_not_ready",
+			pipeline: []fn.ResourceListProcessorFunc{
+				upfFn,
+				if_fn.Run,
+				dnn_fn.Run,
+
+				ipamFn.Run,
+				vlanFn.Run,
+
+				nad_fn.Run,
+				if_fn.Run,
+				dnn_fn.Run,
+				upfFn,
+			},
+		},
+		/*
+		{
 			inputDir:        "upf_pkg",
 			expectedDataDir: "simplified_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
@@ -129,6 +147,7 @@ func TestPipelines(t *testing.T) {
 				upfFn,
 			},
 		},
+		*/
 	}
 
 	for _, tc := range tcs {

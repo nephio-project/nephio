@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptfilev1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
+	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -72,10 +72,10 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 		return nil, err
 	}
 	r := &sdk{
-		cfg:   cfg,
-		inv:   inv,
-		rl:    rl,
-		ready: true,
+		cfg: cfg,
+		inv: inv,
+		rl:  rl,
+		//ready: true,
 	}
 	return r, nil
 }
@@ -86,9 +86,9 @@ type sdk struct {
 	rl  *fn.ResourceList
 	//conditions *ko.KptPackageConditions
 	//kptfile    *fn.KubeObject
-	kptfile kptfilev1.KptFile
-	ready   bool // tracks the overall ready state
-	debug   bool // set based on for annotation
+	kptfile kptfilelibv1.KptFile
+	//ready   bool // tracks the overall ready state
+	debug bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
@@ -106,7 +106,7 @@ func (r *sdk) Run() (bool, error) {
 		r.rl.Results.Errorf(msg)
 		return false, fmt.Errorf(msg)
 	}
-	r.kptfile = kptfilev1.KptFile{Kptfile: kfko}
+	r.kptfile = kptfilelibv1.KptFile{Kptfile: kfko}
 
 	if r.cfg.Root {
 		if err := r.ensureConditionsAndGates(); err != nil {
@@ -135,14 +135,24 @@ func (r *sdk) Run() (bool, error) {
 	if err := r.callGlobalWatches(); err != nil {
 		// the for condition status is updated but we dont return since
 		// we might act upon the readiness status, set by the global watch return status
-		r.failForConditions(err.Error())
-
+		if r.cfg.Root {
+			if err := r.kptfile.SetConditions(failed(err.Error())); err != nil {
+				fn.Logf("set conditions, err: %s\n", err.Error())
+				r.rl.Results.ErrorE(err)
+			}
+		} else {
+			// only add a fail condition for a for that exists for the particular function
+			// the challange here is if the name get changed e.g. AMF example to AMF amf-cluster01
+			// the conditon does not clear -> this could be solved with a generic specialize condition
+			// where the name is turned into a generic specializer name
+			r.failForConditions(err.Error())
+		}
 	}
 	// stage 1 of the sdk pipeline
 	// populate the child resources as if nothing existed; errors are put in the conditions of the for resources
 	// we only call the populate children if we are in ready status and if there are own resources. As such
 	// we dont populate the children and the next part in stage 1 will act upon the result
-	if r.ready && len(r.cfg.Owns) > 0 {
+	if r.inv.isReady() && len(r.cfg.Owns) > 0 {
 		r.populateChildren()
 	}
 
@@ -161,11 +171,19 @@ func (r *sdk) Run() (bool, error) {
 
 	// handle readiness condition -> if all conditions of the for resource are true we can declare readiness
 	if r.cfg.Root {
-		ctPrefix := kptfilev1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
-		if r.kptfile.IsReady(ctPrefix) {
-			if err := r.kptfile.SetConditions(ready()); err != nil {
-				fn.Logf("set conditions, err: %s\n", err.Error())
-				r.rl.Results.ErrorE(err)
+		// when not ready leave the condition as is
+		if r.inv.isReady() {
+			ctPrefix := kptfilelibv1.GetConditionType(&corev1.ObjectReference{APIVersion: r.cfg.For.APIVersion, Kind: r.cfg.For.Kind})
+			if r.kptfile.IsReady(ctPrefix) {
+				if err := r.kptfile.SetConditions(ready()); err != nil {
+					fn.Logf("set conditions, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
+			} else {
+				if err := r.kptfile.SetConditions(notReady()); err != nil {
+					fn.Logf("set conditions, err: %s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+				}
 			}
 		}
 	}
