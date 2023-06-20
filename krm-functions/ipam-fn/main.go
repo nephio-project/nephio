@@ -25,10 +25,7 @@ import (
 )
 
 func main() {
-	r := &fnr.FnR{
-		ClientProxy: ipam.NewMock(),
-	}
-
+	r := fnr.New(ipam.NewMock())
 	if err := fn.AsMain(fn.ResourceListProcessorFunc(r.Run)); err != nil {
 		os.Exit(1)
 	}

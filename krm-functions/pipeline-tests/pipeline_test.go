@@ -50,13 +50,8 @@ func amfFn(rl *fn.ResourceList) (bool, error) {
 }
 */
 
-var ipamFn = &ipam_fn.FnR{
-	ClientProxy: ipam.NewMock(),
-}
-
-var vlanFn = &vlan_fn.FnR{
-	ClientProxy: vlan.NewMock(),
-}
+var ipamFn = ipam_fn.New(ipam.NewMock())
+var vlanFn = vlan_fn.New(vlan.NewMock())
 
 type TestCase struct {
 	pipeline        []fn.ResourceListProcessorFunc
@@ -83,7 +78,6 @@ func TestPipelines(t *testing.T) {
 				upfFn,
 			},
 		},
-		/*
 		{
 			inputDir:        "upf_pkg",
 			expectedDataDir: "simplified_deployment",
@@ -147,7 +141,6 @@ func TestPipelines(t *testing.T) {
 				upfFn,
 			},
 		},
-		*/
 	}
 
 	for _, tc := range tcs {
