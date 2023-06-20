@@ -141,7 +141,6 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 		repomap[repo.Name] = repo
 	}
 
-
 	resources := fn.KubeObjects{}
 	// walk through all the package revisions and check if the dependent resources are ready
 	// we assume there needs to be 1 dependency that resolves
@@ -260,7 +259,6 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 	if err != nil {
 		return nil, err
 	}
-
 
 	newCfgObj := configv1alpha1.BuildNetworkConfig(metav1.ObjectMeta{
 		Name:      o.GetName(),

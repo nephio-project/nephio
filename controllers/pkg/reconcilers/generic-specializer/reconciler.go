@@ -87,8 +87,8 @@ type reconciler struct {
 	client.Client
 	ipamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	vlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
-	porchClient client.Client
-	recorder    record.EventRecorder
+	porchClient     client.Client
+	recorder        record.EventRecorder
 
 	l logr.Logger
 }
