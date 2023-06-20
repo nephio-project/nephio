@@ -1,2 +1,0 @@
-- message: expected Interface object to generate the nad
-  severity: error

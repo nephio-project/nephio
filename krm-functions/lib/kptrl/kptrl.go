@@ -25,59 +25,6 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
-type ResourceList struct {
-	fn.ResourceList
-}
-
-// AddResult adds a result with error and corresponding KubeObject by
-// appending a result to the result slice in the resourceList
-func (r *ResourceList) AddResult(err error, obj *fn.KubeObject) {
-	r.Results = append(r.Results, fn.ErrorConfigObjectResult(err, obj))
-}
-
-// GetResults gets the results slice from the resourceList
-func (r *ResourceList) GetResults() fn.Results {
-	return r.Results
-}
-
-// GetObjects return an fn sdk KubeObject by comparing the APIVersion, Kind, Name and Namespace
-// if the object is found the corresponding obj is returned, if not nil is returned
-func (r *ResourceList) GetObjects(obj *fn.KubeObject) fn.KubeObjects {
-	return r.Items.Where(func(ko *fn.KubeObject) bool { return isGVKNNEqual(ko, obj) })
-}
-
-// GetObjects returns all items from the resourceList
-func (r *ResourceList) GetAllObjects() fn.KubeObjects {
-	return r.Items
-}
-
-// SetObject sets the object in the resourceList items. It either updates/overrides
-// the entry if it exists or appends the entry if it does not exist in the resourceList
-// It uses APIVersion, Kind, Name and Namespace to check the object uniqueness
-func (r *ResourceList) SetObject(obj *fn.KubeObject) error {
-	return r.UpsertObjectToItems(obj, nil, true)
-}
-
-// DeleteObject deletes the object from the resourceList if it exists.
-func (r *ResourceList) DeleteObject(obj *fn.KubeObject) {
-	for idx, o := range r.Items {
-		if isGVKNNEqual(o, obj) {
-			r.Items = append(r.Items[:idx], r.Items[idx+1:]...)
-		}
-	}
-}
-
-// isGVKNEqual validates if the APIVersion, Kind, Name and Namespace of both fn.KubeObject are equal
-func isGVKNNEqual(curobj, newobj *fn.KubeObject) bool {
-	if curobj.GetAPIVersion() == newobj.GetAPIVersion() &&
-		curobj.GetKind() == newobj.GetKind() &&
-		curobj.GetName() == newobj.GetName() &&
-		curobj.GetNamespace() == newobj.GetNamespace() {
-		return true
-	}
-	return false
-}
-
 func includeFile(path string, match []string) bool {
 	for _, m := range match {
 		file := filepath.Base(path)

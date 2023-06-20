@@ -1,2 +1,0 @@
-- message: multiple WorkloadCluster objects found in the kpt package
-  severity: error

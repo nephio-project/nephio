@@ -49,7 +49,7 @@ items:
     - message: update for condition
       status: "False"
       type: req.nephio.org/v1alpha1.DataNetwork.internet
-    - message: create resource
+    - message: create initial resource
       reason: req.nephio.org/v1alpha1.DataNetwork.internet
       status: "False"
       type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-internet-pool1

@@ -25,10 +25,19 @@ import (
 
 type readyCtx struct {
 	ready        bool
+	failed       bool
 	forObj       *fn.KubeObject
 	forCondition *kptv1.Condition
 	owns         map[corev1.ObjectReference]fn.KubeObject
 	watches      map[corev1.ObjectReference]fn.KubeObject
+}
+
+func (r *inv) setReady(b bool) {
+	r.ready = b
+}
+
+func (r *inv) isReady() bool {
+	return r.ready
 }
 
 // getReadyMap provides a readyMap based on the information of the children
@@ -44,6 +53,7 @@ func (r *inv) getReadyMap() map[corev1.ObjectReference]*readyCtx {
 	for forRef, forResCtx := range r.get(forGVKKind, []corev1.ObjectReference{{}}) {
 		readyMap[forRef] = &readyCtx{
 			ready:        true,
+			failed:       forResCtx.failed,
 			owns:         map[corev1.ObjectReference]fn.KubeObject{},
 			watches:      map[corev1.ObjectReference]fn.KubeObject{},
 			forObj:       forResCtx.existingResource,

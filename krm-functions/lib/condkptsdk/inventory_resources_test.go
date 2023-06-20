@@ -30,7 +30,7 @@ func TestSet(t *testing.T) {
 		kc          *gvkKindCtx
 		refs        []corev1.ObjectReference
 		x           any
-		new         newResource
+		newResource bool
 		errExpected bool
 	}{
 		"ForNormal": {
@@ -117,7 +117,7 @@ func TestSet(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = inv.set(tc.kc, tc.refs, tc.x, tc.new)
+			err = inv.set(tc.kc, tc.refs, tc.x, tc.newResource, false)
 			if tc.errExpected {
 				assert.Error(t, err)
 			} else {
@@ -139,7 +139,7 @@ func TestDelete(t *testing.T) {
 		refs        []corev1.ObjectReference
 		deleteRefs  []corev1.ObjectReference
 		x           any
-		new         newResource
+		newResource bool
 		errExpected bool
 	}{
 		"DeleteNormal": {
@@ -174,7 +174,7 @@ func TestDelete(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = inv.set(tc.kc, tc.refs, tc.x, tc.new)
+			err = inv.set(tc.kc, tc.refs, tc.x, tc.newResource, false)
 			if err != nil {
 				assert.NoError(t, err)
 			}
@@ -199,7 +199,7 @@ func TestGet(t *testing.T) {
 		setRefs     [][]corev1.ObjectReference
 		getRefs     []corev1.ObjectReference
 		x           any
-		new         newResource
+		newResource bool
 		errExpected bool
 		len         int
 	}{
@@ -265,7 +265,7 @@ func TestGet(t *testing.T) {
 			}
 
 			for _, refs := range tc.setRefs {
-				inv.set(tc.kc, refs, tc.x, tc.new)
+				inv.set(tc.kc, refs, tc.x, tc.newResource, false)
 			}
 
 			x := inv.get(tc.kc.gvkKind, tc.getRefs)
@@ -281,7 +281,7 @@ func TestList(t *testing.T) {
 		kc          *gvkKindCtx
 		refs        [][]corev1.ObjectReference
 		x           any
-		new         newResource
+		newResource bool
 		errExpected bool
 	}{
 		"List": {
@@ -315,7 +315,7 @@ func TestList(t *testing.T) {
 			}
 
 			for _, ref := range tc.refs {
-				inv.set(tc.kc, ref, tc.x, tc.new)
+				inv.set(tc.kc, ref, tc.x, tc.newResource, false)
 			}
 
 			x := inv.list()

@@ -22,6 +22,8 @@ items:
       config.kubernetes.io/local-config: "true"
   info:
     description: upf package example
+    readinessGates:
+    - conditionType: nephio.org.Specializer.specialize
   pipeline: {}
   status:
     conditions:
@@ -48,6 +50,10 @@ items:
     - message: update for condition
       status: "False"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    - message: not ready
+      reason: Specialize
+      status: "False"
+      type: nephio.org.Specializer.specialize
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:

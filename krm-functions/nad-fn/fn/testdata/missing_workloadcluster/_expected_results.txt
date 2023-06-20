@@ -1,2 +1,0 @@
-- message: workload cluster is missing from the kpt package
-  severity: error

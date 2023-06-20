@@ -75,6 +75,7 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 			},
 			PopulateOwnResourcesFn: nfDeployFn.desiredOwnedResourceList,
 			UpdateResourceFn:       nfDeployFn.UpdateResourceFn,
+			Root:                   true,
 		},
 	)
 

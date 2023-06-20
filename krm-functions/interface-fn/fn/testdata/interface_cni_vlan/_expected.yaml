@@ -51,15 +51,15 @@ items:
     - message: update for condition
       status: "False"
       type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
-    - message: create resource
+    - message: create initial resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-n3-ipv4
-    - message: create resource
+    - message: create initial resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.upf-cluster01-n3
-    - message: create resource
+    - message: create initial resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.upf-cluster01-n3

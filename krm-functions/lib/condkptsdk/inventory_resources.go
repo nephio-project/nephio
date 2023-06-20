@@ -22,6 +22,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -51,16 +52,15 @@ type resourceCtx struct {
 	existingCondition *kptv1.Condition // contains owner in the condition reason
 	existingResource  *fn.KubeObject   // contains the owner in the owner annotation
 	newResource       *fn.KubeObject
+	failed            bool // indicated if the action failed on this resource
 }
-
-type newResource bool
 
 type resources struct {
 	resourceCtx
 	resources map[sdkObjectReference]*resources
 }
 
-func (r *inv) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newResource) error {
+func (r *inv) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, newResource, failed bool) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
@@ -69,7 +69,7 @@ func (r *inv) set(kc *gvkKindCtx, refs []corev1.ObjectReference, x any, new newR
 	if err != nil {
 		return err
 	}
-	return r.resources.set(sdkRefs, kc, x, new)
+	return r.resources.set(sdkRefs, kc, x, newResource, failed)
 }
 
 func (r *inv) delete(kc *gvkKindCtx, refs []corev1.ObjectReference) error {
@@ -138,6 +138,7 @@ func getSdkRefs(k gvkKind, refs []corev1.ObjectReference) ([]sdkObjectReference,
 		return nil, fmt.Errorf("cannot walk resource tree with empty ref")
 	case 1:
 		if k != forGVKKind && k != watchGVKKind {
+			fn.Logf("getSdkRefs: kind: %s, objs: %s\n", k, ref.GetRefsString(refs...))
 			return nil, fmt.Errorf("refs with len 1 only allowed for for/watch")
 		}
 		return []sdkObjectReference{{gvkKind: k, ref: refs[0]}}, nil
@@ -152,8 +153,9 @@ func getSdkRefs(k gvkKind, refs []corev1.ObjectReference) ([]sdkObjectReference,
 
 }
 
-func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new newResource) error {
+func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, newResource, failed bool) error {
 	if len(refs) == 0 {
+		r.failed = failed
 		switch d := x.(type) {
 		case *kptv1.Condition:
 			//fn.Logf("add existing condition: %v\n", x)
@@ -161,10 +163,9 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new ne
 			r.resourceCtx.existingCondition = &x
 			return nil
 		case *fn.KubeObject:
-
 			r.gvkKindCtx = *kc
 			x := *d
-			if new {
+			if newResource {
 				//fn.Logf("add new resource: %v\n", x)
 				r.resourceCtx.newResource = &x
 			} else {
@@ -181,7 +182,7 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, new ne
 	if !r.isInitialized(refs[0]) {
 		r.init(refs[0])
 	}
-	return r.resources[refs[0]].set(refs[1:], kc, x, new)
+	return r.resources[refs[0]].set(refs[1:], kc, x, newResource, failed)
 }
 
 func (r *resources) delete(refs []sdkObjectReference) error {
