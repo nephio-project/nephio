@@ -66,6 +66,10 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
 					Kind:       nephioreqv1alpha1.DataNetworkKind,
 				}: condkptsdk.ChildInitial,
+				{
+					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
+					Kind:       "Dependency",
+				}: condkptsdk.ChildInitial,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
