@@ -228,11 +228,6 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
 
-	configRefs := []corev1.ObjectReference{}
-	for _, o := range objs {
-		configRefs = append(configRefs, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind()})
-	}
-
 	// get "parent"| Dependency struct
 	depObj, err := ko.NewFromKubeObject[nephioreqv1alpha1.Dependency](forObj)
 	if err != nil {
@@ -242,7 +237,12 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 	if err != nil {
 		return nil, err
 	}
-	dep.Status.Injected = configRefs
+
+	dep.Status.Injected = []corev1.ObjectReference{}
+	for _, o := range objs {
+		dep.Status.Injected = append(dep.Status.Injected, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind()})
+	}
+	
 	depObj.SetStatus(dep)
 
 	return &depObj.KubeObject, err
