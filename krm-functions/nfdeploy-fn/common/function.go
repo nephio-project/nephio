@@ -225,6 +225,22 @@ func (f *NfDeployFn[T, PT]) DnnUpdate(o *fn.KubeObject) error {
 	return nil
 }
 
+func (f *NfDeployFn[T, PT]) DependencyUpdate(o *fn.KubeObject) error {
+	depKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Dependency](o)
+	if err != nil {
+		return err
+	}
+
+	dep, err := depKOE.GetGoStruct()
+	if err != nil {
+		return err
+	}
+	for _, ref := range dep.Status.Injected {
+		f.AddDependencyRef(ref)
+	}
+	return nil
+}
+
 func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if nfDeploymentObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
@@ -264,7 +280,16 @@ func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, obj
 		}
 	}
 
+	nfSpec.ConfigRefs = []corev1.ObjectReference{}
+	depObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.DependencyGroupVersionKind))
+	for _, o := range depObjs {
+		if err := f.DependencyUpdate(o); err != nil {
+			return nil, err
+		}
+	}
+
 	f.FillCapacityDetails(nfSpec)
+	nfSpec.ConfigRefs = f.configRefs
 
 	for networkInstanceName, itfceConfig := range f.interfaceConfigsMap {
 		f.AddInterfaceToNetworkInstance(itfceConfig.Name, networkInstanceName)

@@ -54,15 +54,12 @@ func New(c client.Client) *FnR {
 	f.sdkConfig = &condkptsdk.Config{
 		For: corev1.ObjectReference{
 			APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-			Kind:       "Dependency",
-			//Kind:       nephioreqv1alpha1.DependencyKind, // TO BE CHANGED TO DEPENDENCY
+			Kind:       nephioreqv1alpha1.DependencyKind,
 		},
 		Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 			{
-				APIVersion: configv1alpha1.GroupVersion.Identifier(),
-				Kind:       configv1alpha1.NetworkKind,
-				//APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-				//Kind:       nephiodeployv1alpha1.ConfigKind, // TO BE CHANGED TO CONFIG
+				APIVersion: "ref.nephio.org",
+				Kind:       "Config",
 			}: condkptsdk.ChildLocal,
 		},
 		Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -116,13 +113,12 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
 	}
 
-	// get "parent"| Dependency struct
-	//dep, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
-	//if err != nil {
-	//	return nil, err
-	//}
-	//depPackageName := dep.PackageName
-	depPackageName := "free5gc-upf"
+	//get "parent"| Dependency struct
+	dep, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
+	if err != nil {
+		return nil, err
+	}
+	depPackageName := dep.Spec.PackageName
 
 	ctx := context.Background()
 	// list the package revisions
@@ -130,12 +126,12 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	if err := f.List(ctx, prl); err != nil {
 		return nil, err
 	}
-
+	// list the repo(s)
 	repos := &porchconfigv1alpha1.RepositoryList{}
 	if err := f.List(ctx, repos); err != nil {
 		return nil, err
 	}
-
+	// build a repo map for faster lookup
 	repomap := map[string]porchconfigv1alpha1.Repository{}
 	for _, repo := range repos.Items {
 		repomap[repo.Name] = repo
@@ -151,6 +147,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 			return nil, fmt.Errorf("configinject repo name not found: %s", pr.Spec.RepositoryName)
 		}
 		// only analyse the packages with the packageName contained in the dependency requirement resource
+		// and only look at repo(s) where the deployment is true
 		// TBD: do we need to check the latest revision ?
 		if pr.Spec.PackageName == depPackageName && repo.Spec.Deployment {
 			fn.Logf("configinject repo %s\n", pr.Spec.RepositoryName)
@@ -177,39 +174,44 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 				Version: nephiodeployv1alpha1.GroupVersion.Version,
 				Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
 			}
-			for _, o := range rl.Items {
-				fn.Logf("configinject resource apiVersion: %s kind: %s\n", o.GetAPIVersion(), o.GetKind())
-			}
+			for _, ref := range dep.Spec.Injectors {
+				/*
+					for _, o := range rl.Items {
+						fn.Logf("configinject resource apiVersion: %s kind: %s\n", o.GetAPIVersion(), o.GetKind())
+					}
+				*/
+				fn.Logf("configinject dependency gvk: %s\n", gvk.String())
 
-			depObjs := rl.Items.Where(fn.IsGroupVersionKind(gvk))
-			if len(depObjs) == 0 {
-				fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
-				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
-			}
-			for _, o := range depObjs {
-				ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
-					APIVersion: o.GetAPIVersion(),
-					Kind:       o.GetKind(),
-					Name:       o.GetName(),
-				})
-				c := kf.GetCondition(ct)
-				if c == nil {
-					fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a condition for %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
-					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+				depObjs := rl.Items.Where(fn.IsGroupVersionKind(ref.GroupVersionKind()))
+				if len(depObjs) == 0 {
+					fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
+					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
 				}
-				if c.Status != kptv1.ConditionTrue {
-					// we fail fast if the condition is not true
-					fn.Logf("configinject dependency not ready: the package %s in repo %s has a condition which is False for: %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
-					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
+				for _, o := range depObjs {
+					ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
+						APIVersion: o.GetAPIVersion(),
+						Kind:       o.GetKind(),
+						Name:       o.GetName(),
+					})
+					c := kf.GetCondition(ct)
+					if c == nil {
+						fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a condition for %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+						return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+					}
+					if c.Status != kptv1.ConditionTrue {
+						// we fail fast if the condition is not true
+						fn.Logf("configinject dependency not ready: the package %s in repo %s has a condition which is False for: %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
+						return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
+					}
+					// encapsulates the resource in another CR
+					newObj, err := GetConfigKubeObject(forObj, o)
+					if err != nil {
+						return nil, err
+					}
+					fn.Logf("configinject newObj : %v\n", newObj.String())
+					found = true
+					resources = append(resources, newObj)
 				}
-				// encapsulates the resource in another CR
-				newObj, err := GetConfigKubeObject(forObj, o)
-				if err != nil {
-					return nil, err
-				}
-				fn.Logf("configinject newObj : %v\n", newObj.String())
-				found = true
-				resources = append(resources, newObj)
 			}
 		}
 	}
@@ -226,27 +228,24 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
 
-	/*
-		configRefs := []corev1.ObjectReference{}
-		for _, o := range objs {
-			configRefs = append(configRefs, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind})
-		}
+	configRefs := []corev1.ObjectReference{}
+	for _, o := range objs {
+		configRefs = append(configRefs, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind()})
+	}
 
-		// get "parent"| Dependency struct
-		depObj, err := ko.KubeObjectToStruct[nephioreqv1alpha1.Dependency](forObj) // TO BE CHANGED
-		if err != nil {
-			return nil, err
-		}
-		dep, err := depObj.GetGoStruct()
-		if err != nil {
-			return nil, err
-		}
-		dep.Status.injected = configRefs
-		depObj.SetStatus(dep)
+	// get "parent"| Dependency struct
+	depObj, err := ko.NewFromKubeObject[nephioreqv1alpha1.Dependency](forObj)
+	if err != nil {
+		return nil, err
+	}
+	dep, err := depObj.GetGoStruct()
+	if err != nil {
+		return nil, err
+	}
+	dep.Status.Injected = configRefs
+	depObj.SetStatus(dep)
 
-		return &depObj.KubeObject, err
-	*/
-	return forObj, nil
+	return &depObj.KubeObject, err
 }
 
 func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
@@ -260,7 +259,7 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 		return nil, err
 	}
 
-	newCfgObj := configv1alpha1.BuildNetworkConfig(metav1.ObjectMeta{
+	newCfgObj := BuildConfig(metav1.ObjectMeta{
 		Name:      o.GetName(),
 		Namespace: forObj.GetAnnotation(condkptsdk.SpecializerNamespace),
 	},
@@ -270,4 +269,18 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 		configv1alpha1.NetworkStatus{},
 	)
 	return fn.NewFromTypedObject(newCfgObj)
+}
+
+// BuildNetworkConfig returns a Network from a client Object a crName and
+// an Network Spec/Status
+func BuildConfig(meta metav1.ObjectMeta, spec configv1alpha1.NetworkSpec, status configv1alpha1.NetworkStatus) *configv1alpha1.Network {
+	return &configv1alpha1.Network{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ref.nephio.org",
+			Kind:       "Config",
+		},
+		ObjectMeta: meta,
+		Spec:       spec,
+		Status:     status,
+	}
 }
