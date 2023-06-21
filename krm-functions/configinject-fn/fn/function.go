@@ -243,7 +243,9 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		dep.Status.Injected = append(dep.Status.Injected, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind()})
 	}
 
-	depObj.SetStatus(dep)
+	if err := depObj.SetStatus(dep); err != nil {
+		return nil, err
+	}
 
 	return &depObj.KubeObject, err
 }
