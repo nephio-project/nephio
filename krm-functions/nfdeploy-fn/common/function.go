@@ -68,7 +68,7 @@ func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVe
 				}: condkptsdk.ChildInitial,
 				{
 					APIVersion: nephioreqv1alpha1.GroupVersion.Identifier(),
-					Kind:       "Dependency",
+					Kind:       nephioreqv1alpha1.DependencyKind,
 				}: condkptsdk.ChildInitial,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -280,7 +280,6 @@ func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, obj
 		}
 	}
 
-	nfSpec.ConfigRefs = []corev1.ObjectReference{}
 	depObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.DependencyGroupVersionKind))
 	for _, o := range depObjs {
 		if err := f.DependencyUpdate(o); err != nil {

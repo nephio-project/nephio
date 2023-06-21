@@ -240,7 +240,11 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 
 	dep.Status.Injected = []corev1.ObjectReference{}
 	for _, o := range objs {
-		dep.Status.Injected = append(dep.Status.Injected, corev1.ObjectReference{APIVersion: o.GetAPIVersion(), Kind: o.GetKind()})
+		dep.Status.Injected = append(dep.Status.Injected, corev1.ObjectReference{
+			APIVersion: o.GetAPIVersion(),
+			Kind:       o.GetKind(),
+			Name:       o.GetName(),
+			Namespace:  o.GetNamespace()})
 	}
 
 	if err := depObj.SetStatus(dep); err != nil {
