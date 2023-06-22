@@ -9,7 +9,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230608012444-ee7c8cf378e9
 	github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e
-	github.com/nephio-project/api v0.0.0-20230621100151-d203a18b9c53
+	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3

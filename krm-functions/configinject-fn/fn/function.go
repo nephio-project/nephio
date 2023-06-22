@@ -19,15 +19,16 @@ package fn
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	porchconfigv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-	configv1alpha1 "github.com/henderiw-nephio/network/apis/config/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
+	nephiorefv1alpha1 "github.com/nephio-project/api/references/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
@@ -58,8 +59,8 @@ func New(c client.Client) *FnR {
 		},
 		Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 			{
-				APIVersion: "ref.nephio.org",
-				Kind:       "Config",
+				APIVersion: nephiorefv1alpha1.GroupVersion.Identifier(),
+				Kind:       reflect.TypeOf(nephiorefv1alpha1.Config{}).Name(),
 			}: condkptsdk.ChildLocal,
 		},
 		Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
@@ -269,24 +270,22 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 		Name:      o.GetName(),
 		Namespace: forObj.GetAnnotation(condkptsdk.SpecializerNamespace),
 	},
-		configv1alpha1.NetworkSpec{
+		nephiorefv1alpha1.ConfigSpec{
 			Config: runtime.RawExtension{Object: u},
 		},
-		configv1alpha1.NetworkStatus{},
 	)
 	return fn.NewFromTypedObject(newCfgObj)
 }
 
-// BuildNetworkConfig returns a Network from a client Object a crName and
+// BuildConfig returns a Network from a client Object a crName and
 // an Network Spec/Status
-func BuildConfig(meta metav1.ObjectMeta, spec configv1alpha1.NetworkSpec, status configv1alpha1.NetworkStatus) *configv1alpha1.Network {
-	return &configv1alpha1.Network{
+func BuildConfig(meta metav1.ObjectMeta, spec nephiorefv1alpha1.ConfigSpec) *nephiorefv1alpha1.Config {
+	return &nephiorefv1alpha1.Config{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "ref.nephio.org",
+			APIVersion: nephiorefv1alpha1.GroupVersion.Identifier(),
 			Kind:       "Config",
 		},
 		ObjectMeta: meta,
 		Spec:       spec,
-		Status:     status,
 	}
 }
