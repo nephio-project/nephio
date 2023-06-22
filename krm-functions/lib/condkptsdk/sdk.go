@@ -30,6 +30,7 @@ const (
 	SpecializerDebug         = "specializer.nephio.org/debug"
 	SpecializerFor           = "specializer.nephio.org/for"
 	SpecializervlanClaimName = "specializer.nephio.org/vlanClaimName"
+	SpecializerNamespace     = "specializer.nephio.org/namespace"
 )
 
 type KptCondSDK interface {

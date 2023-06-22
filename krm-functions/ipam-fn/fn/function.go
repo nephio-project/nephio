@@ -30,19 +30,32 @@ import (
 
 type FnR struct {
 	ClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
+	sdkConfig   *condkptsdk.Config
+}
+
+func New(c clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]) *FnR {
+	f := &FnR{
+		ClientProxy: c,
+	}
+	f.sdkConfig = &condkptsdk.Config{
+		For: corev1.ObjectReference{
+			APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
+			Kind:       ipamv1alpha1.IPClaimKind,
+		},
+		PopulateOwnResourcesFn: nil,
+		UpdateResourceFn:       f.updateIPClaimResource,
+	}
+	return f
+}
+
+func (f *FnR) GetConfig() condkptsdk.Config {
+	return *f.sdkConfig
 }
 
 func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 	sdk, err := condkptsdk.New(
 		rl,
-		&condkptsdk.Config{
-			For: corev1.ObjectReference{
-				APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
-				Kind:       ipamv1alpha1.IPClaimKind,
-			},
-			PopulateOwnResourcesFn: nil,
-			UpdateResourceFn:       f.updateIPClaimResource,
-		},
+		f.sdkConfig,
 	)
 	if err != nil {
 		rl.Results.ErrorE(err)

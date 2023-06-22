@@ -27,9 +27,7 @@ import (
 const GoldenTestDataPath = "testdata"
 
 func TestGolden(t *testing.T) {
-	r := &FnR{
-		ClientProxy: vlan.NewMock(),
-	}
+	r := New(vlan.NewMock())
 	fnRunner := fn.ResourceListProcessorFunc(r.Run)
 	tst.RunGoldenTests(t, GoldenTestDataPath, fnRunner)
 }

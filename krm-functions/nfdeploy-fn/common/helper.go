@@ -23,6 +23,7 @@ import (
 	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -39,12 +40,14 @@ type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
 	//pkgName             string
 	networkInstance     map[string]nephiodeployv1alpha1.NetworkInstance
 	interfaceConfigsMap map[string]nephiodeployv1alpha1.InterfaceConfig
+	configRefs          []corev1.ObjectReference
 }
 
 func NewFunction[T any, PT PtrIsNFDeployemnt[T]](gvk schema.GroupVersionKind) NfDeployFn[T, PT] {
 	return NfDeployFn[T, PT]{
 		interfaceConfigsMap: make(map[string]nephiodeployv1alpha1.InterfaceConfig),
 		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),
+		configRefs:          []corev1.ObjectReference{},
 		gvk:                 gvk,
 	}
 }
@@ -118,4 +121,8 @@ func (h *NfDeployFn[T, PT]) FillCapacityDetails(spec *nephiodeployv1alpha1.NFDep
 	}
 
 	spec.Capacity = &h.capacity.Spec
+}
+
+func (h *NfDeployFn[T, PT]) AddDependencyRef(ref corev1.ObjectReference) {
+	h.configRefs = append(h.configRefs, ref)
 }

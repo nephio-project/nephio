@@ -111,6 +111,8 @@ func (r *sdk) populate(forOwnerRefNameMap map[string]string, forOwnerRef, objRef
 		if !ok || ownerKindCtx.gvkKind != forGVKKind {
 			// this means the resource was added from a different kind
 			// we don't need to add this to the inventory
+			// with wildcards this is extremely important, otherwise we end up adding everything to the inventory
+			// context
 			if r.debug {
 				fn.Logf("stag1: populate ownkind different owner, ownerRef %v, ownKind: %v ref: %v \n", ownerRef, ownerKindCtx, objRef)
 			}

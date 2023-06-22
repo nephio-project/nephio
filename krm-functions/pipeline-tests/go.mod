@@ -15,7 +15,7 @@ replace (
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0
+	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3
 	github.com/nephio-project/nephio/krm-functions/dnn-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/interface-fn v0.0.0-20230516034137-53f1f1859c10
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-20230516034137-53f1f1859c10
@@ -81,9 +81,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.27.2 // indirect
+	k8s.io/api v0.27.3 // indirect
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
-	k8s.io/apimachinery v0.27.2 // indirect
+	k8s.io/apimachinery v0.27.3 // indirect
 	k8s.io/client-go v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect

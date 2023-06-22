@@ -4,6 +4,7 @@ go 1.20
 
 replace (
 	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
+	github.com/nephio-project/nephio/krm-functions/configinject-fn => ../../krm-functions/configinject-fn
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
@@ -14,12 +15,13 @@ require (
 	code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230504200302-14c7b353e6b6
+	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230608012444-ee7c8cf378e9
 	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230608012444-ee7c8cf378e9
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
-	github.com/henderiw-nephio/network v0.0.0-20230615061333-1031589193d0
-	github.com/nephio-project/api v0.0.0-20230609201130-a549bc37a8c0
+	github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e
+	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3
+	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
@@ -28,8 +30,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/srl-labs/ygotsrl/v22 v22.11.1
 	github.com/stretchr/testify v1.8.2
-	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/api v0.27.3
+	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3

@@ -27,9 +27,7 @@ import (
 const GoldenTestDataPath = "testdata"
 
 func TestGolden(t *testing.T) {
-	r := &FnR{
-		ClientProxy: ipam.NewMock(),
-	}
+	r := New(ipam.NewMock())
 	fnRunner := fn.ResourceListProcessorFunc(r.Run)
 	tst.RunGoldenTests(t, GoldenTestDataPath, fnRunner)
 }
