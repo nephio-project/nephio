@@ -1,0 +1,22 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: Network
+metadata:
+  name: vpc-ran
+spec:
+  topology: nephio
+  routingTables:
+  - name: vpc-ran
+    prefixes:
+    - prefix: 172:2::/32
+    - prefix: 172.2.0.0/16
+    interfaces:
+    - kind: bridgedomain
+      bridgeDomainName: vpc-ran 
+  bridgeDomains: 
+  - name: vpc-ran
+    interfaces:
+    - kind: interface
+      selector:
+        matchExpressions:
+        - {key: nephio.org/cluster-name, operator: Exists}
+      attachmentType: vlan

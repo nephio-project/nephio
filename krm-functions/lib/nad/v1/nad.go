@@ -19,6 +19,7 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
@@ -56,13 +57,19 @@ type Capabilities struct {
 }
 
 type Ipam struct {
-	Type      string      `json:"type,omitempty"`
-	Addresses []Addresses `json:"addresses,omitempty"`
+	Type      string    `json:"type,omitempty"`
+	Addresses []Address `json:"addresses,omitempty"`
+	Routes    []Route   `json:"routes,omitempty"`
 }
 
-type Addresses struct {
+type Address struct {
 	Address string `json:"address,omitempty"`
 	Gateway string `json:"gateway,omitempty"`
+}
+
+type Route struct {
+	Destination string `json:"dst,omitempty"`
+	Gateway     string `json:"gw,omitempty"`
 }
 
 type CniSpecType int64
@@ -133,9 +140,14 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 					Mode: ModeL2,
 					Ipam: Ipam{
 						Type: StaticNadType,
-						Addresses: []Addresses{
+						/*
+						Addresses: []Address{
 							{},
 						},
+						Routes: []Route{
+							{},
+						},
+						*/
 					},
 				},
 			}
@@ -149,9 +161,14 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 					Mode:         ModeBridge,
 					Ipam: Ipam{
 						Type: StaticNadType,
-						Addresses: []Addresses{
+						/*
+						Addresses: []Address{
 							{},
 						},
+						Routes: []Route{
+							{},
+						},
+						*/
 					},
 				},
 				{
@@ -173,9 +190,14 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 					Mode: ModeBridge,
 					Ipam: Ipam{
 						Type: StaticNadType,
-						Addresses: []Addresses{
+						/*
+						Addresses: []Address{
 							{},
 						},
+						Routes: []Route{
+							{},
+						},
+						*/
 					},
 				},
 			}
@@ -191,9 +213,14 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 					Mode: ModeBridge,
 					Ipam: Ipam{
 						Type: StaticNadType,
-						Addresses: []Addresses{
+						/*
+						Addresses: []Address{
 							{},
 						},
+						Routes: []Route{
+							{},
+						},
+						*/
 					},
 				},
 			}
@@ -264,10 +291,10 @@ func (r *NadStruct) GetNadMaster() (string, error) {
 	return "", nil
 }
 
-func (r *NadStruct) GetIpamAddress() ([]Addresses, error) {
+func (r *NadStruct) GetIpamAddress() ([]Address, error) {
 	existingNadConfig, err := r.getNadConfig()
 	if err != nil {
-		return []Addresses{}, err
+		return []Address{}, err
 	}
 	for _, plugin := range existingNadConfig.Plugins {
 		if plugin.Type == TuningType {
@@ -276,7 +303,7 @@ func (r *NadStruct) GetIpamAddress() ([]Addresses, error) {
 			return plugin.Ipam.Addresses, nil
 		}
 	}
-	return []Addresses{}, nil
+	return []Address{}, nil
 }
 
 // SetConfigSpec sets the spec attributes in the kubeobject according the go struct
@@ -341,9 +368,9 @@ func (r *NadStruct) SetNadMaster(nadMaster string) error {
 	}
 }
 
-func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
-	if ipam == nil {
-		return fmt.Errorf("unknown IPAM address")
+func (r *NadStruct) SetIpamAddress(addresses []Address) error {
+	if addresses == nil {
+		return fmt.Errorf("unknown IPAM addresses")
 	} else {
 		nadConfigStruct, err := r.getNadConfig()
 		if err != nil {
@@ -353,7 +380,26 @@ func (r *NadStruct) SetIpamAddress(ipam []Addresses) error {
 			if plugin.Type == TuningType {
 				continue
 			} else {
-				nadConfigStruct.Plugins[i].Ipam.Addresses = ipam
+				nadConfigStruct.Plugins[i].Ipam.Addresses = addresses
+			}
+		}
+		return r.setNadConfig(nadConfigStruct)
+	}
+}
+
+func (r *NadStruct) SetIpamRoutes(routes []Route) error {
+	if routes == nil {
+		return nil
+	} else {
+		nadConfigStruct, err := r.getNadConfig()
+		if err != nil {
+			return err
+		}
+		for i, plugin := range nadConfigStruct.Plugins {
+			if plugin.Type == TuningType {
+				continue
+			} else {
+				nadConfigStruct.Plugins[i].Ipam.Routes = routes
 			}
 		}
 		return r.setNadConfig(nadConfigStruct)

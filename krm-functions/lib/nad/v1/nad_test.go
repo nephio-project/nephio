@@ -358,17 +358,17 @@ func TestGetIpamAddress(t *testing.T) {
 
 	cases := map[string]struct {
 		file string
-		want []Addresses
+		want []Address
 	}{
 		"GetAttachmentTypeNormal": {
 			file: nadTestSriov,
-			want: []Addresses{
+			want: []Address{
 				{Address: "10.0.0.3/24", Gateway: "10.0.0.1"},
 			},
 		},
 		"GetAttachmentTypeEmpty": {
 			file: nadTestEmpty,
-			want: []Addresses{{}},
+			want: nil,
 		},
 	}
 
@@ -606,12 +606,12 @@ func TestSetNadMaster(t *testing.T) {
 func TestSetNadAddress(t *testing.T) {
 	cases := map[string]struct {
 		file        string
-		value       []Addresses
+		value       []Address
 		errExpected bool
 	}{
 		"SetAttachmentTypeNormal": {
 			file: nadTestSriov,
-			value: []Addresses{
+			value: []Address{
 				{Address: "10.0.0.3/24", Gateway: "10.0.0.1"},
 			},
 			errExpected: false,

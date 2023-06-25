@@ -31,6 +31,7 @@ import (
 	nadlibv1 "github.com/nephio-project/nephio/krm-functions/lib/nad/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
+	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -42,6 +43,7 @@ type nadFn struct {
 	workloadCluster *infrav1alpha1.WorkloadCluster
 	forName         string
 	forNamespace    string
+	networkObjs     []infrav1alpha1.Network
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -71,6 +73,10 @@ func Run(rl *fn.ResourceList) (bool, error) {
 					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
 					Kind:       nephiodeployv1alpha1.AMFDeploymentKind,
 				}: myFn.DeploymentCallbackFn,
+				{
+					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
+					Kind:       infrav1alpha1.NetworkKind,
+				}: myFn.NetworkCallbackFn,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
 					Kind:       ipamv1alpha1.IPClaimKind,
@@ -120,6 +126,16 @@ func (f *nadFn) DeploymentCallbackFn(o *fn.KubeObject) error {
 	return nil
 }
 
+func (f *nadFn) NetworkCallbackFn(o *fn.KubeObject) error {
+	networkObj, err := ko.KubeObjectToStruct[infrav1alpha1.Network](o)
+	if err != nil {
+		return err
+	}
+	f.networkObjs = append(f.networkObjs, *networkObj)
+	fn.Logf("network callback: kind: %s, name: %s, namespace: %s\n", o.GetKind(), o.GetName(), o.GetNamespace())
+	return nil
+}
+
 func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
 	if f.workloadCluster == nil {
 		// no WorkloadCluster resource in the package
@@ -138,7 +154,7 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
-	fn.Logf("nad updateResourceFn: ifObj: %d, ipClaimObj: %d, vlanClaimObj: %d\n", len(interfaceObjs), len(ipClaimObjs), len(vlanClaimObjs))
+	fn.Logf("nad updateResourceFn: ifObj: %d, ipClaimObj: %d, vlanClaimObj: %d, networkObjs: %d\n", len(interfaceObjs), len(ipClaimObjs), len(vlanClaimObjs), len(f.networkObjs))
 	// verify all needed objects exist
 	if interfaceObjs.Len() == 0 {
 		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
@@ -203,7 +219,8 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 			}
 		}
 
-		var nadAddresses []nadlibv1.Addresses
+		var nadAddresses []nadlibv1.Address
+		var nadRoutes []nadlibv1.Route
 		for _, ipClaim := range ipClaimObjs {
 			claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipClaim)
 			if err != nil {
@@ -222,17 +239,51 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 			if ipclaimGoStruct.Status.Gateway != nil {
 				gateway = *ipclaimGoStruct.Status.Gateway
 			}
-			if !contains(nadAddresses, address) {
-				nadAddresses = append(nadAddresses, nadlibv1.Addresses{
+			if !containsAddress(nadAddresses, address) {
+				nadAddresses = append(nadAddresses, nadlibv1.Address{
 					Address: address,
 					Gateway: gateway,
 				})
+			}
+
+			if address != "" && gateway != "" {
+				for _, networkObj := range f.networkObjs {
+					for _, rt := range networkObj.Spec.RoutingTables {
+						if rt.Name == ipclaimGoStruct.Spec.NetworkInstance.Name {
+							for _, prefix := range rt.Prefixes {
+								if prefix.GetPrefixKind() == ipamv1alpha1.PrefixKindNetwork {
+									pi, err := iputil.New(prefix.Prefix)
+									if err != nil {
+										return nil, err
+									}
+									pia, err := iputil.New(address)
+									if err != nil {
+										return nil, err
+									}
+									if pi.Prefix.Contains(pia.Addr()) {
+										if !containsDestination(nadRoutes, prefix.Prefix) {
+											nadRoutes = append(nadRoutes, nadlibv1.Route{Destination: prefix.Prefix, Gateway: gateway})
+										}
+										
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		sort.Slice(nadAddresses, func(i, j int) bool {
 			return nadAddresses[i].Address < nadAddresses[j].Address
 		})
 		err = nad.SetIpamAddress(nadAddresses)
+		if err != nil {
+			return nil, err
+		}
+		sort.Slice(nadRoutes, func(i, j int) bool {
+			return nadRoutes[i].Destination < nadRoutes[j].Destination
+		})
+		err = nad.SetIpamRoutes(nadRoutes)
 		if err != nil {
 			return nil, err
 		}
@@ -258,9 +309,18 @@ func (f *nadFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool {
 	return false
 }
 
-func contains(s []nadlibv1.Addresses, e string) bool {
+func containsAddress(s []nadlibv1.Address, e string) bool {
 	for _, a := range s {
 		if a.Address == e {
+			return true
+		}
+	}
+	return false
+}
+
+func containsDestination(s []nadlibv1.Route, e string) bool {
+	for _, a := range s {
+		if a.Destination == e {
 			return true
 		}
 	}
