@@ -114,8 +114,8 @@ github.com/hansthienpondt/nipam v0.0.5/go.mod h1:dJI5FdzV6iaQyaOH4htGqJNs6wGieJe
 github.com/hashicorp/go-version v1.5.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/go-version v1.6.0 h1:feTTfFNnjP967rlCxM/I9g701jU+RN74YKx2mOkIeek=
 github.com/hashicorp/go-version v1.6.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e h1:hh6dILg5vH8lhNg2jJk9ok3fnfChrvKRdhfy3tnZkdg=
-github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e/go.mod h1:0UZ99qGMJxitNGUyNbz4Lo/BH3gYfRh8j4JZGa8ywwo=
+github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e h1:/1ot/S2PsOCPXCgKMmsv0n0mniZ+VkdSgZK7nlPmZRg=
+github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e/go.mod h1:0UZ99qGMJxitNGUyNbz4Lo/BH3gYfRh8j4JZGa8ywwo=
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=
 github.com/imdario/mergo v0.3.16/go.mod h1:WBLT9ZmE3lPoWsEzCh9LPo3TiwVN+ZKEjmz+hD27ysY=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=

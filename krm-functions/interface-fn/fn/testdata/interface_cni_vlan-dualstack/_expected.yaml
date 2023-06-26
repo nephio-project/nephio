@@ -28,6 +28,7 @@ items:
       matchLabels:
         nephio.org/address-family: ipv4
         nephio.org/cluster-name: cluster01
+        nephio.org/network-name: n3
     networkInstance:
       name: vpc-ran
   status: {}
@@ -45,6 +46,7 @@ items:
       matchLabels:
         nephio.org/address-family: ipv6
         nephio.org/cluster-name: cluster01
+        nephio.org/network-name: n3
     networkInstance:
       name: vpc-ran
   status: {}
@@ -89,6 +91,7 @@ items:
   metadata:
     name: n3
     annotations:
+      nephio.org/network-name: n3
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
   spec:

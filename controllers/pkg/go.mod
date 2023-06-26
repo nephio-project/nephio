@@ -19,7 +19,7 @@ require (
 	github.com/GoogleContainerTools/kpt/porch/controllers v0.0.0-20230608012444-ee7c8cf378e9
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
-	github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e
+	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e
 	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000

@@ -3,6 +3,7 @@ kind: Interface
 metadata:
   name: n3
   annotations:
+    nephio.org/network-name: n3
     config.kubernetes.io/local-config: "true"
     specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
 spec:

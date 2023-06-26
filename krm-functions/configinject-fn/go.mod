@@ -8,7 +8,6 @@ require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/GoogleContainerTools/kpt/porch/api v0.0.0-20230608012444-ee7c8cf378e9
-	github.com/henderiw-nephio/network v0.0.0-20230615112901-1004ecbf391e
 	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.27.3
@@ -33,6 +32,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
+	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kentik/patricia v1.2.0 // indirect
@@ -43,7 +43,10 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/common v0.44.0 // indirect
+	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect

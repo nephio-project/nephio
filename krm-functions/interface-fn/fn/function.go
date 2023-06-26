@@ -130,6 +130,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	}
 
 	afs := getAddressFamilies(itfce.Spec.IpFamilyPolicy)
+	purpose := o.GetAnnotation(resourcev1alpha1.NephioNetworkNameKey)
 
 	// When the CNIType is not set this is a loopback interface
 	if itfce.Spec.CNIType != "" {
@@ -142,7 +143,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 				Name:        fmt.Sprintf("%s-%s-%s", getForName(o.GetAnnotations()), o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
-			obj, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af)
+			obj, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindNetwork, af, purpose)
 			if err != nil {
 				return nil, err
 			}
@@ -179,7 +180,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 				Name:        fmt.Sprintf("%s-%s-%s", getForName(o.GetAnnotations()), o.GetName(), string(af)),
 				Annotations: getAnnotations(o.GetAnnotations()),
 			}
-			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af)
+			o, err := f.getIPClaim(meta, *itfce.Spec.NetworkInstance, ipamv1alpha1.PrefixKindLoopback, af, purpose)
 			if err != nil {
 				return nil, err
 			}
@@ -251,7 +252,15 @@ func (f *itfceFn) getVLANClaim(meta metav1.ObjectMeta) (*fn.KubeObject, error) {
 	return fn.NewFromTypedObject(claim)
 }
 
-func (f *itfceFn) getIPClaim(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af nephioreqv1alpha1.IPFamily) (*fn.KubeObject, error) {
+func (f *itfceFn) getIPClaim(meta metav1.ObjectMeta, ni corev1.ObjectReference, kind ipamv1alpha1.PrefixKind, af nephioreqv1alpha1.IPFamily, purpose string) (*fn.KubeObject, error) {
+	matchLabels := map[string]string{
+		resourcev1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
+		resourcev1alpha1.NephioAddressFamilyKey: string(af),
+	}
+	if purpose != "" {
+		matchLabels[resourcev1alpha1.NephioNetworkNameKey] = purpose
+	}
+
 	claim := ipamv1alpha1.BuildIPClaim(
 		meta,
 		ipamv1alpha1.IPClaimSpec{
@@ -259,10 +268,7 @@ func (f *itfceFn) getIPClaim(meta metav1.ObjectMeta, ni corev1.ObjectReference, 
 			NetworkInstance: ni,
 			ClaimLabels: resourcev1alpha1.ClaimLabels{
 				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						resourcev1alpha1.NephioClusterNameKey:   f.workloadCluster.Spec.ClusterName,
-						resourcev1alpha1.NephioAddressFamilyKey: string(af),
-					},
+					MatchLabels: matchLabels,
 				},
 			},
 		},
