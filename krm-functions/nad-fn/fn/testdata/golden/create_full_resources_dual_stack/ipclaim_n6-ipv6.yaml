@@ -12,5 +12,5 @@ spec:
   networkInstance:
     name: vpc-internet
 status:
-  prefix: 4001:db8:abcd:0014::0/64
-  gateway: 4001:db8::1
+  prefix: 172:0:0:1::/64
+  gateway: 172:0:0:1::1

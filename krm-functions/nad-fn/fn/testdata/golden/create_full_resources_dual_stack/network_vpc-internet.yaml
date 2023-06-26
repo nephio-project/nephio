@@ -1,0 +1,28 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: Network
+metadata:
+  name: vpc-internet
+spec:
+  topology: nephio
+  routingTables:
+  - name: vpc-internet
+    prefixes:
+    - prefix: 172::/32
+    - prefix: 172.0.0.0/16
+    - prefix: 1000::/32
+      labels:
+        nephio.org/prefix-kind: pool
+    - prefix: 10.0.0.0/8
+      labels:
+        nephio.org/prefix-kind: pool
+    interfaces:
+    - kind: bridgedomain
+      bridgeDomainName: vpc-internet 
+  bridgeDomains: 
+  - name: vpc-internet
+    interfaces:
+    - kind: interface
+      selector:
+        matchExpressions:
+        - {key: nephio.org/cluster-name, operator: Exists}
+      attachmentType: vlan

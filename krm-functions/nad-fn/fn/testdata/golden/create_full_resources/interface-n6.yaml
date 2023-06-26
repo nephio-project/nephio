@@ -7,6 +7,6 @@ metadata:
 spec:
   networkInstance:
     name: vpc-internet
-  cniType: sriov
+  cniType: ipvlan
   attachmentType: vlan
 status:

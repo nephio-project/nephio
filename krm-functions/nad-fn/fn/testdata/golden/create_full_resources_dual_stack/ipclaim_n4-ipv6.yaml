@@ -12,5 +12,5 @@ spec:
   networkInstance:
     name: vpc-internal
 status:
-  prefix: 3001:db8:abcd:0013::0/64
-  gateway: 3001:db8::1
+  prefix: 172:1:0:1::/64
+  gateway: 172:1:0:1::1

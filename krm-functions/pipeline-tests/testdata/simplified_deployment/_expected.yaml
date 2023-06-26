@@ -2,6 +2,88 @@ apiVersion: config.kubernetes.io/v1
 kind: ResourceList
 items:
 - apiVersion: infra.nephio.org/v1alpha1
+  kind: Network
+  metadata:
+    name: vpc-internal
+  spec:
+    topology: nephio
+    routingTables:
+    - name: vpc-internal
+      prefixes:
+      - prefix: 172:1::/32
+      - prefix: 172.1.0.0/16
+      interfaces:
+      - kind: bridgedomain
+        bridgeDomainName: vpc-internal
+    bridgeDomains:
+    - name: vpc-internal
+      interfaces:
+      - kind: interface
+        selector:
+          matchExpressions:
+          - {key: nephio.org/cluster-name, operator: Exists}
+        attachmentType: vlan
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: Network
+  metadata:
+    name: vpc-internet
+  spec:
+    topology: nephio
+    routingTables:
+    - name: vpc-internet
+      prefixes:
+      - prefix: 172::/32
+      - prefix: 172.0.0.0/16
+      - prefix: 1000::/32
+        labels:
+          nephio.org/prefix-kind: pool
+      - prefix: 10.0.0.0/8
+        labels:
+          nephio.org/prefix-kind: pool
+      interfaces:
+      - kind: bridgedomain
+        bridgeDomainName: vpc-internet
+    bridgeDomains:
+    - name: vpc-internet
+      interfaces:
+      - kind: interface
+        selector:
+          matchExpressions:
+          - {key: nephio.org/cluster-name, operator: Exists}
+        attachmentType: vlan
+- apiVersion: infra.nephio.org/v1alpha1
+  kind: Network
+  metadata:
+    name: vpc-ran
+  spec:
+    topology: nephio
+    routingTables:
+    - name: vpc-ran
+      prefixes:
+      - prefix: 172:2::/32
+        labels:
+          nephio.org/purpose: n2
+      - prefix: 172.2.0.0/16
+        labels:
+          nephio.org/purpose: n2
+      - prefix: 172:3::/32
+        labels:
+          nephio.org/purpose: n3
+      - prefix: 172.3.0.0/16
+        labels:
+          nephio.org/purpose: n3
+      interfaces:
+      - kind: bridgedomain
+        bridgeDomainName: vpc-ran
+    bridgeDomains:
+    - name: vpc-ran
+      interfaces:
+      - kind: interface
+        selector:
+          matchExpressions:
+          - {key: nephio.org/cluster-name, operator: Exists}
+        attachmentType: vlan
+- apiVersion: infra.nephio.org/v1alpha1
   kind: WorkloadCluster
   metadata:
     name: cluster01
@@ -99,7 +181,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
-    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.10","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}],"routes":[{"dst":"172.2.0.0/16","gw":"10.0.0.1"},{"dst":"172.3.0.0/16","gw":"10.0.0.1"}]}}]}'
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
@@ -108,7 +190,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
-    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.10","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}],"routes":[{"dst":"172.1.0.0/16","gw":"10.0.0.1"}]}}]}'
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
@@ -117,7 +199,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
-    config: '{"cniVersion":"0.3.1","vlan":10,"plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}}]}'
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.10","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}],"routes":[{"dst":"10.0.0.0/8","gw":"10.0.0.1"},{"dst":"172.0.0.0/16","gw":"10.0.0.1"}]}}]}'
 - apiVersion: kpt.dev/v1
   kind: Kptfile
   # comment A

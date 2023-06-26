@@ -12,5 +12,5 @@ spec:
   networkInstance:
     name: vpc-ran
 status:
-  prefix: 2001:db8:abcd:0012::0/64
-  gateway: 2001:db8::1
+  prefix: 172:2:0:1::/64
+  gateway: 172:2:0:1::1
