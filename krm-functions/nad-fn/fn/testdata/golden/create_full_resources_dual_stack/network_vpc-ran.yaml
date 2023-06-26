@@ -8,7 +8,17 @@ spec:
   - name: vpc-ran
     prefixes:
     - prefix: 172:2::/32
+      labels:
+        nephio.org/purpose: n2
     - prefix: 172.2.0.0/16
+      labels:
+        nephio.org/purpose: n2
+    - prefix: 172:3::/32
+      labels:
+        nephio.org/purpose: n3
+    - prefix: 172.3.0.0/16
+      labels:
+        nephio.org/purpose: n3
     interfaces:
     - kind: bridgedomain
       bridgeDomainName: vpc-ran 

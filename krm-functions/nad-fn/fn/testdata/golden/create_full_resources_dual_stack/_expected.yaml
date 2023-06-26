@@ -61,7 +61,17 @@ items:
     - name: vpc-ran
       prefixes:
       - prefix: 172:2::/32
+        labels:
+          nephio.org/purpose: n2
       - prefix: 172.2.0.0/16
+        labels:
+          nephio.org/purpose: n2
+      - prefix: 172:3::/32
+        labels:
+          nephio.org/purpose: n3
+      - prefix: 172.3.0.0/16
+        labels:
+          nephio.org/purpose: n3
       interfaces:
       - kind: bridgedomain
         bridgeDomainName: vpc-ran
@@ -190,7 +200,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
-    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.100","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"172.2.0.254/24","gateway":"172.2.0.1"},{"address":"172:2:0:1::/64","gateway":"172:2:0:1::1"}],"routes":[{"dst":"172.2.0.0/16","gw":"172.2.0.1"},{"dst":"172:2::/32","gw":"172:2:0:1::1"}]}}]}'
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.100","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"172.2.0.254/24","gateway":"172.2.0.1"},{"address":"172:2:0:1::/64","gateway":"172:2:0:1::1"}],"routes":[{"dst":"172.2.0.0/16","gw":"172.2.0.1"},{"dst":"172.3.0.0/16","gw":"172.2.0.1"},{"dst":"172:2::/32","gw":"172:2:0:1::1"},{"dst":"172:3::/32","gw":"172:2:0:1::1"}]}}]}'
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
@@ -208,7 +218,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n6
   spec:
-    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.300","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"172.0.0.254/24","gateway":"172.0.0.1"},{"address":"172:0:0:1::/64","gateway":"172:0:0:1::1"}],"routes":[{"dst":"172.0.0.0/16","gw":"172.0.0.1"},{"dst":"172::/32","gw":"172:0:0:1::1"}]}}]}'
+    config: '{"cniVersion":"0.3.1","plugins":[{"type":"sriov","capabilities":{"ips":true},"master":"eth1.300","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"172.0.0.254/24","gateway":"172.0.0.1"},{"address":"172:0:0:1::/64","gateway":"172:0:0:1::1"}],"routes":[{"dst":"10.0.0.0/8","gw":"172.0.0.1"},{"dst":"1000::/32","gw":"172:0:0:1::1"},{"dst":"172.0.0.0/16","gw":"172.0.0.1"},{"dst":"172::/32","gw":"172:0:0:1::1"}]}}]}'
 - apiVersion: kpt.dev/v1
   kind: Kptfile
   # comment A

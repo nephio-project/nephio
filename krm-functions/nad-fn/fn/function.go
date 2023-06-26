@@ -270,19 +270,17 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 					for _, rt := range networkObj.Spec.RoutingTables {
 						if rt.Name == ipclaimGoStruct.Spec.NetworkInstance.Name {
 							for _, prefix := range rt.Prefixes {
-								if prefix.GetPrefixKind() == ipamv1alpha1.PrefixKindNetwork {
-									pi, err := iputil.New(prefix.Prefix)
-									if err != nil {
-										return nil, err
-									}
-									pia, err := iputil.New(address)
-									if err != nil {
-										return nil, err
-									}
-									if pi.Prefix.Contains(pia.Addr()) {
-										if !containsDestination(nadRoutes, prefix.Prefix) {
-											nadRoutes = append(nadRoutes, nadlibv1.Route{Destination: prefix.Prefix, Gateway: gateway})
-										}
+								pi, err := iputil.New(prefix.Prefix)
+								if err != nil {
+									return nil, err
+								}
+								pia, err := iputil.New(address)
+								if err != nil {
+									return nil, err
+								}
+								if pi.GetAddressFamily().String() == pia.GetAddressFamily().String() {
+									if !containsDestination(nadRoutes, prefix.Prefix) {
+										nadRoutes = append(nadRoutes, nadlibv1.Route{Destination: prefix.Prefix, Gateway: gateway})
 									}
 								}
 							}

@@ -1,29 +1,25 @@
 apiVersion: infra.nephio.org/v1alpha1
 kind: Network
 metadata:
-  name: vpc-ran
+  name: vpc-internet
 spec:
   topology: nephio
   routingTables:
-  - name: vpc-ran
+  - name: vpc-internet
     prefixes:
-    - prefix: 172:2::/32
+    - prefix: 172::/32
+    - prefix: 172.0.0.0/16
+    - prefix: 1000::/32
       labels:
-        nephio.org/purpose: n2
-    - prefix: 172.2.0.0/16
+        nephio.org/prefix-kind: pool
+    - prefix: 10.0.0.0/8
       labels:
-        nephio.org/purpose: n2
-    - prefix: 172:3::/32
-      labels:
-        nephio.org/purpose: n3
-    - prefix: 172.3.0.0/16
-      labels:
-        nephio.org/purpose: n3
+        nephio.org/prefix-kind: pool
     interfaces:
     - kind: bridgedomain
-      bridgeDomainName: vpc-ran 
+      bridgeDomainName: vpc-internet 
   bridgeDomains: 
-  - name: vpc-ran
+  - name: vpc-internet
     interfaces:
     - kind: interface
       selector:
