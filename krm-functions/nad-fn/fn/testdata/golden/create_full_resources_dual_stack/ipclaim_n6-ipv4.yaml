@@ -12,5 +12,5 @@ spec:
   networkInstance:
     name: vpc-internet
 status:
-  prefix: 16.0.0.2/24
-  gateway: 16.0.0.1
+  prefix: 172.0.0.254/24
+  gateway: 172.0.0.1

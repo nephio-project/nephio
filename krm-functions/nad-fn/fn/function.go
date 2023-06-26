@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -194,6 +195,12 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 	if ipClaimObjs.Len() == 0 && vlanClaimObjs.Len() != 0 {
 		nad.CniSpecType = nadlibv1.VlanClaimOnly
 	}
+
+	vlanID := 0
+	for _, vlanClaim := range vlanClaimObjs {
+		vlanID, _, _ = vlanClaim.NestedInt([]string{"status", "vlanID"}...)
+	}
+
 	if nad.CniSpecType != nadlibv1.VlanClaimOnly {
 		for _, itfce := range interfaceObjs {
 			i, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](itfce)
@@ -209,13 +216,25 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 			if !f.IsCNITypePresent(itfceGoStruct.Spec.CNIType) {
 				return nil, fmt.Errorf("cniType not supported in workload cluster; workload cluster CNI(s): %v, interface cniType requested: %s", f.workloadCluster.Spec.CNIs, itfceGoStruct.Spec.CNIType)
 			}
+			cniType := itfceGoStruct.Spec.CNIType
 
-			if err := nad.SetCNIType(string(itfceGoStruct.Spec.CNIType)); err != nil {
+			if err := nad.SetCNIType(string(cniType)); err != nil {
 				return nil, err
 			}
-			err = nad.SetNadMaster(*f.workloadCluster.Spec.MasterInterface) // since we validated the workload cluster before it is safe to do this
-			if err != nil {
-				return nil, err
+			masterInterface := *f.workloadCluster.Spec.MasterInterface // since we validated the workload cluster before it is safe to do this
+			if cniType != "vlan" && vlanID != 0 {
+				masterInterface = fmt.Sprintf("%s.%s", masterInterface, strconv.Itoa(vlanID))
+			}
+			if cniType != "bridge" {
+				err = nad.SetNadMaster(masterInterface)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				err = nad.SetBridgeName(vlanID)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 
@@ -264,7 +283,6 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 										if !containsDestination(nadRoutes, prefix.Prefix) {
 											nadRoutes = append(nadRoutes, nadlibv1.Route{Destination: prefix.Prefix, Gateway: gateway})
 										}
-										
 									}
 								}
 							}
@@ -284,14 +302,6 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 			return nadRoutes[i].Destination < nadRoutes[j].Destination
 		})
 		err = nad.SetIpamRoutes(nadRoutes)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, vlanClaim := range vlanClaimObjs {
-		vlanID, _, _ := vlanClaim.NestedInt([]string{"status", "vlanID"}...)
-		err = nad.SetVlan(vlanID)
 		if err != nil {
 			return nil, err
 		}

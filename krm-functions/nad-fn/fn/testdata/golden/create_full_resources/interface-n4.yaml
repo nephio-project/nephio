@@ -7,6 +7,6 @@ metadata:
 spec:
   networkInstance:
     name: vpc-internal
-  cniType: macvlan
+  cniType: ipvlan
   attachmentType: vlan
 status:
