@@ -302,7 +302,7 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 	}
 
 	newCfgObj := BuildConfig(metav1.ObjectMeta{
-		Name:      fmt.Sprintf("%s-%s",getForName(forObj.GetAnnotations()), o.GetName()),
+		Name:      fmt.Sprintf("%s-%s", getForName(forObj.GetAnnotations()), o.GetName()),
 		Namespace: forObj.GetAnnotation(condkptsdk.SpecializerNamespace),
 	},
 		nephiorefv1alpha1.ConfigSpec{
