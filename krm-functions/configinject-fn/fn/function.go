@@ -161,9 +161,13 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 			fn.Logf("configinject repo %s\n", pr.Spec.RepositoryName)
 
 			prName := fmt.Sprintf("%s-%s", pr.Spec.RepositoryName, pr.Spec.PackageName)
+			fn.Logf("configinject pr name %s\n", prName)
 
 			if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
 				if strings.HasPrefix(pr.Spec.Revision, revisionPrefix) {
+
+					fn.Logf("configinject revision %s\n", pr.Spec.Revision)
+
 					newRev, err := getRevisionNbr(pr.Spec.Revision)
 					if err != nil {
 						return nil, err
@@ -188,7 +192,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	}
 
 	for prName, pr := range prmap {
-		if pr != nil {
+		if pr == nil {
 			msg := fmt.Sprintf("configinject dependency not ready: no published package %s\n", prName)
 			fn.Logf("%s\n", msg)
 			// if 1 package is not ready we fail fast
