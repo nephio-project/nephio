@@ -139,84 +139,118 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	}
 
 	resources := fn.KubeObjects{}
-	// walk through all the package revisions and check if the dependent resources are ready
+	// walk through all the package revisions and build a map of the pr(s) that
+	// have the packagename and are in a repo that has deployment true
+	// The map will contain the latest published revision of the pr, if no pr
+	// is published it will have a reference to this pr
 	// we assume there needs to be 1 dependency that resolves
-	found := false
+	prmap := map[string]porchv1alpha1.PackageRevision{}
 	for _, pr := range prl.Items {
 		repo, ok := repomap[pr.Spec.RepositoryName]
 		if !ok {
 			return nil, fmt.Errorf("configinject repo name not found: %s", pr.Spec.RepositoryName)
 		}
-		// only analyse the packages with the packageName contained in the dependency requirement resource
-		// and only look at repo(s) where the deployment is true
-		// TBD: do we need to check the latest revision ?
+		// only analyse the packages with
+		// - the packageName contained in the dependency requirement resource
+		// - repo has deployment true
+		// - package is published
 		if pr.Spec.PackageName == depPackageName && repo.Spec.Deployment {
 			fn.Logf("configinject repo %s\n", pr.Spec.RepositoryName)
-			// get the package resources of the revision
-			prr := &porchv1alpha1.PackageRevisionResources{}
-			if err := f.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: pr.Name}, prr); err != nil {
-				return nil, err
-			}
-			// get the resource list from the package
-			rl, err := kptrl.GetResourceList(prr.Spec.Resources)
-			if err != nil {
-				return nil, err
-			}
-			// get the kptfile from the resourcelist to check condition status
-			kfko := rl.Items.GetRootKptfile()
-			if kfko == nil {
-				return nil, fmt.Errorf("mandatory Kptfile is missing from the package %s, repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
-			}
-			kf := kptfilelibv1.KptFile{Kptfile: kfko}
 
-			// get the dependency objects in the package and check its status
-			gvk := schema.GroupVersionKind{
-				Group:   nephiodeployv1alpha1.GroupVersion.Group,
-				Version: nephiodeployv1alpha1.GroupVersion.Version,
-				Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
-			}
-			for _, ref := range dep.Spec.Injectors {
-				/*
-					for _, o := range rl.Items {
-						fn.Logf("configinject resource apiVersion: %s kind: %s\n", o.GetAPIVersion(), o.GetKind())
-					}
-				*/
-				fn.Logf("configinject dependency gvk: %s\n", gvk.String())
+			prName := fmt.Sprintf("%s-%s", pr.Spec.RepositoryName, pr.Spec.PackageName)
 
-				depObjs := rl.Items.Where(fn.IsGroupVersionKind(ref.GroupVersionKind()))
-				if len(depObjs) == 0 {
-					fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
-					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
-				}
-				for _, o := range depObjs {
-					ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
-						APIVersion: o.GetAPIVersion(),
-						Kind:       o.GetKind(),
-						Name:       o.GetName(),
-					})
-					c := kf.GetCondition(ct)
-					if c == nil {
-						fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a condition for %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
-						return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+			latestPR, ok := prmap[prName]
+			if !ok {
+				// we initialize hte prmap independent of the status
+				prmap[prName] = pr
+			} else {
+				// only update if the PR is published
+				if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
+					if !porchv1alpha1.LifecycleIsPublished(latestPR.Spec.Lifecycle) {
+						// if latest entry in the prmap is not publish but the new pr is published we update the map
+						prmap[prName] = pr
+					} else {
+						// both the latest pr and the new pr are published
+						// update the map with the latest pr
+						// if the revision of the new pr is better than the one of the latest pr in the map
+						if pr.Spec.Revision > latestPR.Spec.Revision {
+							prmap[prName] = pr
+						}
 					}
-					if c.Status != kptv1.ConditionTrue {
-						// we fail fast if the condition is not true
-						fn.Logf("configinject dependency not ready: the package %s in repo %s has a condition which is False for: %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
-						return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
-					}
-					// encapsulates the resource in another CR
-					newObj, err := GetConfigKubeObject(forObj, o)
-					if err != nil {
-						return nil, err
-					}
-					fn.Logf("configinject newObj : %v\n", newObj.String())
-					found = true
-					resources = append(resources, newObj)
 				}
 			}
 		}
 	}
-	if !found {
+
+	for _, pr := range prmap {
+		if !porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
+			msg := fmt.Sprintf("configinject dependency not ready: the package %s in repo %s is not published\n", pr.Spec.PackageName, pr.Spec.RepositoryName)
+			fn.Logf("%s\n", msg)
+			// if 1 package is not ready we fail fast
+			return nil, fmt.Errorf("%s", msg)
+		}
+	}
+
+	// at this stage all packages are published
+	for _, pr := range prmap {
+		// get the package resources of the revision
+		prr := &porchv1alpha1.PackageRevisionResources{}
+		if err := f.Get(ctx, types.NamespacedName{Namespace: pr.Namespace, Name: pr.Name}, prr); err != nil {
+			return nil, err
+		}
+		// get the resource list from the package
+		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
+		if err != nil {
+			return nil, err
+		}
+		// get the kptfile from the resourcelist to check condition status
+		kfko := rl.Items.GetRootKptfile()
+		if kfko == nil {
+			return nil, fmt.Errorf("mandatory Kptfile is missing from the package %s, repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
+		}
+		kf := kptfilelibv1.KptFile{Kptfile: kfko}
+
+		// get the dependency objects in the package and check its status
+		gvk := schema.GroupVersionKind{
+			Group:   nephiodeployv1alpha1.GroupVersion.Group,
+			Version: nephiodeployv1alpha1.GroupVersion.Version,
+			Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
+		}
+		for _, ref := range dep.Spec.Injectors {
+			fn.Logf("configinject dependency gvk: %s\n", gvk.String())
+
+			depObjs := rl.Items.Where(fn.IsGroupVersionKind(ref.GroupVersionKind()))
+			if len(depObjs) == 0 {
+				fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
+				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
+			}
+			for _, o := range depObjs {
+				ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
+					APIVersion: o.GetAPIVersion(),
+					Kind:       o.GetKind(),
+					Name:       o.GetName(),
+				})
+				c := kf.GetCondition(ct)
+				if c == nil {
+					fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a condition for %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a condition for %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ct)
+				}
+				if c.Status != kptv1.ConditionTrue {
+					// we fail fast if the condition is not true
+					fn.Logf("configinject dependency not ready: the package %s in repo %s has a condition which is False for: %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
+					return nil, fmt.Errorf("dependency not ready: the package %s in repo %s has a condition which is False for: %s", pr.Spec.PackageName, pr.Spec.RepositoryName, c.Type)
+				}
+				// encapsulates the resource in another CR
+				newObj, err := GetConfigKubeObject(forObj, o)
+				if err != nil {
+					return nil, err
+				}
+				fn.Logf("configinject newObj : %v\n", newObj.String())
+				resources = append(resources, newObj)
+			}
+		}
+	}
+	if len(prmap) == 0 {
 		fn.Logf("configinject dependency not ready: expecting at least 1 package %s with the corresponding reference\n", depPackageName)
 		return nil, fmt.Errorf("dependency not ready: expecting at least 1 package %s with the corresponding reference", depPackageName)
 	}
