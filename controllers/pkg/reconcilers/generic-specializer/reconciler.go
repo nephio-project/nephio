@@ -245,9 +245,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				if o.GetAPIVersion() == own.APIVersion && o.GetKind() == own.Kind {
 					if o.GetAnnotation(kioutil.PathAnnotation) == "" {
 						// this is a new resource
-						filename := fmt.Sprintf("%s_%s", strings.ToLower(own.Kind), o.GetName())
+						filename := fmt.Sprintf("%s_%s.yaml", strings.ToLower(own.Kind), o.GetName())
 						if o.GetNamespace() != "" {
-							filename = fmt.Sprintf("%s/%s", o.GetNamespace(), filename)
+							filename = fmt.Sprintf("%s/%s.yaml", o.GetNamespace(), filename)
 						}
 						prr.Spec.Resources[filename] = o.String()
 					} else {
