@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
@@ -301,7 +302,7 @@ func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
 	}
 
 	newCfgObj := BuildConfig(metav1.ObjectMeta{
-		Name:      o.GetName(),
+		Name:      fmt.Sprintf("%s-%s",getForName(forObj.GetAnnotations()), o.GetName()),
 		Namespace: forObj.GetAnnotation(condkptsdk.SpecializerNamespace),
 	},
 		nephiorefv1alpha1.ConfigSpec{
@@ -322,4 +323,15 @@ func BuildConfig(meta metav1.ObjectMeta, spec nephiorefv1alpha1.ConfigSpec) *nep
 		ObjectMeta: meta,
 		Spec:       spec,
 	}
+}
+
+func getForName(annotations map[string]string) string {
+	// forName is the resource that is the root resource of the specialization
+	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	forFullName := annotations[condkptsdk.SpecializerOwner]
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		forFullName = owner
+	}
+	split := strings.Split(forFullName, ".")
+	return split[len(split)-1]
 }
