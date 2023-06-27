@@ -43,6 +43,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const revisionPrefix = "v"
+
 type FnR struct {
 	client.Client
 	workloadCluster *infrav1alpha1.WorkloadCluster
@@ -161,24 +163,25 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 			prName := fmt.Sprintf("%s-%s", pr.Spec.RepositoryName, pr.Spec.PackageName)
 
 			if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-				if latestPR, ok := prmap[prName]; ok {
-					// both the latest pr and the new pr are published
-					// update the map with the latest pr
-					// if the revision of the new pr is better than the one of the latest pr in the map
+				if strings.HasPrefix(pr.Spec.Revision, revisionPrefix) {
 					newRev, err := getRevisionNbr(pr.Spec.Revision)
 					if err != nil {
 						return nil, err
 					}
-					latestRev, err := getRevisionNbr(latestPR.Spec.Revision)
-					if err != nil {
-						return nil, err
-					}
-
-					if newRev > latestRev {
+					if latestPR, ok := prmap[prName]; ok {
+						// both the latest pr and the new pr are published
+						// update the map with the latest pr
+						// if the revision of the new pr is better than the one of the latest pr in the map
+						latestRev, err := getRevisionNbr(latestPR.Spec.Revision)
+						if err != nil {
+							return nil, err
+						}
+						if newRev > latestRev {
+							prmap[prName] = pr.DeepCopy()
+						}
+					} else {
 						prmap[prName] = pr.DeepCopy()
 					}
-				} else {
-					prmap[prName] = pr.DeepCopy()
 				}
 			}
 		}
@@ -336,12 +339,7 @@ func getForName(annotations map[string]string) string {
 	return split[len(split)-1]
 }
 
-const revisionPrefix = "v"
-
 func getRevisionNbr(rev string) (int, error) {
-	if !strings.HasPrefix(rev, revisionPrefix) {
-		return 0, nil
-	}
 	rev = strings.TrimPrefix(rev, revisionPrefix)
 	return strconv.Atoi(rev)
 }
