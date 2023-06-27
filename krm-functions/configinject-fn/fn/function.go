@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,6 @@ import (
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	porchconfigv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
-	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	nephiorefv1alpha1 "github.com/nephio-project/api/references/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
@@ -39,7 +39,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -214,19 +213,13 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 		kf := kptfilelibv1.KptFile{Kptfile: kfko}
 
 		// get the dependency objects in the package and check its status
-		// TODO make this more generic
-		gvk := schema.GroupVersionKind{
-			Group:   nephiodeployv1alpha1.GroupVersion.Group,
-			Version: nephiodeployv1alpha1.GroupVersion.Version,
-			Kind:    nephiodeployv1alpha1.UPFDeploymentKind,
-		}
 		for _, ref := range dep.Spec.Injectors {
-			fn.Logf("configinject dependency gvk: %s\n", gvk.String())
+			fn.Logf("configinject dependency gvk: %s\n", ref.GroupVersionKind().String())
 
 			depObjs := rl.Items.Where(fn.IsGroupVersionKind(ref.GroupVersionKind()))
 			if len(depObjs) == 0 {
-				fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
-				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, gvk.String())
+				fn.Logf("configinject dependency not ready: the package %s in repo %s does not contain a resource with %s\n", pr.Spec.PackageName, pr.Spec.RepositoryName, ref.GroupVersionKind().String())
+				return nil, fmt.Errorf("dependency not ready: the package %s in repo %s does not contain a resource with %s", pr.Spec.PackageName, pr.Spec.RepositoryName, ref.GroupVersionKind().String())
 			}
 			for _, o := range depObjs {
 				ct := kptfilelibv1.GetConditionType(&corev1.ObjectReference{
@@ -286,6 +279,10 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 			Namespace:  o.GetNamespace()})
 	}
 
+	sort.Slice(dep.Status.Injected, func(i, j int) bool {
+		return dep.Status.Injected[i].Name < dep.Status.Injected[j].Name
+	})
+
 	if err := depObj.SetStatus(dep); err != nil {
 		return nil, err
 	}
@@ -339,7 +336,12 @@ func getForName(annotations map[string]string) string {
 	return split[len(split)-1]
 }
 
+const revisionPrefix = "v"
+
 func getRevisionNbr(rev string) (int, error) {
-	rev = strings.TrimPrefix(rev, "v")
+	if !strings.HasPrefix(rev, revisionPrefix) {
+		return 0, nil
+	}
+	rev = strings.TrimPrefix(rev, revisionPrefix)
 	return strconv.Atoi(rev)
 }
