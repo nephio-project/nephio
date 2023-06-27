@@ -263,6 +263,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation), "kptfile", o.String())
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				// debug
+
+				r.l.Info("generic specializer object kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", o)
 				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
 				if err != nil {
 					r.l.Error(err, "cannot get extended kubeobject")
@@ -290,13 +292,17 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 
+		r.l.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
+
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
-		if err = r.porchClient.Update(ctx, pr); err != nil {
-			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update pr status")
-			r.l.Error(err, "cannot update pr status")
-			return ctrl.Result{}, err
-		}
+		/*
+			if err = r.porchClient.Update(ctx, pr); err != nil {
+				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update pr status")
+				r.l.Error(err, "cannot update pr status")
+				return ctrl.Result{}, err
+			}
+		*/
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
 			r.l.Error(err, "cannot update packagerevision resources")
