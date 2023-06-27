@@ -292,10 +292,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
-		if err = r.porchClient.Status().Update(ctx, pr); err != nil {
+		if err = r.porchClient.Update(ctx, pr); err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update pr status")
+			r.l.Error(fmt.Errorf("cannot update pr status"), "")
 			return ctrl.Result{}, err
 		}
 		if err = r.porchClient.Update(ctx, prr); err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
+			r.l.Error(fmt.Errorf("cannot update packagerevision resources"), "")
 			return ctrl.Result{}, err
 		}
 	}
