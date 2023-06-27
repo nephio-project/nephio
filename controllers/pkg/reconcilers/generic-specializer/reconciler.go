@@ -277,7 +277,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
-						r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
+						
+							r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
 					}
 				}
 			}
