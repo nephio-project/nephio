@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -145,7 +146,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 	// The map will contain the latest published revision of the pr, if no pr
 	// is published it will have a reference to this pr
 	// we assume there needs to be 1 dependency that resolves
-	prmap := map[string]porchv1alpha1.PackageRevision{}
+	prmap := map[string]*porchv1alpha1.PackageRevision{}
 	for _, pr := range prl.Items {
 		repo, ok := repomap[pr.Spec.RepositoryName]
 		if !ok {
@@ -160,32 +161,33 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 
 			prName := fmt.Sprintf("%s-%s", pr.Spec.RepositoryName, pr.Spec.PackageName)
 
-			latestPR, ok := prmap[prName]
-			if !ok {
-				// we initialize hte prmap independent of the status
-				prmap[prName] = pr
-			} else {
-				// only update if the PR is published
-				if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-					if !porchv1alpha1.LifecycleIsPublished(latestPR.Spec.Lifecycle) {
-						// if latest entry in the prmap is not publish but the new pr is published we update the map
-						prmap[prName] = pr
-					} else {
-						// both the latest pr and the new pr are published
-						// update the map with the latest pr
-						// if the revision of the new pr is better than the one of the latest pr in the map
-						if pr.Spec.Revision > latestPR.Spec.Revision {
-							prmap[prName] = pr
-						}
+			if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
+				if latestPR, ok := prmap[prName]; ok {
+					// both the latest pr and the new pr are published
+					// update the map with the latest pr
+					// if the revision of the new pr is better than the one of the latest pr in the map
+					newRev, err := getRevisionNbr(pr.Spec.Revision)
+					if err != nil {
+						return nil, err
 					}
+					latestRev, err := getRevisionNbr(latestPR.Spec.Revision)
+					if err != nil {
+						return nil, err
+					}
+
+					if newRev > latestRev {
+						prmap[prName] = pr.DeepCopy()
+					}
+				} else {
+					prmap[prName] = pr.DeepCopy()
 				}
 			}
 		}
 	}
 
-	for _, pr := range prmap {
-		if !porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			msg := fmt.Sprintf("configinject dependency not ready: the package %s in repo %s is not published\n", pr.Spec.PackageName, pr.Spec.RepositoryName)
+	for prName, pr := range prmap {
+		if pr != nil {
+			msg := fmt.Sprintf("configinject dependency not ready: no published package %s\n", prName)
 			fn.Logf("%s\n", msg)
 			// if 1 package is not ready we fail fast
 			return nil, fmt.Errorf("%s", msg)
@@ -212,6 +214,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 		kf := kptfilelibv1.KptFile{Kptfile: kfko}
 
 		// get the dependency objects in the package and check its status
+		// TODO make this more generic
 		gvk := schema.GroupVersionKind{
 			Group:   nephiodeployv1alpha1.GroupVersion.Group,
 			Version: nephiodeployv1alpha1.GroupVersion.Version,
@@ -334,4 +337,9 @@ func getForName(annotations map[string]string) string {
 	}
 	split := strings.Split(forFullName, ".")
 	return split[len(split)-1]
+}
+
+func getRevisionNbr(rev string) (int, error) {
+	rev = strings.TrimPrefix(rev, "v")
+	return strconv.Atoi(rev)
 }

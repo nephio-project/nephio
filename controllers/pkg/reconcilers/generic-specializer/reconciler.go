@@ -235,11 +235,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					r.l.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				r.l.Info("generic specializer vlan allocation", "cluserName", clusterName, "status", vlanAlloc.Status)
+				r.l.Info("generic specializer vlan allocation", "clusterName", clusterName, "status", vlanAlloc.Status)
 			}
 			if o.GetAPIVersion() == configInjectFor.APIVersion && o.GetKind() == configInjectFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
+				r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
 			}
 			for own := range configInjectf.GetConfig().Owns {
 				if o.GetAPIVersion() == own.APIVersion && o.GetKind() == own.Kind {
@@ -254,7 +254,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 					}
 					r.l.Info("generic specializer", "kind", own.Kind, "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
-					r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
+					r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
 					r.l.Info("generic specializer config injector", "object", o.String())
 				}
 			}
@@ -296,13 +296,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
-		/*
-			if err = r.porchClient.Update(ctx, pr); err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update pr status")
-				r.l.Error(err, "cannot update pr status")
-				return ctrl.Result{}, err
-			}
-		*/
+		// TODO do we need to update the status?
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
 			r.l.Error(err, "cannot update packagerevision resources")
