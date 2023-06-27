@@ -254,15 +254,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 					}
 					r.l.Info("generic specializer", "kind", own.Kind, "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
-
 					r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
 					r.l.Info("generic specializer config injector", "object", o.String())
 				}
 			}
 
 			if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
-				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
+				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation), "kptfile", o.String())
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+				// debug
 				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
 				if err != nil {
 					r.l.Error(err, "cannot get extended kubeobject")
@@ -277,8 +277,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
-						
-							r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
+						r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
 					}
 				}
 			}
@@ -293,6 +292,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+		if err = r.porchClient.Status().Update(ctx, pr); err != nil {
+			return ctrl.Result{}, err
+		}
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			return ctrl.Result{}, err
 		}
