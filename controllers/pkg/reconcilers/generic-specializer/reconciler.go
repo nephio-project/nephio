@@ -235,34 +235,36 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					r.l.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				r.l.Info("generic specializer vlan allocation", "cluserName", clusterName, "status", vlanAlloc.Status)
+				r.l.Info("generic specializer vlan allocation", "clusterName", clusterName, "status", vlanAlloc.Status)
 			}
 			if o.GetAPIVersion() == configInjectFor.APIVersion && o.GetKind() == configInjectFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
+				r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
 			}
 			for own := range configInjectf.GetConfig().Owns {
 				if o.GetAPIVersion() == own.APIVersion && o.GetKind() == own.Kind {
 					if o.GetAnnotation(kioutil.PathAnnotation) == "" {
 						// this is a new resource
-						filename := fmt.Sprintf("%s_%s", strings.ToLower(own.Kind), o.GetName())
+						filename := fmt.Sprintf("%s_%s.yaml", strings.ToLower(own.Kind), o.GetName())
 						if o.GetNamespace() != "" {
-							filename = fmt.Sprintf("%s/%s", o.GetNamespace(), filename)
+							filename = fmt.Sprintf("%s/%s.yaml", o.GetNamespace(), filename)
 						}
 						prr.Spec.Resources[filename] = o.String()
 					} else {
 						prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 					}
 					r.l.Info("generic specializer", "kind", own.Kind, "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
-
-					r.l.Info("generic specializer config injector", "cluserName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
+					r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
 					r.l.Info("generic specializer config injector", "object", o.String())
 				}
 			}
 
 			if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
-				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
+				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation), "kptfile", o.String())
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
+				// debug
+
+				r.l.Info("generic specializer object kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", o)
 				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
 				if err != nil {
 					r.l.Error(err, "cannot get extended kubeobject")
@@ -277,7 +279,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
-						r.l.Info("generic specializer conditions", "cluserName", clusterName, "status", c.Status, "condition", c.Type, "message", c.Message)
+						r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
 					}
 				}
 			}
@@ -286,13 +288,18 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
-			r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
+			r.l.Error(err, "mandatory Kptfile is missing from the package")
 			return ctrl.Result{}, nil
 		}
 
+		r.l.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
+
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+		// TODO do we need to update the status?
 		if err = r.porchClient.Update(ctx, prr); err != nil {
+			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
+			r.l.Error(err, "cannot update packagerevision resources")
 			return ctrl.Result{}, err
 		}
 	}
