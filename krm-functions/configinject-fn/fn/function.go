@@ -287,7 +287,7 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		return nil, err
 	}
 
-	return &depObj.KubeObject, err
+	return &depObj.KubeObject, nil
 }
 
 func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
