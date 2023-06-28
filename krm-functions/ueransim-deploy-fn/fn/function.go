@@ -133,6 +133,7 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 
 	resources := fn.KubeObjects{}
 
+	// update the deploy fn with the annotations
 	deployKoE, err := ko.NewFromKubeObject[appsv1.Deployment](deployObj)
 	if err != nil {
 		return nil, err
@@ -147,8 +148,9 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 	if err != nil {
 		return nil, err
 	}
-	deployObj.SetAnnotation(NetworksAnnotation, nadString)
-
+	if err := deployObj.SetAnnotation(NetworksAnnotation, nadString); err != nil {
+		return nil, err	
+	}
 	resources = append(resources, &deployKoE.KubeObject)
 
 	// add configmap with the additional information
