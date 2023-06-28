@@ -262,7 +262,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 }
 
 // updateDependencyResource adds the resources to the status
-func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -294,7 +294,7 @@ func (f *FnR) updateDependencyResource(forObj *fn.KubeObject, objs fn.KubeObject
 		return nil, err
 	}
 
-	return &depObj.KubeObject, nil
+	return fn.KubeObjects{&depObj.KubeObject}, nil
 }
 
 func GetConfigKubeObject(forObj, o *fn.KubeObject) (*fn.KubeObject, error) {
