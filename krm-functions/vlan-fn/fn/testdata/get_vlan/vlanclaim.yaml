@@ -1,0 +1,10 @@
+apiVersion: vlan.resource.nephio.org/v1alpha1
+kind: VLANClaim
+metadata:
+  name: n3
+  annotations:
+    nephio.org/action: get
+    specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+spec:
+  vlanIndex:
+    name: cluster03

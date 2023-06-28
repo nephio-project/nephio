@@ -317,6 +317,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-ran
@@ -335,6 +336,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-internal
@@ -353,6 +355,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-internet

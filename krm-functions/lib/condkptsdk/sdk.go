@@ -61,9 +61,9 @@ type Config struct {
 type PopulateOwnResourcesFn func(*fn.KubeObject) (fn.KubeObjects, error)
 
 // the list of objects contains the owns and the specific watches
-type UpdateResourceFn func(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error)
+type UpdateResourceFn func(*fn.KubeObject, fn.KubeObjects) (fn.KubeObjects, error)
 
-func UpdateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (*fn.KubeObject, error) { return nil, nil }
+func UpdateResourceFnNop(*fn.KubeObject, fn.KubeObjects) (fn.KubeObjects, error) { return nil, nil }
 
 type WatchCallbackFn func(*fn.KubeObject) error
 
@@ -82,14 +82,11 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 }
 
 type sdk struct {
-	cfg *Config
-	inv inventory
-	rl  *fn.ResourceList
-	//conditions *ko.KptPackageConditions
-	//kptfile    *fn.KubeObject
+	cfg     *Config
+	inv     inventory
+	rl      *fn.ResourceList
 	kptfile kptfilelibv1.KptFile
-	//ready   bool // tracks the overall ready state
-	debug bool // set based on for annotation
+	debug   bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
@@ -166,9 +163,9 @@ func (r *sdk) Run() (bool, error) {
 	// the error and condition update is handled in the fn as we can have multiple forresource
 	r.updateChildren()
 
-	// stage 2 of the sdk pipeline
+	// stage 2 of the sdk pipeline -> update resources (forObj and adjacent resources)
 	// the error and condition update is handled in the fn as we can have multiple forresource
-	r.updateResource()
+	r.updateResources()
 
 	// handle readiness condition -> if all conditions of the for resource are true we can declare readiness
 	if r.cfg.Root {

@@ -1,0 +1,36 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: ipam.resource.nephio.org/v1alpha1
+  kind: IPClaim
+  metadata:
+    name: upf-cluster01-n3
+    annotations:
+      nephio.org/action: get
+      specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
+  spec:
+    kind: network
+    selector:
+      matchLabels:
+        nephio.org/cluster-name: cluster01
+    networkInstance:
+      name: vpc
+  status:
+    prefix: 10.0.0.10/24
+    gateway: 10.0.0.1
+- apiVersion: kpt.dev/v1
+  kind: Kptfile
+  # comment A
+  metadata:
+    name: pkg-upf
+    #commentB
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  info:
+    description: upf package example
+  pipeline: {}
+  status:
+    conditions:
+    - message: update done
+      status: "True"
+      type: ipam.resource.nephio.org/v1alpha1.IPClaim.upf-cluster01-n3

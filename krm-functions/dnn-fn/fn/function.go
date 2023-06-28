@@ -154,7 +154,7 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 }
 
 // updateDnnResource assembles the Status of the DNN "for object" from the status of the owned IPClaims
-func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) (fn.KubeObjects, error) {
 	dnnObj, err := ko.NewFromKubeObject[nephioreqv1alpha1.DataNetwork](dnnObj_)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (f *dnnFn) updateDnnResource(dnnObj_ *fn.KubeObject, owned fn.KubeObjects) 
 	}
 
 	err = dnnObj.SetStatus(dnn)
-	return &dnnObj.KubeObject, err
+	return fn.KubeObjects{&dnnObj.KubeObject}, err
 }
 
 func getAnnotations(annotations map[string]string) map[string]string {

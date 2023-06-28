@@ -17,6 +17,8 @@ limitations under the License.
 package condkptsdk
 
 import (
+	"fmt"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
@@ -27,7 +29,7 @@ import (
 // First readiness is validated in 2 steps:
 // - global readiness: when key resources are missing
 // - per instance readiness: when certain parts of an instance readiness is missing
-func (r *sdk) updateResource() {
+func (r *sdk) updateResources() {
 	if r.debug {
 		fn.Logf("updateResource isReady: %t\n", r.inv.isReady())
 	}
@@ -68,7 +70,9 @@ func (r *sdk) updateResource() {
 				x := o
 				objs = append(objs, &x)
 			}
-			forObj, err := r.handleUpdateResource(forRef, readyCtx.forObj, readyCtx.forCondition, objs)
+			// we can return multiple objects if the stage 2 generates additional resources
+			// when updating its status
+			newObjs, err := r.handleUpdateResource(forRef, readyCtx.forObj, readyCtx.forCondition, objs)
 			if err != nil {
 				fn.Logf("cannot handleUpdateResource objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
 				if err := r.kptfile.SetConditionRefFailed(forRef, err.Error()); err != nil {
@@ -77,9 +81,33 @@ func (r *sdk) updateResource() {
 				}
 				continue
 			}
-			if forObj != nil {
-				if err := r.upsertChildObject(forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *forObj}, readyCtx.forCondition, "update done", kptv1.ConditionTrue, true); err != nil {
-					fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
+
+			for _, newObj := range newObjs {
+				// need to do validation to check the returned object
+				objRef := &corev1.ObjectReference{APIVersion: newObj.GetAPIVersion(), Kind: newObj.GetKind(), Name: newObj.GetName()}
+				//ownerRef := kptfilelibv1.GetGVKNFromConditionType(newObj.GetAnnotation(SpecializerOwner))
+				gvkKindCtx, ok := r.inv.isGVKMatch(ref.GetGVKRefFromGVKNref(objRef))
+				if !ok {
+					err := fmt.Errorf("stage 2 fn returned an object that is not owned in the config: ref: %s", ref.GetRefsString(*objRef))
+					fn.Logf("%s\n", err.Error())
+					r.rl.Results.ErrorE(err)
+					continue
+				}
+				switch gvkKindCtx.gvkKind {
+				case forGVKKind:
+					if err := r.upsertChildObject(gvkKindCtx.gvkKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, readyCtx.forCondition, "update done", kptv1.ConditionTrue, true); err != nil {
+						fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
+					}
+				case ownGVKKind:
+
+					if err := r.upsertChildObject(gvkKindCtx.gvkKind, []corev1.ObjectReference{forRef, *objRef}, object{obj: *newObj}, readyCtx.forCondition, "update done", kptv1.ConditionTrue, true); err != nil {
+						fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
+					}
+				default:
+					// we do not expect watch kind here
+					err := fmt.Errorf("stage 2 fn returned an unexpected watch kind ref: %s", ref.GetRefsString(*objRef))
+					fn.Logf("%s\n", err.Error())
+					r.rl.Results.ErrorE(err)
 				}
 			}
 		}
@@ -88,12 +116,12 @@ func (r *sdk) updateResource() {
 
 // updateResource performs the fn/controller callback and handles the response
 // by updating the condition and resource in kptfile/resourcelist
-func (r *sdk) handleUpdateResource(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) (*fn.KubeObject, error) {
-	newObj, err := r.cfg.UpdateResourceFn(forObj, objs)
+func (r *sdk) handleUpdateResource(forRef corev1.ObjectReference, forObj *fn.KubeObject, forCondition *kptv1.Condition, objs fn.KubeObjects) (fn.KubeObjects, error) {
+	newObjs, err := r.cfg.UpdateResourceFn(forObj, objs)
 	if err != nil {
-		return newObj, err
+		return newObjs, err
 	}
-	if newObj == nil {
+	if len(newObjs) == 0 {
 		// this happens right now because the NAD gets an interface and the interface can have a default pod network
 		// for which no nad is to be created. hence the nil object
 		// once we do the intelligent diff this can be changed back to an error, since NAD does not have to watch the interface
@@ -107,15 +135,16 @@ func (r *sdk) handleUpdateResource(forRef corev1.ObjectReference, forObj *fn.Kub
 			return fmt.Errorf("cannot generate resource GenerateResourceFn returned nil, for: %v", forRef)
 		*/
 	}
-	// if forCondition reason was set, set the annotation back with the owner
+	// if forCondition reason was set, set the annotation back to the owner
 	if forCondition != nil && forCondition.Reason != "" {
-		if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
-			fn.Logf("error setting new annotation: %v\n", err.Error())
-			r.rl.Results = append(r.rl.Results, fn.ErrorConfigObjectResult(err, newObj))
-			return newObj, err
+		for _, newObj := range newObjs {
+			if err := newObj.SetAnnotation(SpecializerOwner, forCondition.Reason); err != nil {
+				fn.Logf("error setting new annotation: %v\n", err.Error())
+				r.rl.Results.ErrorE(err)
+				return newObjs, err
+			}
 		}
-
 	}
-	return newObj, nil
+	return newObjs, nil
 	//return r.handleUpdate(actionUpdate, forGVKKind, []corev1.ObjectReference{forRef}, object{obj: *newObj}, forCondition, kptv1.ConditionTrue, "done", true)
 }

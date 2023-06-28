@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	resourcev1alpha1 "github.com/nokia/k8s-ipam/apis/resource/common/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +67,7 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 
 // updateIPClaimResource provides an ip claim for a given KRM resource
 // in the package by calling the ipam backend
-func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -80,12 +81,22 @@ func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) 
 		return nil, err
 	}
 	newclaim := claim.DeepCopy()
-	resp, err := f.ClientProxy.Claim(context.Background(), newclaim, nil)
-	if err != nil {
-		return nil, err
+	var resp *ipamv1alpha1.IPClaim
+	if _, ok := claim.Annotations[resourcev1alpha1.NephioAPIAction]; ok {
+		// get action
+		fn.Log("claim action get\n")
+		resp, err = f.ClientProxy.GetClaim(context.Background(), newclaim, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fn.Log("claim action claim\n")
+		resp, err = f.ClientProxy.Claim(context.Background(), newclaim, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 	claim.Status = resp.Status
-
 	if claim.Status.Prefix != nil {
 		fn.Logf("claim resp prefix: %v\n", *resp.Status.Prefix)
 	}
@@ -94,12 +105,5 @@ func (f *FnR) updateIPClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) 
 	}
 	// set the status
 	err = claimKOE.SetStatus(resp)
-	return &claimKOE.KubeObject, err
+	return fn.KubeObjects{&claimKOE.KubeObject}, err
 }
-
-/*
-func getNewName(annotations map[string]string, origName string) string {
-	split := strings.Split(annotations[condkptsdk.SpecializerFor], ".")
-	return fmt.Sprintf("%s-%s", split[len(split)-1], origName)
-}
-*/

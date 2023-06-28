@@ -21,11 +21,11 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
-	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
@@ -62,18 +62,6 @@ func Run(rl *fn.ResourceList) (bool, error) {
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
 					Kind:       infrav1alpha1.WorkloadClusterKind,
 				}: myFn.WorkloadClusterCallbackFn,
-				{
-					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephiodeployv1alpha1.UPFDeploymentKind,
-				}: myFn.DeploymentCallbackFn,
-				{
-					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephiodeployv1alpha1.SMFDeploymentKind,
-				}: myFn.DeploymentCallbackFn,
-				{
-					APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-					Kind:       nephiodeployv1alpha1.AMFDeploymentKind,
-				}: myFn.DeploymentCallbackFn,
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
 					Kind:       infrav1alpha1.NetworkKind,
@@ -119,25 +107,16 @@ func (f *nadFn) WorkloadClusterCallbackFn(o *fn.KubeObject) error {
 	return f.workloadCluster.Spec.Validate()
 }
 
-func (f *nadFn) DeploymentCallbackFn(o *fn.KubeObject) error {
-	f.forName = o.GetName()
-	f.forNamespace = o.GetNamespace()
-
-	fn.Logf("deployment callback: kind: %s, name: %s, namespace: %s\n", o.GetKind(), o.GetName(), o.GetNamespace())
-	return nil
-}
-
 func (f *nadFn) NetworkCallbackFn(o *fn.KubeObject) error {
 	networkObj, err := ko.KubeObjectToStruct[infrav1alpha1.Network](o)
 	if err != nil {
 		return err
 	}
 	f.networkObjs = append(f.networkObjs, *networkObj)
-	fn.Logf("network callback: kind: %s, name: %s, namespace: %s\n", o.GetKind(), o.GetName(), o.GetNamespace())
 	return nil
 }
 
-func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if f.workloadCluster == nil {
 		// no WorkloadCluster resource in the package
 		return nil, fmt.Errorf("workload cluster is missing from the kpt package")
@@ -146,6 +125,16 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 	// the NAD needs a prefix equal to the owner of the deployment and it needs a namespace aligned with the deployment
 	// Given we dont do the intelligent diff we need to look for the owner resource
 	// With the intelligent diff this will be propagated via the annotations.
+	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
+	if interfaceObjs.Len() == 0 {
+		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
+	}
+	for _, o := range interfaceObjs {
+		f.forName = getForName(o.GetAnnotations())
+		f.forNamespace = o.GetAnnotation(condkptsdk.SpecializerNamespace)
+		//fn.Logf("interface callback: kind: %s, name: %s, namespace: %s, annotations: %s\n", o.GetKind(), o.GetName(), o.GetNamespace(), o.GetAnnotations())
+	}
+
 	if f.forName == "" || f.forNamespace == "" {
 		// no for name or for namespace present
 		return nil, fmt.Errorf("expecting a for name and for namespace, got forName: %s, forNamespace: %s", f.forName, f.forNamespace)
@@ -153,13 +142,8 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 
 	ipClaimObjs := objs.Where(fn.IsGroupVersionKind(ipamv1alpha1.IPClaimGroupVersionKind))
 	vlanClaimObjs := objs.Where(fn.IsGroupVersionKind(vlanv1alpha1.VLANClaimGroupVersionKind))
-	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 
 	fn.Logf("nad updateResourceFn: ifObj: %d, ipClaimObj: %d, vlanClaimObj: %d, networkObjs: %d\n", len(interfaceObjs), len(ipClaimObjs), len(vlanClaimObjs), len(f.networkObjs))
-	// verify all needed objects exist
-	if interfaceObjs.Len() == 0 {
-		return nil, fmt.Errorf("expected %s object to generate the nad", nephioreqv1alpha1.InterfaceKind)
-	}
 
 	itfceKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](interfaceObjs[0])
 	if err != nil {
@@ -305,7 +289,7 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (*fn.Kub
 		}
 	}
 
-	return &nad.K.KubeObject, nil
+	return fn.KubeObjects{&nad.K.KubeObject}, nil
 }
 
 func (f *nadFn) IsCNITypePresent(itfceCNIType nephioreqv1alpha1.CNIType) bool {
@@ -333,4 +317,15 @@ func containsDestination(s []nadlibv1.Route, e string) bool {
 		}
 	}
 	return false
+}
+
+func getForName(annotations map[string]string) string {
+	// forName is the resource that is the root resource of the specialization
+	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	forFullName := annotations[condkptsdk.SpecializerOwner]
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		forFullName = owner
+	}
+	split := strings.Split(forFullName, ".")
+	return split[len(split)-1]
 }

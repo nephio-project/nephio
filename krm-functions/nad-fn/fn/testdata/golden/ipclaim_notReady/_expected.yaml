@@ -72,8 +72,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: upf-edge01-n3
-    namespace: pkg-example-upf-bp
+    name: upf-cluster01-n3
+    namespace: dummy
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -142,6 +142,8 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-ran
@@ -154,6 +156,8 @@ items:
     name: n4
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-internal
@@ -166,6 +170,8 @@ items:
     name: n6
     annotations:
       config.kubernetes.io/local-config: "true"
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-internet
@@ -205,10 +211,3 @@ items:
       name: cluster01
   status:
     vlanID: 300
-- apiVersion: workload.nephio.org/v1alpha1
-  kind: UPFDeployment
-  metadata: # kpt-merge: upf-example/upf-example
-    name: upf-edge01
-    namespace: pkg-example-upf-bp
-    annotations:
-      internal.kpt.dev/upstream-identifier: 'workload.nephio.org|UPFDeployment|upf-example|upf-example'
