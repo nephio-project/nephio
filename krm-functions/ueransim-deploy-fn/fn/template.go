@@ -42,7 +42,7 @@ gtpIp: {{ .N3 }}    # gNB's local IP address for N3 Interface (Usually same with
 amfConfigs:
 {{- range $amf := .AMF }}
   - address: {{ $amf }}
-	  port: 38412
+    port: 38412
 {{- end }}
 `
 

@@ -202,6 +202,7 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 func getAmfAddresses(ipClaimObjs fn.KubeObjects) ([]string, error) {
 	amfAddresses := []string{}
 	for _, o := range ipClaimObjs {
+		forName := getForName(o.GetAnnotations())
 		ipClaimKOE, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
 		if err != nil {
 			return nil, err
@@ -213,6 +214,7 @@ func getAmfAddresses(ipClaimObjs fn.KubeObjects) ([]string, error) {
 		}
 
 		if ipClaim.Status.Prefix != nil {
+			fn.Logf("get amf addresses for: %s address %s\n",forName, *ipClaim.Status.Prefix)
 			pi, err := iputil.New(*ipClaim.Status.Prefix)
 			if err != nil {
 				return nil, err
@@ -350,4 +352,15 @@ func getLabels() map[string]string {
 		l[k] = v
 	}
 	return l
+}
+
+func getForName(annotations map[string]string) string {
+	// forName is the resource that is the root resource of the specialization
+	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	forFullName := annotations[condkptsdk.SpecializerOwner]
+	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
+		forFullName = owner
+	}
+	split := strings.Split(forFullName, ".")
+	return split[len(split)-1]
 }
