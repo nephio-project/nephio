@@ -29,7 +29,7 @@ tac: 1              # Tracking Area Code
 # List of supported S-NSSAIs by this gNB
 slices:
   - sst: 0x1
-	  sd: 0x010203
+    sd: 0x010203
 # Indicates whether or not SCTP stream number errors should be ignored.
 ignoreStreamIds: true
 
