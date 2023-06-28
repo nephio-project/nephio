@@ -99,7 +99,7 @@ func (r *sdk) updateResources() {
 						fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
 					}
 				case ownGVKKind:
-					
+
 					if err := r.upsertChildObject(gvkKindCtx.gvkKind, []corev1.ObjectReference{forRef, *objRef}, object{obj: *newObj}, readyCtx.forCondition, "update done", kptv1.ConditionTrue, true); err != nil {
 						fn.Logf("cannot update resourcelist and inventory after handleUpdateResource: objRef %s, err: %v\n", ref.GetRefsString(forRef), err.Error())
 					}

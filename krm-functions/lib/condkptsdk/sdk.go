@@ -82,11 +82,11 @@ func New(rl *fn.ResourceList, cfg *Config) (KptCondSDK, error) {
 }
 
 type sdk struct {
-	cfg *Config
-	inv inventory
-	rl  *fn.ResourceList
+	cfg     *Config
+	inv     inventory
+	rl      *fn.ResourceList
 	kptfile kptfilelibv1.KptFile
-	debug bool // set based on for annotation
+	debug   bool // set based on for annotation
 }
 
 func (r *sdk) Run() (bool, error) {
