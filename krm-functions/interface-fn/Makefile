@@ -1,6 +1,6 @@
 IMAGE_TAG ?= latest
 REGISTRY ?= docker.io/nephio
-IMAGE_NAME ?= interface-test-fn
+IMAGE_NAME ?= interface-fn
 IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # This includes the following targets:
