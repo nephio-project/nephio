@@ -214,7 +214,7 @@ func getAmfAddresses(ipClaimObjs fn.KubeObjects) ([]string, error) {
 		}
 
 		if ipClaim.Status.Prefix != nil {
-			fn.Logf("get amf addresses for: %s address %s\n",forName, *ipClaim.Status.Prefix)
+			fn.Logf("get amf addresses for: %s address %s\n", forName, *ipClaim.Status.Prefix)
 			pi, err := iputil.New(*ipClaim.Status.Prefix)
 			if err != nil {
 				return nil, err
