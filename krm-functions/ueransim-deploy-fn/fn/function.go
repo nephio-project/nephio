@@ -149,7 +149,7 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 		return nil, err
 	}
 	if err := deployObj.SetAnnotation(NetworksAnnotation, nadString); err != nil {
-		return nil, err	
+		return nil, err
 	}
 	resources = append(resources, &deployKoE.KubeObject)
 
