@@ -1,6 +1,6 @@
 IMAGE_TAG ?= latest
 REGISTRY ?= docker.io/nephio
-IMAGE_NAME ?= nad-fn
+IMAGE_NAME ?= nad-test-fn
 IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # This includes the following targets:

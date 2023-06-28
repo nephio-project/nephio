@@ -39,8 +39,8 @@ items:
 - apiVersion: k8s.cni.cncf.io/v1
   kind: NetworkAttachmentDefinition
   metadata:
-    name: upf-edge01-n1
-    namespace: pkg-example-upf-bp
+    name: amf-edge02-n1
+    namespace: dummy
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n1
   spec:
@@ -102,6 +102,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: vpc-ran
@@ -114,6 +115,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       specializer.nephio.org/owner: workload.nephio.org/v1alpha1.AMFDeployment.amf-edge02
+      specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
       name: default
@@ -126,10 +128,3 @@ items:
       config.kubernetes.io/local-config: "true"
   data:
     name: example
-- apiVersion: workload.nephio.org/v1alpha1
-  kind: UPFDeployment
-  metadata: # kpt-merge: upf-example/upf-example
-    name: upf-edge01
-    namespace: pkg-example-upf-bp
-    annotations:
-      internal.kpt.dev/upstream-identifier: 'workload.nephio.org|UPFDeployment|upf-example|upf-example'

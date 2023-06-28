@@ -241,7 +241,7 @@ func (f *NfDeployFn[T, PT]) DependencyUpdate(o *fn.KubeObject) error {
 	return nil
 }
 
-func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if nfDeploymentObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -300,5 +300,5 @@ func (f *NfDeployFn[T, PT]) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, obj
 
 	err = nfKoExt.SetSpec((*T)(nf))
 
-	return &nfKoExt.KubeObject, err
+	return fn.KubeObjects{&nfKoExt.KubeObject}, err
 }

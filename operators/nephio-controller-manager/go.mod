@@ -14,7 +14,7 @@ replace (
 
 require (
 	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230531154408-a4237c40cb76
-	github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c
+	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	k8s.io/apimachinery v0.27.3
@@ -71,7 +71,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nephio-project/api v0.0.0-20230622115552-0304af432fd3 // indirect
+	github.com/nephio-project/api v0.0.0-20230627152656-a2bf013a68da // indirect
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 // indirect

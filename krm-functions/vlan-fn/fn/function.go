@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
+	resourcev1alpha1 "github.com/nokia/k8s-ipam/apis/resource/common/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	corev1 "k8s.io/api/core/v1"
@@ -66,7 +67,7 @@ func (f *FnR) Run(rl *fn.ResourceList) (bool, error) {
 
 // updateVLANClaimResource claims a VLAN for a given VLANClaim KRM resource
 // in the package by calling the vlan backend
-func (f *FnR) updateVLANClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *FnR) updateVLANClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -80,17 +81,28 @@ func (f *FnR) updateVLANClaimResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		return nil, err
 	}
 	newclaim := claim.DeepCopy()
-	newclaim.Name = claim.GetAnnotations()[condkptsdk.SpecializervlanClaimName]
-	resp, err := f.ClientProxy.Claim(context.Background(), newclaim, nil)
-	if err != nil {
-		return nil, err
+	var resp *vlanv1alpha1.VLANClaim
+	if _, ok := claim.Annotations[resourcev1alpha1.NephioAPIAction]; ok {
+		// get action
+		fn.Log("claim action get\n")
+		resp, err = f.ClientProxy.GetClaim(context.Background(), newclaim, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// claim action
+		fn.Log("claim action claim\n")
+		newclaim.Name = claim.GetAnnotations()[condkptsdk.SpecializervlanClaimName]
+		resp, err = f.ClientProxy.Claim(context.Background(), newclaim, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 	claim.Status = resp.Status
-
 	if claim.Status.VLANID != nil {
 		fn.Logf("claim resp vlan: %v\n", *resp.Status.VLANID)
 	}
 	// set the status
 	err = claimKOE.SetStatus(resp)
-	return &claimKOE.KubeObject, err
+	return fn.KubeObjects{&claimKOE.KubeObject}, err
 }

@@ -191,7 +191,7 @@ func (f *itfceFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, er
 	return resources, nil
 }
 
-func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects) (*fn.KubeObject, error) {
+func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects) (fn.KubeObjects, error) {
 	if forObj == nil {
 		return nil, fmt.Errorf("expected a for object but got nil")
 	}
@@ -235,7 +235,7 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 	}
 	// set the status
 	err = itfceKOE.SetStatus(itfce)
-	return &itfceKOE.KubeObject, err
+	return fn.KubeObjects{&itfceKOE.KubeObject}, err
 }
 
 func (f *itfceFn) getVLANClaim(meta metav1.ObjectMeta) (*fn.KubeObject, error) {

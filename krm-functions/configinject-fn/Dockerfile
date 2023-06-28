@@ -16,7 +16,7 @@ FROM golang:1.20-alpine
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
 COPY krm-functions/ krm-functions/
-WORKDIR /go/src/krm-functions/ipam-fn
+WORKDIR /go/src/krm-functions/configinject-fn
 RUN go install
 RUN go build -o /usr/local/bin/function ./
 
