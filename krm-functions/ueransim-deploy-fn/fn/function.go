@@ -31,7 +31,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const NetworksAnnotation = "k8s.v1.cni.cncf.io/networks"
@@ -148,10 +147,21 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 	if err != nil {
 		return nil, err
 	}
-	if err := deployObj.SetAnnotation(NetworksAnnotation, nadString); err != nil {
+	//fn.Logf("nasString: %s\n", nadString)
+	//nadString = strings.ReplaceAll(nadString, " ", "")
+	//fn.Logf("nasString: %s\n", nadString)
+
+	if len(deploy.Spec.Template.Annotations) == 0 {
+		deploy.Spec.Template.Annotations = map[string]string{}
+	}
+	deploy.Spec.Template.Annotations[NetworksAnnotation] = nadString
+
+	do, err := fn.NewFromTypedObject(deploy)
+	if err != nil {
 		return nil, err
 	}
-	resources = append(resources, &deployKoE.KubeObject)
+
+	resources = append(resources, do)
 
 	// add configmap with the additional information
 	configuration, err := getConfiguration(itfceObjs, amfs)
@@ -174,26 +184,28 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 		}
 	}
 	// add service with the additional information
-	serviceKo, err := buildServiceKubeObject(metav1.ObjectMeta{
-		Name:      "gnb-service",
-		Namespace: deploy.Namespace,
-		Labels:    getLabels(),
-	}, corev1.ServiceSpec{
-		Type: corev1.ServiceTypeClusterIP,
-		Ports: []corev1.ServicePort{
-			{
-				Name:       "gnb-ue",
-				Protocol:   corev1.ProtocolUDP,
-				Port:       4997,
-				TargetPort: intstr.IntOrString{IntVal: 4097},
+	/*
+		serviceKo, err := buildServiceKubeObject(metav1.ObjectMeta{
+			Name:      "gnb-service",
+			Namespace: deploy.Namespace,
+			Labels:    getLabels(),
+		}, corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "gnb-ue",
+					Protocol:   corev1.ProtocolUDP,
+					Port:       4997,
+					TargetPort: intstr.IntOrString{IntVal: 4097},
+				},
 			},
-		},
-		Selector: getSelectorLabels(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	resources = append(resources, serviceKo)
+			Selector: getSelectorLabels(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, serviceKo)
+	*/
 
 	return resources, nil
 
@@ -201,6 +213,7 @@ func (f *deployFn) updateResource(deployObj *fn.KubeObject, objs fn.KubeObjects)
 
 func getAmfAddresses(ipClaimObjs fn.KubeObjects) ([]string, error) {
 	amfAddresses := []string{}
+	fn.Logf("get amf addresses: %v\n", ipClaimObjs)
 	for _, o := range ipClaimObjs {
 		forName := getForName(o.GetAnnotations())
 		ipClaimKOE, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
@@ -276,7 +289,7 @@ func getIPAddress(itfce *nephioreqv1alpha1.Interface) (string, error) {
 }
 
 func getNetworkAttachmentDefinitionObjects(prefix string, itfceObjs fn.KubeObjects) (string, error) {
-	var networksJson []string
+	var templateValues []nadTemplateValues
 
 	for _, o := range itfceObjs {
 		itfcKOE, err := ko.NewFromKubeObject[nephioreqv1alpha1.Interface](o)
@@ -291,20 +304,16 @@ func getNetworkAttachmentDefinitionObjects(prefix string, itfceObjs fn.KubeObjec
 
 		for _, ipStatus := range itfce.Status.IPClaimStatus {
 			if ipStatus.Gateway != nil && ipStatus.Prefix != nil {
-				networksJson = append(networksJson, fmt.Sprintf(` {
-  "name": %q,
-  "interface": %q,
-  "ips": [%q],
-  "gateways": [%q]
-}`,
-					createNetworkAttachmentDefintiionName(prefix, itfce.Name),
-					itfce.Name,
-					*ipStatus.Prefix,
-					*ipStatus.Gateway))
+				templateValues = append(templateValues, nadTemplateValues{
+					Name:      createNetworkAttachmentDefintiionName(prefix, itfce.Name),
+					Interface: itfce.Name,
+					IPs:       *ipStatus.Prefix,
+					Gateways:  *ipStatus.Gateway,
+				})
 			}
 		}
 	}
-	return "[\n" + strings.Join(networksJson, ",\n") + "\n]", nil
+	return renderNadTemplate(templateValues)
 }
 
 func createNetworkAttachmentDefintiionName(prefix, suffix string) string {
@@ -325,6 +334,7 @@ func buildConfigMapKubeObject(meta metav1.ObjectMeta, key, value string) (*fn.Ku
 	return fn.NewFromTypedObject(o)
 }
 
+/*
 func buildServiceKubeObject(meta metav1.ObjectMeta, spec corev1.ServiceSpec) (*fn.KubeObject, error) {
 	o := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -336,6 +346,7 @@ func buildServiceKubeObject(meta metav1.ObjectMeta, spec corev1.ServiceSpec) (*f
 	}
 	return fn.NewFromTypedObject(o)
 }
+*/
 
 func getSelectorLabels() map[string]string {
 	return map[string]string{
