@@ -216,7 +216,7 @@ func (f *NfDeployFn[T, PT]) DnnUpdate(o *fn.KubeObject) error {
 	}
 
 	dnn := nephiodeployv1alpha1.DataNetwork{
-		Name: &dnnReq.Spec.NetworkInstance.Name,
+		Name: &dnnReq.Name,
 		Pool: pools,
 	}
 

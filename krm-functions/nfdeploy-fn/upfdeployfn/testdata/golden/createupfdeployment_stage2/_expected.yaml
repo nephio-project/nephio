@@ -183,7 +183,7 @@ items:
       - n4
     - name: vpc-internet
       dataNetworks:
-      - name: vpc-internet
+      - name: internet
         pool:
         - prefix: 10.0.0.3/24
       interfaces:
