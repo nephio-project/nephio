@@ -46,7 +46,6 @@ import (
 
 const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
-	DelayConditionType           = "approval.nephio.org.DelayExpired"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
 )
@@ -104,35 +103,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
-	// If it is published, ignore it
-	if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-		return ctrl.Result{}, nil
-	}
-
-	// Delay if needed
-	// This is a workaround for some "settling" that seems to be needed
-	// in Porch and/or PackageVariant. We should be able to remove it if
-	// we can fix that.
-	requeue, err := r.manageDelay(ctx, pr)
-	if err != nil {
-		r.recorder.Eventf(pr, corev1.EventTypeWarning,
-			"Error", "error processing %q: %s", DelayAnnotationName, err.Error())
-
-		return ctrl.Result{}, err
-	}
-
-	// if requeue is > 0, then we should do nothing more with this PackageRevision
-	// for at least that long
-	if requeue > 0 {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"NotApproved", "delay time not met")
-		return ctrl.Result{RequeueAfter: requeue}, nil
-	}
-
-	// Check for the approval policy annotation
-	policy, ok := pr.GetAnnotations()[PolicyAnnotationName]
+	// If we shouldn't process this at all, just return
+	policy, ok := shouldProcess(pr)
 	if !ok {
-		// no policy set, so just return, we are done
 		return ctrl.Result{}, nil
 	}
 
@@ -140,8 +113,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// of the package variant. If it is not Ready, then we should not approve yet. The
 	// lack of readiness could indicate an error which even impacts whether or not the
 	// readiness gates have been properly set.
-	//
-	//
 	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
@@ -192,7 +163,32 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
-	// policy met
+	// Delay if needed, and let the user know via an event
+	// We should be able to get rid of this if we add a policy to check
+	// the specializer condition. We need to check the *specific* condition,
+	// because if the condition has not been added to the readiness gates yet,
+	// we could pass all the gates even though that specific condition is missing.
+	// That check shouldn't be needed if the initial clone creates the readiness gate
+	// entry though (with the function pipeline run).
+	requeue, err := manageDelay(pr)
+	if err != nil {
+		r.recorder.Eventf(pr, corev1.EventTypeWarning,
+			"Error", "error processing %q: %s", DelayAnnotationName, err.Error())
+
+		// Do not propagate the error; we do not want it to force an immediate requeue
+		// If we could not parse the annotation, it is a user error
+		return ctrl.Result{}, nil
+	}
+
+	// if requeue is > 0, then we should do nothing more with this PackageRevision
+	// for at least that long
+	if requeue > 0 {
+		r.recorder.Event(pr, corev1.EventTypeNormal,
+			"NotApproved", "delay time not met")
+		return ctrl.Result{RequeueAfter: requeue}, nil
+	}
+
+	// All policies met
 	if pr.Spec.Lifecycle == porchv1alpha1.PackageRevisionLifecycleDraft {
 		pr.Spec.Lifecycle = porchv1alpha1.PackageRevisionLifecycleProposed
 		err = r.Update(ctx, pr)
@@ -211,19 +207,33 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, err
 }
 
-func (r *reconciler) manageDelay(ctx context.Context, pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
+func shouldProcess(pr *porchv1alpha1.PackageRevision) (string, bool) {
+	result := true
+
+	// If it is published, ignore it
+	result = result && !porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle)
+
+	// Check for the approval policy annotation
+	policy, ok := pr.GetAnnotations()[PolicyAnnotationName]
+	result = result && ok
+
+	return policy, result
+}
+
+func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 	delay, ok := pr.GetAnnotations()[DelayAnnotationName]
 	if !ok {
-		delay = "2m"
-	}
-	d, err := time.ParseDuration(delay)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing delay duration: %w", err)
+		// only delay if there is a delay annotation
+		return 0, nil
 	}
 
-	// force at least a 30 second delay
-	if d < 30*time.Second {
-		d = 30 * time.Second
+	d, err := time.ParseDuration(delay)
+	if err != nil {
+		return 0, err
+	}
+
+	if d < 0 {
+		return 0, fmt.Errorf("invalid delay %q; delay must be 0 or more", delay)
 	}
 
 	if time.Since(pr.CreationTimestamp.Time) > d {
