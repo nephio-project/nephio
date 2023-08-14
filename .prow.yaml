@@ -4,7 +4,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:7
+      - image: nephio/gotests:1671656214984921088
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:7
+      - image: nephio/gotests:1671656214984921088
         command:
         - make
         args:
@@ -34,7 +34,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:7
+      - image: nephio/gotests:1671656214984921088
         command:
         - "/bin/sh"
         - "-c"
@@ -69,3 +69,11 @@ presubmits:
         - |
           /bin/fossologyscanner repo nomos ojo copyright keyword
           cp -R results ${ARTIFACTS}/    
+  - name: presubmit-nephio-lichen
+    decorate: true
+    run_if_changed: "^.*.go$"
+    spec:
+      containers:
+      - image: nephio/gotests:1671656214984921088
+        command:
+        - "/usr/local/bin/lichen.sh"
