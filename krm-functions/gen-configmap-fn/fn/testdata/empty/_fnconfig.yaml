@@ -1,0 +1,4 @@
+apiVersion: fn.kpt.dev/v1alpha1
+kind: GenConfigMap
+metadata:
+  name: empty-test

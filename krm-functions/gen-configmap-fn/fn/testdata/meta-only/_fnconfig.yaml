@@ -1,0 +1,9 @@
+apiVersion: fn.kpt.dev/v1alpha1
+kind: GenConfigMap
+metadata:
+  name: meta-only-test
+configMapMetadata:
+  name: my-meta-only-map
+  labels:
+    foo: bar
+  namespace: yo
