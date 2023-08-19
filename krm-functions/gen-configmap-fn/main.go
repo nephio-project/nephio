@@ -8,10 +8,8 @@ import (
 	fnr "github.com/nephio-project/nephio/krm-functions/gen-configmap-fn/fn"
 )
 
-var _ fn.ResourceListProcessor = &fnr.GenConfigMap{}
-
 func main() {
-	if err := fn.AsMain(&fnr.GenConfigMap{}); err != nil {
+	if err := fn.AsMain(fn.ResourceListProcessorFunc(fnr.Process)); err != nil {
 		os.Exit(1)
 	}
 }

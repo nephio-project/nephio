@@ -67,7 +67,7 @@ func (fc *GenConfigMap) Validate() error {
 	return nil
 }
 
-func (processor *GenConfigMap) Process(rl *fn.ResourceList) (bool, error) {
+func Process(rl *fn.ResourceList) (bool, error) {
 	// read our fc into a new struct
 	fc := &GenConfigMap{}
 	err := rl.FunctionConfig.As(fc)

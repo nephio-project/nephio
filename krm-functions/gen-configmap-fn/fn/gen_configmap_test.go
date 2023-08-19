@@ -69,8 +69,7 @@ data:
 			ko, err := fn.ParseKubeObject(tc.input)
 			assert.NoError(t, err)
 
-			gcm := &GenConfigMap{}
-			_, err = gcm.Process(&fn.ResourceList{FunctionConfig: ko})
+			_, err = Process(&fn.ResourceList{FunctionConfig: ko})
 			if tc.errExpected != "" {
 				assert.EqualError(t, err, tc.errExpected)
 			} else {
