@@ -8,6 +8,8 @@ items:
     namespace: yo
     labels:
       foo: bar
+    annotations:
+      internal.config.kubernetes.io/path: _gen_configmap_my-meta-only-map.yaml
 functionConfig:
   apiVersion: fn.kpt.dev/v1alpha1
   kind: GenConfigMap

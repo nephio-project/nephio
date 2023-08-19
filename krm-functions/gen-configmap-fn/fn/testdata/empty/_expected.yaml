@@ -5,6 +5,8 @@ items:
   kind: ConfigMap
   metadata:
     name: empty-test
+    annotations:
+      internal.config.kubernetes.io/path: _gen_configmap_empty-test.yaml
 functionConfig:
   apiVersion: fn.kpt.dev/v1alpha1
   kind: GenConfigMap

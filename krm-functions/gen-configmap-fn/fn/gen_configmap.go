@@ -24,6 +24,8 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 
 type GenConfigMapEntry struct {
@@ -103,6 +105,11 @@ func Process(rl *fn.ResourceList) (bool, error) {
 		return false, err
 	}
 	err = cmko.SetName(name)
+	if err != nil {
+		return false, err
+	}
+
+	err = cmko.SetAnnotation(kioutil.PathAnnotation, "_gen_configmap_" + name + ".yaml")
 	if err != nil {
 		return false, err
 	}

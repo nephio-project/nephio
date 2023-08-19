@@ -8,6 +8,8 @@ items:
     namespace: some-ns
     labels:
       foo: bar
+    annotations:
+      internal.config.kubernetes.io/path: _gen_configmap_my-config-map.yaml
   data:
     greeting: Hello Ms. Foo! How are you doing?
 functionConfig:
