@@ -86,8 +86,14 @@ func (processor *GenConfigMap) Process(rl *fn.ResourceList) (bool, error) {
 	}
 
 	cmko := fn.NewEmptyKubeObject()
-	cmko.SetAPIVersion("v1")
-	cmko.SetKind("ConfigMap")
+	err = cmko.SetAPIVersion("v1")
+	if err != nil {
+		return false, err
+	}
+	err = cmko.SetKind("ConfigMap")
+	if err != nil {
+		return false, err
+	}
 	err = cmko.SetNestedField(fc.ConfigMapMetadata, "metadata")
 	if err != nil {
 		return false, err
@@ -99,8 +105,11 @@ func (processor *GenConfigMap) Process(rl *fn.ResourceList) (bool, error) {
 	cmko.SetName(name)
 
 	data := make(map[string]string, len(fc.Data))
-	for _, entry := range fc.Data {
-		entry.generate(fc.Params, data)
+	for i, entry := range fc.Data {
+		err = entry.generate(fc.Params, data)
+		if err != nil {
+			return false, fmt.Errorf("data entry %d generate error: %s", i, err.Error())
+		}
 	}
 	if len(data) > 0 {
 		err = cmko.SetNestedField(data, "data")
