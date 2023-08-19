@@ -102,7 +102,10 @@ func (processor *GenConfigMap) Process(rl *fn.ResourceList) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	cmko.SetName(name)
+	err = cmko.SetName(name)
+	if err != nil {
+		return false, err
+	}
 
 	data := make(map[string]string, len(fc.Data))
 	for i, entry := range fc.Data {
