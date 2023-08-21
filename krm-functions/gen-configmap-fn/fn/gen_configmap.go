@@ -109,7 +109,7 @@ func Process(rl *fn.ResourceList) (bool, error) {
 		return false, err
 	}
 
-	err = cmko.SetAnnotation(kioutil.PathAnnotation, "_gen_configmap_" + name + ".yaml")
+	err = cmko.SetAnnotation(kioutil.PathAnnotation, "_gen_configmap_"+name+".yaml")
 	if err != nil {
 		return false, err
 	}
