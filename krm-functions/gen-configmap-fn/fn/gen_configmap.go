@@ -86,8 +86,6 @@ func Process(rl *fn.ResourceList) (bool, error) {
 		return false, err
 	}
 
-	params, err := kptrl.CopyAndOverlayMapExpr()
-
 	cmko := fn.NewEmptyKubeObject()
 	err = cmko.SetAPIVersion("v1")
 	if err != nil {
