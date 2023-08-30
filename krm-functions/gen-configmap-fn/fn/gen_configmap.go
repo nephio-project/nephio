@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"text/template"
-	//"github.com/google/safetext/yamltemplate"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,6 +85,8 @@ func Process(rl *fn.ResourceList) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	params, err := kptrl.CopyAndOverlayMapExpr()
 
 	cmko := fn.NewEmptyKubeObject()
 	err = cmko.SetAPIVersion("v1")
