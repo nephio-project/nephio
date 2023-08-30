@@ -5,16 +5,18 @@ deploying and managing highly distributed, interconnected workloads such as 5G
 Network Functions, and the underlying infrastructure on which those workloads
 depend.
 
-Nephio is very early in its development; there is no release yet. However if you
-wish to learn more about the project, please take a look at the resources described
-in the [docs repo](https://github.com/nephio-project/docs).
+The R1 Release is now available! To get started with Nephio, view the [docs repo](https://github.com/nephio-project/docs) 
+which contains the [R1 Demo installation instructions](https://github.com/nephio-project/docs/blob/main/install-guide/README.md) 
+and [Quick start exercises](https://github.com/nephio-project/docs/blob/main/user-guide/exercises.md). 
+An announcement from The Linux Foundation regarding the release can be found 
+[here](https://www.linuxfoundation.org/press/nephio-community-gains-momentum-with-release-1-to-simplify-cloud-native-network-automation).
 
-If you wish to experiment with the proof-of-concept code, please take a look at the
-[Nephio ONE Summit 2022 Workshop](https://github.com/nephio-project/one-summit-22-workshop).
+To learn more about the Nephio project, refer to the [Learning with Nephio R1](https://www.youtube.com/playlist?list=PLiW9_IXAWtkt8lbFe1jF_bzEI4gd-Jlq4)
+series and it's corresponding  [wiki pages](https://wiki.nephio.org/display/HOME/Learning+with+Nephio+R1).
 
-If you wish to participate in building R1, please join our SIG meetings, or reach out to
-us on Slack. You may also want to peruse the [R1 Planning](https://github.com/nephio-project/nephio/issues/6)
-issue.
+If you wish to participate in building R2, please join our SIG meetings, or reach out to
+us on Slack. You may also want to peruse the [R2 Planning](https://github.com/orgs/nephio-project/projects/11)
+project board.
 
 ## Community
 
