@@ -1,0 +1,32 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: my-config-map
+    namespace: some-ns
+    labels:
+      foo: bar
+    annotations:
+      internal.config.kubernetes.io/path: _gen_configmap_my-config-map.yaml
+  data:
+    greeting: Hello Ms. Foo! How are you doing?
+functionConfig:
+  apiVersion: fn.kpt.dev/v1alpha1
+  kind: GenConfigMap
+  metadata:
+    name: simple-test
+  configMapMetadata:
+    name: my-config-map
+    namespace: some-ns
+    labels:
+      foo: bar
+  params:
+    salutation: Hello
+    name: Ms. Foo
+    followUp: How are you doing?
+  data:
+  - type: gotmpl
+    key: greeting
+    value: "{{.salutation}} {{.name}}! {{.followUp}}"

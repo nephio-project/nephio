@@ -1,0 +1,16 @@
+apiVersion: fn.kpt.dev/v1alpha1
+kind: GenConfigMap
+metadata:
+  name: literal-test
+configMapMetadata:
+  name: my-config-map
+  namespace: some-ns
+  labels:
+    foo: bar
+data:
+- type: literal
+  key: foo
+  value: bar
+- type: literal
+  key: footoo
+  value: barbar
