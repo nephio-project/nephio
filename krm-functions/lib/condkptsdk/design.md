@@ -91,7 +91,7 @@ The sdk defines different types of own resources:
     - The deletion is take care of by the remote resource by acting on the delete annotation set by the sdk
     - The typical usage pattern is when the parent has insufficient information to define the full spec. E.g. a NAD needs an IP and VLAN for it to be specified fully. So rather than building a half baked CRD the system generates a condition for the child NAD fn/controller to act upon and it will create the Spec within the child function/controller.
 - childLocal: 
-    - the fn/controller defines the spec locally within the fn/controller. Its condition is always true as the actor is the fn itslef
+    - the fn/controller defines the spec locally within the fn/controller. Its condition is always true as the actor is the fn itself
 - childInitial:
     - the package can contain already owned reference in the resource to indicate its dependency. As such the SDK takes this into account when updating conditions. 
 
@@ -351,7 +351,7 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		return ipclaims[i].GetName() < ipclaims[j].GetName()
 	})
 	for _, ipclaim := range ipclaims {
-		// Dont care about the name since the condSDK sorts the data
+		// Don't care about the name since the condSDK sorts the data
 		// based on owner reference
 		claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipclaim)
 		if err != nil {

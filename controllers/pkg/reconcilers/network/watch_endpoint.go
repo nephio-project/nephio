@@ -71,7 +71,7 @@ func (e *endpointEventHandler) add(ctx context.Context, obj runtime.Object, queu
 	}
 
 	for _, network := range networks.Items {
-		// only enqueue if the provider and the networktopology match
+		// only enqueue if the provider and the network topology match
 		if cr.Labels[invv1alpha1.NephioProviderKey] == nokiaSRLProvider &&
 			cr.Labels[invv1alpha1.NephioTopologyKey] == network.Spec.Topology {
 			e.l.Info("event requeue network", "name", network.GetName())

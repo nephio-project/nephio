@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func Run[T any, PT PtrIsNFDeployemnt[T]](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {
+func Run[T any, PT PtrIsNFDeployment[T]](rl *fn.ResourceList, gvk schema.GroupVersionKind) (bool, error) {
 	nfDeployFn := NewFunction[T, PT](gvk)
 
 	var err error

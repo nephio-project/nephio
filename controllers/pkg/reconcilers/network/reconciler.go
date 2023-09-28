@@ -131,7 +131,7 @@ type reconciler struct {
 	l       logr.Logger
 	devices map[string]*ygotsrl.Device
 	//targets   targets.Target
-	resources resources.Resources // get initialized for every cr/recocile loop
+	resources resources.Resources // get initialized for every cr/reconcile loop
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -149,8 +149,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// TODO validation
-	// validate itfce/node or selector
-	// validate in rt + bd -> the itfce/node or selector is coming from the bd
+	// validate interface/node or selector
+	// validate in rt + bd -> the interface/node or selector is coming from the bd
 
 	if meta.WasDeleted(cr) {
 		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {

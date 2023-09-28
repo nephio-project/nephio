@@ -148,7 +148,7 @@ items:
     networkInstance:
       name: vpc-ran
     cniType: ipvlan
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -162,7 +162,7 @@ items:
     networkInstance:
       name: vpc-internal
     cniType: ipvlan
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
@@ -176,7 +176,7 @@ items:
     networkInstance:
       name: vpc-internet
     cniType: ipvlan
-    attachementType: vlan
+    attachmentType: vlan
   status:
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim

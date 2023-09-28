@@ -35,7 +35,7 @@ const (
 	watchGVKKind gvkKind = "watch"
 )
 
-// to make the resource list of the inventory geenric we add the gvkKind on top of the objectReference
+// to make the resource list of the inventory generic we add the gvkKind on top of the objectReference
 type sdkObjectReference struct {
 	gvkKind gvkKind
 	ref     corev1.ObjectReference

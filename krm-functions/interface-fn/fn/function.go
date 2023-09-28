@@ -209,7 +209,7 @@ func (f *itfceFn) updateItfceResource(forObj *fn.KubeObject, objs fn.KubeObjects
 		return ipclaims[i].GetName() < ipclaims[j].GetName()
 	})
 	for _, ipclaim := range ipclaims {
-		// Dont care about the name since the condSDK sorts the data
+		// Don't care about the name since the condSDK sorts the data
 		// based on owner reference
 		claim, err := ko.NewFromKubeObject[ipamv1alpha1.IPClaim](ipclaim)
 		if err != nil {

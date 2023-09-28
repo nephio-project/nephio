@@ -27,7 +27,7 @@ import (
 type inventory interface {
 	// initializeGVKInventory initializes the GVK with the generic GVK
 	// resources as specified in the SDKConfig
-	// used to provide faster loopup if the GVK is relevant for the fn/controller
+	// used to provide faster lookup if the GVK is relevant for the fn/controller
 	// and to provide context if there is a match
 	initializeGVKInventory(cfg *Config) error
 	addGVKObjectReference(kc *gvkKindCtx, ref corev1.ObjectReference) error
@@ -65,7 +65,7 @@ type inv struct {
 	m sync.RWMutex
 	//hasOwn bool
 	// gvkResource contain the gvk based resource from config
-	// they dont contain the names but allow for faster lookups
+	// they don't contain the names but allow for faster lookups
 	// when walking the resource list or condition list
 	gvkResources map[corev1.ObjectReference]*gvkKindCtx
 	// resources contain the runtime resources collected and updated
@@ -107,7 +107,7 @@ func (r *inv) initializeGVKInventory(cfg *Config) error {
 			return err
 		}
 		if ref.IsWildCardRef(objRef) {
-			return fmt.Errorf("no wirlcard refs allowed in watch resource reference")
+			return fmt.Errorf("no wildcard refs allowed in watch resource reference")
 		}
 		if err := r.addGVKObjectReference(&gvkKindCtx{gvkKind: watchGVKKind, callbackFn: cb}, objRef); err != nil {
 			return err

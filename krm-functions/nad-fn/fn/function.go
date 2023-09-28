@@ -123,7 +123,7 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (fn.Kube
 	}
 
 	// the NAD needs a prefix equal to the owner of the deployment and it needs a namespace aligned with the deployment
-	// Given we dont do the intelligent diff we need to look for the owner resource
+	// Given we don't do the intelligent diff we need to look for the owner resource
 	// With the intelligent diff this will be propagated via the annotations.
 	interfaceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 	if interfaceObjs.Len() == 0 {

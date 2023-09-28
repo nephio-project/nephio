@@ -109,7 +109,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// TODO DELETION POLICY: "orphan" deletion policy
 		// token being deleted
 		// Delete the token from the git server
-		// when successfull remove the finalizer
+		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
 			if err := r.deleteToken(ctx, giteaClient, cr); err != nil {
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)

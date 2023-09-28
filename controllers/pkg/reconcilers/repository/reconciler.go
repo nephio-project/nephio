@@ -107,7 +107,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// TODO DELETION POLICY: "orphan" deletion policy
 		// repo being deleted
 		// Delete the repo from the git server
-		// when successfull remove the finalizer
+		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
 			if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
 				r.l.Error(err, "cannot delete repo in git server")
@@ -182,7 +182,7 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 		repo, _, err := giteaClient.CreateRepo(createRepo)
 		if err != nil {
 			r.l.Error(err, "cannot create repo")
-			// Here we dont provide the full error sicne the message change every time and this will retrigger
+			// Here we don't provide the full error since the message change every time and this will re-trigger
 			// a new reconcile loop
 			cr.SetConditions(infrav1alpha1.Failed("cannot create repo"))
 			return err
@@ -205,7 +205,7 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 	repo, _, err := giteaClient.EditRepo(u.UserName, cr.GetName(), editRepo)
 	if err != nil {
 		r.l.Error(err, "cannot update repo")
-		// Here we dont provide the full error sicne the message change every time and this will retrigger
+		// Here we don't provide the full error since the message change every time and this will re-trigger
 		// a new reconcile loop
 		cr.SetConditions(infrav1alpha1.Failed("cannot update repo"))
 		return err

@@ -81,7 +81,7 @@ func RemoveFinalizer(o metav1.Object, finalizer string) {
 }
 
 // FinalizerExists checks whether a certain finalizer is already set
-// on the aupplied object
+// on the applied object
 func FinalizerExists(o metav1.Object, finalizer string) bool {
 	f := o.GetFinalizers()
 	for _, e := range f {

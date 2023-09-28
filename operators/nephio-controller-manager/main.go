@@ -31,6 +31,7 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 	"go.uber.org/zap/zapcore"
+
 	//"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -148,7 +149,7 @@ func main() {
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
 		backendAddress = address
 	}
-	// Sending the porchclient to getgitea, this will be used to get
+	// Sending the porchclient to gitea, this will be used to get
 	// the secret objects for gitea client authentication. The client
 	// of the manager of this controller cannot be used at this point.
 	// Should this be conditional ? Only if we have repo/token reconciler

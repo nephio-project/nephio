@@ -22,7 +22,7 @@ import (
 )
 
 // call the global watch callbacks to provide info to the fns in a generic way
-// so they dont have to parse the complete resourcelist
+// so they don't have to parse the complete resourcelist
 // Also it provide readiness feedback when an error is returned
 func (r *sdk) callGlobalWatches() error {
 	for _, resCtx := range r.inv.get(watchGVKKind, []corev1.ObjectReference{{}}) {

@@ -91,7 +91,7 @@ func isReady(cs capiv1beta1.Conditions) bool {
 }
 
 func getCapiClusterClient(secret *corev1.Secret) (resource.APIPatchingApplicator, bool, error) {
-	//provide a restconfig from the secret value
+	//provide a rest config from the secret value
 	config, err := clientcmd.RESTConfigFromKubeConfig(secret.Data["value"])
 	if err != nil {
 		return resource.APIPatchingApplicator{}, false, err

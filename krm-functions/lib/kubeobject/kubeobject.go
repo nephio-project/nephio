@@ -256,7 +256,7 @@ func asString(node *yaml.Node) (string, bool) {
 }
 
 // findKey finds `key` in the Content list of a YAML MappingNode passed as `mapContents`
-// Returns with the index of the key node as an int and whether the search was succesful as a bool
+// Returns with the index of the key node as an int and whether the search was successful as a bool
 func findKey(mapContents []*yaml.Node, key string) (int, bool) {
 	for i := 0; i < len(mapContents); i += 2 {
 		keyNode := mapContents[i]
@@ -270,7 +270,7 @@ func findKey(mapContents []*yaml.Node, key string) (int, bool) {
 
 // findMatchingItemForFormattingCopy finds the node in `dstList` that matches with `srcItem` in the sense that
 // formatting should be copied from `srcItem` to the matching item in `dstList`
-// Returns with the index of the matching item as an int and whether the search was succesful as a bool
+// Returns with the index of the matching item as an int and whether the search was successful as a bool
 func findMatchingItemForFormattingCopy(srcItem *yaml.Node, dstList []*yaml.Node) (int, bool) {
 	for i, dstItem := range dstList {
 		if shouldCopyFormatting(srcItem, dstItem) {
@@ -280,7 +280,7 @@ func findMatchingItemForFormattingCopy(srcItem *yaml.Node, dstList []*yaml.Node)
 	return 0, false
 }
 
-// shouldCopyFormatting retrurns whether `src` and `dst` nodes are matching in the sense that
+// shouldCopyFormatting returns whether `src` and `dst` nodes are matching in the sense that
 // formatting should be copied from `src` to `dst`
 func shouldCopyFormatting(src, dst *yaml.Node) bool {
 	if src.Kind != dst.Kind {
@@ -312,7 +312,7 @@ func shouldCopyFormatting(src, dst *yaml.Node) bool {
 	case yaml.SequenceNode:
 		// Any change in embedded lists isn't considered as a difference for our purposes,
 		// or in other words: only map fields are compared recursively, but list items are ignored.
-		// In the extreme case of list of lists this can lead to inapropriate formatting,
+		// In the extreme case of list of lists this can lead to inappropriate formatting,
 		// but I find this liberal approach to be more practical and efficient in real-life cases.
 		return true
 	case yaml.AliasNode, yaml.DocumentNode:

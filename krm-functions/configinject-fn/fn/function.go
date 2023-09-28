@@ -143,7 +143,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 
 	resources := fn.KubeObjects{}
 	// walk through all the package revisions and build a map of the pr(s) that
-	// have the packagename and are in a repo that has deployment true
+	// have the package name and are in a repo that has deployment true
 	// The map will contain the latest published revision of the pr, if no pr
 	// is published it will have a reference to this pr
 	// we assume there needs to be 1 dependency that resolves
@@ -153,7 +153,7 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 		if !ok {
 			return nil, fmt.Errorf("configinject repo name not found: %s", pr.Spec.RepositoryName)
 		}
-		// only analyse the packages with
+		// only analyze the packages with
 		// - the packageName contained in the dependency requirement resource
 		// - repo has deployment true
 		// - package is published
