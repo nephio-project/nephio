@@ -84,7 +84,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return reconcile.Result{}, nil
 	}
 
-	// if the secret is being deleted dont do anything for now
+	// if the secret is being deleted don't do anything for now
 	if resource.WasDeleted(cr) {
 		return reconcile.Result{}, nil
 	}
@@ -138,7 +138,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					newcr := cr.DeepCopy()
 					newcr.Namespace = configsyncNamespace
 					// since the original annotations are set by configsync we need to reset them
-					// so apply 2 annotaations to the secret: app = bootstrap +  cluster-name = clusterName
+					// so apply 2 annotations to the secret: app = bootstrap +  cluster-name = clusterName
 					newcr.SetAnnotations(map[string]string{
 						nephioAppKey:   bootstrapApp,
 						clusterNameKey: clusterName,
@@ -155,7 +155,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			}
 		}
 		if !found {
-			// the clusterclient was not found, we retry
+			// the cluster client was not found, we retry
 			r.l.Info("cluster client not found, retry...")
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}

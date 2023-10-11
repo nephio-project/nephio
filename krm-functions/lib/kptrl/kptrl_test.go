@@ -71,7 +71,7 @@ func TestGetResourceList(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			if len(rl.Items) != len(tc.t) {
-				t.Errorf("ResouceList: -want: nil, +got:%v\n", rl.Items)
+				t.Errorf("ResourceList: -want: nil, +got:%v\n", rl.Items)
 			}
 		})
 	}

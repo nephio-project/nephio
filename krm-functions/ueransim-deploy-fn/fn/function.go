@@ -305,7 +305,7 @@ func getNetworkAttachmentDefinitionObjects(prefix string, itfceObjs fn.KubeObjec
 		for _, ipStatus := range itfce.Status.IPClaimStatus {
 			if ipStatus.Gateway != nil && ipStatus.Prefix != nil {
 				templateValues = append(templateValues, nadTemplateValues{
-					Name:      createNetworkAttachmentDefintiionName(prefix, itfce.Name),
+					Name:      createNetworkAttachmentDefinitionName(prefix, itfce.Name),
 					Interface: itfce.Name,
 					IPs:       *ipStatus.Prefix,
 					Gateways:  *ipStatus.Gateway,
@@ -316,7 +316,7 @@ func getNetworkAttachmentDefinitionObjects(prefix string, itfceObjs fn.KubeObjec
 	return renderNadTemplate(templateValues)
 }
 
-func createNetworkAttachmentDefintiionName(prefix, suffix string) string {
+func createNetworkAttachmentDefinitionName(prefix, suffix string) string {
 	return fmt.Sprintf("%s-%s", prefix, suffix)
 }
 

@@ -136,7 +136,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	configInjectkrmfn := fn.ResourceListProcessorFunc(configInjectf.Run)
 	configInjectFor := configInjectf.GetConfig().For
 
-	// we just check for forResource conditions and we dont care if it is satisfied already
+	// we just check for forResource conditions and we don't care if it is satisfied already
 	// this allows us to refresh the allocation.
 	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&ipamFor)) ||
 		porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) ||
@@ -165,7 +165,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				r.l.Error(err, "ipam function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("ipam specializer fn run successfull")
+			r.l.Info("ipam specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) {
 			// run the function SDK
@@ -175,7 +175,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				r.l.Error(err, "vlan function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("vlan specializer fn run successfull")
+			r.l.Info("vlan specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&configInjectFor)) {
 			// run the function SDK
@@ -185,7 +185,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				r.l.Error(err, "configInject function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("configInject specializer fn run successfull")
+			r.l.Info("configInject specializer fn run successful")
 		}
 		workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
 		clusterName := r.getClusterName(workloadClusterObjs)

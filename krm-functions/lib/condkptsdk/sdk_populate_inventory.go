@@ -34,8 +34,8 @@ func (r *sdk) populateInventory() error {
 	// forInventory context. If no match was found to the forOwnerRef the watchedResource is associated
 	// to the global context
 	var forOwnerRef *corev1.ObjectReference
-	// keeps track a map to link the forOnwer name to the specific for resourceName
-	// used by NAD since we dont do the intelligent diff, we need to handle the mapping
+	// keeps track a map to link the forOwner name to the specific for resourceName
+	// used by NAD since we don't do the intelligent diff, we need to handle the mapping
 	// used only to populate the inventory for specific watches
 	forOwnerRefNameMap := map[string]string{}
 

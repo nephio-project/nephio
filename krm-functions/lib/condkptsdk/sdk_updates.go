@@ -66,8 +66,8 @@ func (r *sdk) upsertChildObject(kind gvkKind, refs []corev1.ObjectReference, obj
 		// this is an internal error -> return here since this also validate the refs
 		return err
 	}
-	// for an existing condition use the present condition since it can contain data from a for resource we cannot replace and dont know as it was set
-	// by a fn before this fn was called. e.g. reason in a forReasourc
+	// for an existing condition use the present condition since it can contain data from a for resource we cannot replace and don't know as it was set
+	// by a fn before this fn was called. e.g. reason in a forResource
 	if ec != nil {
 		c = *ec
 		c.Message = msg

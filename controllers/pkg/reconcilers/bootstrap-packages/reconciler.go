@@ -124,7 +124,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, errors.Wrap(err, msg)
 		}
 		// we expect the clusterName to be applied to all resources in the
-		// package revision resources, so we find the clustername by looking at the
+		// package revision resources, so we find the cluster name by looking at the
 		// first resource in the resource list
 		if len(resources) > 0 {
 			clusterName, ok := resources[0].GetAnnotations()[clusterNameKey]
@@ -186,7 +186,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				}
 			}
 			if !found {
-				// the clusterclient was not found, we retry
+				// the cluster client was not found, we retry
 				r.l.Info("cluster client not found, retry...")
 				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 			}
@@ -268,7 +268,7 @@ func (r *reconciler) getResourcesPRR(resources map[string]string) ([]unstructure
 		u := unstructured.Unstructured{}
 		if err := yaml.Unmarshal([]byte(n.MustString()), &u); err != nil {
 			r.l.Error(err, "cannot unmarshal data", "data", n.MustString())
-			// we dont fail
+			// we don't fail
 			continue
 		}
 		if u.GetKind() == reflect.TypeOf(corev1.Namespace{}).Name() {

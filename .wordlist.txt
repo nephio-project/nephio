@@ -8,7 +8,7 @@ apiVersion
 attachmentType
 backend
 bool
-BuildNetworkAttachementDefinition
+BuildNetworkAttachmentDefinition
 childLocal
 ChildRemote
 ChildRemoteCondition

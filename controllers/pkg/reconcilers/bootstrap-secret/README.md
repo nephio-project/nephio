@@ -13,4 +13,4 @@ Once the remote credentials are found and the cluster is deemed ready, the secre
 
 If any of the validation fail the controller will retry installing the secret.
 
-At this stage the implementation is specific to `config-sync` but we aim to provide other gitops toolschains like `argo` and `flux`
+At this stage the implementation is specific to `config-sync` but we aim to provide other gitops tools chains like `argo` and `flux`

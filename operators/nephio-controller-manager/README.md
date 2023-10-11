@@ -1,13 +1,13 @@
 ## Nephio Controller Manager
 
 ### Purpose of this controller
-The purpose of this controller is to create a single binary for all the nephio management controllers for example specialiser controllers,
+The purpose of this controller is to create a single binary for all the nephio management controllers for example specializer controllers,
 bootstrap controller, repo-controller, edge watcher etc.
 
 ### Design
-nephio/operators/nephio-controller-manager operator is the operator manager, which will manage all the nephio mangement controllers. 
+nephio/operators/nephio-controller-manager operator is the operator manager, which will manage all the nephio management controllers. 
 A reconcilers directory is present in the nephio/controllers/pkg module. All the management controller reconciler packages will be
-created in /nephio/controllers/pkg/reconcilers/. The reconciler-interface packge in the nephio/controllers/pkg/reconcilers has the Reconciler interface with controller-runtime 
+created in /nephio/controllers/pkg/reconcilers/. The reconciler-interface package in the nephio/controllers/pkg/reconcilers has the Reconciler interface with controller-runtime 
 reconcile.Reconciler which will be implemented by all the nephio management controller reconcilers.
 Reconciler has the method SetupWithManager which is implemented by all the controller reconcilers, through this method the reconcilers
 are registered with the nephio-controller-manger operator manager.
@@ -18,13 +18,13 @@ are registered with the nephio-controller-manger operator manager.
             
 2. Setup with nephio-controller-manager operator,
       func (r *reconciler) SetupWithManager(mgr ctrl.Manager, i interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
-3. Implement the reconciler controll loop,
+3. Implement the reconciler control loop,
        func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) 
 ### Usage
 The loaded reconcilers have to be enabled, following are the ways they can be enabled,
 1. set env variable, example ENABLE_REPOSITORIES=true
 2. pass list of reconcilers while running the manager, example ./manager --reconcilers=repositories . 
-3. --reconcilders=* will enable all the reconcilers.
+3. --reconcilers=* will enable all the reconcilers.
 
 ### Environment Variables
 For the repository and token reconciler ( copied from repository README)

@@ -10,5 +10,5 @@ spec:
   networkInstance:
     name: vpc-internal
   cniType: ipvlan
-  attachementType: vlan
+  attachmentType: vlan
 status:

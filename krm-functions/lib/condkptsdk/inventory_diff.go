@@ -48,7 +48,7 @@ type object struct {
 // populated with the existing resource/condition info and we also
 // have information on new resource/condition that would be created
 // if nothing existed.
-// the diff compares the eixisiting resource/condition inventory
+// the diff compares the existing resource/condition inventory
 // against the new resource/condition inventory and provide CRUD operation
 // based on that comparisons.
 func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
@@ -126,7 +126,7 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 						diffMap[forRef].updateForCondition = true
 					}
 					diffMap[forRef].createObjs = append(diffMap[forRef].createObjs, object{ref: ownRef, obj: *resCtx.newResource, ownKind: resCtx.ownKind})
-				// if the new resource does not exist and but the resource exist we have to delete the exisiting resource
+				// if the new resource does not exist and but the resource exist we have to delete the existing resource
 				case resCtx.existingResource != nil && resCtx.newResource == nil:
 					// delete resource
 					if forResCtx.existingCondition == nil || (forResCtx.existingCondition != nil && forResCtx.existingCondition.Status != v1.ConditionFalse) {
@@ -135,21 +135,21 @@ func (r *inv) diff() map[corev1.ObjectReference]*inventoryDiff {
 					if resCtx.ownKind != ChildInitial && resCtx.ownKind != ChildLocal {
 						diffMap[forRef].deleteObjs = append(diffMap[forRef].deleteObjs, object{ref: ownRef, obj: *resCtx.existingResource, ownKind: resCtx.ownKind})
 					}
-				// if both exisiting/new resource exists check the differences of the spec
-				// dependening on the outcome update the resource with the new information
+				// if both existing/new resource exists check the differences of the spec
+				// depending on the outcome update the resource with the new information
 				case resCtx.existingResource != nil && resCtx.newResource != nil:
-					// for childremote consition a diff is not needed since the object
+					// for child remote condition a diff is not needed since the object
 					// is created remotely
 					if resCtx.ownKind != ChildRemoteCondition {
 						// check diff
 						existingSpec, err := getSpec(resCtx.existingResource)
 						if err != nil {
-							fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
+							fn.Logf("cannot get spec from existing obj, err: %v\n", err)
 							continue
 						}
 						newSpec, err := getSpec(resCtx.newResource)
 						if err != nil {
-							fn.Logf("cannot get spec from exisiting obj, err: %v\n", err)
+							fn.Logf("cannot get spec from existing obj, err: %v\n", err)
 							continue
 						}
 

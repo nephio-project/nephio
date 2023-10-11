@@ -53,7 +53,7 @@ func GetGVKOrPanic[T any, PT PtrIsRuntimeObject[T]]() schema.GroupVersionKind {
 // FilterByType returns the objects in `objs` whose Group-Version-Kind matches with the Go type `T`.
 // Panics if `T` is not registered in `TheScheme`.
 // FilterByType returns with
-//   - the list of matching KubeObjects coneverted to `*T`.
+//   - the list of matching KubeObjects converted to `*T`.
 //   - the rest of the `objs` list (KubeObjects that don't match)
 //   - a potential error
 func FilterByType[T any, PT PtrIsRuntimeObject[T]](objs fn.KubeObjects) ([]*T, fn.KubeObjects, error) {

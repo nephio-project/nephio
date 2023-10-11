@@ -79,7 +79,7 @@ func TestDiffWithSameSpec(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-		// set for exisiting resource
+		// set for existing resource
 		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
 			{APIVersion: "a", Kind: "a", Name: "a"},
 		}, kubeObjectMade, false, false)
@@ -171,11 +171,11 @@ func TestDiffWithSpecToUpdate(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-		// set for exisiting resource
+		// set for existing resource
 		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
 			{APIVersion: "a", Kind: "a", Name: "a"},
 		}, kubeObjectMade, false, false)
-		// set own exisiting resource
+		// set own existing resource
 		inv.set(&gvkKindCtx{gvkKind: ownGVKKind}, []corev1.ObjectReference{
 			{APIVersion: "a", Kind: "a", Name: "a"},
 			{APIVersion: tt.input.apiVersion, Kind: tt.input.kind, Name: tt.input.name},
@@ -277,11 +277,11 @@ func TestDiffWithSpecToAdd(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-		// set for exisiting resource
+		// set for existing resource
 		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
 			{APIVersion: "a", Kind: "a", Name: "a"},
 		}, kubeObjectMade, false, false)
-		// set own exisiting resource
+		// set own existing resource
 		byteStream, _ = yaml.Marshal(ipa)
 		kubeObjectMade, _ = fn.ParseKubeObject(byteStream)
 		// set own new resource
@@ -366,7 +366,7 @@ func TestDiffWithSpecToDelete(t *testing.T) {
 		}
 		byteStream, _ := yaml.Marshal(ipa)
 		kubeObjectMade, _ := fn.ParseKubeObject(byteStream)
-		// set for exisiting resource
+		// set for existing resource
 		inv.set(&gvkKindCtx{gvkKind: forGVKKind}, []corev1.ObjectReference{
 			{APIVersion: "a", Kind: "a", Name: "a"},
 		}, kubeObjectMade, false, false)

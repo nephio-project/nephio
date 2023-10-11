@@ -103,7 +103,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return ctrl.Result{}, nil
 	}
-	// we just check for forResource conditions and we dont care if it is satisfied already
+	// we just check for forResource conditions and we don't care if it is satisfied already
 	// this allows us to refresh the allocation.
 	ct := kptfilelibv1.GetConditionType(&r.For)
 	if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, ct) {

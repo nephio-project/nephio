@@ -27,12 +27,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type PtrIsNFDeployemnt[T any] interface {
+type PtrIsNFDeployment[T any] interface {
 	*T
 	nephiodeployv1alpha1.NFDeployment
 }
 
-type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
+type NfDeployFn[T any, PT PtrIsNFDeployment[T]] struct {
 	sdk             kptcondsdk.KptCondSDK
 	workloadCluster *infrav1alpha1.WorkloadCluster
 	gvk             schema.GroupVersionKind
@@ -43,7 +43,7 @@ type NfDeployFn[T any, PT PtrIsNFDeployemnt[T]] struct {
 	configRefs          []corev1.ObjectReference
 }
 
-func NewFunction[T any, PT PtrIsNFDeployemnt[T]](gvk schema.GroupVersionKind) NfDeployFn[T, PT] {
+func NewFunction[T any, PT PtrIsNFDeployment[T]](gvk schema.GroupVersionKind) NfDeployFn[T, PT] {
 	return NfDeployFn[T, PT]{
 		interfaceConfigsMap: make(map[string]nephiodeployv1alpha1.InterfaceConfig),
 		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),
@@ -53,7 +53,7 @@ func NewFunction[T any, PT PtrIsNFDeployemnt[T]](gvk schema.GroupVersionKind) Nf
 }
 
 func (h *NfDeployFn[T, PT]) SetInterfaceConfig(interfaceConfig nephiodeployv1alpha1.InterfaceConfig, networkInstanceName string) {
-	// dont add to empty networkInstanceName, ideally should not happen
+	// don't add to empty networkInstanceName, ideally should not happen
 	if len(networkInstanceName) == 0 {
 		return
 	}

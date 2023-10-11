@@ -37,8 +37,8 @@ func GetPorchConditions(cs []kptv1.Condition) []porchv1alpha1.Condition {
 	return prConditions
 }
 
-// HasSpecificTypeConditions checks if the package revsision has forResource Conditions
-// we dont care if the conditions are true or false because we can refresh the allocations
+// HasSpecificTypeConditions checks if the package revision has forResource Conditions
+// we don't care if the conditions are true or false because we can refresh the allocations
 // with this approach
 func HasSpecificTypeConditions(conditions []porchv1alpha1.Condition, conditionType string) bool {
 	for _, c := range conditions {

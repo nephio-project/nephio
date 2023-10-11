@@ -39,7 +39,7 @@ func getSpecializationConditionType() string {
 	})
 }
 
-// Initialize returns a condition that initializes specializtion
+// Initialize returns a condition that initializes specialization
 func initialize() kptv1.Condition {
 	return kptv1.Condition{
 		Type:    getSpecializationConditionType(),

@@ -45,8 +45,8 @@ func CreateClient(config *rest.Config) (client.Client, error) {
 	return c, nil
 }
 
-// controller-runtime does not support subresources so we use REST client directly.
-// TODO: Separate Porch clientset into its own module (similar to k8s clientsets) to use it
+// controller-runtime does not support sub-resources so we use REST client directly.
+// TODO: Separate Porch client set into its own module (similar to k8s client sets) to use it
 // without causing circular reference.
 func CreateRESTClient(config *rest.Config) (rest.Interface, error) {
 	scheme, err := createScheme()

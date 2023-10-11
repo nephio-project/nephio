@@ -53,7 +53,7 @@ func (r *gc) Start(ctx context.Context) {
 	for {
 		select {
 		// The context is the one returned by ctrl.SetupSignalHandler().
-		// cancel() of this contex will trigger <- ctx.Done().
+		// cancel() of this context will trigger <- ctx.Done().
 		// The Idea for continuously retrying is for enabling the user to
 		// create a secret eventually even after the controllers are started.
 		case <-ctx.Done():
@@ -71,8 +71,8 @@ func (r *gc) Start(ctx context.Context) {
 			}
 
 			namespace := os.Getenv("POD_NAMESPACE")
-			if gitNamesapce, ok := os.LookupEnv("GIT_NAMESPACE"); ok {
-				namespace = gitNamesapce
+			if gitNamespace, ok := os.LookupEnv("GIT_NAMESPACE"); ok {
+				namespace = gitNamespace
 			}
 			secretName := "git-user-secret"
 			if gitSecretName, ok := os.LookupEnv("GIT_SECRET_NAME"); ok {

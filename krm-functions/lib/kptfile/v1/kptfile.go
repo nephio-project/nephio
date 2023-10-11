@@ -104,7 +104,7 @@ func (r *KptFile) GetCondition(conditionType string) *kptv1.Condition {
 	return nil
 }
 
-// SetConditions overwroites the existing condition or append the condition to the list if it does not exist
+// SetConditions overwrites the existing condition or append the condition to the list if it does not exist
 func (r *KptFile) SetConditions(ncs ...kptv1.Condition) error {
 	ecs := r.GetConditions()
 	for _, nc := range ncs {

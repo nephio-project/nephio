@@ -8,7 +8,7 @@ The amf deployment function has 3 `watch` resources:
 - `req.nephio.org/v1alpha1.Interface` 
    - For every interface resource status, it will use `status.ipAllocationStatus` and `status.vlanAllocationStatus` fields to populate AMFDeployment `spec.interfaces` values.
 - `req.nephio.org/v1alpha1.DataNetwork`
-    - For every datanetwork resource status, it will use `status.pools.ipAllocation` fields to populate AMFDeployment `spec.networkInstances` values.
+    - For every data network resource status, it will use `status.pools.ipAllocation` fields to populate AMFDeployment `spec.networkInstances` values.
 - `req.nephio.org/v1alpha1.Capacity`
     - This resource is the source of truth for the capacity details in AMFDeployment spec.
 
