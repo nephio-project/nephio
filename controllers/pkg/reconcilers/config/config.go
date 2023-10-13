@@ -19,7 +19,6 @@ package ctrlrconfig
 import (
 	"time"
 
-	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
@@ -31,7 +30,6 @@ import (
 type ControllerConfig struct {
 	PorchClient     client.Client
 	PorchRESTClient rest.Interface
-	GiteaClient     giteaclient.GiteaClient
 	Poll            time.Duration
 	Copts           controller.Options
 	Address         string // backend server address
