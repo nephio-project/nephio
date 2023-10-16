@@ -67,7 +67,7 @@ presubmits:
         args:
         - "-c"
         - |
-          /bin/fossologyscanner repo nomos ojo copyright keyword
+          /bin/fossologyscanner --report SPDX_JSON repo nomos ojo copyright keyword
           cp -R results ${ARTIFACTS}/    
   - name: presubmit-nephio-lichen
     decorate: true
