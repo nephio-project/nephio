@@ -22,11 +22,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	ctrlrconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconciler "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
-	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
@@ -149,16 +147,9 @@ func main() {
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
 		backendAddress = address
 	}
-	// Sending the porchclient to gitea, this will be used to get
-	// the secret objects for gitea client authentication. The client
-	// of the manager of this controller cannot be used at this point.
-	// Should this be conditional ? Only if we have repo/token reconciler
-	g := giteaclient.New(resource.NewAPIPatchingApplicator(porchClient))
-	go g.Start(ctx)
 
 	ctrlCfg := &ctrlrconfig.ControllerConfig{
 		Address:         backendAddress,
-		GiteaClient:     g,
 		PorchClient:     porchClient,
 		PorchRESTClient: porchRESTClient,
 		IpamClientProxy: ipam.New(ctx, clientproxy.Config{

@@ -54,6 +54,13 @@ const (
 // SetupWithManager sets up the controller with the Manager.
 func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
 	cfg, ok := c.(*ctrlconfig.ControllerConfig)
+	// Sending the porchclient to gitea, this will be used to get
+	// the secret objects for gitea client authentication. The client
+	// of the manager of this controller cannot be used at this point.
+	// Should this be conditional ? Only if we have repo/token reconciler
+	r.giteaClient = giteaclient.New(resource.NewAPIPatchingApplicator(cfg.PorchClient))
+	go r.giteaClient.Start(ctx)
+
 	if !ok {
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
@@ -63,7 +70,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	}
 
 	r.APIPatchingApplicator = resource.NewAPIPatchingApplicator(mgr.GetClient())
-	r.giteaClient = cfg.GiteaClient
 	r.finalizer = resource.NewAPIFinalizer(mgr.GetClient(), finalizer)
 
 	return nil, ctrl.NewControllerManagedBy(mgr).
