@@ -12,7 +12,7 @@ pipeline: {}
 status:
   conditions:
   - message: update for condition
-    reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
     status: "False"
     type: req.nephio.org/v1alpha1.DataNetwork.internet
   - message: done
