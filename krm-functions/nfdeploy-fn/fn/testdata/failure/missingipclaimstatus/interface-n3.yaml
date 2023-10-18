@@ -1,0 +1,12 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Interface
+metadata:
+  name: n3
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+spec:
+  networkInstance:
+    name: vpc-ran
+  cniType: sriov
+  attachmentType: vlan
