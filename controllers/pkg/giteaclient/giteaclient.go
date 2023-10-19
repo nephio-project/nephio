@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"code.gitea.io/sdk/gitea"
@@ -36,10 +37,33 @@ type GiteaClient interface {
 	Get() *gitea.Client
 }
 
-func New(client resource.APIPatchingApplicator) GiteaClient {
-	return &gc{
-		client: client,
+var lock = &sync.Mutex{}
+
+var singleInstance *gc
+
+func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (GiteaClient, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("failed creating gitea client, value of ctx cannot be nil")
 	}
+
+	if client.Client == nil {
+		return nil, fmt.Errorf("failed creating gitea client, value of client.Client cannot be nil")
+	}
+
+	if singleInstance == nil {
+		lock.Lock()
+		defer lock.Unlock()
+		if singleInstance == nil {
+			singleInstance = &gc{client: client}
+			log.FromContext(ctx).Info("Gitea Client Instance created now.")
+			go singleInstance.Start(ctx)
+		} else {
+			log.FromContext(ctx).Info("Gitea Client Instance already created.")
+		}
+	} else {
+		log.FromContext(ctx).Info("Gitea Client Instance already created.")
+	}
+	return singleInstance, nil
 }
 
 type gc struct {
