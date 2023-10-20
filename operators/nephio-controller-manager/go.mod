@@ -109,6 +109,7 @@ require (
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230606174411-725288a7abf1 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
+	open-cluster-management.io/api v0.12.0 // indirect
 	sigs.k8s.io/cluster-api v1.4.0-beta.2.0.20230527123250-e111168cdff3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.13.4 // indirect
