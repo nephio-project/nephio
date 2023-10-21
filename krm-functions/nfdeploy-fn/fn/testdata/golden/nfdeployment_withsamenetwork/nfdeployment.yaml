@@ -1,0 +1,8 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: NFDeployment
+metadata:
+  name: upf-cluster01
+  annotations:
+    specializer.nephio.org/debug: "true"
+spec:
+  provider: upf.free5gc.io

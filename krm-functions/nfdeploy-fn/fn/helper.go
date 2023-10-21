@@ -32,13 +32,13 @@ type NfDeployFn struct {
 	capacity        *nephioreqv1alpha1.Capacity
 	//pkgName             string
 	networkInstance     map[string]nephiodeployv1alpha1.NetworkInstance
-	interfaceConfigsMap map[string]nephiodeployv1alpha1.InterfaceConfig
+	interfaceConfigsMap map[string][]nephiodeployv1alpha1.InterfaceConfig
 	paramRef            []nephiodeployv1alpha1.ObjectReference
 }
 
 func NewFunction() NfDeployFn {
 	return NfDeployFn{
-		interfaceConfigsMap: make(map[string]nephiodeployv1alpha1.InterfaceConfig),
+		interfaceConfigsMap: make(map[string][]nephiodeployv1alpha1.InterfaceConfig),
 		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),
 		paramRef:            []nephiodeployv1alpha1.ObjectReference{},
 	}
@@ -50,7 +50,12 @@ func (h *NfDeployFn) SetInterfaceConfig(interfaceConfig nephiodeployv1alpha1.Int
 		return
 	}
 
-	h.interfaceConfigsMap[networkInstanceName] = interfaceConfig
+	if len(h.interfaceConfigsMap[networkInstanceName]) != 0 {
+		h.interfaceConfigsMap[networkInstanceName] = append(h.interfaceConfigsMap[networkInstanceName], interfaceConfig)
+	} else {
+		h.interfaceConfigsMap[networkInstanceName] = []nephiodeployv1alpha1.InterfaceConfig{interfaceConfig}
+	}
+
 }
 
 func (h *NfDeployFn) AddDNNToNetworkInstance(dnn nephiodeployv1alpha1.DataNetwork, networkInstanceName string) {
@@ -96,7 +101,7 @@ func (h *NfDeployFn) GetAllInterfaceConfig() []nephiodeployv1alpha1.InterfaceCon
 	interfaceConfigs := make([]nephiodeployv1alpha1.InterfaceConfig, 0)
 
 	for _, ic := range h.interfaceConfigsMap {
-		interfaceConfigs = append(interfaceConfigs, ic)
+		interfaceConfigs = append(interfaceConfigs, ic...)
 	}
 
 	//sort it based on resource names

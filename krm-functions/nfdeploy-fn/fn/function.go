@@ -287,8 +287,10 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 	f.FillCapacityDetails(nf)
 	nf.Spec.ParametersRefs = f.paramRef
 
-	for networkInstanceName, itfceConfig := range f.interfaceConfigsMap {
-		f.AddInterfaceToNetworkInstance(itfceConfig.Name, networkInstanceName)
+	for networkInstanceName, itfceConfigs := range f.interfaceConfigsMap {
+		for _, itfceConfig := range itfceConfigs {
+			f.AddInterfaceToNetworkInstance(itfceConfig.Name, networkInstanceName)
+		}
 	}
 
 	nf.Spec.Interfaces = f.GetAllInterfaceConfig()
