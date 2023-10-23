@@ -204,14 +204,17 @@ func parseReconcilers(reconcilers string) []string {
 }
 
 func reconcilerIsEnabled(reconcilers []string, reconciler string) bool {
+
 	if slices.Contains(reconcilers, "*") {
 		return true
 	}
 	if slices.Contains(reconcilers, reconciler) {
 		return true
 	}
-	if _, found := os.LookupEnv(fmt.Sprintf("ENABLE_%s", strings.ToUpper(reconciler))); found {
-		return true
+	if val, found := os.LookupEnv(fmt.Sprintf("ENABLE_%s", strings.ToUpper(reconciler))); found {
+		if val == "true" {
+			return true
+		}
 	}
 	return false
 }
