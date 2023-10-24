@@ -58,8 +58,12 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	// the secret objects for gitea client authentication. The client
 	// of the manager of this controller cannot be used at this point.
 	// Should this be conditional ? Only if we have repo/token reconciler
-	r.giteaClient = giteaclient.New(resource.NewAPIPatchingApplicator(cfg.PorchClient))
-	go r.giteaClient.Start(ctx)
+
+	var e error
+	r.giteaClient, e = giteaclient.GetClient(ctx, resource.NewAPIPatchingApplicator(cfg.PorchClient))
+	if e != nil {
+		return nil, e
+	}
 
 	if !ok {
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())

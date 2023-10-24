@@ -141,7 +141,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Start a Gitea Client
 	// Prepare configuration for reconcilers
 	backendAddress := "127.0.0.1:9999"
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
