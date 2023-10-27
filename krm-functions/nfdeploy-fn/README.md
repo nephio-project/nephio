@@ -1,8 +1,8 @@
-# upf-deploy-fn
+# nf-deploy-fn
 
 ## Overview
 
-The upf-deploy-fn is a KRM function leveraging the `cond sdk` using the `workload.nephio.org/v1alpha1.NFDeployment` as `for` KRM resource.
+The nf-deploy-fn is a KRM function leveraging the `cond sdk` using the `workload.nephio.org/v1alpha1.NFDeployment` as `for` KRM resource.
 
 The upf deployment function has 3 `watch` resources:
 - `req.nephio.org/v1alpha1.Interface` 
@@ -21,10 +21,10 @@ kpt fn source <krm resource package> | go run main.go
 ```
 
 ```
-kpt fn eval --type mutator <krm resource package>  -i <upf-deployment-fn-container-image> 
+kpt fn eval --type mutator <krm resource package>  -i <nf-deployment-fn-container-image> 
 ```
 
 
 ## build
 
-make upf-docker-build; make upf-docker-push
+make docker-build; make docker-push
