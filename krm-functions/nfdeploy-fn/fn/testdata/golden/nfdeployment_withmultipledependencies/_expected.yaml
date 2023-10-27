@@ -147,10 +147,10 @@ items:
       interfaces:
       - e1
     parametersRefs:
-    - name: xyz-regional-upf-edge02
+    - name: xyz-regional-sample-edge02
       apiVersion: ref.nephio.org/v1alpha1
       kind: Config
-    - name: xyz-regional-sample-edge02
+    - name: xyz-regional-upf-edge02
       apiVersion: ref.nephio.org/v1alpha1
       kind: Config
     capacity:

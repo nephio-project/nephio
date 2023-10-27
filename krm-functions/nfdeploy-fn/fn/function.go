@@ -19,6 +19,7 @@ package fn
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
@@ -284,13 +285,27 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 		}
 	}
 
+	//sort the paramRefs
+	sort.Slice(f.paramRef, func(i, j int) bool {
+		if f.paramRef[i].Name != nil && f.paramRef[j].Name != nil {
+			return *f.paramRef[i].Name <= *f.paramRef[j].Name
+		}
+		return true
+	})
+
 	f.FillCapacityDetails(nf)
+
 	nf.Spec.ParametersRefs = f.paramRef
 
 	for networkInstanceName, itfceConfigs := range f.interfaceConfigsMap {
 		for _, itfceConfig := range itfceConfigs {
 			f.AddInterfaceToNetworkInstance(itfceConfig.Name, networkInstanceName)
 		}
+
+		//sort the added interfaces
+		sort.Slice(f.networkInstance[networkInstanceName].Interfaces, func(i, j int) bool {
+			return f.networkInstance[networkInstanceName].Interfaces[i] <= f.networkInstance[networkInstanceName].Interfaces[j]
+		})
 	}
 
 	nf.Spec.Interfaces = f.GetAllInterfaceConfig()
