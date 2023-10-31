@@ -119,7 +119,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// Delete the repo from the git server
 		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
-			if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
+			if err := r.deleteRepo(ctx, r.giteaClient, cr); err != nil {
 				r.l.Error(err, "cannot delete repo in git server")
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 			}
@@ -226,7 +226,7 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 	return nil
 }
 
-func (r *reconciler) deleteRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) deleteRepo(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Repository) error {
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
 		r.l.Error(err, "cannot get user info")
