@@ -35,6 +35,10 @@ type GiteaClient interface {
 	Start(ctx context.Context)
 
 	Get() *gitea.Client
+
+	GetMyUserInfo() (*gitea.User, *gitea.Response, error)
+
+	DeleteRepo(owner string, repo string) (*gitea.Response, error)
 }
 
 var lock = &sync.Mutex{}
@@ -136,4 +140,12 @@ func getClientAuth(secret *corev1.Secret) gitea.ClientOption {
 
 func (r *gc) Get() *gitea.Client {
 	return r.giteaClient
+}
+
+func (r *gc) GetMyUserInfo() (*gitea.User, *gitea.Response, error) {
+	return r.giteaClient.GetMyUserInfo()
+}
+
+func (r *gc) DeleteRepo(owner string, repo string) (*gitea.Response, error) {
+	return r.giteaClient.DeleteRepo(owner, repo)
 }
