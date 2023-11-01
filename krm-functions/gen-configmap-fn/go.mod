@@ -8,6 +8,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/stretchr/testify v1.8.2
 	k8s.io/apimachinery v0.27.3
+	sigs.k8s.io/kustomize/kyaml v0.14.2
 )
 
 require (
@@ -44,6 +45,5 @@ require (
 	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/kustomize/kyaml v0.14.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

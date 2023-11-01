@@ -1,0 +1,10 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: DataNetwork
+metadata:
+  name: internet
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    prefix: 10.0.0.0/8
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+spec:
+status: {}

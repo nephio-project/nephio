@@ -125,7 +125,7 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
@@ -139,7 +139,7 @@ items:
     name: n4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:
@@ -153,7 +153,7 @@ items:
     name: n6
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/namespace: dummy
   spec:
     networkInstance:

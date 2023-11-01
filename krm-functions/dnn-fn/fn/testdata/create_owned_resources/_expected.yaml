@@ -20,7 +20,7 @@ items:
     name: upf-cluster01-internet-pool1
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.DataNetwork.internet
   spec:
     kind: pool
@@ -69,7 +69,7 @@ items:
     annotations:
       config.kubernetes.io/local-config: "true"
       prefix: 10.0.0.0/8
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-internet
