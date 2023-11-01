@@ -12,9 +12,9 @@ pipeline: {}
 status:
   conditions:
   - message: update condition for initial resource
-    reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
     status: "False"
     type: req.nephio.org/v1alpha1.Interface.n3
   - message: update for condition
     status: "False"
-    type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+    type: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01

@@ -1,0 +1,30 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: upf-cluster01
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: upf package example
+pipeline: {}
+status:
+  conditions:
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.DataNetwork.internet
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.n3
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.n4
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.n6
+  - message: update for condition
+    status: "True"
+    type: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01

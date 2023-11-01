@@ -1,5 +1,7 @@
 apiVersion: workload.nephio.org/v1alpha1
-kind: UPFDeployment
+kind: NFDeployment
 metadata:
   name: upf-cluster01
   namespace: dummy
+spec:
+  provider: upf.free5gc.io

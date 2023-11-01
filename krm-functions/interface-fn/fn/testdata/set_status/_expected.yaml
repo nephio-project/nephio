@@ -20,7 +20,7 @@ items:
     name: upf-cluster01-n3-ipv4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     kind: network
@@ -39,7 +39,7 @@ items:
     name: upf-cluster01-n3-ipv6
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     kind: network
@@ -57,7 +57,7 @@ items:
   metadata:
     name: upf-cluster01-n3
     annotations:
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     config: '{"cniVersion":"0.3.1","vlan":2,"plugins":[{"type":"macvlan","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"172.1.2.254/24","gateway":"172.1.2.1"}]}},{"type":"tuning","capabilities":{"mac":true},"ipam":{}}]}'
@@ -87,7 +87,7 @@ items:
       status: "True"
       type: k8s.cni.cncf.io/v1.NetworkAttachmentDefinition.upf-cluster01-n3
     - message: update done
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n3
     - message: create resource
@@ -96,14 +96,14 @@ items:
       type: vlan.resource.nephio.org/v1alpha1.VLANClaim.upf-cluster01-n3
     - message: update for condition
       status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      type: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
 - apiVersion: req.nephio.org/v1alpha1
   kind: Interface
   metadata:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/debug: "true"
   spec:
     networkInstance:
@@ -125,7 +125,7 @@ items:
     name: upf-cluster01-n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -134,8 +134,10 @@ items:
   status:
     vlanID: 10
 - apiVersion: workload.nephio.org/v1alpha1
-  kind: UPFDeployment
+  kind: NFDeployment
   metadata:
     name: upf-cluster01
     annotations:
       specializer.nephio.org/debug: "true"
+  spec:
+    provider: upf.free5gc.io
