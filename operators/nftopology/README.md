@@ -140,15 +140,13 @@ NTC will also extract the number of pending conditions from each of the PR as a 
 NTC only tracks those NF instances that are successfully deployed, i.e., the corresponding cloned and hydrated / specialized package is merged to the **main** branch on the corresponding deployment repo for that target workload cluster. NTC would first create the initial *NFDeployTopology* CR when the first package merged, then update the CR as every subsequent package got merged.
 
 As each NF package got merged, the existing NFDeployedInstance's Connectivities field would change. This relationship is keyed off of the NetworkInstance resource; NetworkInstance specifies for each cluster matching the input label, a corresponding NF specified by NFTemplate would be deployed. For each NFAttachment defined on this NFInstance, there is a NetworkInstance defined --- and for any other NFInstance that has NFAttachment
-attached to this same network, it means the two NFInstances are connected. From this, NTC can construct the connectivities part of the NFDeployedTopology struct. The rest of the NFDeployedToplogy basically mapped one to one with different parts of NFTopology, as denoted by the following table:
+attached to this same network, it means the two NFInstances are connected. From this, NTC can construct the connectivities part of the NFDeployedInstance struct. The rest of the NFDeployedToplogy basically mapped one to one with different parts of NFTopology, as denoted by the following table:
 
-| NFTopology | NFDeployedTopology | 
+| NFTopology | NFDeployedInstance | 
 |:---------- | :----------------- |
 | **self-generated** | *Id* |
 | deployment repo | *ClusterName* |
 | NFTemplate.NFType | *NFType* | 
-| Class.Vendor | *NFVendor* |
-| Class.Version | *NFVersion* | 
 
 ## Reference
 Package Variant Controller: [doc](https://github.com/GoogleContainerTools/kpt/blob/a58c5c080787de693382ffd6936b73e9aed116c8/docs/design-docs/08-package-variant.md)
