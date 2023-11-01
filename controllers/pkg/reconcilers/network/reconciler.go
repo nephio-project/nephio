@@ -127,11 +127,9 @@ type reconciler struct {
 	finalizer       *resource.APIFinalizer
 	IpamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	VlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
-
-	l       logr.Logger
-	devices map[string]*ygotsrl.Device
-	//targets   targets.Target
-	resources resources.Resources // get initialized for every cr/reconcile loop
+	l               logr.Logger
+	devices         map[string]*ygotsrl.Device
+	resources       resources.Resources // get initialized for every cr/reconcile loop
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
