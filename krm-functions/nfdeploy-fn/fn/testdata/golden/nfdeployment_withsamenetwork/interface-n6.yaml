@@ -1,0 +1,20 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Interface
+metadata:
+  name: n6
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
+spec:
+  networkInstance:
+    name: vpc-internet
+  cniType: sriov
+  attachmentType: vlan
+status:
+  ipClaimStatus:
+  - prefix: 10.0.0.4/24
+    gateway: 10.0.0.2
+  - prefix: 1000::2/64
+    gateway: 1000::1
+  vlanClaimStatus:
+    vlanID: 101
