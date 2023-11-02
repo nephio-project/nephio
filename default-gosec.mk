@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 GOSEC_VER ?= 2.15.0
-GIT_ROOT_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-include $(GIT_ROOT_DIR)/detect-container-runtime.mk 
+GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
+include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
 # Install link at https://github.com/securego/gosec#install if not running inside a container
 .PHONY: gosec
 gosec: ## Inspect the source code for security problems by scanning the Go Abstract Syntax Tree
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v "$(GIT_ROOT_DIR):$(GIT_ROOT_DIR)" -w "$(CURDIR)" docker.io/securego/gosec:${GOSEC_VER} ./...
+		$(CONTAINER_RUNTIME) run -it -v "$(abspath $(GIT_ROOT_DIR)):$(abspath $(GIT_ROOT_DIR))" -w "$(CURDIR)" docker.io/securego/gosec:${GOSEC_VER} ./...
 else
 		gosec ./...
 endif

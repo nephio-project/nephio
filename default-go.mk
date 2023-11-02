@@ -15,8 +15,8 @@
 
 ##@ Go tests & formatting
 
-GIT_ROOT_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-include $(GIT_ROOT_DIR)/default-go-misc.mk 
-include $(GIT_ROOT_DIR)/default-go-test.mk 
-include $(GIT_ROOT_DIR)/default-go-lint.mk 
+GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
+include $(GIT_ROOT_DIR)/default-go-misc.mk
+include $(GIT_ROOT_DIR)/default-go-test.mk
+include $(GIT_ROOT_DIR)/default-go-lint.mk
 include $(GIT_ROOT_DIR)/default-gosec.mk

@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-GIT_ROOT_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-include $(GIT_ROOT_DIR)/detect-container-runtime.mk 
+GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
+include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
 ##@ Container images
 
