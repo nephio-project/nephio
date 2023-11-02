@@ -15,25 +15,25 @@
 package bootstrappackages
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    pkgvarapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
-    porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-    corev1 "k8s.io/api/core/v1"
-    "sigs.k8s.io/controller-runtime/pkg/client"
-    "sigs.k8s.io/yaml"
+	porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
+	pkgvarapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 type fakeClient struct {
-    objects []client.Object
-    client.Client
+	objects []client.Object
+	client.Client
 }
 
 var _ client.Client = &fakeClient{}
 
 func (f *fakeClient) List(_ context.Context, obj client.ObjectList, _ ...client.ListOption) error {
-    repoList := `apiVersion: config.porch.kpt.dev/v1alpha1
+	repoList := `apiVersion: config.porch.kpt.dev/v1alpha1
 kind: RepositoryList
 metadata:
   name: my-repo-list
@@ -49,7 +49,7 @@ items:
   metadata:
     name: dummy-repo`
 
-    secretList := `apiVersion: config.porch.kpt.dev
+	secretList := `apiVersion: config.porch.kpt.dev 
 kind: List
 metadata:
   name: my-secret-list
@@ -97,10 +97,9 @@ items:
       uid: dc85205e-43e6-42f6-8bb7-a5bafb398aa5
     resourceVersion: "3530"
     uid: 045c19c7-c93d-4eb4-b7c6-6fc62045a2ab
-  type: kubernetes.io/basic-auth`
-  
+  type: kubernetes.io/basic-auth` // #nosec G101
 
-    pvList := `apiVersion: config.porch.kpt.dev
+	pvList := `apiVersion: config.porch.kpt.dev
 kind: PackageVariantList
 metadata:
   name: my-pv-list
@@ -130,25 +129,25 @@ items:
       repo: dn-2
       package: dn-2`
 
-    var err error
-    switch v := obj.(type) {
-    case *porchconfig.RepositoryList:
-        err = yaml.Unmarshal([]byte(repoList), v)
-        for _, o := range v.Items {
-            f.objects = append(f.objects, o.DeepCopy())
-        }
-    case *corev1.SecretList:
-        err = yaml.Unmarshal([]byte(secretList), v)
-        for _, o := range v.Items {
-            f.objects = append(f.objects, o.DeepCopy())
-        }
-    case *pkgvarapi.PackageVariantList:
-        err = yaml.Unmarshal([]byte(pvList), v)
-        for _, o := range v.Items {
-            f.objects = append(f.objects, o.DeepCopy())
-        }
-    default:
-        return fmt.Errorf("unsupported type")
-    }
-    return err
+	var err error
+	switch v := obj.(type) {
+	case *porchconfig.RepositoryList:
+		err = yaml.Unmarshal([]byte(repoList), v)
+		for _, o := range v.Items {
+			f.objects = append(f.objects, o.DeepCopy())
+		}
+	case *corev1.SecretList:
+		err = yaml.Unmarshal([]byte(secretList), v)
+		for _, o := range v.Items {
+			f.objects = append(f.objects, o.DeepCopy())
+		}
+	case *pkgvarapi.PackageVariantList:
+		err = yaml.Unmarshal([]byte(pvList), v)
+		for _, o := range v.Items {
+			f.objects = append(f.objects, o.DeepCopy())
+		}
+	default:
+		return fmt.Errorf("unsupported type")
+	}
+	return err
 }

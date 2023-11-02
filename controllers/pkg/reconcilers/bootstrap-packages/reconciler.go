@@ -49,7 +49,6 @@ func init() {
 	reconcilerinterface.Register("bootstrappackages", &reconciler{})
 }
 
-
 //+kubebuilder:rbac:groups="*",resources=secrets,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters/status,verbs=get
@@ -82,8 +81,8 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c a
 
 type reconciler struct {
 	client.Client
-	porchClient   client.Client
-	log           logr.Logger
+	porchClient client.Client
+	log         logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
