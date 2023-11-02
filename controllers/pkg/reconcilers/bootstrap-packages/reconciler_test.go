@@ -107,12 +107,12 @@ func TestIsStagingPackageRevision(t *testing.T) {
 		expectedError error
 		expectedIsStagingRepo bool
 	}{
-		"IsStaging": {
+		"Staging repo type found": {
 			repoName: "mgmt-staging",
 			expectedIsStagingRepo: true,
 			expectedError: nil,
 		},
-		"IsNotStaging": {
+		"Staging repo type not found": {
 			repoName: "dummy-repo",
 			expectedIsStagingRepo: false,
 			expectedError: nil,
