@@ -17,16 +17,6 @@
 GO_VERSION ?= 1.20.2
 IMG_REGISTRY ?= docker.io/nephio
 
-# CONTAINER_RUNNABLE checks if tests and lint check can be run inside container.
-ifeq ($(shell command -v podman > /dev/null 2>&1; echo $$?), 0)
-CONTAINER_RUNTIME=podman
-else
-CONTAINER_RUNTIME=docker
-endif
-CONTAINER_RUNNABLE ?= $(shell command -v $(CONTAINER_RUNTIME) > /dev/null 2>&1; echo $$?)
-
-export CONTAINER_RUNTIME CONTAINER_RUNNABLE
-
 # find all subdirectories with a go.mod file in them
 GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
 # find all subdirectories with a Dockerfile in them

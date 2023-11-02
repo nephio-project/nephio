@@ -14,13 +14,15 @@
 
 
 GOLANG_CI_VER ?= v1.52
+GIT_ROOT_DIR := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+include $(GIT_ROOT_DIR)/detect-container-runtime.mk 
 
 # Install link at https://golangci-lint.run/usage/install/ if not running inside a container
 .PHONY: lint
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v "$(CURDIR):/go/src" -w /go/src docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-		 golangci-lint run ./... -v --timeout 10m
+	$(CONTAINER_RUNTIME) run -it -v "$(GIT_ROOT_DIR):$(GIT_ROOT_DIR)" -w "$(CURDIR)" docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
+	 golangci-lint run ./... -v --timeout 10m
 else
-		golangci-lint run ./... -v --timeout 10m
+	golangci-lint run ./... -v --timeout 10m
 endif
