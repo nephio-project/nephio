@@ -20,8 +20,9 @@ vendor
 # Tox environments
 .tox/
 *.dic
-/.vscode
+**/.vscode/
 go.work
 go.work.sum
 lcov.info
 coverage_unit.html
+**/lcov.info.tmp
