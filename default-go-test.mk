@@ -14,7 +14,6 @@
 
 GO_VERSION ?= 1.20.2
 TEST_COVERAGE_FILE=lcov.info
-TMP_TEST_COVERAGE_FILE=lcov.info.tmp
 TEST_COVERAGE_HTML_FILE=coverage_unit.html
 TEST_COVERAGE_FUNC_FILE=func_coverage.out
 
@@ -25,13 +24,11 @@ unit: test
 test: ## Run unit tests (go test)
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		$(CONTAINER_RUNTIME) run -it -v "$(CURDIR):/go/src" -w /go/src docker.io/library/golang:${GO_VERSION}-alpine3.17 \
-         sh -e -c "go test ./... -v -coverprofile ${TMP_TEST_COVERAGE_FILE}; \
-		 cat ${TMP_TEST_COVERAGE_FILE} | grep -v "fake_client.go" > ${TEST_COVERAGE_FILE}; \
+         sh -e -c "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
          go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
          go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"
 else
-		go test ./... -v -coverprofile ${TMP_TEST_COVERAGE_FILE} 
-	    cat ${TMP_TEST_COVERAGE_FILE} | grep -v "fake_client.go" > ${TEST_COVERAGE_FILE}
+		go test ./... -v -coverprofile ${TEST_COVERAGE_FILE} 
 		go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}
 		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
 endif

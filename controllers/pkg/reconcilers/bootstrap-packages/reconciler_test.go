@@ -17,12 +17,10 @@ limitations under the License.
 package bootstrappackages
 
 import (
-	"context"
 	"fmt"
 	"testing"
+
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func TestGetResourcesPRR(t *testing.T) {
@@ -77,7 +75,7 @@ spec:
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := reconciler{}
-			us, err := r.filterNonLocalResources(tc.resources)
+			us, _, err := r.getResourcesPRR(tc.resources)
 
 			if tc.expectedErr {
 				assert.Error(t, err)
@@ -97,65 +95,6 @@ spec:
 				delete(tc.wanted, gvkn)
 			}
 
-		})
-	}
-}
-
-func TestIsStagingPackageRevision(t *testing.T) {
-	cases := map[string]struct {
-		repoName string
-		expectedError error
-		expectedIsStagingRepo bool
-	}{
-		"IsStaging": {
-			repoName: "mgmt-staging",
-			expectedIsStagingRepo: true,
-			expectedError: nil,
-		},
-		"IsNotStaging": {
-			repoName: "dummy-repo",
-			expectedIsStagingRepo: false,
-			expectedError: nil,
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
-			fc := &fakeClient{}
-	        r := &reconciler{}
-			actualIsStagingRepo, actualError := r.IsStagingPackageRevision(ctx, fc, tc.repoName)
-			require.Equal(t, tc.expectedIsStagingRepo, actualIsStagingRepo)
-			require.Equal(t, tc.expectedError, actualError)
-			
-		})
-	}
-}
-
-func TestGetClusterSecret(t *testing.T) {
-	cases := map[string]struct {
-		clusterName string
-		expectedError error
-		expectedSecret corev1.Secret
-	}{
-		"Got cluster Secret": {
-			clusterName: "wc-argocd",
-			expectedSecret: corev1.Secret{
-				Type: "cluster.x-k8s.io/secret",
-			},
-			expectedError: nil,
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
-			fc := &fakeClient{}
-	        r := &reconciler{}
-			actualSecret, actualError := r.GetClusterSecret(ctx, fc, tc.clusterName)
-			require.Equal(t, tc.expectedSecret.Type, actualSecret.Type)
-			require.Equal(t, tc.expectedError, actualError)
-			
 		})
 	}
 }
