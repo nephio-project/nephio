@@ -25,7 +25,7 @@ unit: test
 .PHONY: test
 test: ## Run unit tests (go test)
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run -it -v "$(abspath $(GIT_ROOT_DIR)):$(abspath $(GIT_ROOT_DIR))" -w "$(CURDIR)" docker.io/library/golang:${GO_VERSION}-alpine3.17 \
+		$(RUN_CONTAINER_COMMAND) docker.io/library/golang:${GO_VERSION}-alpine3.17 \
          sh -e -c "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
          go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
          go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"

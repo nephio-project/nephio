@@ -24,4 +24,4 @@ endif
 
 CONTAINER_RUNNABLE ?= $(shell command -v $(CONTAINER_RUNTIME) > /dev/null 2>&1; echo $$?)
 
-export CONTAINER_RUNTIME CONTAINER_RUNNABLE
+RUN_CONTAINER_COMMAND ?= $(CONTAINER_RUNTIME) run -it --rm -v "$(abspath $(GIT_ROOT_DIR)):$(abspath $(GIT_ROOT_DIR))" -w "$(CURDIR)" --security-opt label=disable 

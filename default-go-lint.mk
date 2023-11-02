@@ -21,7 +21,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 .PHONY: lint
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
-	$(CONTAINER_RUNTIME) run -it -v "$(abspath $(GIT_ROOT_DIR)):$(abspath $(GIT_ROOT_DIR))" -w "$(CURDIR)" docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
+	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
 	 golangci-lint run ./... -v --timeout 10m
 else
 	golangci-lint run ./... -v --timeout 10m

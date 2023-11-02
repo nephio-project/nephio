@@ -29,8 +29,7 @@ docker-build docker-push:  ## Build docker images.
 	done
 
 .PHONY: test fmt vet unit unit-clean
-# delegate these targets to the Makefiles of individual go modules
-test fmt vet unit unit-clean: 
+test fmt vet unit unit-clean: ## These targets are delegated to the Makefiles of individual go modules in this directory subtree
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done
