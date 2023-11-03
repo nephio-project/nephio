@@ -117,7 +117,7 @@ func TestPackageRevisionIsReady(t *testing.T) {
 			conds: []porchv1alpha1.Condition{
 				{
 					Type: "foo",
-					Status: porchv1alpha1.ConditionStatus(kptv1.ConditionTrue),
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
 				},
 			},
 			readyGates:   []porchv1alpha1.ReadinessGate{
@@ -131,7 +131,7 @@ func TestPackageRevisionIsReady(t *testing.T) {
 			conds: []porchv1alpha1.Condition{
 				{
 					Type: "bar",
-					Status: porchv1alpha1.ConditionStatus(kptv1.ConditionFalse),
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
 				},
 			},
 			readyGates:   []porchv1alpha1.ReadinessGate{
