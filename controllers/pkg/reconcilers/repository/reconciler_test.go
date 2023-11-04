@@ -30,6 +30,9 @@ type GiteaClientMock struct {
 type NephioGiteaClientMock struct {
 	myUserInfoError error
 	deleteRepoError error
+	getRepoError    error
+	createRepoError error
+	editRepoError   error
 }
 
 func (gc NephioGiteaClientMock) Get() *gitea.Client {
@@ -45,6 +48,113 @@ func (gc NephioGiteaClientMock) GetMyUserInfo() (*gitea.User, *gitea.Response, e
 
 func (gc NephioGiteaClientMock) DeleteRepo(owner string, repo string) (*gitea.Response, error) {
 	return nil, gc.deleteRepoError
+}
+
+func (gc NephioGiteaClientMock) GetRepo(userName string, repoCRName string) (*gitea.Repository, *gitea.Response, error) {
+	return nil, nil, gc.getRepoError
+}
+
+func (gc NephioGiteaClientMock) CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error) {
+	return &gitea.Repository{}, nil, gc.createRepoError
+}
+
+func (gc NephioGiteaClientMock) EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error) {
+	return &gitea.Repository{}, nil, gc.editRepoError
+}
+
+func TestUpsertRepo(t *testing.T) {
+	dummyString := "Dummy String"
+	dummyBool := true
+	dummyTrustModel := infrav1alpha1.TrustModel("Trust Model")
+
+	testCases := map[string]struct {
+		ctx         context.Context
+		giteaClient NephioGiteaClientMock
+		cr          infrav1alpha1.Repository
+		expectedErr error
+	}{
+		"User Info reports error": {
+			ctx: nil,
+			giteaClient: NephioGiteaClientMock{
+				myUserInfoError: errors.New("Error getting User Information"),
+			},
+			cr:          infrav1alpha1.Repository{},
+			expectedErr: errors.New("Error getting User Information"),
+		},
+		"Repo exists, cr fields blank": {
+			ctx:         nil,
+			giteaClient: NephioGiteaClientMock{},
+			cr: infrav1alpha1.Repository{
+				Status: infrav1alpha1.RepositoryStatus{},
+			},
+			expectedErr: nil,
+		},
+		"Repo exists, cr fields not blank": {
+			ctx: nil,
+			giteaClient: NephioGiteaClientMock{
+				editRepoError: errors.New("Repo update failed"),
+			},
+			cr: infrav1alpha1.Repository{
+				Spec: infrav1alpha1.RepositorySpec{
+					Description: &dummyString,
+					Private:     &dummyBool,
+				},
+				Status: infrav1alpha1.RepositoryStatus{},
+			},
+			expectedErr: errors.New("Repo update failed"),
+		},
+		"Repo exists, update fails": {
+			ctx:         nil,
+			giteaClient: NephioGiteaClientMock{},
+			cr: infrav1alpha1.Repository{
+				Status: infrav1alpha1.RepositoryStatus{},
+			},
+			expectedErr: nil,
+		},
+		"Create repo: cr fields not blank": {
+			ctx: nil,
+			giteaClient: NephioGiteaClientMock{
+				getRepoError: errors.New("Repo does not exist"),
+			},
+			cr: infrav1alpha1.Repository{
+				Spec: infrav1alpha1.RepositorySpec{
+					Description:   &dummyString,
+					Private:       &dummyBool,
+					IssueLabels:   &dummyString,
+					Gitignores:    &dummyString,
+					License:       &dummyString,
+					Readme:        &dummyString,
+					DefaultBranch: &dummyString,
+					TrustModel:    &dummyTrustModel,
+				},
+			},
+			expectedErr: nil,
+		},
+		"Create repo: cr fields blank": {
+			ctx: nil,
+			giteaClient: NephioGiteaClientMock{
+				getRepoError: errors.New("Repo does not exist"),
+			},
+			cr:          infrav1alpha1.Repository{},
+			expectedErr: nil,
+		},
+		"Create repo: fails": {
+			ctx: nil,
+			giteaClient: NephioGiteaClientMock{
+				getRepoError:    errors.New("Repo does not exist"),
+				createRepoError: errors.New("Error creating repo"),
+			},
+			cr:          infrav1alpha1.Repository{},
+			expectedErr: errors.New("Error creating repo"),
+		},
+	}
+	for tn, tc := range testCases {
+		t.Run(tn, func(t *testing.T) {
+			r := reconciler{}
+			err := r.upsertRepo(tc.ctx, tc.giteaClient, &tc.cr)
+			require.Equal(t, tc.expectedErr, err)
+		})
+	}
 }
 
 func TestDeleteRepo(t *testing.T) {

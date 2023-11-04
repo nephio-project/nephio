@@ -33,12 +33,12 @@ import (
 
 type GiteaClient interface {
 	Start(ctx context.Context)
-
 	Get() *gitea.Client
-
 	GetMyUserInfo() (*gitea.User, *gitea.Response, error)
-
 	DeleteRepo(owner string, repo string) (*gitea.Response, error)
+	GetRepo(userName string, repoCRName string) (*gitea.Repository, *gitea.Response, error)
+	CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error)
+	EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error)
 }
 
 var lock = &sync.Mutex{}
@@ -148,4 +148,16 @@ func (r *gc) GetMyUserInfo() (*gitea.User, *gitea.Response, error) {
 
 func (r *gc) DeleteRepo(owner string, repo string) (*gitea.Response, error) {
 	return r.giteaClient.DeleteRepo(owner, repo)
+}
+
+func (r *gc) GetRepo(userName string, repoCRName string) (*gitea.Repository, *gitea.Response, error) {
+	return r.giteaClient.GetRepo(userName, repoCRName)
+}
+
+func (r *gc) CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error) {
+	return r.giteaClient.CreateRepo(createRepoOption)
+}
+
+func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error) {
+	return r.giteaClient.EditRepo(userName, repoCRName, editRepoOption)
 }

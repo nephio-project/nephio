@@ -143,14 +143,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// upsert repo in git server
-	if err := r.upsertRepo(ctx, giteaClient, cr); err != nil {
+	if err := r.upsertRepo(ctx, r.giteaClient, cr); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) upsertRepo(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Repository) error {
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
 		r.l.Error(err, "cannot get user info")
