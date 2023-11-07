@@ -1,0 +1,15 @@
+apiVersion: config.porch.kpt.dev/v1alpha1
+kind: RepositoryList
+metadata:
+  name: my-repo-list
+items:
+- apiVersion: config.porch.kpt.dev/v1alpha1
+  kind: Repository
+  metadata:
+    annotations:
+      nephio.org/staging: "true"
+    name: mgmt-staging
+- apiVersion: config.porch.kpt.dev/v1alpha1
+  kind: Repository
+  metadata:
+    name: dummy-repo

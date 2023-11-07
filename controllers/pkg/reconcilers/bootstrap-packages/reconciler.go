@@ -26,7 +26,6 @@ import (
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	porchconfigv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
@@ -82,18 +81,17 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c a
 type reconciler struct {
 	client.Client
 	porchClient client.Client
-	log         logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.log = log.FromContext(ctx)
-	packageRevision := &porchv1alpha1.PackageRevision{}
-	if err := r.Client.Get(ctx, req.NamespacedName, packageRevision); err != nil {
+	log := log.FromContext(ctx)
+	cr := &porchv1alpha1.PackageRevision{}
+	if err := r.Client.Get(ctx, req.NamespacedName, cr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
 			msg := "cannot get resource"
-			r.log.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), msg)
 		}
 		return ctrl.Result{}, nil
@@ -101,19 +99,19 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// check if the packagerevision is part of a staging repository
 	// if not we can ignore this package revision
-	stagingPR, err := r.IsStagingPackageRevision(ctx, r.porchClient, packageRevision.Spec.RepositoryName)
+	stagingPR, err := r.IsStagingPackageRevision(ctx, cr.Spec.RepositoryName)
 	if err != nil {
 		msg := "cannot list repositories"
-		r.log.Error(err, msg)
+		log.Error(err, msg)
 		return ctrl.Result{}, errors.Wrap(err, msg)
 	}
-	if stagingPR && porchv1alpha1.LifecycleIsPublished(packageRevision.Spec.Lifecycle) {
-		r.log.Info("reconcile package revision")
+	if stagingPR && porchv1alpha1.LifecycleIsPublished(cr.Spec.Lifecycle) {
+		log.Info("reconcile package revision")
 		// get the relevant package revision resources
 		resources, err := r.getPrResources(ctx, req)
 		if err != nil {
 			msg := "cannot get resources"
-			r.log.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(err, msg)
 		}
 		if len(resources) > 0 {
@@ -122,15 +120,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// first resource in the resource list
 			clusterName, ok := resources[0].GetAnnotations()["nephio.org/cluster-name"]
 			if !ok {
-				r.log.Info("clusterName not found",
+				log.Info("clusterName not found",
 					"resource", fmt.Sprintf("%s.%s.%s", resources[0].GetAPIVersion(), resources[0].GetKind(), resources[0].GetName()),
 					"annotations", resources[0].GetAnnotations())
 				return ctrl.Result{}, nil
 			}
-			clusterSecret, err := r.GetClusterSecret(ctx, r.Client, clusterName)
+			clusterSecret, err := r.GetClusterSecret(ctx, clusterName)
 			if err != nil {
 				msg := fmt.Sprintf("failed to get cluster Secret for: %s", clusterName)
-				r.log.Error(err, msg)
+				log.Error(err, msg)
 				return ctrl.Result{}, errors.Wrap(err, msg)
 			}
 			clusterClient, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(&clusterSecret)
@@ -138,26 +136,26 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 				if err != nil {
 					msg := "cannot get clusterClient"
-					r.log.Error(err, msg)
+					log.Error(err, msg)
 					return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 				}
 				if !ready {
-					r.log.Info("cluster not ready")
+					log.Info("cluster not ready")
 					return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 				}
 				// install the resources to the cluster
 				for _, resource := range resources {
 					resource := resource // required to prevent gosec warning: G601 (CWE-118): Implicit memory aliasing in for loop
-					r.log.Info("install manifest", "resource", fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
+					log.Info("install manifest", "resource", fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
 					if err := clusterClient.Apply(ctx, &resource); err != nil {
 						msg := fmt.Sprintf("cannot apply resource to cluster: resourceName: %s", resource.GetName())
-						r.log.Error(err, msg)
+						log.Error(err, msg)
 						return ctrl.Result{}, errors.Wrap(err, msg)
 					}
 				}
 			} else {
 				// the clusterClient was not found, we retry
-				r.log.Info("cluster client not found, retry...")
+				log.Info("cluster client not found, retry...")
 				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 			}
 		}
@@ -165,10 +163,10 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *reconciler) GetClusterSecret(ctx context.Context, client client.Client, clusterName string) (corev1.Secret, error) {
+func (r *reconciler) GetClusterSecret(ctx context.Context, clusterName string) (corev1.Secret, error) {
 	// we need to find the cluster client secret
 	secrets := &corev1.SecretList{}
-	if err := client.List(ctx, secrets); err != nil {
+	if err := r.Client.List(ctx, secrets); err != nil {
 		return corev1.Secret{}, err
 	}
 	clusterSecret := corev1.Secret{}
@@ -181,9 +179,9 @@ func (r *reconciler) GetClusterSecret(ctx context.Context, client client.Client,
 	return clusterSecret, nil
 }
 
-func (r *reconciler) IsStagingPackageRevision(ctx context.Context, porchClient client.Client, repositoryName string) (bool, error) {
+func (r *reconciler) IsStagingPackageRevision(ctx context.Context, repositoryName string) (bool, error) {
 	repos := &porchconfigv1alpha1.RepositoryList{}
-	if err := porchClient.List(ctx, repos); err != nil {
+	if err := r.porchClient.List(ctx, repos); err != nil {
 		return false, err
 	}
 	stagingRepoNames := []string{}
@@ -203,11 +201,11 @@ func (r *reconciler) IsStagingPackageRevision(ctx context.Context, porchClient c
 func (r *reconciler) getPrResources(ctx context.Context, req ctrl.Request) ([]unstructured.Unstructured, error) {
 	PackageRevisionResources := &porchv1alpha1.PackageRevisionResources{}
 	if err := r.porchClient.Get(ctx, req.NamespacedName, PackageRevisionResources); err != nil {
-		r.log.Error(err, "cannot get package revision resourcelist", "key", req.NamespacedName)
+		log.FromContext(ctx).Error(err, "cannot get package revision resourcelist", "key", req.NamespacedName)
 		return nil, err
 	}
 
-	return r.filterNonLocalResources(PackageRevisionResources.Spec.Resources)
+	return r.filterNonLocalResources(ctx, PackageRevisionResources.Spec.Resources)
 }
 
 func includedFileTypes(path string, match []string) bool {
@@ -220,7 +218,7 @@ func includedFileTypes(path string, match []string) bool {
 	return false
 }
 
-func (r *reconciler) filterNonLocalResources(resources map[string]string) ([]unstructured.Unstructured, error) {
+func (r *reconciler) filterNonLocalResources(ctx context.Context, resources map[string]string) ([]unstructured.Unstructured, error) {
 	inputs := []kio.Reader{}
 	for path, data := range resources {
 		if includedFileTypes(path, []string{"*.yaml", "*.yml", "Kptfile"}) {
@@ -251,7 +249,7 @@ func (r *reconciler) filterNonLocalResources(resources map[string]string) ([]uns
 		}
 		u := unstructured.Unstructured{}
 		if err := yaml.Unmarshal([]byte(rnode.MustString()), &u); err != nil {
-			r.log.Error(err, "cannot unmarshal data", "data", rnode.MustString())
+			log.FromContext(ctx).Error(err, "cannot unmarshal data", "data", rnode.MustString())
 			// we dont fail
 			continue
 		}

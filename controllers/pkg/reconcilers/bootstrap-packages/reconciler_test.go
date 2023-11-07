@@ -77,7 +77,7 @@ spec:
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := reconciler{}
-			us, err := r.filterNonLocalResources(tc.resources)
+			us, err := r.filterNonLocalResources(context.Background(), tc.resources)
 
 			if tc.expectedErr {
 				assert.Error(t, err)
@@ -122,9 +122,9 @@ func TestIsStagingPackageRevision(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			fc := &fakeClient{}
-	        r := &reconciler{}
-			actualIsStagingRepo, actualError := r.IsStagingPackageRevision(ctx, fc, tc.repoName)
+			fc := &fakeClient{testDataPath: "testdata/client_responses/repos.yaml"}
+	        r := &reconciler{porchClient: fc}
+			actualIsStagingRepo, actualError := r.IsStagingPackageRevision(ctx, tc.repoName)
 			require.Equal(t, tc.expectedIsStagingRepo, actualIsStagingRepo)
 			require.Equal(t, tc.expectedError, actualError)
 			
@@ -150,9 +150,9 @@ func TestGetClusterSecret(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			fc := &fakeClient{}
-	        r := &reconciler{}
-			actualSecret, actualError := r.GetClusterSecret(ctx, fc, tc.clusterName)
+			fc := &fakeClient{testDataPath: "testdata/client_responses/secrets.yaml"}
+	        r := &reconciler{Client: fc}
+			actualSecret, actualError := r.GetClusterSecret(ctx, tc.clusterName)
 			require.Equal(t, tc.expectedSecret.Type, actualSecret.Type)
 			require.Equal(t, tc.expectedError, actualError)
 			
