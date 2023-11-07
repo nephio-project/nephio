@@ -119,6 +119,14 @@ func TestPackageRevisionIsReady(t *testing.T) {
 					Type: "foo",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
 				},
+				{
+					Type: "foobar",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
+				{
+					Type: "myterriblecondition",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
 			},
 			readyGates:   []porchv1alpha1.ReadinessGate{
 				{
@@ -140,6 +148,16 @@ func TestPackageRevisionIsReady(t *testing.T) {
 				},
 			},
 			want: false,
+		},
+		"Empty readinessGates": {
+			conds: []porchv1alpha1.Condition{
+				{
+					Type: "bar",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
+				},
+			},
+			readyGates:   []porchv1alpha1.ReadinessGate{},
+			want: true,
 		},
 	}
 
