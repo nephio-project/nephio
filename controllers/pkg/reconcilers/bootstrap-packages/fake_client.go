@@ -17,9 +17,9 @@ package bootstrappackages
 import (
 	"context"
 	"fmt"
-    "os"
 	porchconfig "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -27,16 +27,16 @@ import (
 type fakeClient struct {
 	objects []client.Object
 	client.Client
-  testDataPath string
+	testDataPath string
 }
 
 var _ client.Client = &fakeClient{}
 
 func (f *fakeClient) List(_ context.Context, obj client.ObjectList, _ ...client.ListOption) error {
-  data, err := os.ReadFile(f.testDataPath)
-  if err != nil {
-      panic(err)
-  }
+	data, err := os.ReadFile(f.testDataPath)
+	if err != nil {
+		panic(err)
+	}
 
 	switch v := obj.(type) {
 	case *porchconfig.RepositoryList:
@@ -49,7 +49,7 @@ func (f *fakeClient) List(_ context.Context, obj client.ObjectList, _ ...client.
 		for _, o := range v.Items {
 			f.objects = append(f.objects, o.DeepCopy())
 		}
-  default:
+	default:
 		return fmt.Errorf("unsupported type")
 	}
 	return err
