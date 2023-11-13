@@ -71,7 +71,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	}
 
 	r.APIPatchingApplicator = resource.NewAPIPatchingApplicator(mgr.GetClient())
-	r.finalizer = resource.NewAPIFinalizer(mgr.GetClient(), finalizer)
+	r.finalizer = resource.NewAPIFinalizer(mgr.GetClient(), "infra.nephio.org/finalizer")
 
 	return nil, ctrl.NewControllerManagedBy(mgr).
 		Named("RepositoryController").
