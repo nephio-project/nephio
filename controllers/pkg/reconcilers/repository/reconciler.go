@@ -100,8 +100,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// check if client exists otherwise retry
-	giteaClient := r.giteaClient.Get()
-	if giteaClient == nil {
+	if r.giteaClient == nil {
 		err := fmt.Errorf("gitea server unreachable")
 		log.Error(err, "cannot connect to git server")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
