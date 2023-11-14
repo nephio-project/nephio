@@ -4,11 +4,11 @@
 - Approver: 
 
 ## Description
-NFTopology controller (NTC) takes a network topology centric input and kickstarts the Nephio automation process via generating a PackageVariantSet (PVS) custom resource, and as the associated packages are being deployed, NTC continuously updates statuses to reflect state of deployment of these packages. Primarily, NTC serves as example application to utilize Nephio primitives for network function automations.
+The NFTopology controller (NTC) takes a network topology centric input and kickstarts the Nephio automation process by generating a PackageVariantSet (PVS) custom resource. As the associated packages are being deployed, NTC continuously updates their status fields to reflect the state of deployment of these packages. Primarily, NTC serves as example application that utilizes Nephio primitives for network function automations.
 
 ![NFTopology High Level Functional Diagram](./img/nftopology-functional.jpg)
 
-NTC contains two controllers, one watches the NFTopology custom resource, and reconcile that intent via constructing a number of PVSs; the other controller watches PackageRevision resources in the management cluster to determine what NF package has been deployed, and updates the NFTopology status accordingly.
+The NTC contains two controllers. The first controller watches the NFTopology custom resource and reconciles that intent by constructing a number of PVSs. The second controller watches PackageRevision resources in the management cluster to determine what NF packages have been deployed and updates the NFTopology status accordingly.
 
 ## NFTopology CRD
 This is the definition of the NFTopology custom resource:
@@ -24,8 +24,7 @@ type NFInterface struct {
     NetworkInstanceName string `json:"networkInstanceName" yaml:"networkInstanceName"`
 }
 
-// PackageRevisionReference is a temporary replica of PackageRevisionReference used for the
-// ONE Summit
+// PackageRevisionReference defines a reference to a package
 type PackageRevisionReference struct {
     // Namespace is the namespace for both the repository and package revision
     // +optional
@@ -108,11 +107,11 @@ The concept behind the NFTopology custom resource is denoted by the following di
 
 ![NFTopology CRD](./img/nftopology-crd.jpg)
 
-Note that the NetworkInstance field is static, i.e., user defined a fixed NetworkInstance resource to be linked to a template, whereas the actual NF instance is dynamic --- that is, the actuation of the instance of the NF is based off of a cluster matching some labels, but the NetworkInstace this NF specification will be attaching to is statically configured. Note that each NFInstance would only create one instance per each cluster matching a label, and that the NFNetworkInstance does **NOT** define the network, it is merely
-a placeholder to denote a connectivity between an instance's attachment point to another instance's attachment point
+Note that the NetworkInstance field is static, i.e., the user defined a fixed NetworkInstance resource to be linked to a template, whereas the actual NF instance is dynamic --- that is, the actuation of the instance of the NF is based on a cluster matching some labels, but the NetworkInstace that this NF specification will be attaching to is statically configured. Note that each NFInstance would only create one instance per each cluster matching a label, and that the NFNetworkInstance does **NOT** define the network, it is merely
+a placeholder to denote connectivity between an instance's attachment point and another instance's attachment point
 
 ## NFTopology to PackageVariantSet CR Mapping
-NTC kickstarts the hydration process via applying the **PackageVariantSet** (PVS) CR to management cluster. The following table denotes which fields from NFTopology (and its associated struct) will be used to populate the PVS CR:
+NTC kickstarts the hydration process by applying the **PackageVariantSet** (PVS) CR to management cluster. The following table denotes which fields from NFTopology (and its associated struct) will be used to populate the PVS CR:
 
 | NFTopology or associated | PVS Spec field | 
 |:------------------------ | :------------- |
@@ -132,14 +131,14 @@ NTC also adds a label to each of the associated PVCs for connectivity associatio
 ## Tracking Packages
 NTC will embed a label 'nf-deployment-name', which is set to NFToplogy CR's own name; PackageVariantSet and PackageVariant controllers will propagate this label to all the PackageRevision resources associated with the "fan-out"ed packages.
 
-NTC watches over all PackageRevision resources in the management cluster, and maps the NFTopology intent to the number of deployed NF resources via tracking corresponding PackageRevision resources. As each PackageRevision resource gets to *PUBLISHED* state, NTC would update the **NFInstances** field of its status to reflect on deployed NF package.
+NTC watches over all PackageRevision resources in the management cluster, and maps the NFTopology intent to the number of deployed NF resources by tracking the corresponding PackageRevision resources. As each PackageRevision resource gets to *PUBLISHED* state, NTC will update the **NFInstances** field of its status to reflect on deployed NF package.
 
 NTC will also extract the number of pending conditions from each of the PR as a display to user(s) who want to continuously examine the lifecycle of the packages, and which conditions are gating a particular package from being deployed. NTC essentially tracks status of package deployment for all NF instances specified derived from the NFTopology intent; however, NTC does **NOT** track the progress of the deployment once the package is pushed to the workload cluster.
 
 ## Constructing NFInstances of NFTopology Status
 NTC only tracks those NF instances that are successfully deployed, i.e., the corresponding cloned and hydrated / specialized package is merged to the **main** branch on the corresponding deployment repo for that target workload cluster. NTC would first create the initial *NFDeployTopology* CR when the first package merged, then update the CR as every subsequent package got merged.
 
-As each NF package got merged, the existing NFDeployedInstance's Connectivities field would change. This relationship is keyed off of the NetworkInstance resource; NetworkInstance specifies for each cluster matching the input label, a corresponding NF specified by NFTemplate would be deployed. For each NFAttachment defined on this NFInstance, there is a NetworkInstance defined --- and for any other NFInstance that has NFAttachment
+As each NF package gets merged, the existing NFDeployedInstance's Connectivities field will change. This relationship is keyed off of the NetworkInstance resource; NetworkInstance specifies for each cluster matching the input label, a corresponding NF specified by NFTemplate will be deployed. For each NFAttachment defined on this NFInstance, there is a NetworkInstance defined --- and for any other NFInstance that has NFAttachment
 attached to this same network, it means the two NFInstances are connected. From this, NTC can construct the connectivities part of the NFDeployedInstance struct. The rest of the NFDeployedToplogy basically mapped one to one with different parts of NFTopology, as denoted by the following table:
 
 | NFTopology | NFDeployedInstance | 
