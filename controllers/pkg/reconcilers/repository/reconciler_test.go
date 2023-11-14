@@ -35,6 +35,10 @@ type NephioGiteaClientMock struct {
 	editRepoError   error
 }
 
+func (gc NephioGiteaClientMock) IsInitialized() bool {
+	return true
+}
+
 func (gc NephioGiteaClientMock) Get() *gitea.Client {
 	return nil
 }
