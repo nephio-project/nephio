@@ -123,7 +123,7 @@ The assumption here is that (at least a subset of) the ClusterSelector labels wi
 
 NFTopology CR has capacity input which needs to be passed through PVS to the actual NF packages. This can be accomplished via the kpt provided function **search-replace** where the capacity input from NFTopology CR can be passed to the cloned NF package, which also contains capacity.yaml.
 
-NTC will also need to associate all the to-be-fan'ed-out packages with this deployment. In PVS, this is allowed as a set of labels to be passed to PVS controller, which will then propagate those labels to PackageVariant (PV) CRs, and subsequently the PackageRevision (PR) CRs. NTC will then watch for all the PR resources created, and associated them with which NFTopology specification via these labels.
+NTC will also need to associate all the to-be-fan'ed-out packages with this deployment. In PVS, this is allowed as a set of labels to be passed to PVS controller, which will then propagate those labels to PackageVariant (PV) CRs, and subsequently the PackageRevision (PR) CRs. NTC will then watch for all the PR resources created, and associate them with the relevant NFTopology specification via these labels.
 
 NTC also adds a label to each of the associated PVCs for connectivity association. This will lead to each resulting PackageRevision to also carry these labels.
 
