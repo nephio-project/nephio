@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "api"
+		},
+		{
+			"name": "hello-server",
+			"path": "examples/apps/hello-server"
+		},
+		{
+			"name": "porch",
+			"path": "."
+		},
+		{
+			"name": "kpt",
+			"path": ".."
+		},
+		{
+			"name": "controllers",
+			"path": "controllers"
+		},
+		{
+			"name": "rollouts",
+			"path": "../rollouts"
+		}
+	]
+}
