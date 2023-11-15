@@ -31,8 +31,8 @@ include default-mockery.mk
 
 ##@ Go tests & formatting
 
-.PHONY: unit lint gosec test unit-clean 
-unit lint gosec test: ## These targets are delegated to the Makefiles of individual Go modules
+.PHONY: unit lint gosec test unit-clean install-mockery generate-mocks
+unit lint gosec test install-mockery generate-mocks: ## These targets are delegated to the Makefiles of individual Go modules
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done

@@ -17,6 +17,12 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/go-logr/logr"
+	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	"github.com/stretchr/testify/mock"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"testing"
 
 	"code.gitea.io/sdk/gitea"
@@ -197,6 +203,80 @@ func TestDeleteRepo(t *testing.T) {
 			r := reconciler{}
 			err := r.deleteRepo(tc.ctx, tc.giteaClient, &tc.cr)
 			require.Equal(t, tc.expectedErr, err)
+		})
+	}
+}
+
+func Test_reconciler_upsertRepo(t *testing.T) {
+	type mockHelper struct {
+		methodName string
+		argType    []string
+		retArgList []interface{}
+	}
+	type fields struct {
+		APIPatchingApplicator resource.APIPatchingApplicator
+		giteaClient           giteaclient.GiteaClient
+		finalizer             *resource.APIFinalizer
+		l                     logr.Logger
+	}
+	type args struct {
+		ctx         context.Context
+		giteaClient giteaclient.GiteaClient
+		cr          *infrav1alpha1.Repository
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		mocks   []mockHelper
+		wantErr bool
+	}{
+		{
+			name:   "User Info reports error",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(nil)},
+			args:   args{nil, nil, &infrav1alpha1.Repository{}},
+			mocks: []mockHelper{
+				{"GetMyUserInfo", []string{}, []interface{}{nil, nil, fmt.Errorf("error getting User Information")}},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Repo exists, cr fields blank",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(nil)},
+			args:   args{nil, nil, &infrav1alpha1.Repository{Status: infrav1alpha1.RepositoryStatus{}}},
+			mocks: []mockHelper{
+				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, nil}},
+				{"EditRepo", []string{"string", "string", "gitea.EditRepoOption"}, []interface{}{&gitea.Repository{}, nil, nil}},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &reconciler{
+				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
+				giteaClient:           tt.fields.giteaClient,
+				finalizer:             tt.fields.finalizer,
+				l:                     tt.fields.l,
+			}
+			// The below block being setup and processing of mocks before invoking the function to be tested
+			mockGClient := new(giteaclient.MockGiteaClient)
+			tt.args.giteaClient = mockGClient
+			tt.fields.giteaClient = mockGClient
+			for counter := range tt.mocks {
+				call := mockGClient.Mock.On(tt.mocks[counter].methodName)
+				for _, arg := range tt.mocks[counter].argType {
+					call.Arguments = append(call.Arguments, mock.AnythingOfType(arg))
+				}
+				for _, ret := range tt.mocks[counter].retArgList {
+					call.ReturnArguments = append(call.ReturnArguments, ret)
+				}
+			}
+
+			if err := r.upsertRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
+				t.Errorf("upsertRepo() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }

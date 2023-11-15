@@ -19,6 +19,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"reflect"
 
 	"code.gitea.io/sdk/gitea"
@@ -83,6 +84,7 @@ type reconciler struct {
 	resource.APIPatchingApplicator
 	giteaClient giteaclient.GiteaClient
 	finalizer   *resource.APIFinalizer
+	l           logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
