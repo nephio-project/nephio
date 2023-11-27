@@ -62,6 +62,10 @@ func (gc NephioGiteaClientMock) EditRepo(userName string, repoCRName string, edi
 	return &gitea.Repository{}, nil, gc.editRepoError
 }
 
+func (gc NephioGiteaClientMock) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
+	return nil, nil
+}
+
 func TestUpsertRepo(t *testing.T) {
 	dummyString := "Dummy String"
 	dummyBool := true

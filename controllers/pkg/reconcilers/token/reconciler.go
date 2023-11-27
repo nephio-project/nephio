@@ -121,7 +121,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// Delete the token from the git server
 		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
-			if err := r.deleteToken(ctx, giteaClient, cr); err != nil {
+			if err := r.deleteToken(ctx, r.giteaClient, cr); err != nil {
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 			}
 		}
@@ -221,7 +221,7 @@ func (r *reconciler) createToken(ctx context.Context, giteaClient *gitea.Client,
 	return nil
 }
 
-func (r *reconciler) deleteToken(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Token) error {
+func (r *reconciler) deleteToken(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Token) error {
 	_, err := giteaClient.DeleteAccessToken(cr.GetTokenName())
 	if err != nil {
 		r.l.Error(err, "cannot delete token")

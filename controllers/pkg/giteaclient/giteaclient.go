@@ -39,6 +39,7 @@ type GiteaClient interface {
 	GetRepo(userName string, repoCRName string) (*gitea.Repository, *gitea.Response, error)
 	CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error)
 	EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error)
+	DeleteAccessToken(value interface{}) (*gitea.Response, error)
 }
 
 var lock = &sync.Mutex{}
@@ -160,4 +161,8 @@ func (r *gc) CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Reposit
 
 func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error) {
 	return r.giteaClient.EditRepo(userName, repoCRName, editRepoOption)
+}
+
+func (r *gc) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
+	return r.giteaClient.DeleteAccessToken(value)
 }
