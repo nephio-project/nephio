@@ -137,7 +137,6 @@ SetNadMaster
 SIG
 SiteCode
 SMF
-SMFDeployment
 snetworkplumbingwg
 specializer
 sriov
@@ -146,7 +145,7 @@ toolchain
 TypeOf
 UnMarshal
 UPF
-UPFDeployment
+NFDeployment
 URI
 VLAN
 VLANAllocation

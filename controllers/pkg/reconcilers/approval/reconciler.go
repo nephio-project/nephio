@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	"github.com/go-logr/logr"
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
@@ -84,20 +83,18 @@ type reconciler struct {
 	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx).WithValues("req", req)
-	r.l.Info("reconcile approval")
+	log := log.FromContext(ctx).WithValues("req", req)
+	log.Info("reconcile approval")
 
 	pr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
-			r.l.Error(err, "cannot get resource")
+			log.Error(err, "cannot get resource")
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), "cannot get resource")
 		}
 		return ctrl.Result{}, nil

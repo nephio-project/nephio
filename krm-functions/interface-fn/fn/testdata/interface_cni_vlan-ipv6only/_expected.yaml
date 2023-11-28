@@ -20,7 +20,7 @@ items:
     name: upf-cluster01-n3-ipv6
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
     kind: network
@@ -46,12 +46,12 @@ items:
   status:
     conditions:
     - message: update condition for initial resource
-      reason: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      reason: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       status: "False"
       type: req.nephio.org/v1alpha1.Interface.n3
     - message: update for condition
       status: "False"
-      type: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      type: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
     - message: create initial resource
       reason: req.nephio.org/v1alpha1.Interface.n3
       status: "False"
@@ -71,7 +71,7 @@ items:
     annotations:
       nephio.org/network-name: n3
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-ran
@@ -85,7 +85,7 @@ items:
     name: upf-cluster01-n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n3
   spec:
@@ -93,8 +93,10 @@ items:
       name: cluster01
   status: {}
 - apiVersion: workload.nephio.org/v1alpha1
-  kind: UPFDeployment
+  kind: NFDeployment
   metadata:
     name: upf-cluster01
     annotations:
       specializer.nephio.org/debug: "true"
+  spec:
+    provider: upf.free5gc.io

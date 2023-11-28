@@ -1,0 +1,8 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: NFDeployment
+metadata:
+  name: xyz-cluster01
+  annotations:
+    specializer.nephio.org/debug: "true"
+spec:
+  provider: xyz.free5gc.io

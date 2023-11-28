@@ -106,3 +106,67 @@ func TestHasSpecificTypeConditions(t *testing.T) {
 		})
 	}
 }
+
+func TestPackageRevisionIsReady(t *testing.T) {
+	cases := map[string]struct {
+		conds    []porchv1alpha1.Condition
+		readyGates []porchv1alpha1.ReadinessGate
+		want bool
+	}{
+		"Ready": {
+			conds: []porchv1alpha1.Condition{
+				{
+					Type: "foo",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
+				},
+				{
+					Type: "foobar",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
+				{
+					Type: "myterriblecondition",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
+			},
+			readyGates:   []porchv1alpha1.ReadinessGate{
+				{
+					ConditionType: "foo",
+				},
+			},
+			want: true,
+		},
+		"Not ready": {
+			conds: []porchv1alpha1.Condition{
+				{
+					Type: "bar",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
+			},
+			readyGates:   []porchv1alpha1.ReadinessGate{
+				{
+					ConditionType: "bar",
+				},
+			},
+			want: false,
+		},
+		"Empty readinessGates": {
+			conds: []porchv1alpha1.Condition{
+				{
+					Type: "bar",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
+				},
+			},
+			readyGates:   []porchv1alpha1.ReadinessGate{},
+			want: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			b := PackageRevisionIsReady(tc.readyGates, tc.conds)
+			if diff := cmp.Diff(b, tc.want); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
+			}
+		})
+	}
+}
