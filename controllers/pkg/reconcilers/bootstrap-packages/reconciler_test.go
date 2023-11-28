@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrappackages
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -75,7 +76,7 @@ spec:
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			r := reconciler{}
-			us, _, err := r.getResourcesPRR(tc.resources)
+			us, _, err := r.getResourcesPRR(context.Background(), tc.resources)
 
 			if tc.expectedErr {
 				assert.Error(t, err)

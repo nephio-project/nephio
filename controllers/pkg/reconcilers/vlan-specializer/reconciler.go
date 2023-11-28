@@ -29,7 +29,6 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
@@ -85,20 +84,18 @@ type reconciler struct {
 	For         corev1.ObjectReference
 	porchClient client.Client
 	krmfn       fn.ResourceListProcessor
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx).WithValues("req", req)
-	r.l.Info("reconcile specializer")
+	log := log.FromContext(ctx).WithValues("req", req)
+	log.Info("reconcile specializer")
 
 	pr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
-			r.l.Error(err, "cannot get resource")
+			log.Error(err, "cannot get resource")
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), "cannot get resource")
 		}
 		return ctrl.Result{}, nil
@@ -110,32 +107,32 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
 		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
-			r.l.Error(err, "cannot get package revision resources")
+			log.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
 		// get resourceList from resources
 		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
 		if err != nil {
-			r.l.Error(err, "cannot get resourceList")
+			log.Error(err, "cannot get resourceList")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
 
 		// run the function SDK
 		_, err = r.krmfn.Process(rl)
 		if err != nil {
-			r.l.Error(err, "function run failed")
+			log.Error(err, "function run failed")
 			// TBD if we need to return here + check if kptfile is set
 			//return ctrl.Result{}, errors.Wrap(err, "function run failed")
 		}
 		for _, o := range rl.Items {
-			r.l.Info("resourceList", "data", o.String())
+			log.Info("resourceList", "data", o.String())
 			// TBD what if we create new resources
 			// update the resources with the latest info
 			prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 		}
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
-			r.l.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
+			log.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
 			return ctrl.Result{}, nil
 		}
 
