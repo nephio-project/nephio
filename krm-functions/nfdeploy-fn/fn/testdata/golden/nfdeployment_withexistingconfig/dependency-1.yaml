@@ -1,0 +1,18 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Dependency
+metadata:
+  name: sample
+  annotations:
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.xyz-cluster01
+    specializer.nephio.org/namespace: free5gc-cp
+spec:
+  packageName: free5gc-sample
+  injectors:
+    - apiVersion: sample.xyz.org/v1alpha1
+      kind: UPF
+status:
+  injected:
+    - name: xyz-regional-sample-edge02
+      namespace: free5gc-sample
+      apiVersion: ref.nephio.org/v1alpha1
+      kind: Config
