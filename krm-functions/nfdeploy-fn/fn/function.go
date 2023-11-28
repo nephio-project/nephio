@@ -285,17 +285,21 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 		}
 	}
 
+	f.FillCapacityDetails(nf)
+
+	if len(nf.Spec.ParametersRefs) == 0 {
+		nf.Spec.ParametersRefs = f.paramRef
+	} else {
+		nf.Spec.ParametersRefs = append(nf.Spec.ParametersRefs, f.paramRef...)
+	}
+
 	//sort the paramRefs
-	sort.Slice(f.paramRef, func(i, j int) bool {
-		if f.paramRef[i].Name != nil && f.paramRef[j].Name != nil {
-			return *f.paramRef[i].Name <= *f.paramRef[j].Name
+	sort.Slice(nf.Spec.ParametersRefs, func(i, j int) bool {
+		if nf.Spec.ParametersRefs[i].Name != nil && nf.Spec.ParametersRefs[j].Name != nil {
+			return *nf.Spec.ParametersRefs[i].Name <= *nf.Spec.ParametersRefs[j].Name
 		}
 		return true
 	})
-
-	f.FillCapacityDetails(nf)
-
-	nf.Spec.ParametersRefs = f.paramRef
 
 	for networkInstanceName, itfceConfigs := range f.interfaceConfigsMap {
 		for _, itfceConfig := range itfceConfigs {
