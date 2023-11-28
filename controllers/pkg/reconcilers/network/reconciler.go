@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-logr/logr"
 	configv1alpha1 "github.com/henderiw-nephio/network/apis/config/v1alpha1"
 	infra2v1alpha1 "github.com/henderiw-nephio/network/apis/infra2/v1alpha1"
 	"github.com/henderiw-nephio/network/pkg/endpoints"
@@ -128,21 +127,20 @@ type reconciler struct {
 	IpamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	VlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
 
-	l       logr.Logger
 	devices map[string]*ygotsrl.Device
 	//targets   targets.Target
 	resources resources.Resources // get initialized for every cr/reconcile loop
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx)
-	r.l.Info("reconcile", "req", req)
+	log := log.FromContext(ctx)
+	log.Info("reconcile", "req", req)
 
 	cr := &infrav1alpha1.Network{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		// if the resource no longer exists the reconcile loop is done
 		if resource.IgnoreNotFound(err) != nil {
-			r.l.Error(err, errGetCr)
+			log.Error(err, errGetCr)
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), errGetCr)
 		}
 		return ctrl.Result{}, nil
@@ -154,32 +152,32 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if meta.WasDeleted(cr) {
 		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {
-			r.l.Error(err, "cannot remove finalizer")
+			log.Error(err, "cannot remove finalizer")
 			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 		}
 
-		r.l.Info("Successfully deleted resource")
+		log.Info("Successfully deleted resource")
 		return ctrl.Result{Requeue: false}, nil
 	}
 
 	// add finalizer to avoid deleting the token w/o it being deleted from the git server
 	if err := r.finalizer.AddFinalizer(ctx, cr); err != nil {
-		r.l.Error(err, "cannot add finalizer")
+		log.Error(err, "cannot add finalizer")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	eps, err := r.getProviderEndpoints(ctx, cr.Spec.Topology)
 	if err != nil {
-		r.l.Error(err, "cannot list provider endpoints")
+		log.Error(err, "cannot list provider endpoints")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	nodes, err := r.getProviderNodes(ctx, cr.Spec.Topology)
 	if err != nil {
-		r.l.Error(err, "cannot list provider nodes")
+		log.Error(err, "cannot list provider nodes")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
@@ -195,23 +193,23 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		},
 	)
 
-	r.l.Info("apply initial resources")
+	log.Info("apply initial resources")
 	if err := r.applyInitialresources(ctx, cr, eps, nodes); err != nil {
-		r.l.Error(err, "cannot apply initial resources")
+		log.Error(err, "cannot apply initial resources")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	r.l.Info("get new resources")
+	log.Info("get new resources")
 	if err := r.getNewResources(ctx, cr, eps, nodes); err != nil {
-		r.l.Error(err, "cannot get new resources")
+		log.Error(err, "cannot get new resources")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	r.l.Info("apply all resources")
+	log.Info("apply all resources")
 	if err := r.resources.APIApply(ctx); err != nil {
-		r.l.Error(err, "cannot apply resources to the API")
+		log.Error(err, "cannot apply resources to the API")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
@@ -235,7 +233,7 @@ func (r *reconciler) getProviderEndpoints(ctx context.Context, topology string) 
 	}
 	eps := &invv1alpha1.EndpointList{}
 	if err := r.List(ctx, eps, opts...); err != nil {
-		r.l.Error(err, "cannot list endpoints")
+		log.FromContext(ctx).Error(err, "cannot list endpoints")
 		return nil, err
 	}
 	return &endpoints.Endpoints{EndpointList: eps}, nil
@@ -250,7 +248,7 @@ func (r *reconciler) getProviderNodes(ctx context.Context, topology string) (*no
 	}
 	nos := &invv1alpha1.NodeList{}
 	if err := r.List(ctx, nos, opts...); err != nil {
-		r.l.Error(err, "cannot list nodes")
+		log.FromContext(ctx).Error(err, "cannot list nodes")
 		return nil, err
 	}
 	return &nodes.Nodes{NodeList: nos}, nil
@@ -268,11 +266,11 @@ func (r *reconciler) applyInitialresources(ctx context.Context, cr *infrav1alpha
 	})
 
 	if err := n.Run(ctx, cr); err != nil {
-		r.l.Error(err, "cannot execute network run")
+		log.FromContext(ctx).Error(err, "cannot execute network run")
 		return err
 	}
 	if err := r.resources.APIApply(ctx); err != nil {
-		r.l.Error(err, "cannot apply resources to the API")
+		log.FromContext(ctx).Error(err, "cannot apply resources to the API")
 		return err
 	}
 	return nil
@@ -290,7 +288,7 @@ func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Netw
 	})
 
 	if err := n.Run(ctx, cr); err != nil {
-		r.l.Error(err, "cannot execute network run")
+		log.FromContext(ctx).Error(err, "cannot execute network run")
 		return err
 	}
 
@@ -309,7 +307,7 @@ func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Netw
 	}
 
 	for nodeName, device := range n.GetDevices() {
-		r.l.Info("node config", "nodeName", nodeName)
+		log.FromContext(ctx).Info("node config", "nodeName", nodeName)
 
 		j, err := ygot.EmitJSON(device, &ygot.EmitJSONConfig{
 			Format: ygot.RFC7951,
@@ -320,7 +318,7 @@ func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Netw
 			SkipValidation: false,
 		})
 		if err != nil {
-			r.l.Error(err, "cannot construct json device info")
+			log.FromContext(ctx).Error(err, "cannot construct json device info")
 			return err
 		}
 

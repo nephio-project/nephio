@@ -26,7 +26,6 @@ import (
 
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	porchconfigv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porchconfig/v1alpha1"
-	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
@@ -89,19 +88,17 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c a
 type reconciler struct {
 	client.Client
 	porchClient client.Client
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 	cr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
 			msg := "cannot get resource"
-			r.l.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), msg)
 		}
 		return ctrl.Result{}, nil
@@ -112,15 +109,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	stagingPR, err := r.IsStagingPackageRevision(ctx, cr)
 	if err != nil {
 		msg := "cannot list repositories"
-		r.l.Error(err, msg)
+		log.Error(err, msg)
 		return ctrl.Result{}, errors.Wrap(err, msg)
 	}
 	if stagingPR && porchv1alpha1.LifecycleIsPublished(cr.Spec.Lifecycle) {
-		r.l.Info("reconcile package revision")
+		log.Info("reconcile package revision")
 		resources, namespacePresent, err := r.getResources(ctx, req)
 		if err != nil {
 			msg := "cannot get resources"
-			r.l.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(err, msg)
 		}
 		// we expect the clusterName to be applied to all resources in the
@@ -129,7 +126,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if len(resources) > 0 {
 			clusterName, ok := resources[0].GetAnnotations()[clusterNameKey]
 			if !ok {
-				r.l.Info("clusterName not found",
+				log.Info("clusterName not found",
 					"resource", fmt.Sprintf("%s.%s.%s", resources[0].GetAPIVersion(), resources[0].GetKind(), resources[0].GetName()),
 					"annotations", resources[0].GetAnnotations())
 				return ctrl.Result{}, nil
@@ -138,7 +135,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			secrets := &corev1.SecretList{}
 			if err := r.List(ctx, secrets); err != nil {
 				msg := "cannot list secrets"
-				r.l.Error(err, msg)
+				log.Error(err, msg)
 				return ctrl.Result{}, errors.Wrap(err, msg)
 			}
 			found := false
@@ -151,11 +148,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 						if err != nil {
 							msg := "cannot get clusterClient"
-							r.l.Error(err, msg)
+							log.Error(err, msg)
 							return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 						}
 						if !ready {
-							r.l.Info("cluster not ready")
+							log.Info("cluster not ready")
 							return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 						}
 						if !namespacePresent {
@@ -163,22 +160,22 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 							if err = clusterClient.Get(ctx, types.NamespacedName{Name: configsyncNamespace}, ns); err != nil {
 								if resource.IgnoreNotFound(err) != nil {
 									msg := fmt.Sprintf("cannot get namespace: %s", configsyncNamespace)
-									r.l.Error(err, msg)
+									log.Error(err, msg)
 									return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 								}
 								msg := fmt.Sprintf("namespace: %s, does not exist, retry...", configsyncNamespace)
-								r.l.Info(msg)
+								log.Info(msg)
 								return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 							}
 						}
 						// install resources
 						for _, resource := range resources {
 							resource := resource // required to prevent gosec warning: G601 (CWE-118): Implicit memory aliasing in for loop
-							r.l.Info("install manifest", "resource",
+							log.Info("install manifest", "resource",
 								fmt.Sprintf("%s.%s.%s", resource.GetAPIVersion(), resource.GetKind(), resource.GetName()))
 							if err := clusterClient.Apply(ctx, &resource); err != nil {
 								msg := fmt.Sprintf("cannot apply resource to cluster: resourceName: %s", resource.GetName())
-								r.l.Error(err, msg)
+								log.Error(err, msg)
 								return ctrl.Result{}, errors.Wrap(err, msg)
 							}
 						}
@@ -187,7 +184,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			}
 			if !found {
 				// the cluster client was not found, we retry
-				r.l.Info("cluster client not found, retry...")
+				log.Info("cluster client not found, retry...")
 				return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 			}
 		}
@@ -219,11 +216,11 @@ func (r *reconciler) IsStagingPackageRevision(ctx context.Context, cr *porchv1al
 func (r *reconciler) getResources(ctx context.Context, req ctrl.Request) ([]unstructured.Unstructured, bool, error) {
 	prr := &porchv1alpha1.PackageRevisionResources{}
 	if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
-		r.l.Error(err, "cannot get package revision resourcelist", "key", req.NamespacedName)
+		log.FromContext(ctx).Error(err, "cannot get package revision resourcelist", "key", req.NamespacedName)
 		return nil, false, err
 	}
 
-	return r.getResourcesPRR(prr.Spec.Resources)
+	return r.getResourcesPRR(ctx, prr.Spec.Resources)
 }
 
 func includeFile(path string, match []string) bool {
@@ -236,7 +233,7 @@ func includeFile(path string, match []string) bool {
 	return false
 }
 
-func (r *reconciler) getResourcesPRR(resources map[string]string) ([]unstructured.Unstructured, bool, error) {
+func (r *reconciler) getResourcesPRR(ctx context.Context, resources map[string]string) ([]unstructured.Unstructured, bool, error) {
 	inputs := []kio.Reader{}
 	for path, data := range resources {
 		if includeFile(path, []string{"*.yaml", "*.yml", "Kptfile"}) {
@@ -267,7 +264,7 @@ func (r *reconciler) getResourcesPRR(resources map[string]string) ([]unstructure
 		}
 		u := unstructured.Unstructured{}
 		if err := yaml.Unmarshal([]byte(n.MustString()), &u); err != nil {
-			r.l.Error(err, "cannot unmarshal data", "data", n.MustString())
+			log.FromContext(ctx).Error(err, "cannot unmarshal data", "data", n.MustString())
 			// we don't fail
 			continue
 		}
