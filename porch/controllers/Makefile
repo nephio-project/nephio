@@ -16,6 +16,15 @@ IMAGE_TAG ?= latest
 IMAGE_REPO ?= docker.io/nephio
 IMAGE_NAME ?= porch-controllers
 
+# This includes the following targets:
+#   test, unit, unit-clean,
+#   gosec, lint,
+#   fmt, vet
+include ../../default-go.mk
+
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include ../../default-help.mk
+
 .PHONY: build-image docker-build
 build-image docker-build:
 	cd ../..; docker buildx build --load --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f porch/controllers/Dockerfile .

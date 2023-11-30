@@ -20,6 +20,15 @@ DEPLOYCONFIGDIR=$(BUILDDIR)/deploy
 DEPLOYCONFIG_NO_SA_DIR=$(BUILDDIR)/deploy-no-sa
 KPTDIR=$(abspath $(CURDIR)/..)
 
+# This includes the following targets:
+#   test, unit, unit-clean,
+#   gosec, lint,
+#   fmt, vet
+include ../default-go.mk
+
+# This includes the 'help' target that prints out all targets with their descriptions organized by categories
+include ../default-help.mk
+
 # Modules are ordered in dependency order. A module precedes modules that depend on it.
 MODULES = \
  examples/apps/hello-server \
