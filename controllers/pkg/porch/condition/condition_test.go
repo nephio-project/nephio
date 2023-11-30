@@ -109,26 +109,26 @@ func TestHasSpecificTypeConditions(t *testing.T) {
 
 func TestPackageRevisionIsReady(t *testing.T) {
 	cases := map[string]struct {
-		conds    []porchv1alpha1.Condition
+		conds      []porchv1alpha1.Condition
 		readyGates []porchv1alpha1.ReadinessGate
-		want bool
+		want       bool
 	}{
 		"Ready": {
 			conds: []porchv1alpha1.Condition{
 				{
-					Type: "foo",
+					Type:   "foo",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
 				},
 				{
-					Type: "foobar",
+					Type:   "foobar",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
 				},
 				{
-					Type: "myterriblecondition",
+					Type:   "myterriblecondition",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
 				},
 			},
-			readyGates:   []porchv1alpha1.ReadinessGate{
+			readyGates: []porchv1alpha1.ReadinessGate{
 				{
 					ConditionType: "foo",
 				},
@@ -138,11 +138,11 @@ func TestPackageRevisionIsReady(t *testing.T) {
 		"Not ready": {
 			conds: []porchv1alpha1.Condition{
 				{
-					Type: "bar",
+					Type:   "bar",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
 				},
 			},
-			readyGates:   []porchv1alpha1.ReadinessGate{
+			readyGates: []porchv1alpha1.ReadinessGate{
 				{
 					ConditionType: "bar",
 				},
@@ -152,12 +152,12 @@ func TestPackageRevisionIsReady(t *testing.T) {
 		"Empty readinessGates": {
 			conds: []porchv1alpha1.Condition{
 				{
-					Type: "bar",
+					Type:   "bar",
 					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionTrue),
 				},
 			},
-			readyGates:   []porchv1alpha1.ReadinessGate{},
-			want: true,
+			readyGates: []porchv1alpha1.ReadinessGate{},
+			want:       true,
 		},
 	}
 
