@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IMAGE_TAG ?= latest
+IMAGE_TAG  ?= latest
 IMAGE_REPO ?= docker.io/nephio
-IMAGE_NAME ?= porch-controllers
+IMAGE_NAME ?= porch-server
 
 .PHONY: build-image docker-build
 build-image docker-build:
-	cd ../..; docker buildx build --load --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f porch/controllers/Dockerfile .
+	docker buildx build --load --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f $(CURDIR)/Dockerfile ../..
 
 .PHONY: push-image docker-push
 push-image docker-push:
-	cd ../..; docker buildx build --push --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f porch/controllers/Dockerfile .
+	docker buildx build --push --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f $(CURDIR)/Dockerfile ../..

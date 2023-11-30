@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# GCP project to use for development
-GCP_PROJECT_ID ?= $(shell gcloud config get-value project)
 IMAGE_TAG ?= latest
-IMAGE_REPO ?= gcr.io/$(GCP_PROJECT_ID)
+IMAGE_REPO ?= docker.io/nephio
 IMAGE_NAME ?= hello-server
 
-.PHONY: push-image
-push-image:
+.PHONY: push-image docker-push
+push-image docker-push:
 	docker buildx build --push --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 
-.PHONY: build-image
-build-image:
+.PHONY: build-image docker-build
+build-image docker-build:
 	docker buildx build --load --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .

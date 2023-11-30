@@ -45,6 +45,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/GoogleContainerTools/kpt v1.0.0-beta.48 h1:TOK/6ooDVMx7QUesgEWGLuiFf9BK9MFxl75EfIGVnso=
+github.com/GoogleContainerTools/kpt v1.0.0-beta.48/go.mod h1:4HB9SqxxRYOQPQp1LiAz4IFSLQVNMJk8sE41S1HF4TI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93 h1:c1GhPzYzU2a3E+/2WB9OxoljK2pNYfsBF5Fz9GkdYXs=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20220720212527-133180134b93/go.mod h1:gkK43tTaPXFNASpbIbQImzhmt1hdcdin++kvzTblykc=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=

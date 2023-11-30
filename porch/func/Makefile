@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GCP_PROJECT_ID ?= $(shell gcloud config get-value project)
 IMAGE_TAG  ?= latest
-IMAGE_REPO ?= gcr.io/$(GCP_PROJECT_ID)
+IMAGE_REPO ?= docker.io/nephio
 IMAGE_NAME ?= function-runner
 WRAPPER_SERVER_IMAGE_NAME ?= wrapper-server
 COMPILED_PROTO=evaluator/evaluator_grpc.pb.go evaluator/evaluator.pb.go
@@ -31,12 +30,12 @@ $(COMPILED_PROTO): evaluator/evaluator.proto
 	  --go-grpc_out=./evaluator --go-grpc_opt=paths=source_relative \
 	  ./evaluator/evaluator.proto 
 
-.PHONY: build-image
-build-image:
+.PHONY: build-image docker-build
+build-image docker-build:
 	docker buildx build --load --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f ./Dockerfile "$(KPTDIR)"
 	docker buildx build --load --tag $(IMAGE_REPO)/$(WRAPPER_SERVER_IMAGE_NAME):$(IMAGE_TAG) -f ./Dockerfile-wrapperserver "$(KPTDIR)"
 
-.PHONY: push-image
-push-image:
+.PHONY: push-image docker-push
+push-image docker-push:
 	docker buildx build --push --tag $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) -f ./Dockerfile "$(KPTDIR)"
 	docker buildx build --push --tag $(IMAGE_REPO)/$(WRAPPER_SERVER_IMAGE_NAME):$(IMAGE_TAG) -f ./Dockerfile-wrapperserver "$(KPTDIR)"

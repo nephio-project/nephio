@@ -26,19 +26,16 @@ FROM gcr.io/kpt-fn/starlark:v0.3.0 as starlark
 FROM gcr.io/kpt-fn/upsert-resource:v0.2.0 as upsert-resource
 
 FROM golang:1.21.4-alpine3.18 as builder
-WORKDIR /go/src/github.com/GoogleContainerTools/kpt
+WORKDIR /go/src
 
 RUN go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.11
 RUN cp $GOPATH/bin/grpc-health-probe /grpc-health-probe
 
-COPY go.mod go.sum ./
 COPY porch/go.mod porch/go.sum porch/
 COPY porch/api/go.mod porch/api/go.sum porch/api/
 
 RUN cd porch ; go build -v google.golang.org/grpc k8s.io/klog/v2
 
-COPY pkg pkg
-COPY internal internal
 COPY porch/func/ porch/func/
 RUN cd porch/func ; go build -v -o /server ./server
 COPY porch/func/config.yaml /config.yaml

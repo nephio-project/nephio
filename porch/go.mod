@@ -3,14 +3,13 @@ module github.com/GoogleContainerTools/kpt/porch
 go 1.21
 
 replace (
-	github.com/GoogleContainerTools/kpt => ../
 	github.com/GoogleContainerTools/kpt/porch/api => ./api
 	github.com/go-git/go-git/v5 v5.4.3-0.20220408232334-4f916225cb2f => github.com/platkrm/go-git/v5 v5.4.3-0.20220410165046-c76b262044ce
 )
 
 require (
 	cloud.google.com/go/iam v1.1.1
-	github.com/GoogleContainerTools/kpt v0.0.0-00010101000000-000000000000
+	github.com/GoogleContainerTools/kpt v1.0.0-beta.48
 	github.com/GoogleContainerTools/kpt-functions-catalog/functions/go/apply-replacements v0.1.1
 	github.com/GoogleContainerTools/kpt-functions-catalog/functions/go/apply-setters v0.2.0
 	github.com/GoogleContainerTools/kpt-functions-catalog/functions/go/set-namespace v0.4.1

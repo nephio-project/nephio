@@ -15,7 +15,6 @@
 FROM golang:1.21.4-bookworm as builder
 
 WORKDIR /workspace
-COPY go.mod go.sum ./
 COPY porch/go.mod porch/go.sum porch/
 COPY porch/api/go.mod porch/api/go.sum porch/api/
 
@@ -36,8 +35,6 @@ RUN CGO_ENABLED=0 go build -v \
   k8s.io/client-go/discovery/cached
 
 WORKDIR /workspace
-COPY internal/ internal/
-COPY pkg/ pkg/
 COPY porch/api/ porch/api/
 COPY porch/controllers/ porch/controllers/
 COPY porch/pkg/ porch/pkg/

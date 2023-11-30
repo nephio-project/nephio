@@ -20,12 +20,9 @@ WORKDIR /go/src/github.com/GoogleContainerTools/kpt
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 
-COPY go.mod go.sum ./
 COPY porch/go.mod porch/go.sum porch/
 COPY porch/api/go.mod porch/api/go.sum porch/api/
 
-RUN echo "Downloading root modules ..." \
- && go mod download
 RUN echo "Downloading porch modules ..." \
  && cd porch && go mod download
 RUN echo "Downloading api modules ..." \
@@ -36,8 +33,6 @@ RUN cd porch/; go build -v \
   k8s.io/klog/v2 \
   github.com/go-git/go-git/v5
 
-COPY internal internal
-COPY pkg pkg
 COPY porch/api porch/api
 COPY porch/controllers porch/controllers
 COPY porch/pkg porch/pkg
