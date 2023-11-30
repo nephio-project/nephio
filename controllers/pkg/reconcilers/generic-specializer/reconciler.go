@@ -123,7 +123,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"Waiting", "owning PackageVariant not Ready")
 
-			return ctrl.Result{RequeueAfter: RequeueDuration}, nil
+		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
 
 	ipamf := ipamfn.New(r.ipamClientProxy)
