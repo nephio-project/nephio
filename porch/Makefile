@@ -147,15 +147,6 @@ tidy:
 test:
 	@for f in $(MODULES); do (cd $$f; echo "Testing $$f"; E2E=1 go test -race --count=1 ./...) || exit 1; done
 
-.PHONY: vet
-vet:
-	@for f in $(MODULES); do (cd $$f; echo "Checking $$f"; go run honnef.co/go/tools/cmd/staticcheck@latest ./...); done
-	@for f in $(MODULES); do (cd $$f; echo "Vetting $$f"; go vet ./...) || exit 1; done
-
-.PHONY: fmt
-fmt:
-	@for f in $(MODULES); do (cd $$f; echo "Formatting $$f"; gofmt -s -w .); done
-
 PORCH = $(BUILDDIR)/porch
 
 .PHONY: run-local
