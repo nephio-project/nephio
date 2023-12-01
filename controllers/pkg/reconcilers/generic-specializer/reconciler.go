@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	"github.com/go-logr/logr"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
@@ -89,20 +88,18 @@ type reconciler struct {
 	vlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
 	porchClient     client.Client
 	recorder        record.EventRecorder
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx).WithValues("req", req)
-	r.l.Info("reconcile genericspecializer")
+	log := log.FromContext(ctx).WithValues("req", req)
+	log.Info("reconcile genericspecializer")
 
 	pr := &porchv1alpha1.PackageRevision{}
 	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
-			r.l.Error(err, "cannot get resource")
+			log.Error(err, "cannot get resource")
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), "cannot get resource")
 		}
 		return ctrl.Result{}, nil
@@ -146,14 +143,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		prr := &porchv1alpha1.PackageRevisionResources{}
 		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
-			r.l.Error(err, "cannot get package revision resources")
+			log.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
 		}
 		// get resourceList from resources
 		rl, err := kptrl.GetResourceList(prr.Spec.Resources)
 		if err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get resourceList: %s", err.Error()))
-			r.l.Error(err, "cannot get resourceList")
+			log.Error(err, "cannot get resourceList")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
 
@@ -162,40 +159,40 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			_, err = ipamkrmfn.Process(rl)
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
-				r.l.Error(err, "ipam function run failed")
+				log.Error(err, "ipam function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("ipam specializer fn run successful")
+			log.Info("ipam specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) {
 			// run the function SDK
 			_, err = vlankrmfn.Process(rl)
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
-				r.l.Error(err, "vlan function run failed")
+				log.Error(err, "vlan function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("vlan specializer fn run successful")
+			log.Info("vlan specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&configInjectFor)) {
 			// run the function SDK
 			_, err = configInjectkrmfn.Process(rl)
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
-				r.l.Error(err, "configInject function run failed")
+				log.Error(err, "configInject function run failed")
 				return ctrl.Result{}, nil
 			}
-			r.l.Info("configInject specializer fn run successful")
+			log.Info("configInject specializer fn run successful")
 		}
 		workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
-		clusterName := r.getClusterName(workloadClusterObjs)
+		clusterName := r.getClusterName(ctx, workloadClusterObjs)
 
 		// We want to process the functions to refresh the claims
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
 			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
-			r.l.Info("package is published, no updates possible",
+			log.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
 				"rev", pr.Spec.Revision,
@@ -212,34 +209,34 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				// Debug
 				alloc, err := kubeobject.NewFromKubeObject[ipamv1alpha1.IPClaim](o)
 				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
+					log.Error(err, "cannot get extended kubeobject")
 					continue
 				}
 				ipAlloc, err := alloc.GetGoStruct()
 				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
+					log.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				r.l.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
+				log.Info("generic specializer ip allocation", "clusterName", clusterName, "status", ipAlloc.Status)
 			}
 			if o.GetAPIVersion() == vlanFor.APIVersion && o.GetKind() == vlanFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				// Debug
 				alloc, err := kubeobject.NewFromKubeObject[vlanv1alpha1.VLANClaim](o)
 				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
+					log.Error(err, "cannot get extended kubeobject")
 					continue
 				}
 				vlanAlloc, err := alloc.GetGoStruct()
 				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
+					log.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				r.l.Info("generic specializer vlan allocation", "clusterName", clusterName, "status", vlanAlloc.Status)
+				log.Info("generic specializer vlan allocation", "clusterName", clusterName, "status", vlanAlloc.Status)
 			}
 			if o.GetAPIVersion() == configInjectFor.APIVersion && o.GetKind() == configInjectFor.Kind {
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
-				r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
+				log.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", configInjectFor.Kind, o.GetName()))
 			}
 			for own := range configInjectf.GetConfig().Owns {
 				if o.GetAPIVersion() == own.APIVersion && o.GetKind() == own.Kind {
@@ -253,33 +250,33 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					} else {
 						prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 					}
-					r.l.Info("generic specializer", "kind", own.Kind, "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
-					r.l.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
-					r.l.Info("generic specializer config injector", "object", o.String())
+					log.Info("generic specializer", "kind", own.Kind, "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation))
+					log.Info("generic specializer config injector", "clusterName", clusterName, "resourceName", fmt.Sprintf("%s/%s", own.Kind, o.GetName()))
+					log.Info("generic specializer config injector", "object", o.String())
 				}
 			}
 
 			if o.GetAPIVersion() == "kpt.dev/v1" && o.GetKind() == "Kptfile" {
-				r.l.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation), "kptfile", o.String())
+				log.Info("generic specializer", "pathAnnotation", o.GetAnnotation(kioutil.PathAnnotation), "kptfile", o.String())
 				prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 				// debug
 
-				r.l.Info("generic specializer object kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", o)
+				log.Info("generic specializer object kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", o)
 				kptf, err := kubeobject.NewFromKubeObject[kptv1.KptFile](o)
 				if err != nil {
-					r.l.Error(err, "cannot get extended kubeobject")
+					log.Error(err, "cannot get extended kubeobject")
 					continue
 				}
 				kptfile, err := kptf.GetGoStruct()
 				if err != nil {
-					r.l.Error(err, "cannot get gostruct from kubeobject")
+					log.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
 				for _, c := range kptfile.Status.Conditions {
 					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
 						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
-						r.l.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
+						log.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
 					}
 				}
 			}
@@ -288,35 +285,35 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
-			r.l.Error(err, "mandatory Kptfile is missing from the package")
+			log.Error(err, "mandatory Kptfile is missing from the package")
 			return ctrl.Result{}, nil
 		}
 
-		r.l.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
+		log.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
 
 		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
 		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
 		// TODO do we need to update the status?
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
-			r.l.Error(err, "cannot update packagerevision resources")
+			log.Error(err, "cannot update packagerevision resources")
 			return ctrl.Result{}, err
 		}
 	}
 	return ctrl.Result{}, nil
 }
 
-func (r *reconciler) getClusterName(workloadClusterObjs fn.KubeObjects) string {
+func (r *reconciler) getClusterName(ctx context.Context, workloadClusterObjs fn.KubeObjects) string {
 	clusterName := ""
 	if len(workloadClusterObjs) > 0 {
 		cluster, err := kubeobject.NewFromKubeObject[infrav1alpha1.WorkloadCluster](workloadClusterObjs[0])
 		if err != nil {
-			r.l.Error(err, "cannot get extended kubeobject")
+			log.FromContext(ctx).Error(err, "cannot get extended kubeobject")
 			return clusterName
 		}
 		workloadCluster, err := cluster.GetGoStruct()
 		if err != nil {
-			r.l.Error(err, "cannot get gostruct from kubeobject")
+			log.FromContext(ctx).Error(err, "cannot get gostruct from kubeobject")
 			return clusterName
 		}
 		clusterName = workloadCluster.Spec.ClusterName

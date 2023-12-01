@@ -19,7 +19,6 @@ package network
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	invv1alpha1 "github.com/nokia/k8s-ipam/apis/inv/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +32,6 @@ import (
 
 type nodeEventHandler struct {
 	client client.Client
-	l      logr.Logger
 }
 
 // Create enqueues a request for all ip allocation within the ipam
@@ -62,8 +60,8 @@ func (e *nodeEventHandler) add(ctx context.Context, obj runtime.Object, queue ad
 	if !ok {
 		return
 	}
-	e.l = log.FromContext(ctx)
-	e.l.Info("event", "kind", obj.GetObjectKind(), "name", cr.GetName())
+	log := log.FromContext(ctx)
+	log.Info("event", "kind", obj.GetObjectKind(), "name", cr.GetName())
 
 	networks := &infrav1alpha1.NetworkList{}
 	if err := e.client.List(ctx, networks); err != nil {
@@ -74,7 +72,7 @@ func (e *nodeEventHandler) add(ctx context.Context, obj runtime.Object, queue ad
 		// only enqueue if the provider and the network topology match
 		if cr.Labels[invv1alpha1.NephioProviderKey] == nokiaSRLProvider &&
 			cr.Labels[invv1alpha1.NephioTopologyKey] == network.Spec.Topology {
-			e.l.Info("event requeue network", "name", network.GetName())
+			log.Info("event requeue network", "name", network.GetName())
 			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
 				Namespace: network.GetNamespace(),
 				Name:      network.GetName()}})

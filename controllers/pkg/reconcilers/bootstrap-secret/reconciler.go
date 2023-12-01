@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
@@ -66,19 +65,17 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c a
 
 type reconciler struct {
 	client.Client
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
 	cr := &corev1.Secret{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		// if the resource no longer exists the reconcile loop is done
 		if resource.IgnoreNotFound(err) != nil {
 			msg := "cannot get resource"
-			r.l.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), msg)
 		}
 		return reconcile.Result{}, nil
@@ -96,13 +93,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if cr.GetAnnotations()[nephioAppKey] == configsyncApp &&
 		cr.GetAnnotations()[clusterNameKey] != "" &&
 		cr.GetAnnotations()[clusterNameKey] != "mgmt" {
-		r.l.Info("reconcile secret")
+		log.Info("reconcile secret")
 		clusterName := cr.GetAnnotations()[clusterNameKey]
 
 		secrets := &corev1.SecretList{}
 		if err := r.List(ctx, secrets); err != nil {
 			msg := "cannot list secrets"
-			r.l.Error(err, msg)
+			log.Error(err, msg)
 			return ctrl.Result{}, errors.Wrap(err, msg)
 		}
 		found := false
@@ -115,11 +112,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 					if err != nil {
 						msg := "cannot get clusterClient"
-						r.l.Error(err, msg)
+						log.Error(err, msg)
 						return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 					}
 					if !ready {
-						r.l.Info("cluster not ready")
+						log.Info("cluster not ready")
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
 					// check if namespace exists, if not retry
@@ -127,11 +124,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					if err = clusterClient.Get(ctx, types.NamespacedName{Name: configsyncNamespace}, ns); err != nil {
 						if resource.IgnoreNotFound(err) != nil {
 							msg := fmt.Sprintf("cannot get namespace: %s", configsyncNamespace)
-							r.l.Error(err, msg)
+							log.Error(err, msg)
 							return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 						}
 						msg := fmt.Sprintf("namespace: %s, does not exist, retry...", configsyncNamespace)
-						r.l.Info(msg)
+						log.Info(msg)
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
 
@@ -145,10 +142,10 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					})
 					newcr.ResourceVersion = ""
 					newcr.UID = ""
-					r.l.Info("secret info", "secret", newcr.Annotations)
+					log.Info("secret info", "secret", newcr.Annotations)
 					if err := clusterClient.Apply(ctx, newcr); err != nil {
 						msg := fmt.Sprintf("cannot apply secret to cluster %s", clusterName)
-						r.l.Error(err, msg)
+						log.Error(err, msg)
 						return ctrl.Result{}, errors.Wrap(err, msg)
 					}
 				}
@@ -156,7 +153,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		if !found {
 			// the cluster client was not found, we retry
-			r.l.Info("cluster client not found, retry...")
+			log.Info("cluster client not found, retry...")
 			return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 		}
 	}
