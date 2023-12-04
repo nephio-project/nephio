@@ -122,15 +122,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						log.Info("cluster not ready")
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
-					
-					// remoteNamespace holds the namespace of the remote cluster 
+
+					// remoteNamespace holds the namespace of the remote cluster
 					// on which this secret is to be installed.
 					// e.g. configsync requires it to be installed in configsync-management
 					// but the mgmt cluster already has configsync-management in use, so
 					// we need the ability to change the namespace of the remote cluster
 					// for this secret
 					// the controller uses the namespace of the cr by default and if the
-					// remoteNamespace annotation `"nephio.org/remote-namespace"` is set 
+					// remoteNamespace annotation `"nephio.org/remote-namespace"` is set
 					// it will use the value of the  annotation as the remote namespace
 					remoteNamespace := cr.Name
 					if rns, ok := cr.GetAnnotations()[remoteNamespaceKey]; ok {
