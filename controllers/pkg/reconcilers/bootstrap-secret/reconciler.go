@@ -42,10 +42,13 @@ func init() {
 }
 
 const (
-	clusterNameKey      = "nephio.org/cluster-name"
-	nephioAppKey        = "nephio.org/app"
-	configsyncApp       = "configsync"
-	bootstrapApp        = "bootstrap"
+	clusterNameKey = "nephio.org/cluster-name"
+	nephioAppKey   = "nephio.org/app"
+	namespaceKey   = "nephio.org/namespace"
+	syncApp        = "toBeInstalledOnRemoteCluster"
+	bootstrapApp   = "bootstrap"
+
+	//configsyncApp       = "configsync"
 	//configsyncNamespace = "config-management-system"
 )
 
@@ -90,11 +93,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// the secret is relevant to be installed in the workload cluster if:
 	// annotation key "nephio.org/app" == configsync
 	// annotation key "nephio.org/cluster-name" different then "" and different then management
-	if cr.GetAnnotations()[nephioAppKey] == configsyncApp &&
+	// annotation key "nephio.org/namespaceKey" different then ""
+	if cr.GetAnnotations()[nephioAppKey] == syncApp &&
 		cr.GetAnnotations()[clusterNameKey] != "" &&
-		cr.GetAnnotations()[clusterNameKey] != "mgmt" {
+		cr.GetAnnotations()[clusterNameKey] != "mgmt" &&
+		cr.GetAnnotations()[namespaceKey] != "" {
 		log.Info("reconcile secret")
 		clusterName := cr.GetAnnotations()[clusterNameKey]
+		remoteNamespace := cr.GetAnnotations()[namespaceKey] // holds the namespace of the remote cluster on which this secret is to eb installed
 
 		secrets := &corev1.SecretList{}
 		if err := r.List(ctx, secrets); err != nil {
@@ -121,13 +127,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					}
 					// check if namespace exists, if not retry
 					ns := &corev1.Namespace{}
-					if err = clusterClient.Get(ctx, types.NamespacedName{Name: cr.Namespace}, ns); err != nil {
+					if err = clusterClient.Get(ctx, types.NamespacedName{Name: remoteNamespace}, ns); err != nil {
 						if resource.IgnoreNotFound(err) != nil {
-							msg := fmt.Sprintf("cannot get namespace: %s", cr.Namespace)
+							msg := fmt.Sprintf("cannot get namespace: %s", remoteNamespace)
 							log.Error(err, msg)
 							return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 						}
-						msg := fmt.Sprintf("namespace: %s, does not exist, retry...", cr.Namespace)
+						msg := fmt.Sprintf("namespace: %s, does not exist, retry...", remoteNamespace)
 						log.Info(msg)
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
