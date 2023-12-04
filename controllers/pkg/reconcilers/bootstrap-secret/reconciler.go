@@ -42,11 +42,11 @@ func init() {
 }
 
 const (
-	clusterNameKey = "nephio.org/cluster-name"
-	nephioAppKey   = "nephio.org/app"
-	namespaceKey   = "nephio.org/namespace"
-	syncApp        = "toBeInstalledOnRemoteCluster"
-	bootstrapApp   = "bootstrap"
+	clusterNameKey     = "nephio.org/cluster-name"
+	nephioAppKey       = "nephio.org/app"
+	remoteNamespaceKey = "nephio.org/remote-namespace"
+	syncApp            = "tobeinstalledonremotecluster"
+	bootstrapApp       = "bootstrap"
 
 	//configsyncApp       = "configsync"
 	//configsyncNamespace = "config-management-system"
@@ -93,14 +93,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// the secret is relevant to be installed in the workload cluster if:
 	// annotation key "nephio.org/app" == configsync
 	// annotation key "nephio.org/cluster-name" different then "" and different then management
-	// annotation key "nephio.org/namespaceKey" different then ""
 	if cr.GetAnnotations()[nephioAppKey] == syncApp &&
 		cr.GetAnnotations()[clusterNameKey] != "" &&
-		cr.GetAnnotations()[clusterNameKey] != "mgmt" &&
-		cr.GetAnnotations()[namespaceKey] != "" {
+		cr.GetAnnotations()[clusterNameKey] != "mgmt" {
 		log.Info("reconcile secret")
 		clusterName := cr.GetAnnotations()[clusterNameKey]
-		remoteNamespace := cr.GetAnnotations()[namespaceKey] // holds the namespace of the remote cluster on which this secret is to eb installed
 
 		secrets := &corev1.SecretList{}
 		if err := r.List(ctx, secrets); err != nil {
@@ -125,7 +122,21 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						log.Info("cluster not ready")
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
-					// check if namespace exists, if not retry
+					
+					// remoteNamespace holds the namespace of the remote cluster 
+					// on which this secret is to be installed.
+					// e.g. configsync requires it to be installed in configsync-management
+					// but the mgmt cluster already has configsync-management in use, so
+					// we need the ability to change the namespace of the remote cluster
+					// for this secret
+					// the controller uses the namespace of the cr by default and if the
+					// remoteNamespace annotation `"nephio.org/remote-namespace"` is set 
+					// it will use the value of the  annotation as the remote namespace
+					remoteNamespace := cr.Name
+					if rns, ok := cr.GetAnnotations()[remoteNamespaceKey]; ok {
+						remoteNamespace = rns
+					}
+					// check if the remote namespace exists, if not retry
 					ns := &corev1.Namespace{}
 					if err = clusterClient.Get(ctx, types.NamespacedName{Name: remoteNamespace}, ns); err != nil {
 						if resource.IgnoreNotFound(err) != nil {
