@@ -46,7 +46,7 @@ const (
 	nephioAppKey        = "nephio.org/app"
 	configsyncApp       = "configsync"
 	bootstrapApp        = "bootstrap"
-	configsyncNamespace = "config-management-system"
+	//configsyncNamespace = "config-management-system"
 )
 
 //+kubebuilder:rbac:groups="*",resources=secrets,verbs=get;list;watch
@@ -121,19 +121,18 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					}
 					// check if namespace exists, if not retry
 					ns := &corev1.Namespace{}
-					if err = clusterClient.Get(ctx, types.NamespacedName{Name: configsyncNamespace}, ns); err != nil {
+					if err = clusterClient.Get(ctx, types.NamespacedName{Name: cr.Namespace}, ns); err != nil {
 						if resource.IgnoreNotFound(err) != nil {
-							msg := fmt.Sprintf("cannot get namespace: %s", configsyncNamespace)
+							msg := fmt.Sprintf("cannot get namespace: %s", cr.Namespace)
 							log.Error(err, msg)
 							return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 						}
-						msg := fmt.Sprintf("namespace: %s, does not exist, retry...", configsyncNamespace)
+						msg := fmt.Sprintf("namespace: %s, does not exist, retry...", cr.Namespace)
 						log.Info(msg)
 						return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 					}
 
 					newcr := cr.DeepCopy()
-					newcr.Namespace = configsyncNamespace
 					// since the original annotations are set by configsync we need to reset them
 					// so apply 2 annotations to the secret: app = bootstrap +  cluster-name = clusterName
 					newcr.SetAnnotations(map[string]string{
