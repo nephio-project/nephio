@@ -1,19 +1,43 @@
-# bootstrap secret controller
+# Bootstrap Secret Controller
 
-The bootstrap controller is a k8s controller which goal is to bootstrap secrets on a newly installed cluster. This ensure e.g. that a gitops tool like `config-sync`, `argo`, `flux` or others are installed on a remote cluster and subsequent configurations tasks get handled through the gitops toolchain.
+The Bootstrap Secret Controller is a Kubernetes (k8s) controller designed to facilitate the seamless bootstrapping of secrets on a freshly installed cluster. The primary objective is to ensure the installation of essential tools such as config-sync, argo, flux, or others on a remote cluster, enabling subsequent configuration tasks to be efficiently managed through the GitOps toolchain.
 
-## implementation
+## Implementation
 
-The controller acts on a secret. It first figures out if the secret is to be installed on the remote cluster, by checking if:
-- annotation key `nephio.org/app` is equal to `tobeinstalledonremotecluster`
-- annotation key `nephio.org/cluster-name` is not an empty string or `mgmt`; a cluster-name can contain multiple clusters in a comma seperated list w/o spaces e.g. `nephio.org/cluster-name = cluster01,cluster02`
+This controller operates based on a set of predefined rules and annotations within a secret. The following criteria determine whether the secret should be installed on the remote cluster:
 
-Per cluster specified in the cluster-name we follow the below process. Bothe need to succeed, if not a reconciliation is retriggered.
+The annotation key `nephio.org/app` must be set to `tobeinstalledonremotecluster`.
+The annotation key `nephio.org/cluster-name` should not be an empty string or equal to `mgmt`. 
+The cluster name can contain multiple clusters in a comma-separated list without spaces (e.g., nephio.org/cluster-name = cluster01,cluster02).
 
-per cluser logic:
+For each cluster specified in the cluster-name, the controller follows the subsequent process. Both steps must succeed; otherwise, a reconciliation is triggered.
 
-- If the controller knows the secret is to be installed on the remote cluster, it finds the credentials of the remote cluster and the type of cluster based on the signatures of the secret (right now only cluster api is implemented, but the code is able to handle other implementations).
-Once the remote credentials are found and the cluster is deemed ready, the secret gets installed on the remote cluster after validating if the corresponding namespace exists. The secret get installed on the remote cluster if the corresponding namespace exists
+Per-cluster logic:
 
-If any of the validation fail the controller will retry installing the secret.
+- Determine Installation Status:
+If the controller identifies that the secret is meant to be installed on the remote cluster, it locates the credentials and determines the type of cluster based on the secret's signatures (currently implemented for Cluster API, but extensible for other implementations).
+Once the remote credentials are obtained, and the cluster is considered ready, the secret is installed on the remote cluster. The controller validates the existence of the corresponding namespace before installation.
 
+- Namespace:
+The corresponding namespace for installation can be different from the original secret's namespace. An additional annotation, nephio.org/remote-namespace, can be used to set a custom namespace.
+If any of the validation steps fail during the installation process, the controller will automatically retry, ensuring the robust deployment of secrets on the remote cluster.
+
+## example 
+
+This secret will be picked up by the bootstrap secret controller and will be installed on
+cluster: `edge01` in namespace: `config-management-system`
+
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-site-name-access-token-configsync
+  namespace: default
+  annotations:
+    nephio.org/gitops: configsync
+    nephio.org/app: tobeinstalledonremotecluster
+    nephio.org/remote-namespace: config-management-system
+    nephio.org/cluster-name: edge01
+...
+```

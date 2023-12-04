@@ -47,9 +47,6 @@ const (
 	remoteNamespaceKey = "nephio.org/remote-namespace"
 	syncApp            = "tobeinstalledonremotecluster"
 	bootstrapApp       = "bootstrap"
-
-	//configsyncApp       = "configsync"
-	//configsyncNamespace = "config-management-system"
 )
 
 //+kubebuilder:rbac:groups="*",resources=secrets,verbs=get;list;watch
