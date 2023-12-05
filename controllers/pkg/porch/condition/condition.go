@@ -69,14 +69,3 @@ func PackageRevisionIsReady(readinessGates []porchv1alpha1.ReadinessGate, condit
 
 	return true
 }
-
-// HasReadinessGate checks if a specific gate exists
-func HasReadinessGate(gates []porchv1alpha1.ReadinessGate, gate string) bool {
-	for i := range gates {
-		g := gates[i]
-		if g.ConditionType == gate {
-			return true
-		}
-	}
-	return false
-}

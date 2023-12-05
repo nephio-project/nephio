@@ -1,0 +1,13 @@
+apiVersion: req.nephio.org/v1alpha1
+kind: Dependency
+metadata:
+  name: upf
+  annotations:
+    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    specializer.nephio.org/namespace: free5gc-cp
+spec:
+  packageName: free5gc-upf
+  injectors:
+    - apiVersion: workload.nephio.org/v1alpha1
+      kind: NFDeployment
+status: {}

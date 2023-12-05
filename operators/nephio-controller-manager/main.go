@@ -141,7 +141,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Start a Gitea Client
 	// Prepare configuration for reconcilers
 	backendAddress := "127.0.0.1:9999"
 	if address, ok := os.LookupEnv("CLIENT_PROXY_ADDRESS"); ok {
@@ -204,14 +203,17 @@ func parseReconcilers(reconcilers string) []string {
 }
 
 func reconcilerIsEnabled(reconcilers []string, reconciler string) bool {
+
 	if slices.Contains(reconcilers, "*") {
 		return true
 	}
 	if slices.Contains(reconcilers, reconciler) {
 		return true
 	}
-	if _, found := os.LookupEnv(fmt.Sprintf("ENABLE_%s", strings.ToUpper(reconciler))); found {
-		return true
+	if val, found := os.LookupEnv(fmt.Sprintf("ENABLE_%s", strings.ToUpper(reconciler))); found {
+		if val == "true" {
+			return true
+		}
 	}
 	return false
 }

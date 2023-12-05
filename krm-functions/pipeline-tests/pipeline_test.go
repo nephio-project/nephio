@@ -23,12 +23,11 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	tlib "github.com/nephio-project/nephio/krm-functions/lib/test"
 
-	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	dnn_fn "github.com/nephio-project/nephio/krm-functions/dnn-fn/fn"
 	if_fn "github.com/nephio-project/nephio/krm-functions/interface-fn/fn"
 	ipam_fn "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	nad_fn "github.com/nephio-project/nephio/krm-functions/nad-fn/fn"
-	nfdeploy_fn "github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/common"
+	nfdeploy_fn "github.com/nephio-project/nephio/krm-functions/nfdeploy-fn/fn"
 	vlan_fn "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
@@ -36,19 +35,9 @@ import (
 
 const testdir = "testdata"
 
-func upfFn(rl *fn.ResourceList) (bool, error) {
-	return nfdeploy_fn.Run[nephiodeployv1alpha1.UPFDeployment](rl, nephiodeployv1alpha1.UPFDeploymentGroupVersionKind)
+func nfFn(rl *fn.ResourceList) (bool, error) {
+	return nfdeploy_fn.Run(rl)
 }
-
-/*
-func smfFn(rl *fn.ResourceList) (bool, error) {
-	return nfdeploy_fn.Run[nephiodeployv1alpha1.SMFDeployment](rl, nephiodeployv1alpha1.SMFDeploymentGroupVersionKind)
-}
-
-func amfFn(rl *fn.ResourceList) (bool, error) {
-	return nfdeploy_fn.Run[nephiodeployv1alpha1.AMFDeployment](rl, nephiodeployv1alpha1.AMFDeploymentGroupVersionKind)
-}
-*/
 
 var ipamFn = ipam_fn.New(ipam.NewMock())
 var vlanFn = vlan_fn.New(vlan.NewMock())
@@ -65,7 +54,7 @@ func TestPipelines(t *testing.T) {
 			inputDir:        "upf_pkg_init",
 			expectedDataDir: "workload_cluster_not_ready",
 			pipeline: []fn.ResourceListProcessorFunc{
-				upfFn,
+				nfFn,
 				if_fn.Run,
 				dnn_fn.Run,
 
@@ -75,14 +64,14 @@ func TestPipelines(t *testing.T) {
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 			},
 		},
 		{
 			inputDir:        "upf_pkg",
 			expectedDataDir: "simplified_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
-				upfFn,
+				nfFn,
 				if_fn.Run,
 				dnn_fn.Run,
 
@@ -92,19 +81,19 @@ func TestPipelines(t *testing.T) {
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 			},
 		},
 		{
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment",
 			pipeline: []fn.ResourceListProcessorFunc{
-				upfFn,
+				nfFn,
 				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 
 				ipamFn.Run,
 				vlanFn.Run,
@@ -112,33 +101,33 @@ func TestPipelines(t *testing.T) {
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 			},
 		},
 		{
 			inputDir:        "upf_pkg",
 			expectedDataDir: "real_deployment_2",
 			pipeline: []fn.ResourceListProcessorFunc{
-				upfFn,
+				nfFn,
 				if_fn.Run,
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 
 				ipamFn.Run,
 
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 
 				vlanFn.Run,
 
 				nad_fn.Run,
 				if_fn.Run,
 				dnn_fn.Run,
-				upfFn,
+				nfFn,
 			},
 		},
 	}

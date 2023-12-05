@@ -22,7 +22,6 @@ import (
 	"reflect"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/go-logr/logr"
 	commonv1alpha1 "github.com/nephio-project/api/common/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
@@ -42,9 +41,7 @@ func init() {
 }
 
 const (
-	finalizer = "infra.nephio.org/finalizer"
-	// errors
-	errGetCr        = "cannot get cr"
+	finalizer       = "infra.nephio.org/finalizer"
 	errUpdateStatus = "cannot update status"
 )
 
@@ -58,8 +55,12 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	// the secret objects for gitea client authentication. The client
 	// of the manager of this controller cannot be used at this point.
 	// Should this be conditional ? Only if we have repo/token reconciler
-	r.giteaClient = giteaclient.New(resource.NewAPIPatchingApplicator(cfg.PorchClient))
-	go r.giteaClient.Start(ctx)
+
+	var e error
+	r.giteaClient, e = giteaclient.GetClient(ctx, resource.NewAPIPatchingApplicator(cfg.PorchClient))
+	if e != nil {
+		return nil, e
+	}
 
 	if !ok {
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
@@ -82,29 +83,26 @@ type reconciler struct {
 	resource.APIPatchingApplicator
 	giteaClient giteaclient.GiteaClient
 	finalizer   *resource.APIFinalizer
-
-	l logr.Logger
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.l = log.FromContext(ctx)
-	r.l.Info("reconcile", "req", req)
+	log := log.FromContext(ctx)
+	log.Info("reconcile", "req", req)
 
 	cr := &infrav1alpha1.Repository{}
 	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		// if the resource no longer exists the reconcile loop is done
 		if resource.IgnoreNotFound(err) != nil {
-			r.l.Error(err, "cannot get resource")
+			log.Error(err, "cannot get resource")
 			return ctrl.Result{}, errors.Wrap(resource.IgnoreNotFound(err), "cannot get resource")
 		}
 		return ctrl.Result{}, nil
 	}
 
 	// check if client exists otherwise retry
-	giteaClient := r.giteaClient.Get()
-	if giteaClient == nil {
+	if !r.giteaClient.IsInitialized() {
 		err := fmt.Errorf("gitea server unreachable")
-		r.l.Error(err, "cannot connect to git server")
+		log.Error(err, "cannot connect to git server")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
@@ -115,41 +113,42 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// Delete the repo from the git server
 		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
-			if err := r.deleteRepo(ctx, giteaClient, cr); err != nil {
-				r.l.Error(err, "cannot delete repo in git server")
+			if err := r.deleteRepo(ctx, r.giteaClient, cr); err != nil {
+				log.Error(err, "cannot delete repo in git server")
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 			}
 		}
 
 		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {
-			r.l.Error(err, "cannot remove finalizer")
+			log.Error(err, "cannot remove finalizer")
 			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 		}
 
-		r.l.Info("Successfully deleted resource")
+		log.Info("Successfully deleted resource")
 		return ctrl.Result{Requeue: false}, nil
 	}
 
 	// add finalizer to avoid deleting the repo w/o it being deleted from the git server
 	if err := r.finalizer.AddFinalizer(ctx, cr); err != nil {
-		r.l.Error(err, "cannot add finalizer")
+		log.Error(err, "cannot add finalizer")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	// upsert repo in git server
-	if err := r.upsertRepo(ctx, giteaClient, cr); err != nil {
+	if err := r.upsertRepo(ctx, r.giteaClient, cr); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) upsertRepo(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Repository) error {
+	log := log.FromContext(ctx)
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
-		r.l.Error(err, "cannot get user info")
+		log.Error(err, "cannot get user info")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return err
 	}
@@ -183,17 +182,17 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 			createRepo.TrustModel = gitea.TrustModel(*cr.Spec.TrustModel)
 		}
 		createRepo.AutoInit = true
-		r.l.Info("repository", "config", createRepo)
+		log.Info("repository", "config", createRepo)
 
 		repo, _, err := giteaClient.CreateRepo(createRepo)
 		if err != nil {
-			r.l.Error(err, "cannot create repo")
+			log.Error(err, "cannot create repo")
 			// Here we don't provide the full error since the message change every time and this will re-trigger
 			// a new reconcile loop
 			cr.SetConditions(infrav1alpha1.Failed("cannot create repo"))
 			return err
 		}
-		r.l.Info("repo created", "name", cr.GetName())
+		log.Info("repo created", "name", cr.GetName())
 		cr.Status.URL = &repo.CloneURL
 		return nil
 	}
@@ -210,32 +209,33 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient *gitea.Client, 
 	}
 	repo, _, err := giteaClient.EditRepo(u.UserName, cr.GetName(), editRepo)
 	if err != nil {
-		r.l.Error(err, "cannot update repo")
+		log.Error(err, "cannot update repo")
 		// Here we don't provide the full error since the message change every time and this will re-trigger
 		// a new reconcile loop
 		cr.SetConditions(infrav1alpha1.Failed("cannot update repo"))
 		return err
 	}
-	r.l.Info("repo updated", "name", cr.GetName())
+	log.Info("repo updated", "name", cr.GetName())
 	cr.Status.URL = &repo.CloneURL
 
 	return nil
 }
 
-func (r *reconciler) deleteRepo(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Repository) error {
+func (r *reconciler) deleteRepo(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Repository) error {
+	log := log.FromContext(ctx)
 	u, _, err := giteaClient.GetMyUserInfo()
 	if err != nil {
-		r.l.Error(err, "cannot get user info")
+		log.Error(err, "cannot get user info")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return err
 	}
 
 	_, err = giteaClient.DeleteRepo(u.UserName, cr.GetName())
 	if err != nil {
-		r.l.Error(err, "cannot delete repo")
+		log.Error(err, "cannot delete repo")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return err
 	}
-	r.l.Info("repo deleted", "name", cr.GetName())
+	log.Info("repo deleted", "name", cr.GetName())
 	return nil
 }
