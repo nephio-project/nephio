@@ -100,7 +100,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		clusterName := cr.GetAnnotations()[clusterNameKey]
 		clusterNames := strings.Split(clusterName, ",")
 
-		
 		// for each cluster specified in the annotation, we need to find the
 		// corresponding cluster credentials to access th remote cluster
 		// we walk through the secrets and check if the cluster api client accepts them
@@ -180,7 +179,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				}
 			}
 			// we need to find a cluster for each clusterName, so
-			// even in case of multiple 
+			// even in case of multiple
 			if !found {
 				// the cluster client was not found, we retry
 				log.Info("cluster client not found, retry...")
