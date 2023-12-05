@@ -429,6 +429,47 @@ func (_c *MockGiteaClient_GetRepo_Call) RunAndReturn(run func(string, string) (*
 	return _c
 }
 
+// IsInitialized provides a mock function with given fields:
+func (_m *MockGiteaClient) IsInitialized() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// MockGiteaClient_IsInitialized_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsInitialized'
+type MockGiteaClient_IsInitialized_Call struct {
+	*mock.Call
+}
+
+// IsInitialized is a helper method to define mock.On call
+func (_e *MockGiteaClient_Expecter) IsInitialized() *MockGiteaClient_IsInitialized_Call {
+	return &MockGiteaClient_IsInitialized_Call{Call: _e.mock.On("IsInitialized")}
+}
+
+func (_c *MockGiteaClient_IsInitialized_Call) Run(run func()) *MockGiteaClient_IsInitialized_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockGiteaClient_IsInitialized_Call) Return(_a0 bool) *MockGiteaClient_IsInitialized_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockGiteaClient_IsInitialized_Call) RunAndReturn(run func() bool) *MockGiteaClient_IsInitialized_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Start provides a mock function with given fields: ctx
 func (_m *MockGiteaClient) Start(ctx context.Context) {
 	_m.Called(ctx)
