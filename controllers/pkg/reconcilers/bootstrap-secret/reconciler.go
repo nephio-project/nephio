@@ -139,7 +139,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						// the controller uses the namespace of the cr by default and if the
 						// remoteNamespace annotation `"nephio.org/remote-namespace"` is set
 						// it will use the value of the  annotation as the remote namespace
-						remoteNamespace := cr.Name
+						remoteNamespace := cr.Namespace
 						if rns, ok := cr.GetAnnotations()[remoteNamespaceKey]; ok {
 							remoteNamespace = rns
 						}
@@ -165,6 +165,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						})
 						newcr.ResourceVersion = ""
 						newcr.UID = ""
+						newcr.Namespace = remoteNamespace
 						log.Info("secret info", "secret", newcr.Annotations)
 						if err := clusterClient.Apply(ctx, newcr); err != nil {
 							msg := fmt.Sprintf("cannot apply secret to cluster %s", clusterName)
