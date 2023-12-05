@@ -83,9 +83,13 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+<<<<<<< HEAD
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
+=======
+>>>>>>> cde0408 (Fix go.mod)
 	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
