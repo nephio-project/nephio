@@ -19,8 +19,8 @@ package bootstrappackages
 import (
 	"context"
 	"fmt"
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestGetResourcesPRR(t *testing.T) {

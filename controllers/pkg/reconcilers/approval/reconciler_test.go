@@ -83,14 +83,14 @@ func TestShouldProcess(t *testing.T) {
 func TestManageDelay(t *testing.T) {
 	now := time.Now()
 	testCases := map[string]struct {
-		pr             porchapi.PackageRevision
+		pr              porchapi.PackageRevision
 		expectedRequeue bool
-		expectedError bool
+		expectedError   bool
 	}{
 		"no annotation": {
-			pr:             porchapi.PackageRevision{},
+			pr:              porchapi.PackageRevision{},
 			expectedRequeue: false,
-			expectedError: false,
+			expectedError:   false,
 		},
 		"unparseable annotation": {
 			pr: porchapi.PackageRevision{
@@ -101,7 +101,7 @@ func TestManageDelay(t *testing.T) {
 				},
 			},
 			expectedRequeue: false,
-			expectedError: true,
+			expectedError:   true,
 		},
 		"negative annotation": {
 			pr: porchapi.PackageRevision{
@@ -112,7 +112,7 @@ func TestManageDelay(t *testing.T) {
 				},
 			},
 			expectedRequeue: false,
-			expectedError: true,
+			expectedError:   true,
 		},
 		"not old enough": {
 			pr: porchapi.PackageRevision{
@@ -124,19 +124,19 @@ func TestManageDelay(t *testing.T) {
 				},
 			},
 			expectedRequeue: true,
-			expectedError: false,
+			expectedError:   false,
 		},
 		"old enough": {
 			pr: porchapi.PackageRevision{
 				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{now.AddDate(-1,0,0)},
+					CreationTimestamp: metav1.Time{now.AddDate(-1, 0, 0)},
 					Annotations: map[string]string{
 						"approval.nephio.org/delay": "1h",
 					},
 				},
 			},
 			expectedRequeue: false,
-			expectedError: false,
+			expectedError:   false,
 		},
 	}
 	for tn, tc := range testCases {
