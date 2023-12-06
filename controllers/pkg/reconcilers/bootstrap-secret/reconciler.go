@@ -160,7 +160,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						// we overwrite 2 annotations that have specific information
 						newcr.Annotations[nephioAppKey] = bootstrapApp
 						newcr.Annotations[clusterNameKey] = clusterName
-						
+
 						newcr.ResourceVersion = ""
 						newcr.UID = ""
 						newcr.Namespace = remoteNamespace

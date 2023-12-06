@@ -17,15 +17,15 @@
 package util
 
 import (
-	"testing"
-	"github.com/stretchr/testify/require"
 	"context"
 	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
-  "sigs.k8s.io/yaml"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
+	"testing"
 )
 
 type fakeClient struct {
@@ -33,9 +33,8 @@ type fakeClient struct {
 	client.Client
 }
 
-
 func (f *fakeClient) Get(_ context.Context, _ client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
-mockPV := `apiVersion: config.porch.kpt.dev/v1alpha1
+	mockPV := `apiVersion: config.porch.kpt.dev/v1alpha1
 kind: PackageVariant
 metadata:
   name: wc-argocd-argocd-cluster
@@ -47,35 +46,35 @@ status:
     status: "True"
     type: Ready
 `
-  yaml.Unmarshal([]byte(mockPV), obj)
-  f.object = obj
+	yaml.Unmarshal([]byte(mockPV), obj)
+	f.object = obj
 	return nil
 }
 
 func TestPackageRevisionIsReady(t *testing.T) {
 	tr := true
 	cases := map[string]struct {
-    mockClient        *fakeClient
-		packageRevision		porchapi.PackageRevision
-		expectedOwned		  bool
-		expectedError		  error
+		mockClient      *fakeClient
+		packageRevision porchapi.PackageRevision
+		expectedOwned   bool
+		expectedError   error
 	}{
 		"Owned": {
-      mockClient: &fakeClient{},
-			packageRevision:   porchapi.PackageRevision{
-        ObjectMeta: metav1.ObjectMeta{
+			mockClient: &fakeClient{},
+			packageRevision: porchapi.PackageRevision{
+				ObjectMeta: metav1.ObjectMeta{
 					OwnerReferences: []metav1.OwnerReference{
-            {
-              APIVersion:     "config.porch.kpt.dev/v1alpha1",
-						  Controller:      &tr,
-						  Kind:            reflect.TypeOf(pvapi.PackageVariant{}).Name(),
-						  Name:            "wc-argocd-argocd-cluster",
-					  },
-          },
-        },
-      },
-		  expectedOwned: true,
-		  expectedError:  nil,
+						{
+							APIVersion: "config.porch.kpt.dev/v1alpha1",
+							Controller: &tr,
+							Kind:       reflect.TypeOf(pvapi.PackageVariant{}).Name(),
+							Name:       "wc-argocd-argocd-cluster",
+						},
+					},
+				},
+			},
+			expectedOwned: true,
+			expectedError: nil,
 		},
 	}
 
