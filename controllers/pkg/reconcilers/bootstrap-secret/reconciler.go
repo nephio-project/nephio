@@ -157,12 +157,10 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						}
 
 						newcr := cr.DeepCopy()
-						// since the original annotations are set by configsync we need to reset them
-						// so apply 2 annotations to the secret: app = bootstrap +  cluster-name = clusterName
-						newcr.SetAnnotations(map[string]string{
-							nephioAppKey:   bootstrapApp,
-							clusterNameKey: clusterName,
-						})
+						// we overwrite 2 annotations that have specific information
+						newcr.Annotations[nephioAppKey] = bootstrapApp
+						newcr.Annotations[clusterNameKey] = clusterName
+						
 						newcr.ResourceVersion = ""
 						newcr.UID = ""
 						newcr.Namespace = remoteNamespace
