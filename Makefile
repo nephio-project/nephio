@@ -28,6 +28,8 @@ DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -exec sh -c 'echo \"$$(dirn
 # This includes the 'help' target that prints out all targets with their descriptions organized by categories
 include default-help.mk
 
+#This includes the targets related to mockery
+include default-mockery.mk
 
 ##@ Go tests & formatting
 
