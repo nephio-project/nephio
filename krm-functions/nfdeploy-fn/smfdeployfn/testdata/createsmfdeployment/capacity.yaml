@@ -1,9 +1,0 @@
-apiVersion: req.nephio.org/v1alpha1
-kind: Capacity
-metadata:
-  name: controlplane
-  annotations:
-    config.kubernetes.io/local-config: "true"
-    specializer.nephio.org/owner: workload.nephio.org/v1alpha1.SMFDeployment.smf-cluster01
-spec:
-  maxSessions: 10000

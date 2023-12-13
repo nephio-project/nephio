@@ -206,7 +206,7 @@ func getAnnotations(annotations map[string]string) map[string]string {
 
 func getForName(annotations map[string]string) string {
 	// forName is the resource that is the root resource of the specialization
-	// e.g. UPFDeployment, SMFDeployment, AMFDeployment
+	// e.g. NFDeployment
 	forFullName := annotations[condkptsdk.SpecializerOwner]
 	if owner, ok := annotations[condkptsdk.SpecializerFor]; ok {
 		forFullName = owner

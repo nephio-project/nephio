@@ -17,24 +17,17 @@
 GO_VERSION ?= 1.20.2
 IMG_REGISTRY ?= docker.io/nephio
 
-# CONTAINER_RUNNABLE checks if tests and lint check can be run inside container.
-ifeq ($(shell command -v podman > /dev/null 2>&1; echo $$?), 0)
-CONTAINER_RUNTIME=podman
-else
-CONTAINER_RUNTIME=docker
-endif
-CONTAINER_RUNNABLE ?= $(shell command -v $(CONTAINER_RUNTIME) > /dev/null 2>&1; echo $$?)
-
-export CONTAINER_RUNTIME CONTAINER_RUNNABLE
-
 # find all subdirectories with a go.mod file in them
-GO_MOD_DIRS = $(shell find . -name 'go.mod' -printf "'%h' ")
+GO_MOD_DIRS = $(shell find . -name 'go.mod' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
+# NOTE: the above line is complicated for Mac and busybox compatibilty reasons.
+# It is meant to be equivalent with this:  find . -name 'go.mod' -printf "'%h' " 
+
 # find all subdirectories with a Dockerfile in them
-DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -printf "'%h' " )
+DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -exec sh -c 'echo \"$$(dirname "{}")\" ' \; )
 
 # This includes the 'help' target that prints out all targets with their descriptions organized by categories
 include default-help.mk
-
+include default-mockery.mk
 
 ##@ Go tests & formatting
 
@@ -58,4 +51,21 @@ unit-clean: ## These targets are delegated to the Makefiles of individual Go mod
 docker-build docker-push: ## These targets are delegated to the Makefiles next to Dockerfiles
 	for dir in $(DOCKERFILE_DIRS); do \
 		$(MAKE) -C "$$dir" $@  ; \
+	done
+
+
+##@ Mockery code
+
+.PHONY: install-mockery
+install-mockery: ## install mockery
+ifeq ($(CONTAINER_RUNNABLE), 0)
+		$(CONTAINER_RUNTIME) pull docker.io/vektra/mockery:v${MOCKERY_VERSION}
+else
+		wget -qO- https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_${OS}_${OS_ARCH}.tar.gz | sudo tar -xvzf - -C /usr/local/bin
+endif
+
+.PHONY: generate-mocks
+generate-mocks:
+	for dir in $(GO_MOD_DIRS); do \
+		$(MAKE) -C "$$dir" $@ || true ; \
 	done

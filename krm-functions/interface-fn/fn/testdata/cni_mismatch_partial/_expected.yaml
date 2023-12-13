@@ -19,7 +19,7 @@ items:
     name: upf-cluster01-n4-ipv4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
     kind: network
@@ -67,7 +67,7 @@ items:
     name: n3
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-ran
@@ -80,7 +80,7 @@ items:
     name: n4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/owner: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
   spec:
     networkInstance:
       name: vpc-ran
@@ -93,7 +93,7 @@ items:
     name: upf-cluster01-n4
     annotations:
       config.kubernetes.io/local-config: "true"
-      specializer.nephio.org/for: workload.nephio.org/v1alpha1.UPFDeployment.upf-cluster01
+      specializer.nephio.org/for: workload.nephio.org/v1alpha1.NFDeployment.upf-cluster01
       specializer.nephio.org/vlanClaimName: vpc-ran-cluster01-bd
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n4
   spec:
