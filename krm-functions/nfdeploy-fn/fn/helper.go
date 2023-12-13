@@ -20,8 +20,8 @@ import (
 	"sort"
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
-	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
+	workloadv1alpha1 "github.com/nephio-project/api/workload/v1alpha1"
 	kptcondsdk "github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -31,20 +31,20 @@ type NfDeployFn struct {
 	workloadCluster *infrav1alpha1.WorkloadCluster
 	capacity        *nephioreqv1alpha1.Capacity
 	//pkgName             string
-	networkInstance     map[string]nephiodeployv1alpha1.NetworkInstance
-	interfaceConfigsMap map[string][]nephiodeployv1alpha1.InterfaceConfig
-	paramRef            []nephiodeployv1alpha1.ObjectReference
+	networkInstance     map[string]workloadv1alpha1.NetworkInstance
+	interfaceConfigsMap map[string][]workloadv1alpha1.InterfaceConfig
+	paramRef            []workloadv1alpha1.ObjectReference
 }
 
 func NewFunction() NfDeployFn {
 	return NfDeployFn{
-		interfaceConfigsMap: make(map[string][]nephiodeployv1alpha1.InterfaceConfig),
-		networkInstance:     make(map[string]nephiodeployv1alpha1.NetworkInstance),
-		paramRef:            []nephiodeployv1alpha1.ObjectReference{},
+		interfaceConfigsMap: make(map[string][]workloadv1alpha1.InterfaceConfig),
+		networkInstance:     make(map[string]workloadv1alpha1.NetworkInstance),
+		paramRef:            []workloadv1alpha1.ObjectReference{},
 	}
 }
 
-func (h *NfDeployFn) SetInterfaceConfig(interfaceConfig nephiodeployv1alpha1.InterfaceConfig, networkInstanceName string) {
+func (h *NfDeployFn) SetInterfaceConfig(interfaceConfig workloadv1alpha1.InterfaceConfig, networkInstanceName string) {
 	// don't add to empty networkInstanceName, ideally should not happen
 	if len(networkInstanceName) == 0 {
 		return
@@ -53,19 +53,19 @@ func (h *NfDeployFn) SetInterfaceConfig(interfaceConfig nephiodeployv1alpha1.Int
 	if len(h.interfaceConfigsMap[networkInstanceName]) != 0 {
 		h.interfaceConfigsMap[networkInstanceName] = append(h.interfaceConfigsMap[networkInstanceName], interfaceConfig)
 	} else {
-		h.interfaceConfigsMap[networkInstanceName] = []nephiodeployv1alpha1.InterfaceConfig{interfaceConfig}
+		h.interfaceConfigsMap[networkInstanceName] = []workloadv1alpha1.InterfaceConfig{interfaceConfig}
 	}
 
 }
 
-func (h *NfDeployFn) AddDNNToNetworkInstance(dnn nephiodeployv1alpha1.DataNetwork, networkInstanceName string) {
+func (h *NfDeployFn) AddDNNToNetworkInstance(dnn workloadv1alpha1.DataNetwork, networkInstanceName string) {
 	if nI, ok := h.networkInstance[networkInstanceName]; ok {
 		nI.DataNetworks = append(nI.DataNetworks, dnn)
 		h.networkInstance[networkInstanceName] = nI
 	} else {
-		h.networkInstance[networkInstanceName] = nephiodeployv1alpha1.NetworkInstance{
+		h.networkInstance[networkInstanceName] = workloadv1alpha1.NetworkInstance{
 			Name:         networkInstanceName,
-			DataNetworks: []nephiodeployv1alpha1.DataNetwork{dnn},
+			DataNetworks: []workloadv1alpha1.DataNetwork{dnn},
 		}
 	}
 }
@@ -75,15 +75,15 @@ func (h *NfDeployFn) AddInterfaceToNetworkInstance(interfaceName, networkInstanc
 		nI.Interfaces = append(nI.Interfaces, interfaceName)
 		h.networkInstance[networkInstanceName] = nI
 	} else {
-		h.networkInstance[networkInstanceName] = nephiodeployv1alpha1.NetworkInstance{
+		h.networkInstance[networkInstanceName] = workloadv1alpha1.NetworkInstance{
 			Name:       networkInstanceName,
 			Interfaces: []string{interfaceName},
 		}
 	}
 }
 
-func (h *NfDeployFn) GetAllNetworkInstance() []nephiodeployv1alpha1.NetworkInstance {
-	networkInstances := make([]nephiodeployv1alpha1.NetworkInstance, 0)
+func (h *NfDeployFn) GetAllNetworkInstance() []workloadv1alpha1.NetworkInstance {
+	networkInstances := make([]workloadv1alpha1.NetworkInstance, 0)
 
 	for _, nI := range h.networkInstance {
 		networkInstances = append(networkInstances, nI)
@@ -97,8 +97,8 @@ func (h *NfDeployFn) GetAllNetworkInstance() []nephiodeployv1alpha1.NetworkInsta
 	return networkInstances
 }
 
-func (h *NfDeployFn) GetAllInterfaceConfig() []nephiodeployv1alpha1.InterfaceConfig {
-	interfaceConfigs := make([]nephiodeployv1alpha1.InterfaceConfig, 0)
+func (h *NfDeployFn) GetAllInterfaceConfig() []workloadv1alpha1.InterfaceConfig {
+	interfaceConfigs := make([]workloadv1alpha1.InterfaceConfig, 0)
 
 	for _, ic := range h.interfaceConfigsMap {
 		interfaceConfigs = append(interfaceConfigs, ic...)
@@ -112,7 +112,7 @@ func (h *NfDeployFn) GetAllInterfaceConfig() []nephiodeployv1alpha1.InterfaceCon
 	return interfaceConfigs
 }
 
-func (h *NfDeployFn) FillCapacityDetails(nf *nephiodeployv1alpha1.NFDeployment) {
+func (h *NfDeployFn) FillCapacityDetails(nf *workloadv1alpha1.NFDeployment) {
 	if h.capacity == nil {
 		return
 	}
@@ -121,7 +121,7 @@ func (h *NfDeployFn) FillCapacityDetails(nf *nephiodeployv1alpha1.NFDeployment) 
 }
 
 func (h *NfDeployFn) AddDependencyRef(ref corev1.ObjectReference) {
-	h.paramRef = append(h.paramRef, nephiodeployv1alpha1.ObjectReference{
+	h.paramRef = append(h.paramRef, workloadv1alpha1.ObjectReference{
 		Name:       &ref.Name,
 		Kind:       ref.Kind,
 		APIVersion: ref.APIVersion,
