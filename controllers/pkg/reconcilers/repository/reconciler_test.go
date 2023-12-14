@@ -30,34 +30,36 @@ import (
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 )
 
+type mockHelper struct {
+	methodName string
+	argType    []string
+	retArgList []interface{}
+}
+type fields struct {
+	APIPatchingApplicator resource.APIPatchingApplicator
+	giteaClient           giteaclient.GiteaClient
+	finalizer             *resource.APIFinalizer
+	l                     logr.Logger
+}
+type args struct {
+	ctx         context.Context
+	giteaClient giteaclient.GiteaClient
+	cr          *infrav1alpha1.Repository
+}
+type repoTest struct {
+	name    string
+	fields  fields
+	args    args
+	mocks   []mockHelper
+	wantErr bool
+}
+
 func TestUpsertRepo(t *testing.T) {
 	dummyString := "Dummy String"
 	dummyBool := true
 	dummyTrustModel := infrav1alpha1.TrustModel("Trust Model")
 
-	type mockHelper struct {
-		methodName string
-		argType    []string
-		retArgList []interface{}
-	}
-	type fields struct {
-		APIPatchingApplicator resource.APIPatchingApplicator
-		giteaClient           giteaclient.GiteaClient
-		finalizer             *resource.APIFinalizer
-		l                     logr.Logger
-	}
-	type args struct {
-		ctx         context.Context
-		giteaClient giteaclient.GiteaClient
-		cr          *infrav1alpha1.Repository
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		mocks   []mockHelper
-		wantErr bool
-	}{
+	tests := []repoTest{
 		{
 			name:   "User Info reports error",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
@@ -177,19 +179,8 @@ func TestUpsertRepo(t *testing.T) {
 				giteaClient:           tt.fields.giteaClient,
 				finalizer:             tt.fields.finalizer,
 			}
-			// The block below sets up processing of mocks before invoking the function to be tested
-			mockGClient := new(giteaclient.MockGiteaClient)
-			tt.args.giteaClient = mockGClient
-			tt.fields.giteaClient = mockGClient
-			for counter := range tt.mocks {
-				call := mockGClient.Mock.On(tt.mocks[counter].methodName)
-				for _, arg := range tt.mocks[counter].argType {
-					call.Arguments = append(call.Arguments, mock.AnythingOfType(arg))
-				}
-				for _, ret := range tt.mocks[counter].retArgList {
-					call.ReturnArguments = append(call.ReturnArguments, ret)
-				}
-			}
+
+			initMockeryMocks(&tt)
 
 			if err := r.upsertRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
 				t.Errorf("upsertRepo() error = %v, wantErr %v", err, tt.wantErr)
@@ -199,40 +190,7 @@ func TestUpsertRepo(t *testing.T) {
 }
 
 func TestDeleteRepo(t *testing.T) {
-	/*
-			"Delete repo reports error": {
-				ctx: nil,
-				giteaClient: NephioGiteaClientMock{
-					deleteRepoError: errors.New("Error deleting repo"),
-				},
-				cr:          infrav1alpha1.Repository{},
-				expectedErr: errors.New("Error deleting repo"),
-			},
-		}
-	*/
-	type mockHelper struct {
-		methodName string
-		argType    []string
-		retArgList []interface{}
-	}
-	type fields struct {
-		APIPatchingApplicator resource.APIPatchingApplicator
-		giteaClient           giteaclient.GiteaClient
-		finalizer             *resource.APIFinalizer
-		l                     logr.Logger
-	}
-	type args struct {
-		ctx         context.Context
-		giteaClient giteaclient.GiteaClient
-		cr          *infrav1alpha1.Repository
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		mocks   []mockHelper
-		wantErr bool
-	}{
+	tests := []repoTest{
 		{
 			name:   "User Info and Delete Repo both OK",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
@@ -291,23 +249,27 @@ func TestDeleteRepo(t *testing.T) {
 				giteaClient:           tt.fields.giteaClient,
 				finalizer:             tt.fields.finalizer,
 			}
-			// The block below sets up processing of mocks before invoking the function to be tested
-			mockGClient := new(giteaclient.MockGiteaClient)
-			tt.args.giteaClient = mockGClient
-			tt.fields.giteaClient = mockGClient
-			for counter := range tt.mocks {
-				call := mockGClient.Mock.On(tt.mocks[counter].methodName)
-				for _, arg := range tt.mocks[counter].argType {
-					call.Arguments = append(call.Arguments, mock.AnythingOfType(arg))
-				}
-				for _, ret := range tt.mocks[counter].retArgList {
-					call.ReturnArguments = append(call.ReturnArguments, ret)
-				}
-			}
+
+			initMockeryMocks(&tt)
 
 			if err := r.deleteRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
 				t.Errorf("deleteRepo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func initMockeryMocks(tt *repoTest) {
+	mockGClient := new(giteaclient.MockGiteaClient)
+	tt.args.giteaClient = mockGClient
+	tt.fields.giteaClient = mockGClient
+	for counter := range tt.mocks {
+		call := mockGClient.Mock.On(tt.mocks[counter].methodName)
+		for _, arg := range tt.mocks[counter].argType {
+			call.Arguments = append(call.Arguments, mock.AnythingOfType(arg))
+		}
+		for _, ret := range tt.mocks[counter].retArgList {
+			call.ReturnArguments = append(call.ReturnArguments, ret)
+		}
 	}
 }
