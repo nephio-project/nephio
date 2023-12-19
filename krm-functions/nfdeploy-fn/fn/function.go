@@ -23,8 +23,8 @@ import (
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
-	nephiodeployv1alpha1 "github.com/nephio-project/api/nf_deployments/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
+	workloadv1alpha1 "github.com/nephio-project/api/workload/v1alpha1"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	"github.com/nokia/k8s-ipam/pkg/iputil"
@@ -50,8 +50,8 @@ func Run(rl *fn.ResourceList) (bool, error) {
 		rl,
 		&condkptsdk.Config{
 			For: corev1.ObjectReference{
-				APIVersion: nephiodeployv1alpha1.GroupVersion.Identifier(),
-				Kind:       nephiodeployv1alpha1.NFDeploymentKind,
+				APIVersion: workloadv1alpha1.GroupVersion.Identifier(),
+				Kind:       workloadv1alpha1.NFDeploymentKind,
 			},
 			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 				{
@@ -156,8 +156,8 @@ func (f *NfDeployFn) InterfaceUpdate(o *fn.KubeObject) error {
 		return nil
 	}
 
-	var ipv4 *nephiodeployv1alpha1.IPv4
-	var ipv6 *nephiodeployv1alpha1.IPv6
+	var ipv4 *workloadv1alpha1.IPv4
+	var ipv6 *workloadv1alpha1.IPv6
 	for _, ifStatus := range itfcIPAllocStatus {
 		//fn.Logf("prefix prefix:%v\n", ifStatus)
 		if ifStatus.Prefix != nil {
@@ -167,12 +167,12 @@ func (f *NfDeployFn) InterfaceUpdate(o *fn.KubeObject) error {
 				return err
 			}
 			if pi.IsIpv6() {
-				ipv6 = &nephiodeployv1alpha1.IPv6{
+				ipv6 = &workloadv1alpha1.IPv6{
 					Address: *ifStatus.Prefix,
 					Gateway: ifStatus.Gateway,
 				}
 			} else {
-				ipv4 = &nephiodeployv1alpha1.IPv4{
+				ipv4 = &workloadv1alpha1.IPv4{
 					Address: *ifStatus.Prefix,
 					Gateway: ifStatus.Gateway,
 				}
@@ -180,7 +180,7 @@ func (f *NfDeployFn) InterfaceUpdate(o *fn.KubeObject) error {
 		}
 	}
 
-	itfcConfig := nephiodeployv1alpha1.InterfaceConfig{
+	itfcConfig := workloadv1alpha1.InterfaceConfig{
 		Name:   itfce.Name,
 		IPv4:   ipv4,
 		IPv6:   ipv6,
@@ -206,16 +206,16 @@ func (f *NfDeployFn) DnnUpdate(o *fn.KubeObject) error {
 		return nil
 	}
 
-	pools := []nephiodeployv1alpha1.Pool{}
+	pools := []workloadv1alpha1.Pool{}
 	if len(dnnReq.Status.Pools) != 0 {
 		for _, pool := range dnnReq.Status.Pools {
 			if pool.IPClaim.Prefix != nil {
-				pools = append(pools, nephiodeployv1alpha1.Pool{Prefix: *pool.IPClaim.Prefix})
+				pools = append(pools, workloadv1alpha1.Pool{Prefix: *pool.IPClaim.Prefix})
 			}
 		}
 	}
 
-	dnn := nephiodeployv1alpha1.DataNetwork{
+	dnn := workloadv1alpha1.DataNetwork{
 		Name: &dnnReq.Name,
 		Pool: pools,
 	}
@@ -248,12 +248,12 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 
 	var err error
 
-	nfKoExt, err := ko.NewFromKubeObject[nephiodeployv1alpha1.NFDeployment](nfDeploymentObj)
+	nfKoExt, err := ko.NewFromKubeObject[workloadv1alpha1.NFDeployment](nfDeploymentObj)
 	if err != nil {
 		return nil, err
 	}
 
-	var nf *nephiodeployv1alpha1.NFDeployment
+	var nf *workloadv1alpha1.NFDeployment
 	nf, err = nfKoExt.GetGoStruct()
 	if err != nil {
 		return nil, err
