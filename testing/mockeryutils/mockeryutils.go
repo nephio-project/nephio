@@ -21,6 +21,10 @@ import (
 )
 
 func InitMocks(mocked *mock.Mock, mocks []MockHelper) {
+	if mocked == nil {
+		panic("\"mocked\" may not be nil")
+	}
+
 	for counter := range mocks {
 		call := mocked.On(mocks[counter].MethodName)
 		for _, arg := range mocks[counter].ArgType {

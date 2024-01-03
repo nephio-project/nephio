@@ -17,7 +17,7 @@ limitations under the License.
 package mockeryutils
 
 type MockHelper struct {
-	MethodName string
+	MethodName string // This field maps to the "Method" field at https://godoc.org/github.com/stretchr/testify/mock#Call
 	ArgType    []string
 	RetArgList []interface{}
 }
