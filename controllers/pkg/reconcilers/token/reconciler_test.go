@@ -75,7 +75,6 @@ func TestDeleteToken(t *testing.T) {
 				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
 				giteaClient:           tt.fields.giteaClient,
 				finalizer:             tt.fields.finalizer,
-				l:                     tt.fields.l,
 			}
 			// The below block being setup and processing of mocks before invoking the function to be tested
 			mockGClient := new(giteaclient.MockGiteaClient)
