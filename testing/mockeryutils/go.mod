@@ -1,9 +1,5 @@
 module github.com/nephio-project/nephio/testing/mockeryutils
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 067b722 (Fix go version in go.mod)
 go 1.20
 
 require github.com/stretchr/testify v1.8.4
@@ -14,9 +10,3 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-<<<<<<< HEAD
-=======
-go 1.23
->>>>>>> 1a25bb6 (Se correct go version in go.mod file)
-=======
->>>>>>> 067b722 (Fix go version in go.mod)
