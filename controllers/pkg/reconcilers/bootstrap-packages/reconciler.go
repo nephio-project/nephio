@@ -125,13 +125,12 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					"annotations", resources[0].GetAnnotations())
 				return ctrl.Result{}, nil
 			}
-			clusterSecret, err := r.GetClusterSecret(ctx, clusterName)
+			clusterClient, ok, err := r.GetClusterClient(ctx, clusterName)
 			if err != nil {
 				msg := fmt.Sprintf("failed to get cluster Secret for: %s", clusterName)
 				log.Error(err, msg)
 				return ctrl.Result{}, errors.Wrap(err, msg)
 			}
-			clusterClient, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(&clusterSecret)
 			if ok {
 				clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 				if err != nil {
@@ -163,20 +162,27 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *reconciler) GetClusterSecret(ctx context.Context, clusterName string) (corev1.Secret, error) {
+func (r *reconciler) GetClusterClient(ctx context.Context, clusterName string) (cluster.ClusterClient, bool, error) {
 	// we need to find the cluster client secret
 	secrets := &corev1.SecretList{}
 	if err := r.Client.List(ctx, secrets); err != nil {
-		return corev1.Secret{}, err
+		return nil, false, err
 	}
 	clusterSecret := corev1.Secret{}
 	for _, secret := range secrets.Items {
 		if strings.Contains(secret.GetName(), clusterName) {
 			clusterSecret = secret
-			break
+
+			clusterClient, ok := cluster.Cluster{
+				Client: r.Client,
+			}.GetClusterClient(&clusterSecret)
+
+			if ok {
+				return clusterClient, ok, nil
+			}
 		}
 	}
-	return clusterSecret, nil
+	return nil, false, nil
 }
 
 func (r *reconciler) IsStagingPackageRevision(ctx context.Context, repositoryName string) (bool, error) {

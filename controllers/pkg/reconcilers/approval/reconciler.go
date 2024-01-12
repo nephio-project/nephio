@@ -47,6 +47,7 @@ const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
+	RequeueDuration              = 10 * time.Second
 )
 
 func init() {
@@ -122,7 +123,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"NotApproved", "owning PackageVariant not Ready")
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
 
 	// All policies require readiness gates to be met, so if they
@@ -131,7 +132,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"NotApproved", "readiness gates not met")
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
 
 	// Readiness is met, so check our other policies
@@ -157,7 +158,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
 			"NotApproved", "approval policy %q not met", policy)
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
 
 	// Delay if needed, and let the user know via an event
@@ -185,8 +186,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{RequeueAfter: requeue}, nil
 	}
 
+	action := "approving"
+	reason := "Approved"
+
 	// All policies met
 	if pr.Spec.Lifecycle == porchv1alpha1.PackageRevisionLifecycleDraft {
+		action = "proposing"
+		reason = "Proposed"
 		pr.Spec.Lifecycle = porchv1alpha1.PackageRevisionLifecycleProposed
 		err = r.Update(ctx, pr)
 	} else {
@@ -198,7 +204,10 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err != nil {
 		r.recorder.Eventf(pr, corev1.EventTypeWarning,
-			"Error", "error approving: %s", err.Error())
+			"Error", "error %s: %s", action, err.Error())
+	} else {
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			reason, "all approval policies met")
 	}
 
 	return ctrl.Result{}, err

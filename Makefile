@@ -27,7 +27,7 @@ DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -exec sh -c 'echo \"$$(dirn
 
 # This includes the 'help' target that prints out all targets with their descriptions organized by categories
 include default-help.mk
-
+include default-mockery.mk
 
 ##@ Go tests & formatting
 
@@ -51,4 +51,21 @@ unit-clean: ## These targets are delegated to the Makefiles of individual Go mod
 docker-build docker-push: ## These targets are delegated to the Makefiles next to Dockerfiles
 	for dir in $(DOCKERFILE_DIRS); do \
 		$(MAKE) -C "$$dir" $@  ; \
+	done
+
+
+##@ Mockery code
+
+.PHONY: install-mockery
+install-mockery: ## install mockery
+ifeq ($(CONTAINER_RUNNABLE), 0)
+		$(CONTAINER_RUNTIME) pull docker.io/vektra/mockery:v${MOCKERY_VERSION}
+else
+		wget -qO- https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_${OS}_${OS_ARCH}.tar.gz | sudo tar -xvzf - -C /usr/local/bin
+endif
+
+.PHONY: generate-mocks
+generate-mocks:
+	for dir in $(GO_MOD_DIRS); do \
+		$(MAKE) -C "$$dir" $@ || true ; \
 	done

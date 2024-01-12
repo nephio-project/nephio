@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
@@ -49,6 +50,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
+)
+
+const (
+	RequeueDuration = 10 * time.Second
 )
 
 func init() {
@@ -111,14 +116,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
 	if !pvReady {
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"Waiting", "owning PackageVariant not Ready")
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
 
 	ipamf := ipamfn.New(r.ipamClientProxy)

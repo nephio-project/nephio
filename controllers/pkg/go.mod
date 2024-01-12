@@ -20,7 +20,7 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
 	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e
-	github.com/nephio-project/api v1.0.1-0.20231006162045-9ad2d0db2a8d
+	github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
