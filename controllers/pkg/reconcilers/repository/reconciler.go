@@ -41,7 +41,7 @@ func init() {
 }
 
 const (
-	finalizer = "infra.nephio.org/finalizer"
+	finalizer       = "infra.nephio.org/finalizer"
 	errUpdateStatus = "cannot update status"
 )
 
