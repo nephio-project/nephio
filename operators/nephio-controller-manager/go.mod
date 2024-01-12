@@ -88,7 +88,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/srl-labs/ygotsrl/v22 v22.11.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
