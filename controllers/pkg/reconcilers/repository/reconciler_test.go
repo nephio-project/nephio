@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
-	"github.com/stretchr/testify/mock"
+	"github.com/nephio-project/nephio/testing/mockeryutils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -60,7 +60,7 @@ func TestUpsertRepo(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
 			args:   args{nil, nil, &infrav1alpha1.Repository{}},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{nil, nil, fmt.Errorf("error getting User Information")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{nil, nil, fmt.Errorf("error getting User Information")}},
 			},
 			wantErr: true,
 		},
@@ -69,9 +69,9 @@ func TestUpsertRepo(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
 			args:   args{nil, nil, &infrav1alpha1.Repository{Status: infrav1alpha1.RepositoryStatus{}}},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, nil}},
-				{"EditRepo", []string{"string", "string", "gitea.EditRepoOption"}, []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -90,9 +90,9 @@ func TestUpsertRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, nil}},
-				{"EditRepo", []string{"string", "string", "gitea.EditRepoOption"}, []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -105,9 +105,10 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, nil}},
-				{"EditRepo", []string{"string", "string", "gitea.EditRepoOption"}, []interface{}{&gitea.Repository{}, nil, fmt.Errorf("error updating repo")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string",
+					"gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("error updating repo")}},
 			},
 			wantErr: true,
 		},
@@ -131,9 +132,9 @@ func TestUpsertRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{"CreateRepo", []string{"gitea.CreateRepoOption"}, []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -146,9 +147,9 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{"CreateRepo", []string{"gitea.CreateRepoOption"}, []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -161,9 +162,9 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"GetRepo", []string{"string", "string"}, []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{"CreateRepo", []string{"gitea.CreateRepoOption"}, []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo creation fails")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo creation fails")}},
 			},
 			wantErr: true,
 		}}
@@ -199,8 +200,8 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"DeleteRepo", []string{"string", "string"}, []interface{}{&gitea.Response{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, nil, nil}},
 			},
 			wantErr: false,
 		}, {
@@ -216,7 +217,7 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, fmt.Errorf("Error getting User Information")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, fmt.Errorf("Error getting User Information")}},
 			},
 			wantErr: true,
 		}, {
@@ -232,8 +233,8 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{"GetMyUserInfo", []string{}, []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{"DeleteRepo", []string{"string", "string"}, []interface{}{&gitea.Response{}, fmt.Errorf("Error deleting repo")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, fmt.Errorf("Error deleting repo")}},
 			},
 			wantErr: true,
 		}}
