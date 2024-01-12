@@ -32,7 +32,7 @@ include ../../default-mockery.mk
 generate-mocks:
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		echo ${PWD}
-		$(CONTAINER_RUNTIME) run --security-opt label=disable -v ${PWD}:/src -w /src/controllers/pkg docker.io/vektra/mockery:v${MOCKERY_VERSION}
+		$(CONTAINER_RUNTIME) run --security-opt label=disable -v ${PWD}:/src -w /src docker.io/vektra/mockery:v${MOCKERY_VERSION}
 else
 		mockery
 endif
