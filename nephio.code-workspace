@@ -1,0 +1,24 @@
+{
+	"folders": [
+			{
+					"name": "nephio-root",
+					"path": "."
+			},
+			{
+					"name": "controllers",
+					"path": "controllers/pkg"
+			},
+			{
+					"name": "krm-functions",
+					"path": "krm-functions"
+			},
+			{
+					"name": "operators",
+					"path": "operators"
+			},
+			{
+					"name": "testing",
+					"path": "testing/mockeryutils"
+			}
+	]
+}
