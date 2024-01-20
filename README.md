@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/nephio-project/nephio.svg)](https://pkg.go.dev/github.com/nephio-project/nephio)
+
 # Nephio
 
 The Nephio project is building a Kubernetes-based automation platform for
