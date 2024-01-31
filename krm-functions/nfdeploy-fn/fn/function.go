@@ -263,7 +263,6 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 	// we need to compare for deduplication logic
 	// slice append is not ideal, it breaks the function idempotency requirement
 	f.paramRef = nf.Spec.ParametersRefs
-	fn.Logf("Before elements in paramRef %+v", nf.Spec.ParametersRefs)
 
 	capObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.CapacityGroupVersionKind))
 	for _, o := range capObjs {
@@ -295,7 +294,6 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 	f.FillCapacityDetails(nf)
 
 	nf.Spec.ParametersRefs = f.paramRef
-	fn.Logf("Af elements in paramRef %+v", nf.Spec.ParametersRefs)
 
 	//sort the paramRefs
 	sort.Slice(nf.Spec.ParametersRefs, func(i, j int) bool {
