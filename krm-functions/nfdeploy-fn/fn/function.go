@@ -259,6 +259,12 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 		return nil, err
 	}
 
+	// add all the existing param ref to the struct
+	// we need to compare for deduplication logic
+	// slice append is not ideal, it breaks the function idempotency requirement
+	f.paramRef = nf.Spec.ParametersRefs
+	fn.Logf("Before elements in paramRef %+v", nf.Spec.ParametersRefs)
+
 	capObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.CapacityGroupVersionKind))
 	for _, o := range capObjs {
 		if err := f.CapacityUpdate(o); err != nil {
@@ -271,6 +277,7 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 			return nil, err
 		}
 	}
+
 	itfceObjs := objs.Where(fn.IsGroupVersionKind(nephioreqv1alpha1.InterfaceGroupVersionKind))
 	for _, o := range itfceObjs {
 		if err := f.InterfaceUpdate(o); err != nil {
@@ -287,11 +294,8 @@ func (f *NfDeployFn) UpdateResourceFn(nfDeploymentObj *fn.KubeObject, objs fn.Ku
 
 	f.FillCapacityDetails(nf)
 
-	if len(nf.Spec.ParametersRefs) == 0 {
-		nf.Spec.ParametersRefs = f.paramRef
-	} else {
-		nf.Spec.ParametersRefs = append(nf.Spec.ParametersRefs, f.paramRef...)
-	}
+	nf.Spec.ParametersRefs = f.paramRef
+	fn.Logf("Af elements in paramRef %+v", nf.Spec.ParametersRefs)
 
 	//sort the paramRefs
 	sort.Slice(nf.Spec.ParametersRefs, func(i, j int) bool {

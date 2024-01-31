@@ -39,21 +39,20 @@ items:
       reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Interface.n2
-    - message: update for condition
-      status: "False"
+    - message: update done
+      status: "True"
       type: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
     - message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
       status: "True"
       type: req.nephio.org/v1alpha1.Dependency.upf
-    - message: not ready
-      reason: Specialize
-      status: "False"
-      type: nephio.org.Specializer.specialize
-    - message: create initial resource condition
+    - message: update condition for initial resource
       reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
-      status: "False"
+      status: "True"
       type: req.nephio.org/v1alpha1.Dependency.upf_duplicate
+    - reason: Ready
+      status: "True"
+      type: nephio.org.Specializer.specialize
 - apiVersion: req.nephio.org/v1alpha1
   kind: Capacity
   metadata:
@@ -137,3 +136,21 @@ items:
       specializer.nephio.org/debug: "true"
   spec:
     provider: amf.free5gc.io
+    interfaces:
+    - name: n2
+      ipv4:
+        address: 10.0.0.3/24
+        gateway: 10.0.0.1
+      vlanID: 100
+    networkInstances:
+    - name: vpc-ran
+      interfaces:
+      - n2
+    parametersRefs:
+    - name: amf-regional-upf-edge02
+      apiVersion: ref.nephio.org/v1alpha1
+      kind: Config
+    capacity:
+      maxDownlinkThroughput: "0"
+      maxSubscribers: 1000
+      maxUplinkThroughput: "0"

@@ -28,3 +28,7 @@ status:
     reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
     status: "True"
     type: req.nephio.org/v1alpha1.Dependency.upf
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Dependency.upf_duplicate
