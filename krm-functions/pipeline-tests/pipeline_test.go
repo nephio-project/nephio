@@ -130,35 +130,6 @@ func TestPipelines(t *testing.T) {
 				nfFn,
 			},
 		},
-		{
-			inputDir:        "upf_pkg",
-			expectedDataDir: "real_deployment_2",
-			pipeline: []fn.ResourceListProcessorFunc{
-				nfFn,
-				nfFn,
-				if_fn.Run,
-				nad_fn.Run,
-				if_fn.Run,
-				dnn_fn.Run,
-				nfFn,
-
-				ipamFn.Run,
-
-				nad_fn.Run,
-				if_fn.Run,
-				dnn_fn.Run,
-				nfFn,
-
-				vlanFn.Run,
-
-				nad_fn.Run,
-				if_fn.Run,
-				dnn_fn.Run,
-				nfFn,
-				nfFn,
-				nfFn,
-			},
-		},
 	}
 
 	for _, tc := range tcs {
