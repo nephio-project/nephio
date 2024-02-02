@@ -1,8 +1,0 @@
-apiVersion: workload.nephio.org/v1alpha1
-kind: NFDeployment
-metadata:
-  name: amf-cluster01
-  annotations:
-    specializer.nephio.org/debug: "true"
-spec:
-  provider: amf.free5gc.io
