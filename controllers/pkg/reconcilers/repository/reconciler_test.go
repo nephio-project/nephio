@@ -16,54 +16,37 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"testing"
+
+	"github.com/go-logr/logr"
+	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	"github.com/nephio-project/nephio/testing/mockeryutils"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"code.gitea.io/sdk/gitea"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
-	"github.com/stretchr/testify/require"
 )
 
-type GiteaClientMock struct {
+type fields struct {
+	APIPatchingApplicator resource.APIPatchingApplicator
+	giteaClient           giteaclient.GiteaClient
+	finalizer             *resource.APIFinalizer
+	l                     logr.Logger
 }
-
-type NephioGiteaClientMock struct {
-	myUserInfoError error
-	deleteRepoError error
-	getRepoError    error
-	createRepoError error
-	editRepoError   error
+type args struct {
+	ctx         context.Context
+	giteaClient giteaclient.GiteaClient
+	cr          *infrav1alpha1.Repository
 }
-
-func (gc NephioGiteaClientMock) IsInitialized() bool {
-	return true
-}
-
-func (gc NephioGiteaClientMock) Get() *gitea.Client {
-	return nil
-}
-
-func (gc NephioGiteaClientMock) Start(ctx context.Context) {
-}
-
-func (gc NephioGiteaClientMock) GetMyUserInfo() (*gitea.User, *gitea.Response, error) {
-	return &gitea.User{}, &gitea.Response{}, gc.myUserInfoError
-}
-
-func (gc NephioGiteaClientMock) DeleteRepo(owner string, repo string) (*gitea.Response, error) {
-	return nil, gc.deleteRepoError
-}
-
-func (gc NephioGiteaClientMock) GetRepo(userName string, repoCRName string) (*gitea.Repository, *gitea.Response, error) {
-	return nil, nil, gc.getRepoError
-}
-
-func (gc NephioGiteaClientMock) CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error) {
-	return &gitea.Repository{}, nil, gc.createRepoError
-}
-
-func (gc NephioGiteaClientMock) EditRepo(userName string, repoCRName string, editRepoOption gitea.EditRepoOption) (*gitea.Repository, *gitea.Response, error) {
-	return &gitea.Repository{}, nil, gc.editRepoError
+type repoTest struct {
+	name    string
+	fields  fields
+	args    args
+	mocks   []mockeryutils.MockHelper
+	wantErr bool
 }
 
 func TestUpsertRepo(t *testing.T) {
@@ -71,132 +54,210 @@ func TestUpsertRepo(t *testing.T) {
 	dummyBool := true
 	dummyTrustModel := infrav1alpha1.TrustModel("Trust Model")
 
-	testCases := map[string]struct {
-		ctx         context.Context
-		giteaClient NephioGiteaClientMock
-		cr          infrav1alpha1.Repository
-		expectedErr error
-	}{
-		"User Info reports error": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				myUserInfoError: errors.New("Error getting User Information"),
+	tests := []repoTest{
+		{
+			name:   "User Info reports error",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args:   args{nil, nil, &infrav1alpha1.Repository{}},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{nil, nil, fmt.Errorf("error getting User Information")}},
 			},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: errors.New("Error getting User Information"),
+			wantErr: true,
 		},
-		"Repo exists, cr fields blank": {
-			ctx:         nil,
-			giteaClient: NephioGiteaClientMock{},
-			cr: infrav1alpha1.Repository{
-				Status: infrav1alpha1.RepositoryStatus{},
+		{
+			name:   "Repo exists, cr spec fields blank",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args:   args{nil, nil, &infrav1alpha1.Repository{Status: infrav1alpha1.RepositoryStatus{}}},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
-			expectedErr: nil,
+			wantErr: false,
 		},
-		"Repo exists, cr fields not blank": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				editRepoError: errors.New("Repo update failed"),
-			},
-			cr: infrav1alpha1.Repository{
-				Spec: infrav1alpha1.RepositorySpec{
-					Description: &dummyString,
-					Private:     &dummyBool,
-				},
-				Status: infrav1alpha1.RepositoryStatus{},
-			},
-			expectedErr: errors.New("Repo update failed"),
-		},
-		"Repo exists, update fails": {
-			ctx:         nil,
-			giteaClient: NephioGiteaClientMock{},
-			cr: infrav1alpha1.Repository{
-				Status: infrav1alpha1.RepositoryStatus{},
-			},
-			expectedErr: nil,
-		},
-		"Create repo: cr fields not blank": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				getRepoError: errors.New("Repo does not exist"),
-			},
-			cr: infrav1alpha1.Repository{
-				Spec: infrav1alpha1.RepositorySpec{
-					Description:   &dummyString,
-					Private:       &dummyBool,
-					IssueLabels:   &dummyString,
-					Gitignores:    &dummyString,
-					License:       &dummyString,
-					Readme:        &dummyString,
-					DefaultBranch: &dummyString,
-					TrustModel:    &dummyTrustModel,
+		{
+			name:   "Repo exists, cr spec fields not blank",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{
+					Spec: infrav1alpha1.RepositorySpec{
+						Description: &dummyString,
+						Private:     &dummyBool,
+					},
+					Status: infrav1alpha1.RepositoryStatus{},
 				},
 			},
-			expectedErr: nil,
-		},
-		"Create repo: cr fields blank": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				getRepoError: errors.New("Repo does not exist"),
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
 			},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: nil,
+			wantErr: false,
 		},
-		"Create repo: fails": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				getRepoError:    errors.New("Repo does not exist"),
-				createRepoError: errors.New("Error creating repo"),
+		{
+			name:   "Repo exists, update fails",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{},
 			},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: errors.New("Error creating repo"),
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string",
+					"gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("error updating repo")}},
+			},
+			wantErr: true,
 		},
-	}
-	for tn, tc := range testCases {
-		t.Run(tn, func(t *testing.T) {
-			r := reconciler{}
-			err := r.upsertRepo(tc.ctx, tc.giteaClient, &tc.cr)
-			require.Equal(t, tc.expectedErr, err)
+		{
+			name:   "Create repo: cr fields not blank",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{
+					Spec: infrav1alpha1.RepositorySpec{
+						Description:   &dummyString,
+						Private:       &dummyBool,
+						IssueLabels:   &dummyString,
+						Gitignores:    &dummyString,
+						License:       &dummyString,
+						Readme:        &dummyString,
+						DefaultBranch: &dummyString,
+						TrustModel:    &dummyTrustModel,
+					},
+				},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Create repo: cr fields blank",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Create repo: fails",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo creation fails")}},
+			},
+			wantErr: true,
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &reconciler{
+				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
+				giteaClient:           tt.fields.giteaClient,
+				finalizer:             tt.fields.finalizer,
+			}
+
+			initMockeryMocks(&tt)
+
+			if err := r.upsertRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
+				t.Errorf("upsertRepo() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
 
 func TestDeleteRepo(t *testing.T) {
+	tests := []repoTest{
+		{
+			name:   "User Info and Delete Repo both OK",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "repo-name",
+					},
+				},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, nil, nil}},
+			},
+			wantErr: false,
+		}, {
+			name:   "User Info reports error",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "repo-name",
+					},
+				},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, fmt.Errorf("Error getting User Information")}},
+			},
+			wantErr: true,
+		}, {
+			name:   "Delete Repo reports error",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
+			args: args{
+				nil,
+				nil,
+				&infrav1alpha1.Repository{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "repo-name",
+					},
+				},
+			},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, fmt.Errorf("Error deleting repo")}},
+			},
+			wantErr: true,
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &reconciler{
+				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
+				giteaClient:           tt.fields.giteaClient,
+				finalizer:             tt.fields.finalizer,
+			}
 
-	testCases := map[string]struct {
-		ctx         context.Context
-		giteaClient NephioGiteaClientMock
-		cr          infrav1alpha1.Repository
-		expectedErr error
-	}{
-		"User Info and Delete repo both work": {
-			ctx:         nil,
-			giteaClient: NephioGiteaClientMock{},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: nil,
-		},
-		"User Info reports error": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				myUserInfoError: errors.New("Error getting User Information"),
-			},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: errors.New("Error getting User Information"),
-		},
-		"Delete repo reports error": {
-			ctx: nil,
-			giteaClient: NephioGiteaClientMock{
-				deleteRepoError: errors.New("Error deleting repo"),
-			},
-			cr:          infrav1alpha1.Repository{},
-			expectedErr: errors.New("Error deleting repo"),
-		},
-	}
-	for tn, tc := range testCases {
-		t.Run(tn, func(t *testing.T) {
-			r := reconciler{}
-			err := r.deleteRepo(tc.ctx, tc.giteaClient, &tc.cr)
-			require.Equal(t, tc.expectedErr, err)
+			initMockeryMocks(&tt)
+
+			if err := r.deleteRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
+				t.Errorf("deleteRepo() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
+}
+
+func initMockeryMocks(tt *repoTest) {
+	mockGClient := new(giteaclient.MockGiteaClient)
+	tt.args.giteaClient = mockGClient
+	tt.fields.giteaClient = mockGClient
+	mockeryutils.InitMocks(&mockGClient.Mock, tt.mocks)
 }
