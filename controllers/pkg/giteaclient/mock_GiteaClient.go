@@ -86,6 +86,61 @@ func (_c *MockGiteaClient_CreateRepo_Call) RunAndReturn(run func(gitea.CreateRep
 	return _c
 }
 
+
+// DeleteAccessToken provides a mock function with given fields: value
+func (_m *MockGiteaClient) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
+	ret := _m.Called(value)
+
+	var r0 *gitea.Response
+	var r1 error
+	if rf, ok := ret.Get(0).(func(interface{}) (*gitea.Response, error)); ok {
+		return rf(value)
+	}
+	if rf, ok := ret.Get(0).(func(interface{}) *gitea.Response); ok {
+		r0 = rf(value)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*gitea.Response)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(interface{}) error); ok {
+		r1 = rf(value)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockGiteaClient_DeleteAccessToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAccessToken'
+type MockGiteaClient_DeleteAccessToken_Call struct {
+	*mock.Call
+}
+
+// DeleteAccessToken is a helper method to define mock.On call
+//   - value interface{}
+func (_e *MockGiteaClient_Expecter) DeleteAccessToken(value interface{}) *MockGiteaClient_DeleteAccessToken_Call {
+	return &MockGiteaClient_DeleteAccessToken_Call{Call: _e.mock.On("DeleteAccessToken", value)}
+}
+
+func (_c *MockGiteaClient_DeleteAccessToken_Call) Run(run func(value interface{})) *MockGiteaClient_DeleteAccessToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(interface{}))
+	})
+	return _c
+}
+
+func (_c *MockGiteaClient_DeleteAccessToken_Call) Return(_a0 *gitea.Response, _a1 error) *MockGiteaClient_DeleteAccessToken_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockGiteaClient_DeleteAccessToken_Call) RunAndReturn(run func(interface{}) (*gitea.Response, error)) *MockGiteaClient_DeleteAccessToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteRepo provides a mock function with given fields: owner, repo
 func (_m *MockGiteaClient) DeleteRepo(owner string, repo string) (*gitea.Response, error) {
 	ret := _m.Called(owner, repo)
