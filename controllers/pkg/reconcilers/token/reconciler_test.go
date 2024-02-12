@@ -50,7 +50,7 @@ type tokenTests struct {
 }
 
 func TestDeleteToken(t *testing.T) {
-	tests := []tokenTest {
+	tests := []tokenTests {
 		{
 			name:   "Delete Access token reports error",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
@@ -196,7 +196,7 @@ func TestCreateToken(t *testing.T) {
 			}
 
 			initMockeryMocks(&tt)
-			
+
 			if err := r.createToken(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
 				t.Errorf("createToken() error = %v, wantErr %v", err, tt.wantErr)
 			}
