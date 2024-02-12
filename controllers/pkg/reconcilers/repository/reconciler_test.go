@@ -49,9 +49,6 @@ type repoTest struct {
 	wantErr bool
 }
 
-func (gc NephioGiteaClientMock) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
-	return nil, nil
-}
 
 func TestUpsertRepo(t *testing.T) {
 	dummyString := "Dummy String"
