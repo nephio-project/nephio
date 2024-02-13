@@ -5,10 +5,10 @@ deploying and managing highly distributed, interconnected workloads such as 5G
 Network Functions, and the underlying infrastructure on which those workloads
 depend.
 
-To get started with Nephio, view the [docs repo](https://github.com/nephio-project/docs) 
-which contains the [Demo installation instructions](https://github.com/nephio-project/docs/blob/main/content/en/docs/guides/install-guides/_index.md) 
-and Quick Start Exercises for [Free5GC](https://github.com/nephio-project/docs/blob/main/content/en/docs/guides/user-guides/exercise-1-free5gc.md)
-and [OAI](https://github.com/nephio-project/docs/blob/main/content/en/docs/guides/user-guides/exercise-2-oai.md). 
+To get started with Nephio, view the [documentation website](https://docs.nephio.org/docs/)
+which contains the [Demo installation instructions](https://docs.nephio.org/docs/guides/install-guides/) 
+and Quick Start Exercises for [Free5GC](https://docs.nephio.org/docs/guides/user-guides/exercise-1-free5gc/)
+and [OAI](https://docs.nephio.org/docs/guides/user-guides/exercise-2-oai/). 
 
 To learn more about the Nephio project, refer to the [Learning with Nephio](https://www.youtube.com/playlist?list=PLiW9_IXAWtkt8lbFe1jF_bzEI4gd-Jlq4)
 series and it's corresponding  [wiki pages](https://wiki.nephio.org/display/HOME/Learning+with+Nephio+R1).
