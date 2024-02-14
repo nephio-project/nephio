@@ -86,7 +86,6 @@ func (_c *MockGiteaClient_CreateRepo_Call) RunAndReturn(run func(gitea.CreateRep
 	return _c
 }
 
-
 // DeleteAccessToken provides a mock function with given fields: value
 func (_m *MockGiteaClient) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
 	ret := _m.Called(value)

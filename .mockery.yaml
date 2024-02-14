@@ -1,6 +1,0 @@
-packages:
-  github.com/nephio-project/nephio/controllers/pkg/giteaclient:
-    interfaces:
-      GiteaClient:
-        config:
-          dir: "{{.InterfaceDir}}"

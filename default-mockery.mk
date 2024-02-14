@@ -18,3 +18,22 @@ GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 OS_ARCH ?= $(shell uname -m)
 OS ?= $(shell uname)
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
+
+.PHONY: install-mockery
+install-mockery: ## install mockery
+ifeq ($(CONTAINER_RUNNABLE), 0)
+		$(CONTAINER_RUNTIME) pull docker.io/vektra/mockery:v${MOCKERY_VERSION}
+else
+		wget -qO- https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_${OS}_${OS_ARCH}.tar.gz | sudo tar -xvzf - -C /usr/local/bin
+endif
+
+.PHONY: generate-mocks
+generate-mocks:
+ifeq ($(CONTAINER_RUNNABLE), 0)
+		find . -name .mockery.yaml \
+			-exec echo generating mocks specified in {} . . . \; \
+			-execdir $(CONTAINER_RUNTIME) run --security-opt label=disable -v .:/src -w /src/controllers/pkg docker.io/vektra/mockery:v${MOCKERY_VERSION} \; \
+			-exec echo generated mocks specified in {} \;
+else
+		mockery
+endif
