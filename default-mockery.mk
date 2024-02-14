@@ -35,5 +35,9 @@ ifeq ($(CONTAINER_RUNNABLE), 0)
 			-execdir $(CONTAINER_RUNTIME) run --security-opt label=disable -v .:/src -w /src/controllers/pkg docker.io/vektra/mockery:v${MOCKERY_VERSION} \; \
 			-exec echo generated mocks specified in {} \;
 else
+		find . -name .mockery.yaml \
+			-exec echo generating mocks specified in {} . . . \; \
+			-execdir mockery \; \
+			-exec echo generated mocks specified in {} \;
 		mockery
 endif
