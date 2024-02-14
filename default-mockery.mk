@@ -39,5 +39,4 @@ else
 			-exec echo generating mocks specified in {} . . . \; \
 			-execdir mockery \; \
 			-exec echo generated mocks specified in {} \;
-		mockery
 endif
