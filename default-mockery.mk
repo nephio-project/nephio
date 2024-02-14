@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-MOCKERY_VERSION=2.37.1
+MOCKERY_VERSION=2.41.0
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 OS_ARCH ?= $(shell uname -m)
 OS ?= $(shell uname)
@@ -32,7 +32,7 @@ generate-mocks:
 ifeq ($(CONTAINER_RUNNABLE), 0)
 		find . -name .mockery.yaml \
 			-exec echo generating mocks specified in {} . . . \; \
-			-execdir $(CONTAINER_RUNTIME) run --security-opt label=disable -v .:/src -w /src/controllers/pkg docker.io/vektra/mockery:v${MOCKERY_VERSION} \; \
+			-execdir $(CONTAINER_RUNTIME) run --security-opt label=disable -v .:/src -w /src docker.io/vektra/mockery:v${MOCKERY_VERSION} \; \
 			-exec echo generated mocks specified in {} \;
 else
 		find . -name .mockery.yaml \
