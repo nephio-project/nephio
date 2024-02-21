@@ -135,6 +135,20 @@ func TestPackageRevisionIsReady(t *testing.T) {
 			},
 			want: true,
 		},
+		"Condition type not present": {
+			conds: []porchv1alpha1.Condition{
+				{
+					Type:   "myterriblecondition",
+					Status: porchv1alpha1.ConditionStatus(porchv1alpha1.ConditionFalse),
+				},
+			},
+			readyGates: []porchv1alpha1.ReadinessGate{
+				{
+					ConditionType: "notmyterriblecondition",
+				},
+			},
+			want: false,
+		},
 		"Not ready": {
 			conds: []porchv1alpha1.Condition{
 				{
