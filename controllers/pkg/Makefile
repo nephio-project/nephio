@@ -23,16 +23,3 @@ include ../../default-go.mk
 
 # This includes the 'help' target that prints out all targets with their descriptions organized by categories
 include ../../default-help.mk
-
-# This includes the below targets for mockery
-#   install-mockery
-#   generate-mocks
-include ../../default-mockery.mk
-.PHONY: generate-mocks
-generate-mocks:
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		echo ${PWD}
-		$(CONTAINER_RUNTIME) run --security-opt label=disable -v ${PWD}:/src -w /src/controllers/pkg docker.io/vektra/mockery:v${MOCKERY_VERSION}
-else
-		mockery
-endif
