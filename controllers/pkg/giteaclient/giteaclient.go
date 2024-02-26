@@ -59,13 +59,9 @@ func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (Gite
 	if singleInstance == nil {
 		lock.Lock()
 		defer lock.Unlock()
-		if singleInstance == nil {
-			singleInstance = &gc{client: client}
-			log.FromContext(ctx).Info("Gitea Client Instance created now.")
-			go singleInstance.Start(ctx)
-		} else {
-			log.FromContext(ctx).Info("Gitea Client Instance already created.")
-		}
+		singleInstance = &gc{client: client}
+		log.FromContext(ctx).Info("Gitea Client Instance created now.")
+		go singleInstance.Start(ctx)
 	} else {
 		log.FromContext(ctx).Info("Gitea Client Instance already created.")
 	}
