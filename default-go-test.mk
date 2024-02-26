@@ -14,7 +14,6 @@
 
 
 GO_VERSION ?= 1.20.2
-MOCKERY_VERSION=2.37.1
 TEST_COVERAGE_FILE=lcov.info
 TEST_COVERAGE_HTML_FILE=coverage_unit.html
 TEST_COVERAGE_FUNC_FILE=func_coverage.out
@@ -37,22 +36,6 @@ else
 		go test ./... -v -coverprofile ${TEST_COVERAGE_FILE} 
 		go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}
 		go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}
-endif
-
-.PHONY: install-mockery
-install-mockery: ## install mockery
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) pull docker.io/vektra/mockery:v${MOCKERY_VERSION}
-else
-		wget -qO- https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_${OS}_${OS_ARCH}.tar.gz | sudo tar -xvzf - -C /usr/local/bin
-endif
-
-.PHONY: generate-mocks
-generate-mocks:
-ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(CONTAINER_RUNTIME) run --security-opt label=disable -v ${PWD}:/src -w /src docker.io/vektra/mockery:v${MOCKERY_VERSION}
-else
-		mockery
 endif
 
 .PHONY: unit-clean
