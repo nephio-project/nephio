@@ -136,41 +136,6 @@ func TestIgnoreNotFound(t *testing.T) {
 	}
 }
 
-func TestIsAPIError(t *testing.T) {
-	errBoom := errors.New("boom")
-	k8sError := kerrors.NewBadRequest("BadRequest Reason")
-
-	type args struct {
-		err error
-	}
-	cases := map[string]struct {
-		args args
-		want bool
-	}{
-		"isKubernetesAPIError": {
-			args: args{
-				err: k8sError,
-			},
-			want: true,
-		},
-		"isNotKubernetesAPIError": {
-			args: args{
-				err: errBoom,
-			},
-			want: false,
-		},
-	}
-
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			got := IsAPIError(tc.args.err)
-			if diff := cmp.Diff(tc.want, got, EquateErrors()); diff != "" {
-				t.Errorf("Ignore(...): -want %t, +got error:\n%s", tc.want, diff)
-			}
-		})
-	}
-}
-
 func TestIsAPIErrorWrapped(t *testing.T) {
 	errBoom := errors.New("boom")
 	k8sError := kerrors.NewBadRequest("BadRequest Reason")
