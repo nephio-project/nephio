@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func TestIgnore(t *testing.T) {
@@ -103,6 +104,68 @@ func TestIgnoreAny(t *testing.T) {
 			got := IgnoreAny(tc.args.err, tc.args.is...)
 			if diff := cmp.Diff(tc.want, got, EquateErrors()); diff != "" {
 				t.Errorf("Ignore(...): -want error, +got error:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIgnoreNotFound(t *testing.T) {
+	errBoom := errors.New("boom")
+	type args struct {
+		err error
+	}
+	cases := map[string]struct {
+		args args
+		want error
+	}{
+		"IgnoreNotFound": {
+			args: args{
+				err: errBoom,
+			},
+			want: errBoom,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := IgnoreNotFound(tc.args.err)
+			if diff := cmp.Diff(tc.want, got, EquateErrors()); diff != "" {
+				t.Errorf("Ignore(...): -want error, +got error:\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsAPIErrorWrapped(t *testing.T) {
+	errBoom := errors.New("boom")
+	k8sError := kerrors.NewBadRequest("BadRequest Reason")
+
+	type args struct {
+		err error
+	}
+	cases := map[string]struct {
+		args args
+		want bool
+	}{
+		"isKubernetesAPIErrorWrapped": {
+			args: args{
+				err: k8sError,
+			},
+			want: true,
+		},
+		"isNotKubernetesAPIErrorWrapped": {
+			args: args{
+				err: errBoom,
+			},
+			want: false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := IsAPIErrorWrapped(tc.args.err)
+			if diff := cmp.Diff(tc.want, got, EquateErrors()); diff != "" {
+				t.Errorf("Ignore(...): -want %t, +got error:\n%s", tc.want, diff)
 			}
 		})
 	}
