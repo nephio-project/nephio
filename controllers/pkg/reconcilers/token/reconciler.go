@@ -45,7 +45,6 @@ func init() {
 const (
 	finalizer = "infra.nephio.org/finalizer"
 	// errors
-	errGetCr        = "cannot get cr"
 	errUpdateStatus = "cannot update status"
 )
 
@@ -104,10 +103,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// check if client exists otherwise retry
-	giteaClient := r.giteaClient.Get()
-	if giteaClient == nil {
+	if !r.giteaClient.IsInitialized() {
 		err := fmt.Errorf("gitea server unreachable")
-		log.Error(err, "cannot connect to gitea server")
+		log.Error(err, "cannot connect to git server")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
@@ -119,6 +117,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
 			if err := r.deleteToken(ctx, r.giteaClient, cr); err != nil {
+				log.Error(err, "cannot delete token in git server")
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 			}
 		}
@@ -141,24 +140,24 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// create token and secret
-	if err := r.createToken(ctx, giteaClient, cr); err != nil {
+	if err := r.createToken(ctx, r.giteaClient, cr); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
-func (r *reconciler) createToken(ctx context.Context, giteaClient *gitea.Client, cr *infrav1alpha1.Token) error {
+func (r *reconciler) createToken(ctx context.Context, giteaClient giteaclient.GiteaClient, cr *infrav1alpha1.Token) error {
 	log := log.FromContext(ctx)
 	tokens, _, err := giteaClient.ListAccessTokens(gitea.ListAccessTokensOptions{})
 	if err != nil {
-		log.Error(err, "cannot list repo")
+		log.Error(err, "cannot list tokens")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return err
 	}
 	tokenFound := false
-	for _, repo := range tokens {
-		if repo.Name == cr.GetTokenName() {
+	for _, token := range tokens {
+		if token.Name == cr.GetTokenName() {
 			tokenFound = true
 			break
 		}

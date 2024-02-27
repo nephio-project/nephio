@@ -23,6 +23,69 @@ func (_m *MockGiteaClient) EXPECT() *MockGiteaClient_Expecter {
 	return &MockGiteaClient_Expecter{mock: &_m.Mock}
 }
 
+// CreateAccessToken provides a mock function with given fields: opt
+func (_m *MockGiteaClient) CreateAccessToken(opt gitea.CreateAccessTokenOption) (*gitea.AccessToken, *gitea.Response, error) {
+	ret := _m.Called(opt)
+
+	var r0 *gitea.AccessToken
+	var r1 *gitea.Response
+	var r2 error
+	if rf, ok := ret.Get(0).(func(gitea.CreateAccessTokenOption) (*gitea.AccessToken, *gitea.Response, error)); ok {
+		return rf(opt)
+	}
+	if rf, ok := ret.Get(0).(func(gitea.CreateAccessTokenOption) *gitea.AccessToken); ok {
+		r0 = rf(opt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*gitea.AccessToken)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(gitea.CreateAccessTokenOption) *gitea.Response); ok {
+		r1 = rf(opt)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*gitea.Response)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(gitea.CreateAccessTokenOption) error); ok {
+		r2 = rf(opt)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockGiteaClient_CreateAccessToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateAccessToken'
+type MockGiteaClient_CreateAccessToken_Call struct {
+	*mock.Call
+}
+
+// CreateAccessToken is a helper method to define mock.On call
+//   - opt gitea.CreateAccessTokenOption
+func (_e *MockGiteaClient_Expecter) CreateAccessToken(opt interface{}) *MockGiteaClient_CreateAccessToken_Call {
+	return &MockGiteaClient_CreateAccessToken_Call{Call: _e.mock.On("CreateAccessToken", opt)}
+}
+
+func (_c *MockGiteaClient_CreateAccessToken_Call) Run(run func(opt gitea.CreateAccessTokenOption)) *MockGiteaClient_CreateAccessToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(gitea.CreateAccessTokenOption))
+	})
+	return _c
+}
+
+func (_c *MockGiteaClient_CreateAccessToken_Call) Return(_a0 *gitea.AccessToken, _a1 *gitea.Response, _a2 error) *MockGiteaClient_CreateAccessToken_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *MockGiteaClient_CreateAccessToken_Call) RunAndReturn(run func(gitea.CreateAccessTokenOption) (*gitea.AccessToken, *gitea.Response, error)) *MockGiteaClient_CreateAccessToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateRepo provides a mock function with given fields: createRepoOption
 func (_m *MockGiteaClient) CreateRepo(createRepoOption gitea.CreateRepoOption) (*gitea.Repository, *gitea.Response, error) {
 	ret := _m.Called(createRepoOption)
@@ -85,7 +148,6 @@ func (_c *MockGiteaClient_CreateRepo_Call) RunAndReturn(run func(gitea.CreateRep
 	_c.Call.Return(run)
 	return _c
 }
-
 
 // DeleteAccessToken provides a mock function with given fields: value
 func (_m *MockGiteaClient) DeleteAccessToken(value interface{}) (*gitea.Response, error) {
@@ -467,6 +529,69 @@ func (_c *MockGiteaClient_IsInitialized_Call) Return(_a0 bool) *MockGiteaClient_
 }
 
 func (_c *MockGiteaClient_IsInitialized_Call) RunAndReturn(run func() bool) *MockGiteaClient_IsInitialized_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAccessTokens provides a mock function with given fields: opts
+func (_m *MockGiteaClient) ListAccessTokens(opts gitea.ListAccessTokensOptions) ([]*gitea.AccessToken, *gitea.Response, error) {
+	ret := _m.Called(opts)
+
+	var r0 []*gitea.AccessToken
+	var r1 *gitea.Response
+	var r2 error
+	if rf, ok := ret.Get(0).(func(gitea.ListAccessTokensOptions) ([]*gitea.AccessToken, *gitea.Response, error)); ok {
+		return rf(opts)
+	}
+	if rf, ok := ret.Get(0).(func(gitea.ListAccessTokensOptions) []*gitea.AccessToken); ok {
+		r0 = rf(opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*gitea.AccessToken)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(gitea.ListAccessTokensOptions) *gitea.Response); ok {
+		r1 = rf(opts)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*gitea.Response)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(gitea.ListAccessTokensOptions) error); ok {
+		r2 = rf(opts)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// MockGiteaClient_ListAccessTokens_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAccessTokens'
+type MockGiteaClient_ListAccessTokens_Call struct {
+	*mock.Call
+}
+
+// ListAccessTokens is a helper method to define mock.On call
+//   - opts gitea.ListAccessTokensOptions
+func (_e *MockGiteaClient_Expecter) ListAccessTokens(opts interface{}) *MockGiteaClient_ListAccessTokens_Call {
+	return &MockGiteaClient_ListAccessTokens_Call{Call: _e.mock.On("ListAccessTokens", opts)}
+}
+
+func (_c *MockGiteaClient_ListAccessTokens_Call) Run(run func(opts gitea.ListAccessTokensOptions)) *MockGiteaClient_ListAccessTokens_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(gitea.ListAccessTokensOptions))
+	})
+	return _c
+}
+
+func (_c *MockGiteaClient_ListAccessTokens_Call) Return(_a0 []*gitea.AccessToken, _a1 *gitea.Response, _a2 error) *MockGiteaClient_ListAccessTokens_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
+func (_c *MockGiteaClient_ListAccessTokens_Call) RunAndReturn(run func(gitea.ListAccessTokensOptions) ([]*gitea.AccessToken, *gitea.Response, error)) *MockGiteaClient_ListAccessTokens_Call {
 	_c.Call.Return(run)
 	return _c
 }
