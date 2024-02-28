@@ -55,13 +55,19 @@ func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (Gite
 	if client.Client == nil {
 		return nil, fmt.Errorf("failed creating gitea client, value of client.Client cannot be nil")
 	}
-
+	// check if instance is created
 	if singleInstance == nil {
+		// Create a lock
 		lock.Lock()
 		defer lock.Unlock()
-		singleInstance = &gc{client: client}
-		log.FromContext(ctx).Info("Gitea Client Instance created now.")
-		go singleInstance.Start(ctx)
+		// Check instance is still null as another thread of execution may have initialized it before the lock was acquired.
+		if singleInstance == nil {
+			singleInstance = &gc{client: client}
+			log.FromContext(ctx).Info("Gitea Client Instance created now.")
+			go singleInstance.Start(ctx)
+		} else {
+			log.FromContext(ctx).Info("Gitea Client Instance already created.")
+		}
 	} else {
 		log.FromContext(ctx).Info("Gitea Client Instance already created.")
 	}
