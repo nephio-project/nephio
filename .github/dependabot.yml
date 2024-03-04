@@ -9,4 +9,3 @@ updates:
     directory: /
     schedule:
       interval: daily
-    rebase-strategy: disabled
