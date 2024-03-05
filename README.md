@@ -9,7 +9,7 @@ Network Functions, and the underlying infrastructure on which those workloads
 depend.
 
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/nephio-project/nephio/badge)](https://securityscorecards.dev/viewer/?uri=github.com/nephio-project/nephio)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/nephio-project/nephio/badge)](https://securityscorecards.dev/viewer/?uri=github.com/nephio-project/nephio) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7665/badge)](https://www.bestpractices.dev/projects/7665)
 
 The R1 Release is now available! To get started with Nephio, view the [docs repo](https://github.com/nephio-project/docs) 
 which contains the [R1 Demo installation instructions](https://github.com/nephio-project/docs/blob/main/install-guide/README.md) 
