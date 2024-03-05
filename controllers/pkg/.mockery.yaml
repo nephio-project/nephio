@@ -1,0 +1,13 @@
+with-expecter: true
+packages:
+  github.com/nephio-project/nephio/controllers/pkg/giteaclient:
+    interfaces:
+      GiteaClient:
+        config:
+          dir: "{{.InterfaceDir}}"
+  sigs.k8s.io/controller-runtime/pkg/client:
+    interfaces:
+      Client:
+        config:
+          dir: "mocks/external/{{ .InterfaceName | lower }}"
+          outpkg: "mocks"

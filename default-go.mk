@@ -20,3 +20,4 @@ include $(GIT_ROOT_DIR)/default-go-misc.mk
 include $(GIT_ROOT_DIR)/default-go-test.mk
 include $(GIT_ROOT_DIR)/default-go-lint.mk
 include $(GIT_ROOT_DIR)/default-gosec.mk
+include $(GIT_ROOT_DIR)/default-mockery.mk
