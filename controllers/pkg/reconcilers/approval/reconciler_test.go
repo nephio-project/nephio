@@ -15,12 +15,17 @@
 package approval
 
 import (
+	context "context"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/mock"
 
 	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
 )
 
 func TestShouldProcess(t *testing.T) {
@@ -117,7 +122,7 @@ func TestManageDelay(t *testing.T) {
 		"not old enough": {
 			pr: porchapi.PackageRevision{
 				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{now},
+					CreationTimestamp: metav1.Time{Time: now},
 					Annotations: map[string]string{
 						"approval.nephio.org/delay": "1h",
 					},
@@ -129,7 +134,7 @@ func TestManageDelay(t *testing.T) {
 		"old enough": {
 			pr: porchapi.PackageRevision{
 				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{now.AddDate(-1, 0, 0)},
+					CreationTimestamp: metav1.Time{Time: now.AddDate(-1, 0, 0)},
 					Annotations: map[string]string{
 						"approval.nephio.org/delay": "1h",
 					},
@@ -144,6 +149,89 @@ func TestManageDelay(t *testing.T) {
 			actualRequeue, actualError := manageDelay(&tc.pr)
 			require.Equal(t, tc.expectedRequeue, actualRequeue > 0)
 			require.Equal(t, tc.expectedError, actualError != nil)
+		})
+	}
+}
+
+
+
+func TestPolicyInitial(t *testing.T) {
+
+	testCases := map[string]struct {
+		pr              porchapi.PackageRevision
+		prl             *porchapi.PackageRevisionList
+		expectedApprove bool
+		expectedError   error
+		mockReturnErr   error
+	}{
+		"Draft with proposed lifecycle": {
+			pr: porchapi.PackageRevision{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"approval.nephio.org/policy": "initial",
+					},
+				},
+			},
+			prl: &porchapi.PackageRevisionList{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "Blah",
+					Kind:       "Blah",
+				},
+				Items: []porchapi.PackageRevision{
+					{
+						Spec: porchapi.PackageRevisionSpec{
+							Lifecycle: porchapi.PackageRevisionLifecycleProposed,
+						},
+					},
+				},
+			},
+			expectedApprove: true,
+			expectedError:   nil,
+			mockReturnErr:   nil,
+		},
+		"Draft with existing version": {
+			pr: porchapi.PackageRevision{
+				Spec: porchapi.PackageRevisionSpec{
+					RepositoryName: "MyRepo",
+					PackageName:    "MyPackage",
+				},
+			},
+			prl: &porchapi.PackageRevisionList{
+				Items: []porchapi.PackageRevision{
+					{
+						Spec: porchapi.PackageRevisionSpec{
+							Lifecycle:      porchapi.PackageRevisionLifecyclePublished,
+							RepositoryName: "MyRepo",
+							PackageName:    "MyPackage",
+						},
+					},
+				},
+			},
+			expectedApprove: false,
+			expectedError:   nil,
+			mockReturnErr:   nil,
+		},
+		"runtime client list failure": {
+			pr: porchapi.PackageRevision{},
+			prl: &porchapi.PackageRevisionList{},
+			expectedApprove: false,
+			expectedError:   fmt.Errorf("Failed to list items"),
+			mockReturnErr:   fmt.Errorf("Failed to list items"),
+		},
+	}
+	for tn, tc := range testCases {
+		// Create a new instance of the mock object
+		clientMock := new(mocks.MockClient)
+		clientMock.On("List", context.TODO(), mock.AnythingOfType("*v1alpha1.PackageRevisionList")).Return(tc.mockReturnErr).Run(func(args mock.Arguments) {
+			packRevList := args.Get(1).(*porchapi.PackageRevisionList)
+			*packRevList = *tc.prl // tc.prl is what r.Get will store in 2nd Argument
+		})
+		// Create an instance of the component under test
+		r := reconciler{baseClient: clientMock}
+		t.Run(tn, func(t *testing.T) {
+			actualApproval, actualError := r.policyInitial(context.TODO(), &tc.pr)
+			require.Equal(t, tc.expectedApprove, actualApproval)
+			require.Equal(t, tc.expectedError, actualError)
 		})
 	}
 }

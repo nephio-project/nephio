@@ -67,7 +67,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
 
-	r.Client = mgr.GetClient()
+	r.baseClient = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
@@ -80,7 +80,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 // reconciler reconciles a NetworkInstance object
 type reconciler struct {
-	client.Client
+	baseClient      client.Client
 	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
@@ -91,7 +91,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log.Info("reconcile approval")
 
 	pr := &porchv1alpha1.PackageRevision{}
-	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
+	if err := r.baseClient.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
@@ -194,7 +194,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		action = "proposing"
 		reason = "Proposed"
 		pr.Spec.Lifecycle = porchv1alpha1.PackageRevisionLifecycleProposed
-		err = r.Update(ctx, pr)
+		err = r.baseClient.Update(ctx, pr)
 	} else {
 		err = porchclient.UpdatePackageRevisionApproval(ctx, r.porchRESTClient, client.ObjectKey{
 			Namespace: pr.Namespace,
@@ -251,7 +251,7 @@ func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 
 func (r *reconciler) policyInitial(ctx context.Context, pr *porchv1alpha1.PackageRevision) (bool, error) {
 	var prList porchv1alpha1.PackageRevisionList
-	if err := r.Client.List(ctx, &prList); err != nil {
+	if err := r.baseClient.List(ctx, &prList); err != nil {
 		return false, err
 	}
 
