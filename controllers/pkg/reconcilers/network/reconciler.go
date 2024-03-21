@@ -136,8 +136,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log := log.FromContext(ctx)
 	log.Info("reconcile", "req", req)
 
-	cr := &infrav1alpha1.Network{}
-	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
+	network := &infrav1alpha1.Network{}
+	if err := r.Get(ctx, req.NamespacedName, network); err != nil {
 		// if the resource no longer exists the reconcile loop is done
 		if resource.IgnoreNotFound(err) != nil {
 			log.Error(err, errGetCr)
@@ -150,11 +150,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// validate interface/node or selector
 	// validate in rt + bd -> the interface/node or selector is coming from the bd
 
-	if meta.WasDeleted(cr) {
-		if err := r.finalizer.RemoveFinalizer(ctx, cr); err != nil {
+	if meta.WasDeleted(network) {
+		if err := r.finalizer.RemoveFinalizer(ctx, network); err != nil {
 			log.Error(err, "cannot remove finalizer")
-			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+			network.SetConditions(infrav1alpha1.Failed(err.Error()))
+			return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 		}
 
 		log.Info("Successfully deleted resource")
@@ -162,31 +162,31 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// add finalizer to avoid deleting the token w/o it being deleted from the git server
-	if err := r.finalizer.AddFinalizer(ctx, cr); err != nil {
+	if err := r.finalizer.AddFinalizer(ctx, network); err != nil {
 		log.Error(err, "cannot add finalizer")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
-	eps, err := r.getProviderEndpoints(ctx, cr.Spec.Topology)
+	eps, err := r.getProviderEndpoints(ctx, network.Spec.Topology)
 	if err != nil {
 		log.Error(err, "cannot list provider endpoints")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
-	nodes, err := r.getProviderNodes(ctx, cr.Spec.Topology)
+	nodes, err := r.getProviderNodes(ctx, network.Spec.Topology)
 	if err != nil {
 		log.Error(err, "cannot list provider nodes")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
 	r.resources = resources.New(
 		r.APIPatchingApplicator,
 		resources.Config{
-			CR:             cr,
-			MatchingLabels: resourcev1alpha1.GetOwnerLabelsFromCR(cr),
+			CR:             network,
+			MatchingLabels: resourcev1alpha1.GetOwnerLabelsFromCR(network),
 			Owns: []schema.GroupVersionKind{
 				configv1alpha1.NetworkGroupVersionKind,
 			},
@@ -194,28 +194,28 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	)
 
 	log.Info("apply initial resources")
-	if err := r.applyInitialresources(ctx, cr, eps, nodes); err != nil {
+	if err := r.applyInitialresources(ctx, network, eps, nodes); err != nil {
 		log.Error(err, "cannot apply initial resources")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
 	log.Info("get new resources")
-	if err := r.getNewResources(ctx, cr, eps, nodes); err != nil {
+	if err := r.getNewResources(ctx, network, eps, nodes); err != nil {
 		log.Error(err, "cannot get new resources")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
 	log.Info("apply all resources")
 	if err := r.resources.APIApply(ctx); err != nil {
 		log.Error(err, "cannot apply resources to the API")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+		network.SetConditions(infrav1alpha1.Failed(err.Error()))
+		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 	}
 
-	cr.SetConditions(infrav1alpha1.Ready())
-	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+	network.SetConditions(infrav1alpha1.Ready())
+	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, network), errUpdateStatus)
 }
 
 func getMatchingNodeLabels(cr client.Object, nodeName string) client.MatchingLabels {
