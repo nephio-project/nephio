@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package openshift
 
 import (
 	"testing"
@@ -24,26 +24,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGetClusterClient(t *testing.T) {
+func TestGetClusterName(t *testing.T) {
 	cases := map[string]struct {
-		secret     *corev1.Secret
-		wantClient bool
-		wantName   string
+		secret *corev1.Secret
+		want   string
 	}{
-		"None": {
-			secret:     &corev1.Secret{},
-			wantClient: false,
-			wantName:   "",
+		"Nil": {
+			secret: &corev1.Secret{},
+			want:   "",
 		},
-		"Capi": {
-			secret: &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "a-kubeconfig",
-				},
-				Type: corev1.SecretType("cluster.x-k8s.io/secret"),
-			},
-			wantClient: true,
-			wantName:   "a",
+		"None": {
+			secret: &corev1.Secret{},
+			want:   "",
 		},
 		"OpenShift": {
 			secret: &corev1.Secret{
@@ -54,26 +46,21 @@ func TestGetClusterClient(t *testing.T) {
 						"hive.openshift.io/secret-type":             "kubeconfig",
 					},
 				},
-				Type: corev1.SecretType("Opaque"),
+				Type: corev1.SecretType("cluster.x-k8s.io/secret"),
 			},
-			wantClient: true,
-			wantName:   "ca-montreal",
+			want: "ca-montreal",
 		},
 	}
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			c := Cluster{}
-			client, gotClient := c.GetClusterClient(tc.secret)
-
-			if diff := cmp.Diff(tc.wantClient, gotClient); diff != "" {
-				t.Errorf("-want, +got:\n%s", diff)
+			c := OpenShift{
+				Secret: tc.secret,
 			}
-			if gotClient {
-				gotName := client.GetClusterName()
-				if diff := cmp.Diff(tc.wantName, gotName); diff != "" {
-					t.Errorf("-want, +got:\n%s", diff)
-				}
+			got := c.GetClusterName()
+
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("-want, +got:\n%s", diff)
 			}
 		})
 	}
