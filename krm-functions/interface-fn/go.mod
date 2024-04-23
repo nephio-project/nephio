@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/interface-fn
 
-go 1.20
+go 1.22
 
 replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 

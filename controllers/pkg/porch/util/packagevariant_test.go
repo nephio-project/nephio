@@ -18,14 +18,15 @@ package util
 
 import (
 	"context"
+	"reflect"
+	"testing"
+
 	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 type fakeClient struct {
@@ -67,7 +68,7 @@ func TestPackageRevisionIsReady(t *testing.T) {
 						{
 							APIVersion: "config.porch.kpt.dev/v1alpha1",
 							Controller: &tr,
-							Kind:       reflect.TypeOf(pvapi.PackageVariant{}).Name(),
+							Kind:       reflect.TypeFor[pvapi.PackageVariant]().Name(),
 							Name:       "wc-argocd-argocd-cluster",
 						},
 					},

@@ -56,7 +56,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 				{
 					APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+					Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
 				}: condkptsdk.ChildRemoteCondition,
 				{
 					APIVersion: ipamv1alpha1.GroupVersion.Identifier(),
@@ -70,7 +70,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+					Kind:       reflect.TypeFor[infrav1alpha1.WorkloadCluster]().Name(),
 				}: myFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
@@ -289,7 +289,7 @@ func BuildNetworkAttachmentDefinition(meta metav1.ObjectMeta, spec nadv1.Network
 	return &nadv1.NetworkAttachmentDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+			Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
 		},
 		ObjectMeta: meta,
 		Spec:       spec,

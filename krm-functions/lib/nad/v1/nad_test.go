@@ -17,14 +17,15 @@ limitations under the License.
 package v1
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/google/go-cmp/cmp"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 var nadTestSriov = `apiVersion: "k8s.cni.cncf.io/v1"
@@ -105,7 +106,7 @@ func TestNewFromGoStruct(t *testing.T) {
 			input: &nadv1.NetworkAttachmentDefinition{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+					Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",

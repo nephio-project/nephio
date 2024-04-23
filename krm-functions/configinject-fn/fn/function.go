@@ -63,7 +63,7 @@ func New(c client.Client) *FnR {
 		Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 			{
 				APIVersion: nephiorefv1alpha1.GroupVersion.Identifier(),
-				Kind:       reflect.TypeOf(nephiorefv1alpha1.Config{}).Name(),
+				Kind:       reflect.TypeFor[nephiorefv1alpha1.Config]().Name(),
 			}: condkptsdk.ChildLocal,
 		},
 		Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{

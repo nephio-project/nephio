@@ -158,8 +158,7 @@ func (o *KubeObjectExt[T1]) getFieldOrPanic(value *T1, fieldName string) interfa
 }
 
 func validateTypeOrPanic[T1 any]() {
-	var x T1
-	v := reflect.TypeOf(x)
+	v := reflect.TypeFor[T1]()
 	if v.Kind() != reflect.Struct {
 		panic(fmt.Sprintf("type %q is not a struct", v.Name()))
 	}

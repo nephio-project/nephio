@@ -185,7 +185,7 @@ func (r *reconciler) createToken(ctx context.Context, giteaClient giteaclient.Gi
 		secret := &corev1.Secret{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: corev1.SchemeGroupVersion.Identifier(),
-				Kind:       reflect.TypeOf(corev1.Secret{}).Name(),
+				Kind:       reflect.TypeFor[corev1.Secret]().Name(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace:   cr.GetNamespace(),

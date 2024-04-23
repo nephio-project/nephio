@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/controllers/pkg
 
-go 1.20
+go 1.22
 
 replace (
 	github.com/GoogleContainerTools/kpt/porch => github.com/GoogleContainerTools/kpt/porch v0.0.0-20230526213300-77a54e3b8e88
