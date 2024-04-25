@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-GOLANG_CI_VER ?= v1.57
+GOLANG_CI_VER ?= v1.52
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
