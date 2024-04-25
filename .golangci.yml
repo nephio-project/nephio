@@ -1,10 +1,14 @@
-run:
-  skip-dirs:
+issues:
+  exclude-dirs:
     - vendor
 
-  skip-files:
+  exclude-files:
     - ".*\\_test.go$"
     - "^mock_*Client.go$"
+
+
+run:
+  go: '1.22'
 
 linters:
   # refer https://golangci-lint.run/usage/linters/
