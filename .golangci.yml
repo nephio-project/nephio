@@ -4,6 +4,7 @@ run:
 
   skip-files:
     - ".*\\_test.go$"
+    - "^mock_*Client.go$"
 
 linters:
   # refer https://golangci-lint.run/usage/linters/
@@ -26,3 +27,4 @@ linters:
     - typecheck
     # Checks Go code for unused constants, variables, functions and types
     - unused
+    - imports
