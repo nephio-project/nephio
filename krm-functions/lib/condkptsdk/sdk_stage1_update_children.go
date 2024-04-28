@@ -133,6 +133,7 @@ func (r *sdk) updateChildren() {
 		for _, obj := range diff.createObjs {
 			if r.debug {
 				fn.Logf("stage1: diff action -> create obj: ref: %s, ownkind: %s\n", kptfilelibv1.GetConditionType(&obj.ref), obj.ownKind)
+				// #nosec G601
 			}
 			status := kptv1.ConditionFalse
 			if obj.ownKind == ChildLocal {
@@ -151,6 +152,7 @@ func (r *sdk) updateChildren() {
 		for _, obj := range diff.updateObjs {
 			if r.debug {
 				fn.Logf("stage1: diff action -> update obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+				// #nosec G601
 			}
 			if err := r.upsertChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, nil, "update resource", kptv1.ConditionFalse, false); err != nil {
 				// the errors are already logged, we set the result in the for condition
@@ -163,6 +165,7 @@ func (r *sdk) updateChildren() {
 		for _, obj := range diff.deleteObjs {
 			if r.debug {
 				fn.Logf("stage1: diff action -> delete obj: %s\n", kptfilelibv1.GetConditionType(&obj.ref))
+				// #nosec G601
 			}
 			if err := r.deleteChildObject(ownGVKKind, []corev1.ObjectReference{forRef, obj.ref}, obj, "delete resource"); err != nil {
 				// the errors are already logged, we set the result in the for condition
