@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-GOLANG_CI_VER ?= v1.52
+GOLANG_CI_VER ?= v1.57
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
@@ -22,7 +22,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
 	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-	 golangci-lint run ./... -v --timeout 10m
+	 golangci-lint run ./... -v
 else
-	golangci-lint run ./... -v --timeout 10m
+	golangci-lint run ./... -v
 endif

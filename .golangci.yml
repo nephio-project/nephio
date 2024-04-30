@@ -1,8 +1,11 @@
 run:
-  skip-dirs:
-    - vendor
+  timeout: 10m
 
-  skip-files:
+issues:
+  exclude-dirs:
+    - "vendor"
+
+  exclude-files:
     - ".*\\_test.go$"
 
 linters:
