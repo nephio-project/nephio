@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/lib
 
-go 1.20
+go 1.22
 
 require (
 	github.com/GoogleContainerTools/kpt v1.0.0-beta.29.0.20230327202912-01513604feaa

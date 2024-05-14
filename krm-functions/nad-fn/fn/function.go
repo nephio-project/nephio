@@ -55,7 +55,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 		&condkptsdk.Config{
 			For: corev1.ObjectReference{
 				APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-				Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+				Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
@@ -168,7 +168,7 @@ func (f *nadFn) updateResourceFn(_ *fn.KubeObject, objs fn.KubeObjects) (fn.Kube
 	nad, err := nadlibv1.NewFromGoStruct(&nadv1.NetworkAttachmentDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-			Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
+			Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
 		},
 		ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("%s-%s", f.forName, interfaceObjs[0].GetName()), Namespace: f.forNamespace},
 	})

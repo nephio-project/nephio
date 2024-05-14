@@ -48,7 +48,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 		&condkptsdk.Config{
 			For: corev1.ObjectReference{
 				APIVersion: appsv1.SchemeGroupVersion.Identifier(),
-				Kind:       reflect.TypeOf(appsv1.Deployment{}).Name(),
+				Kind:       reflect.TypeFor[appsv1.Deployment]().Name(),
 			},
 			Owns: map[corev1.ObjectReference]condkptsdk.ResourceKind{
 				{
@@ -61,17 +61,17 @@ func Run(rl *fn.ResourceList) (bool, error) {
 				}: condkptsdk.ChildInitial,
 				{
 					APIVersion: corev1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(corev1.ConfigMap{}).Name(),
+					Kind:       reflect.TypeFor[corev1.ConfigMap]().Name(),
 				}: condkptsdk.ChildLocal,
 				{
 					APIVersion: corev1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(corev1.Service{}).Name(),
+					Kind:       reflect.TypeFor[corev1.Service]().Name(),
 				}: condkptsdk.ChildLocal,
 			},
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+					Kind:       reflect.TypeFor[infrav1alpha1.WorkloadCluster]().Name(),
 				}: myFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: myFn.desiredOwnedResourceList,
@@ -324,7 +324,7 @@ func buildConfigMapKubeObject(meta metav1.ObjectMeta, key, value string) (*fn.Ku
 	o := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			Kind:       reflect.TypeOf(corev1.ConfigMap{}).Name(),
+			Kind:       reflect.TypeFor[corev1.ConfigMap]().Name(),
 		},
 		ObjectMeta: meta,
 		Data: map[string]string{
@@ -339,7 +339,7 @@ func buildServiceKubeObject(meta metav1.ObjectMeta, spec corev1.ServiceSpec) (*f
 	o := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			Kind:       reflect.TypeOf(corev1.Service{}).Name(),
+			Kind:       reflect.TypeFor[corev1.Service]().Name(),
 		},
 		ObjectMeta: meta,
 		Spec:       spec,

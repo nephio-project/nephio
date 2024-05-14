@@ -83,8 +83,7 @@ func GetSingleton[T any, PT PtrIsRuntimeObject[T]](objs fn.KubeObjects) (*T, err
 		return nil, err
 	}
 	if len(typedObjs) != 1 {
-		var x T
-		return nil, fmt.Errorf("expected exactly 1 instance of %v in the kpt package, but got %v", reflect.TypeOf(x).Name(), len(typedObjs))
+		return nil, fmt.Errorf("expected exactly 1 instance of %v in the kpt package, but got %v", reflect.TypeFor[T]().Name(), len(typedObjs))
 	}
 	return typedObjs[0], nil
 }

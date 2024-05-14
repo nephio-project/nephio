@@ -61,7 +61,7 @@ func (r *Capi) isCapiClusterReady(ctx context.Context) bool {
 	r.l = log.FromContext(ctx)
 	name := r.GetClusterName()
 
-	cl := resource.GetUnstructuredFromGVK(&schema.GroupVersionKind{Group: capiv1beta1.GroupVersion.Group, Version: capiv1beta1.GroupVersion.Version, Kind: reflect.TypeOf(capiv1beta1.Cluster{}).Name()})
+	cl := resource.GetUnstructuredFromGVK(&schema.GroupVersionKind{Group: capiv1beta1.GroupVersion.Group, Version: capiv1beta1.GroupVersion.Version, Kind: reflect.TypeFor[capiv1beta1.Cluster]().Name()})
 	if err := r.Get(ctx, types.NamespacedName{Namespace: r.Secret.GetNamespace(), Name: name}, cl); err != nil {
 		r.l.Error(err, "cannot get cluster")
 		return false

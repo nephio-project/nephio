@@ -74,7 +74,7 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			Watch: map[corev1.ObjectReference]condkptsdk.WatchCallbackFn{
 				{
 					APIVersion: infrav1alpha1.GroupVersion.Identifier(),
-					Kind:       reflect.TypeOf(infrav1alpha1.WorkloadCluster{}).Name(),
+					Kind:       reflect.TypeFor[infrav1alpha1.WorkloadCluster]().Name(),
 				}: nfDeployFn.WorkloadClusterCallbackFn,
 			},
 			PopulateOwnResourcesFn: nfDeployFn.desiredOwnedResourceList,
