@@ -1,0 +1,34 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: cluster01-amf
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: amf package example
+pipeline: {}
+status:
+  conditions:
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Capacity.dataplane
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.DataNetwork.internet
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Interface.n2
+  - message: update for condition
+    status: "False"
+    type: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Dependency.upf
+  - message: update condition for initial resource
+    reason: workload.nephio.org/v1alpha1.NFDeployment.amf-cluster01
+    status: "True"
+    type: req.nephio.org/v1alpha1.Dependency.upf_duplicate
