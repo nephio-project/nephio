@@ -1,0 +1,19 @@
+# CLOMonitor metadata file
+
+# Checks exemptions
+exemptions:
+  - check: artifacthub_badge
+    reason: "Nephio artifacts are hosted on DockerHub" 
+
+  - check: signed_releases
+    reason: >
+      "All Nephio release images are cryptographically signed during build with cosign. 
+      Images and signatures are hosted in DockerHub. Naming convention is that signature 
+      filename is an image sha256 digest and the file extension is .sig
+      Scorecard check is currently limited to repositories hosted on GitHub,
+      and does not support other source hosting repositories."
+
+licenseScanning:
+  # In Nephio every PR is being tested for license compliance. Those include Fossology scan, Scancode-toolkit scan and 
+  # Lichen scan of produced binaries. The results of those scans are available at Prow site:
+  url: https://prow.nephio.io/
