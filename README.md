@@ -30,7 +30,7 @@ If you wish to participate in building Nephio, please join our SIG meetings, or 
 project boards.
 
 ## Software Bill Of Materials
-Release container images are digitally signed as well as have Software Bill Of Materials (SBOM) created for them. Both signature and sbom are stored in [DockerHub]([https://hub.docker.com/ ](https://hub.docker.com/u/nephio) as artifacts. 
+Release container images are digitally signed as well as have Software Bill Of Materials (SBOM) created for them. Both signature and sbom are stored in [DockerHub](https://hub.docker.com/u/nephio) as artifacts. 
 Naming convention is that filename is an image sha256 digest and the file extension is respectively .sig and .sbom
 
 ## Community
