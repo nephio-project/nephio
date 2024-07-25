@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
+	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )

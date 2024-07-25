@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
@@ -110,8 +111,9 @@ func main() {
 
 	managerOptions := ctrl.Options{
 		Scheme:                     scheme,
-		MetricsBindAddress:         metricsAddr,
-		Port:                       9443,
+		Metrics: server.Options{
+			BindAddress: 			fmt.Sprintf("%s%d", metricsAddr, 9443),
+		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             false,
 		LeaderElectionID:           "nephio-operators.nephio.org",

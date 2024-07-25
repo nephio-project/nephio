@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
+	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"

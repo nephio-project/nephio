@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
-	pvapi "github.com/GoogleContainerTools/kpt/porch/controllers/packagevariants/api/v1alpha1"
+	porchapi "github.com/nephio-project/porch/api/porch/v1alpha1"
+	pvapi "github.com/nephio-project/porch/controllers/packagevariants/api/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"

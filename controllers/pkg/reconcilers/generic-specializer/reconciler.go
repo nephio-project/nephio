@@ -24,8 +24,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
-	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
+	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"	
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
@@ -38,6 +37,7 @@ import (
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	vlanfn "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
+	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"

@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	porchapi "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
+	mocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
+	porchapi "github.com/nephio-project/porch/api/porch/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
 )
 
 func TestShouldProcess(t *testing.T) {
@@ -153,8 +153,6 @@ func TestManageDelay(t *testing.T) {
 	}
 }
 
-
-
 func TestPolicyInitial(t *testing.T) {
 
 	testCases := map[string]struct {
@@ -212,8 +210,8 @@ func TestPolicyInitial(t *testing.T) {
 			mockReturnErr:   nil,
 		},
 		"runtime client list failure": {
-			pr: porchapi.PackageRevision{},
-			prl: &porchapi.PackageRevisionList{},
+			pr:              porchapi.PackageRevision{},
+			prl:             &porchapi.PackageRevisionList{},
 			expectedApprove: false,
 			expectedError:   fmt.Errorf("Failed to list items"),
 			mockReturnErr:   fmt.Errorf("Failed to list items"),

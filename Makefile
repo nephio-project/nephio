@@ -29,6 +29,10 @@ DOCKERFILE_DIRS = $(shell find . -iname 'Dockerfile' -exec sh -c 'echo \"$$(dirn
 include default-help.mk
 include default-mockery.mk
 
+.PHONY: tidy
+tidy:
+	@for f in $(GO_MOD_DIRS); do (cd $$f; echo "Tidying $$f"; go mod tidy) || exit 1; done
+
 ##@ Go tests & formatting
 
 .PHONY: unit lint gosec test unit-clean 
