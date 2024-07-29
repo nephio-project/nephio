@@ -110,9 +110,9 @@ func main() {
 	}
 
 	managerOptions := ctrl.Options{
-		Scheme:                     scheme,
+		Scheme: scheme,
 		Metrics: server.Options{
-			BindAddress: 			fmt.Sprintf("%s%d", metricsAddr, 9443),
+			BindAddress: fmt.Sprintf("%s%d", metricsAddr, 9443),
 		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             false,

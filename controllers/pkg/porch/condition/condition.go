@@ -19,8 +19,8 @@ package porchcondition
 import (
 	"strings"
 
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
+	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 )
 
 // GetPorchConditions converts kpt conditions to porch conditions
