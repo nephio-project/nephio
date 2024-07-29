@@ -30,11 +30,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	porchv1alpha1 "github.com/GoogleContainerTools/kpt/porch/api/porch/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	function "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
+	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"

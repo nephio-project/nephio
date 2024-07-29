@@ -30,7 +30,7 @@ import (
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -196,7 +196,7 @@ func (r *reconciler) upsertRepo(ctx context.Context, giteaClient giteaclient.Git
 		cr.Status.URL = &repo.CloneURL
 		return nil
 	}
-	editRepo := gitea.EditRepoOption{Name: pointer.String(cr.GetName())}
+	editRepo := gitea.EditRepoOption{Name: ptr.To(cr.GetName())}
 	if cr.Spec.Description != nil {
 		editRepo.Description = cr.Spec.Description
 	} else {

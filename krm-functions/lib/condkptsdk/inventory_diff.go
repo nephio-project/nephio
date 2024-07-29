@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	v1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
+	v1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

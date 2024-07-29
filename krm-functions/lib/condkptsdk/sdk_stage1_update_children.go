@@ -21,9 +21,9 @@ import (
 	"sort"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	kptv1 "github.com/GoogleContainerTools/kpt/pkg/api/kptfile/v1"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
+	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

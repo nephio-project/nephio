@@ -4,7 +4,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:1783899289886396416
+      - image: nephio/gotests:1817817865340850176
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:1783899289886396416
+      - image: nephio/gotests:1817817865340850176
         command:
         - make
         args:
@@ -24,7 +24,7 @@ presubmits:
     run_if_changed: "(\\.go|Makefile)$"
     spec:
       containers:
-      - image: nephio/gotests:1783899289886396416
+      - image: nephio/gotests:1817817865340850176
         command:
         - make
         args:
@@ -34,7 +34,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1783899289886396416
+      - image: nephio/gotests:1817817865340850176
         command:
         - "/bin/sh"
         - "-c"
@@ -74,7 +74,7 @@ presubmits:
     run_if_changed: "^.*.go$"
     spec:
       containers:
-      - image: nephio/gotests:1783899289886396416
+      - image: nephio/gotests:1817817865340850176
         command:
         - "/usr/local/bin/lichen.sh"
 

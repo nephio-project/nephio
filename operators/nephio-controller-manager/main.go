@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
@@ -30,7 +31,6 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 	"go.uber.org/zap/zapcore"
 
-	//"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -39,7 +39,6 @@ import (
 	"golang.org/x/exp/slices"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/klog/v2/klogr"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -53,11 +52,8 @@ import (
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/bootstrap-secret"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/generic-specializer"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/network"
-
-	//_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/ipam-specializer"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/repository"
 	_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/token"
-	//_ "github.com/nephio-project/nephio/controllers/pkg/reconcilers/vlan-specializer"
 )
 
 var (
@@ -69,8 +65,6 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var enabledReconcilersString string
-
-	//klog.InitFlags(nil)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -88,48 +82,37 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	/*
-		if len(flag.Args()) != 0 {
-			setupLog.Errorf("unexpected additional (non-flag) arguments: %v", flag.Args())
-			os.Exit(1)
-		}
-	*/
-
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
 		setupLog.Error(err, "cannot initializer schema")
-		//klog.Errorf("error initializing scheme: %s", err.Error())
 		os.Exit(1)
 	}
 	err := porchclient.AddToScheme(scheme)
 	if err != nil {
 		setupLog.Error(err, "cannot initializer schema with porch API(s)")
-		//	klog.Errorf("error initializing scheme with Porch APIs: %s", err.Error())
 		os.Exit(1)
 	}
 
 	managerOptions := ctrl.Options{
-		Scheme:                     scheme,
-		MetricsBindAddress:         metricsAddr,
-		Port:                       9443,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: fmt.Sprintf("%s%d", metricsAddr, 9443),
+		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             false,
 		LeaderElectionID:           "nephio-operators.nephio.org",
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 	}
 
-	ctrl.SetLogger(klogr.New())
 	porchClient, err := porchclient.CreateClient(ctrl.GetConfigOrDie())
 	if err != nil {
 		setupLog.Error(err, "cannot create porch client")
-		//klog.Errorf("unable to create porch client: #{err}")
 		os.Exit(1)
 	}
 
 	porchRESTClient, err := porchclient.CreateRESTClient(ctrl.GetConfigOrDie())
 	if err != nil {
 		setupLog.Error(err, "cannot create porch REST client")
-		//klog.Errorf("error creating porch REST client: %s", err.Error())
 		os.Exit(1)
 	}
 	ctx := ctrl.SetupSignalHandler()
@@ -137,7 +120,6 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOptions)
 	if err != nil {
 		setupLog.Error(err, "cannot create manager")
-		//klog.Errorf("error creating manager: #{err}")
 		os.Exit(1)
 	}
 
@@ -167,7 +149,6 @@ func main() {
 		}
 		if _, err = r.SetupWithManager(ctx, mgr, ctrlCfg); err != nil {
 			setupLog.Error(err, "cannot setup with manager", "reconciler", name)
-			//klog.Errorf("error creating %q reconciler: %s", name, err.Error())
 			os.Exit(1)
 		}
 		enabled = append(enabled, name)
@@ -175,10 +156,8 @@ func main() {
 
 	if len(enabled) == 0 {
 		setupLog.Info("no reconcilers are enabled; did you forget to pass the --reconcilers flag?")
-		//klog.Warningf("no reconcilers are enabled; did you forget to pass the --reconcilers flag?")
 	} else {
 		setupLog.Info("enabled reconcilers", "reconcilers", strings.Join(enabled, ","))
-		//klog.Infof("enabled reconcilers: %v", strings.Join(enabled, ","))
 	}
 
 	//+kubebuilder:scaffold:builder

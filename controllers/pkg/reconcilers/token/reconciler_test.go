@@ -23,12 +23,12 @@ import (
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	"github.com/stretchr/testify/mock"
-	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type fields struct {
@@ -50,15 +50,15 @@ type tokenTests struct {
 }
 
 func TestDeleteToken(t *testing.T) {
-	tests := []tokenTests {
+	tests := []tokenTests{
 		{
 			name:   "Delete Access token reports error",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "DeleteAccessToken", 
-				ArgType: []string{"string"}, 
-				RetArgList: []interface{}{nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
+				{MethodName: "DeleteAccessToken",
+					ArgType:    []string{"string"},
+					RetArgList: []interface{}{nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
 			},
 			wantErr: true,
 		},
@@ -67,9 +67,9 @@ func TestDeleteToken(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "DeleteAccessToken", 
-				ArgType: []string{"string"}, 
-				RetArgList: []interface{}{nil, nil}},
+				{MethodName: "DeleteAccessToken",
+					ArgType:    []string{"string"},
+					RetArgList: []interface{}{nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -81,7 +81,7 @@ func TestDeleteToken(t *testing.T) {
 				giteaClient:           tt.fields.giteaClient,
 				finalizer:             tt.fields.finalizer,
 			}
-			
+
 			initMockeryMocks(&tt)
 
 			if err := r.deleteToken(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
@@ -96,38 +96,37 @@ func TestCreateToken(t *testing.T) {
 	clientMock := new(mocks.MockClient)
 	clientMock.On("Get", nil, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Secret")).Return(nil).Run(func(args mock.Arguments) {})
 	clientMock.On("Patch", nil, mock.AnythingOfType("*v1.Secret"), mock.AnythingOfType("*resource.patch")).Return(nil).Run(func(args mock.Arguments) {})
-	
-	tests := []tokenTests {
+
+	tests := []tokenTests{
 		{
 			name:   "Create Access token reports user auth error",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "ListAccessTokens", 
-				ArgType: []string{"gitea.ListAccessTokensOptions"}, 
-				RetArgList: []interface{}{nil, nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
+				{MethodName: "ListAccessTokens",
+					ArgType:    []string{"gitea.ListAccessTokensOptions"},
+					RetArgList: []interface{}{nil, nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
 			},
 			wantErr: true,
 		},
 		{
 			name:   "Create Access token already exists",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
-			args:   args{nil, nil, &infrav1alpha1.Token{
+			args: args{nil, nil, &infrav1alpha1.Token{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:   "test-ns",
-				Name:        "test-token",
-				
-			}}},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-token",
+				}}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "ListAccessTokens", 
-				ArgType: []string{"gitea.ListAccessTokensOptions"}, 
-				RetArgList: []interface{}{[]*gitea.AccessToken{
-					{ID: 123,
-					Name: "test-token-test-ns",},
-				}, nil, nil}},
+				{MethodName: "ListAccessTokens",
+					ArgType: []string{"gitea.ListAccessTokensOptions"},
+					RetArgList: []interface{}{[]*gitea.AccessToken{
+						{ID: 123,
+							Name: "test-token-test-ns"},
+					}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -136,12 +135,12 @@ func TestCreateToken(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "ListAccessTokens", 
-				ArgType: []string{"gitea.ListAccessTokensOptions"}, 
-				RetArgList: []interface{}{[]*gitea.AccessToken{
-					{ID: 123,
-					Name: "test-token-test-ns",},
-				}, nil, nil}},
+				{MethodName: "ListAccessTokens",
+					ArgType: []string{"gitea.ListAccessTokensOptions"},
+					RetArgList: []interface{}{[]*gitea.AccessToken{
+						{ID: 123,
+							Name: "test-token-test-ns"},
+					}, nil, nil}},
 				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{nil, nil, fmt.Errorf("error getting User Information")}},
 			},
 			wantErr: true,
@@ -151,38 +150,37 @@ func TestCreateToken(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "ListAccessTokens", 
-				ArgType: []string{"gitea.ListAccessTokensOptions"}, 
-				RetArgList: []interface{}{[]*gitea.AccessToken{
-					{ID: 123,
-					Name: "test-token-test-ns",},
-				}, nil, nil}},
+				{MethodName: "ListAccessTokens",
+					ArgType: []string{"gitea.ListAccessTokensOptions"},
+					RetArgList: []interface{}{[]*gitea.AccessToken{
+						{ID: 123,
+							Name: "test-token-test-ns"},
+					}, nil, nil}},
 				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "CreateAccessToken", 
-				ArgType: []string{"gitea.CreateAccessTokenOption"}, 
-				RetArgList: []interface{}{&gitea.AccessToken{}, nil, fmt.Errorf("failed to create token")}},
+				{MethodName: "CreateAccessToken",
+					ArgType:    []string{"gitea.CreateAccessTokenOption"},
+					RetArgList: []interface{}{&gitea.AccessToken{}, nil, fmt.Errorf("failed to create token")}},
 			},
 			wantErr: true,
 		},
 		{
 			name:   "Create Access token reports success",
 			fields: fields{resource.NewAPIPatchingApplicator(clientMock), nil, nil},
-			args:   args{nil, nil, &infrav1alpha1.Token{
+			args: args{nil, nil, &infrav1alpha1.Token{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: corev1.SchemeGroupVersion.Identifier(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:   "test-ns",
-				Name:        "test-token",
-				
-			}}},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test-ns",
+					Name:      "test-token",
+				}}},
 			mocks: []mockeryutils.MockHelper{
 				{MethodName: "ListAccessTokens", ArgType: []string{"gitea.ListAccessTokensOptions"}, RetArgList: []interface{}{[]*gitea.AccessToken{}, nil, nil}},
 				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "CreateAccessToken", 
-				ArgType: []string{"gitea.CreateAccessTokenOption"}, 
-				RetArgList: []interface{}{&gitea.AccessToken{ID: 123,
-					Name: "test-token-test-ns"}, nil, nil}},
+				{MethodName: "CreateAccessToken",
+					ArgType: []string{"gitea.CreateAccessTokenOption"},
+					RetArgList: []interface{}{&gitea.AccessToken{ID: 123,
+						Name: "test-token-test-ns"}, nil, nil}},
 			},
 			wantErr: false,
 		},
