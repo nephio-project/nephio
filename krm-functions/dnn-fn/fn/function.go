@@ -32,7 +32,7 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/iputil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/kustomize/kyaml/kio/filters"
 )
 
@@ -131,7 +131,7 @@ func (f *dnnFn) desiredOwnedResourceList(o *fn.KubeObject) (fn.KubeObjects, erro
 				Kind:            ipamv1alpha1.PrefixKindPool,
 				NetworkInstance: dnn.Spec.NetworkInstance,
 				PrefixLength:    &pool.PrefixLength,
-				CreatePrefix:    pointer.Bool(true),
+				CreatePrefix:    ptr.To(true),
 				ClaimLabels: resourcev1alpha1.ClaimLabels{
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{

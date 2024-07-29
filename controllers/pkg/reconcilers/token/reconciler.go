@@ -32,7 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -197,7 +197,7 @@ func (r *reconciler) createToken(ctx context.Context, giteaClient giteaclient.Gi
 						Kind:       cr.Kind,
 						Name:       cr.Name,
 						UID:        cr.UID,
-						Controller: pointer.Bool(true),
+						Controller: ptr.To(true),
 					},
 				},
 			},
