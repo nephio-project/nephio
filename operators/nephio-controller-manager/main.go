@@ -96,7 +96,7 @@ func main() {
 	managerOptions := ctrl.Options{
 		Scheme: scheme,
 		Metrics: server.Options{
-			BindAddress: 			metricsAddr,
+			BindAddress: metricsAddr,
 		},
 		HealthProbeBindAddress:     probeAddr,
 		LeaderElection:             false,
