@@ -139,7 +139,7 @@ git commit -s -m 'This is my commit message'
 ```
 #### Code Review of the Pull Request
 
-In Nephio Project uses [Prow](https://docs.prow.k8s.io/) to among many other tasks test and manage the Pull Requests. Prow also allows to interact with PR trough ['slash' commands](https://prow.nephio.io/command-help)
+Nephio Project uses [Prow](https://docs.prow.k8s.io/) among many other tools to test and manage the Pull Requests. Prow also allows to interact with PR through ['slash' commands](https://prow.nephio.io/command-help)
 
 ##### The Code Review Process
 The **author** submits a PR
