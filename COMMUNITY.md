@@ -19,7 +19,7 @@ Remember we were all '[new contributors]' once.
 
 Members are active contributors in the community. Members might have PRs and GitHub issues assigned to them and are added to GitHub team(s).
 Prow's presubmit tests are automatically run for their PRs as well as GitHub Actions (where applicable). 
-Members are welcome to remain continously active contributors to the community.
+Members are welcome to remain continuously active contributors to the community.
 
 ### Requirements
 
