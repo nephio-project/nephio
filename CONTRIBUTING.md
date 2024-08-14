@@ -175,4 +175,4 @@ Please do not rely on GitHub notifications sent to approvers/reviewers or mentio
   - Sometimes it takes a while to merge the PR after it was approved, PR queue can be observed on [Prow's Tide status dashboard](https://prow.nephio.io/tide)
   - If the PR gets final step like approve or lgtm done after 12 hours pass since presubmit tests were run they are getting re-triggered
 - GitHub things
-  - EasyCLA sometimes non-properly check the status, it can be re-triggered with /easycla command or it often sorts out when you close and re-open the PR
+  - EasyCLA sometimes improperly checks the status, it can be re-triggered with `/easycla` command or it often sorts out when you close and re-open the PR
