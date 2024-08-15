@@ -47,7 +47,7 @@ const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
-	RequeueDuration              = 10 * time.Second
+	RequeueDuration              = 15 * time.Second
 )
 
 func init() {
@@ -67,6 +67,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
 
+	r.apiReader = mgr.GetAPIReader()
 	r.baseClient = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
@@ -80,6 +81,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 // reconciler reconciles a NetworkInstance object
 type reconciler struct {
+	apiReader       client.Reader
 	baseClient      client.Client
 	porchClient     client.Client
 	porchRESTClient rest.Interface
@@ -91,7 +93,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log.Info("reconcile approval")
 
 	pr := &porchv1alpha1.PackageRevision{}
-	if err := r.baseClient.Get(ctx, req.NamespacedName, pr); err != nil {
+	if err := r.apiReader.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
