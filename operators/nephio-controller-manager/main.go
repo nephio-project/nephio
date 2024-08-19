@@ -65,6 +65,7 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var enabledReconcilersString string
+	var approvalRequeueDuration int64
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -72,6 +73,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&enabledReconcilersString, "reconcilers", "", "reconcilers that should be enabled; use * to mean 'enable all'")
+	flag.Int64Var(&approvalRequeueDuration, "approval-requeue-duration", 15, "Interval to allow before requeue of the approval controller reconcile key")
 
 	opts := zap.Options{
 		Development: true,
@@ -139,6 +141,7 @@ func main() {
 		VlanClientProxy: vlan.New(ctx, clientproxy.Config{
 			Address: backendAddress,
 		}),
+		ApprovalRequeueDuration: approvalRequeueDuration,
 	}
 
 	enabledReconcilers := parseReconcilers(enabledReconcilersString)

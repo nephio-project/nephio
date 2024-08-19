@@ -47,7 +47,6 @@ const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
-	RequeueDuration              = 15 * time.Second
 )
 
 func init() {
@@ -72,6 +71,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
+	r.requeueDuration = time.Duration(cfg.ApprovalRequeueDuration) * time.Second
 
 	return nil, ctrl.NewControllerManagedBy(mgr).
 		Named("ApprovalController").
@@ -86,6 +86,7 @@ type reconciler struct {
 	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
+	requeueDuration time.Duration
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -125,7 +126,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"NotApproved", "owning PackageVariant not Ready")
 
-		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
+		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
 
 	// All policies require readiness gates to be met, so if they
@@ -134,7 +135,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Event(pr, corev1.EventTypeNormal,
 			"NotApproved", "readiness gates not met")
 
-		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
+		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
 
 	// Readiness is met, so check our other policies
@@ -160,7 +161,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
 			"NotApproved", "approval policy %q not met", policy)
 
-		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
+		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
 
 	// Delay if needed, and let the user know via an event
