@@ -28,11 +28,12 @@ import (
 )
 
 type ControllerConfig struct {
-	PorchClient     client.Client
-	PorchRESTClient rest.Interface
-	Poll            time.Duration
-	Copts           controller.Options
-	Address         string // backend server address
-	IpamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
-	VlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
+	PorchClient             client.Client
+	PorchRESTClient         rest.Interface
+	Poll                    time.Duration
+	Copts                   controller.Options
+	Address                 string // backend server address
+	IpamClientProxy         clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
+	VlanClientProxy         clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
+	ApprovalRequeueDuration int64
 }
