@@ -225,7 +225,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/gen-configmap-fn/Dockerfile --destination=nephio/gen-configmap-fn:${PULL_BASE_REF} --destination=nephio/gen-configmap-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/gen-configmap-fn/Dockerfile --destination=nephio/gen-configmap-fn:${BUILD_ID} --destination=nephio/gen-configmap-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
