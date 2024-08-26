@@ -425,7 +425,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ueransim-deploy-fn/Dockerfile --destination=nephio/ueransim-deploy-fn:${PULL_BASE_REF} --destination=nephio/ueransim-deploy-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ueransim-deploy-fn/Dockerfile --destination=nephio/ueransim-deploy-fn:${BUILD_ID} --destination=nephio/ueransim-deploy-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
