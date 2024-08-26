@@ -185,7 +185,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/dnn-fn/Dockerfile --destination=nephio/dnn-fn:${PULL_BASE_REF} --destination=nephio/dnn-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/dnn-fn/Dockerfile --destination=nephio/dnn-fn:${BUILD_ID} --destination=nephio/dnn-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
