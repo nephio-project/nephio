@@ -465,7 +465,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/vlan-fn/Dockerfile --destination=nephio/vlan-fn:${PULL_BASE_REF} --destination=nephio/vlan-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/vlan-fn/Dockerfile --destination=nephio/vlan-fn:${BUILD_ID} --destination=nephio/vlan-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
