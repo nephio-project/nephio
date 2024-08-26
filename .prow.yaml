@@ -305,7 +305,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ipam-fn/Dockerfile --destination=nephio/ipam-fn:${PULL_BASE_REF} --destination=nephio/ipam-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ipam-fn/Dockerfile --destination=nephio/ipam-fn:${BUILD_ID} --destination=nephio/ipam-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
