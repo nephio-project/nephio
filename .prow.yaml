@@ -385,7 +385,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/nfdeploy-fn/Dockerfile --destination=nephio/nfdeploy-fn:${PULL_BASE_REF} --destination=nephio/nfdeploy-fn:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/nfdeploy-fn/Dockerfile --destination=nephio/nfdeploy-fn:${BUILD_ID} --destination=nephio/nfdeploy-fn:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
