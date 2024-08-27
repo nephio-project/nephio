@@ -78,3 +78,405 @@ presubmits:
         command:
         - "/usr/local/bin/lichen.sh"
 
+postsubmits:
+
+  
+  - name: build-push-nephio-operator-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio Operator Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=operators/nephio-controller-manager/Dockerfile --destination=nephio/nephio-operator:${BUILD_ID} --destination=nephio/nephio-operator:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+                
+  - name: build-push-nephio-krm-func-config-inject-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM ConfigInject Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/configinject-fn/Dockerfile --destination=nephio/configinject-fn:${BUILD_ID} --destination=nephio/configinject-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+  
+  - name: build-push-nephio-krm-func-dnn-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM DNN Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/dnn-fn/Dockerfile --destination=nephio/dnn-fn:${BUILD_ID} --destination=nephio/dnn-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+
+  - name: build-push-nephio-krm-func-gen-configmap-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM GenConfigMap Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/gen-configmap-fn/Dockerfile --destination=nephio/gen-configmap-fn:${BUILD_ID} --destination=nephio/gen-configmap-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+  
+  - name: build-push-nephio-krm-func-interface-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM Interface Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/interface-fn/Dockerfile --destination=nephio/interface-fn:${BUILD_ID} --destination=nephio/interface-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+
+  - name: build-push-nephio-krm-func-ipam-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM IPAM Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ipam-fn/Dockerfile --destination=nephio/ipam-fn:${BUILD_ID} --destination=nephio/ipam-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json 
+  
+  - name: build-push-nephio-krm-func-nad-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM NAD Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/nad-fn/Dockerfile --destination=nephio/nad-fn:${BUILD_ID} --destination=nephio/nad-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+  
+  - name: build-push-nephio-krm-func-nfdeploy-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM NfDeploy Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/nfdeploy-fn/Dockerfile --destination=nephio/nfdeploy-fn:${BUILD_ID} --destination=nephio/nfdeploy-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+  
+  - name: build-push-nephio-krm-func-ueransim-deploy-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM UeRanSim Deploy Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/ueransim-deploy-fn/Dockerfile --destination=nephio/ueransim-deploy-fn:${BUILD_ID} --destination=nephio/ueransim-deploy-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+ 
+  - name: build-push-nephio-krm-func-vlan-dev-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM VLAN Dev Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/vlan-fn/Dockerfile --destination=nephio/vlan-fn:${BUILD_ID} --destination=nephio/vlan-fn:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
