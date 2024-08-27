@@ -47,6 +47,7 @@ const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
+	AlwaysPolicyAnnotationValue  = "always"
 )
 
 func init() {
@@ -123,8 +124,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !pvReady {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"NotApproved", "owning PackageVariant not Ready")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			"NotApproved", "owning PackageVariant for %s not Ready", pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -132,8 +133,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// All policies require readiness gates to be met, so if they
 	// are not, we are done for now.
 	if !porchconds.PackageRevisionIsReady(pr.Spec.ReadinessGates, pr.Status.Conditions) {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"NotApproved", "readiness gates not met")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			"NotApproved", "readiness gates not met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -143,6 +144,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	switch policy {
 	case InitialPolicyAnnotationValue:
 		approve, err = r.policyInitial(ctx, pr)
+	case AlwaysPolicyAnnotationValue:
+		approve, err = true, nil
 	default:
 		r.recorder.Eventf(pr, corev1.EventTypeWarning,
 			"InvalidPolicy", "invalid %q annotation value: %q", PolicyAnnotationName, policy)
@@ -159,7 +162,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if !approve {
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
-			"NotApproved", "approval policy %q not met", policy)
+			"NotApproved", "approval policy %q not met for %s", policy, pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -210,7 +213,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			"Error", "error %s: %s", action, err.Error())
 	} else {
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
-			reason, "all approval policies met")
+			reason, "all approval policies met for %s: %s", pr.Spec.PackageName, reason)
 	}
 
 	return ctrl.Result{}, err

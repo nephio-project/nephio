@@ -120,8 +120,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !pvReady {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"Waiting", "owning PackageVariant not Ready")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal, 
+			"Waiting", "owning PackageVariant for %s not Ready", pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
@@ -196,7 +196,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
+			r.recorder.Eventf(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is %s, no update possible", pr.Spec.Lifecycle)
 			log.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
@@ -296,12 +296,12 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		log.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
 
-		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
-		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
+		// kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
+		// pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
 		// TODO do we need to update the status?
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
-			log.Error(err, "cannot update packagerevision resources")
+			log.Error(err, "cannot update packagerevision resources", "PackageRevision", pr.Name)
 			return ctrl.Result{}, err
 		}
 	}

@@ -39,7 +39,7 @@ func TestShouldProcess(t *testing.T) {
 			expectedPolicy: "",
 			expectedShould: false,
 		},
-		"draft with policy annotation": {
+		"draft with initial policy annotation": {
 			pr: porchapi.PackageRevision{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -48,6 +48,17 @@ func TestShouldProcess(t *testing.T) {
 				},
 			},
 			expectedPolicy: "initial",
+			expectedShould: true,
+		},
+		"draft with always policy annotation": {
+			pr: porchapi.PackageRevision{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"approval.nephio.org/policy": "always",
+					},
+				},
+			},
+			expectedPolicy: "always",
 			expectedShould: true,
 		},
 		"draft with no policy annotation, but delay annotation": {

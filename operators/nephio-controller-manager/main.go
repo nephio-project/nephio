@@ -73,7 +73,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&enabledReconcilersString, "reconcilers", "", "reconcilers that should be enabled; use * to mean 'enable all'")
-	flag.Int64Var(&approvalRequeueDuration, "approval-requeue-duration", 15, "Interval to allow before requeue of the approval controller reconcile key")
+	flag.Int64Var(&approvalRequeueDuration, "approval-requeue-duration", 10, "Interval to allow before requeue of the approval controller reconcile key")
 
 	opts := zap.Options{
 		Development: true,
