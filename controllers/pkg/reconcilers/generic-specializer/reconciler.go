@@ -122,7 +122,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !pvReady {
-		r.recorder.Eventf(pr, corev1.EventTypeNormal, 
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
 			"Waiting", "owning PackageVariant for %s not Ready", pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
