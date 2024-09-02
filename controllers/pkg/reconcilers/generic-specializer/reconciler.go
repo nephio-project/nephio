@@ -75,6 +75,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
+	r.apiReader = mgr.GetAPIReader()
 	r.recorder = mgr.GetEventRecorderFor("generic-specializer")
 	r.ipamClientProxy = cfg.IpamClientProxy
 	r.vlanClientProxy = cfg.VlanClientProxy
@@ -92,6 +93,7 @@ type reconciler struct {
 	ipamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	vlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
 	porchClient     client.Client
+	apiReader       client.Reader
 	recorder        record.EventRecorder
 }
 
@@ -100,7 +102,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log.Info("reconcile genericspecializer")
 
 	pr := &porchv1alpha1.PackageRevision{}
-	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
+	if err := r.apiReader.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
@@ -111,7 +113,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// check if the PackageVariant has done its work
-	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.apiReader)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
@@ -146,7 +148,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
-		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
+		if err := r.apiReader.Get(ctx, req.NamespacedName, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
 			log.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")

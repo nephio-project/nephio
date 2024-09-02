@@ -69,7 +69,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.apiReader = mgr.GetAPIReader()
 	r.baseClient = mgr.GetClient()
-	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
 	r.requeueDuration = time.Duration(cfg.ApprovalRequeueDuration) * time.Second
@@ -84,7 +83,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 type reconciler struct {
 	apiReader       client.Reader
 	baseClient      client.Client
-	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
 	requeueDuration time.Duration
@@ -115,7 +113,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// of the package variant. If it is not Ready, then we should not approve yet. The
 	// lack of readiness could indicate an error which even impacts whether or not the
 	// readiness gates have been properly set.
-	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.apiReader)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
