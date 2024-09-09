@@ -25,7 +25,7 @@ Members are welcome to remain continuously active contributors to the community.
 
 - Ensure affiliation is up to date in [openprofile.dev]. 
 - Have made **several contributions** to the project or community, enough to
-  demonstrate an **ongoing and possible long-term commitment** to the project like:
+  demonstrate an **ongoing and possible long-term commitment** to the project such as:
     - Authoring or reviewing PRs on GitHub, with at least one **merged** PR.
     - Filing or commenting on issues on GitHub
     - Contributing to SIG, subproject, or community discussions (meetings,
