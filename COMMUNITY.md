@@ -32,7 +32,7 @@ Members are welcome to remain continuously active contributors to the community.
       Slack, mailing list)
 - Have read the [contributor guide]
 - Sponsored by one reviewer
-- **Open an issue [Membership request] against the 'nephio' repo**
+- **Open an issue **Membership request** against the 'nephio' repo**
    - Ensure your sponsor is @mentioned on the issue
    - Provide information described above that is representative of your work on the project
 - Have your sponsoring reviewer reply confirmation of sponsorship
