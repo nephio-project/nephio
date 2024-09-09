@@ -13,7 +13,7 @@ This document describes the responsibilities and contributor roles in Nephio Pro
 
 Anyone is welcome to contribute to Nephio project. Existing members should make a point of being helpful 
 for new contributors in any way possible (PR workflow, finding relevant documentation, guiding with coding style etc.)
-Remember we were all '[new contributors]' once.
+Remember we were all *new contributors* once.
 
 ## Member
 
