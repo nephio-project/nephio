@@ -103,5 +103,6 @@ compatibility, adhering to API, performance and correctness issues, interactions
 
 
 [new contributors]: /CONTRIBUTING.md
+[contributor guide]: /CONTRIBUTING.md
 [OWNERS]: https://www.kubernetes.dev/docs/guide/owners/
 [openprofile.dev]: https://openprofile.dev/edit/profile
