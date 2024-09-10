@@ -46,14 +46,14 @@ import (
 const revisionPrefix = "v"
 
 type FnR struct {
-	client.Client
+	client.Reader
 	workloadCluster *infrav1alpha1.WorkloadCluster
 	sdkConfig       *condkptsdk.Config
 }
 
-func New(c client.Client) *FnR {
+func New(c client.Reader) *FnR {
 	f := &FnR{
-		Client: c,
+		Reader: c,
 	}
 	f.sdkConfig = &condkptsdk.Config{
 		For: corev1.ObjectReference{

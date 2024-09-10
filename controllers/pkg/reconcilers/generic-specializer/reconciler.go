@@ -136,7 +136,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	vlankrmfn := fn.ResourceListProcessorFunc(vlanf.Run)
 	vlanFor := vlanf.GetConfig().For
 
-	configInjectf := configinjectfn.New(r.porchClient)
+	configInjectf := configinjectfn.New(r.apiReader)
 	configInjectkrmfn := fn.ResourceListProcessorFunc(configInjectf.Run)
 	configInjectFor := configInjectf.GetConfig().For
 
