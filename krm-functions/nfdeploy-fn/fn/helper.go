@@ -121,9 +121,20 @@ func (h *NfDeployFn) FillCapacityDetails(nf *workloadv1alpha1.NFDeployment) {
 }
 
 func (h *NfDeployFn) AddDependencyRef(ref corev1.ObjectReference) {
-	h.paramRef = append(h.paramRef, workloadv1alpha1.ObjectReference{
-		Name:       &ref.Name,
-		Kind:       ref.Kind,
-		APIVersion: ref.APIVersion,
-	})
+	if !h.checkDependencyExist(ref) {
+		h.paramRef = append(h.paramRef, workloadv1alpha1.ObjectReference{
+			Name:       &ref.Name,
+			Kind:       ref.Kind,
+			APIVersion: ref.APIVersion,
+		})
+	}
+}
+
+func (h *NfDeployFn) checkDependencyExist(ref corev1.ObjectReference) bool {
+	for _, p := range h.paramRef {
+		if *p.Name == ref.Name && p.Kind == ref.Kind && p.APIVersion == ref.APIVersion {
+			return true
+		}
+	}
+	return false
 }
