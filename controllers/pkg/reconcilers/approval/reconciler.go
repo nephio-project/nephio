@@ -255,7 +255,7 @@ func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 
 func (r *reconciler) policyInitial(ctx context.Context, pr *porchv1alpha1.PackageRevision) (bool, error) {
 	var prList porchv1alpha1.PackageRevisionList
-	if err := r.baseClient.List(ctx, &prList); err != nil {
+	if err := r.apiReader.List(ctx, &prList); err != nil {
 		return false, err
 	}
 
