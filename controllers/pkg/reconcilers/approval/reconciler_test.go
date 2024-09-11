@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	mocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
+	mockReader "github.com/nephio-project/nephio/controllers/pkg/mocks/external/reader"
 	porchapi "github.com/nephio-project/porch/api/porch/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -230,13 +230,13 @@ func TestPolicyInitial(t *testing.T) {
 	}
 	for tn, tc := range testCases {
 		// Create a new instance of the mock object
-		clientMock := new(mocks.MockClient)
-		clientMock.On("List", context.TODO(), mock.AnythingOfType("*v1alpha1.PackageRevisionList")).Return(tc.mockReturnErr).Run(func(args mock.Arguments) {
+		readerMock := new(mockReader.MockReader)
+		readerMock.On("List", context.TODO(), mock.AnythingOfType("*v1alpha1.PackageRevisionList")).Return(tc.mockReturnErr).Run(func(args mock.Arguments) {
 			packRevList := args.Get(1).(*porchapi.PackageRevisionList)
 			*packRevList = *tc.prl // tc.prl is what r.Get will store in 2nd Argument
 		})
 		// Create an instance of the component under test
-		r := reconciler{baseClient: clientMock}
+		r := reconciler{apiReader: readerMock}
 		t.Run(tn, func(t *testing.T) {
 			actualApproval, actualError := r.policyInitial(context.TODO(), &tc.pr)
 			require.Equal(t, tc.expectedApprove, actualApproval)
