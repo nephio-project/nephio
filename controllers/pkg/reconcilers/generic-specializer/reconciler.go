@@ -75,6 +75,7 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.Client = mgr.GetClient()
 	r.porchClient = cfg.PorchClient
+	r.apiReader = mgr.GetAPIReader()
 	r.recorder = mgr.GetEventRecorderFor("generic-specializer")
 	r.ipamClientProxy = cfg.IpamClientProxy
 	r.vlanClientProxy = cfg.VlanClientProxy
@@ -92,6 +93,7 @@ type reconciler struct {
 	ipamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	vlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
 	porchClient     client.Client
+	apiReader       client.Reader
 	recorder        record.EventRecorder
 }
 
@@ -100,7 +102,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	log.Info("reconcile genericspecializer")
 
 	pr := &porchv1alpha1.PackageRevision{}
-	if err := r.Get(ctx, req.NamespacedName, pr); err != nil {
+	if err := r.apiReader.Get(ctx, req.NamespacedName, pr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
@@ -111,7 +113,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// check if the PackageVariant has done its work
-	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.apiReader)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
@@ -120,8 +122,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !pvReady {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"Waiting", "owning PackageVariant not Ready")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			"Waiting", "owning PackageVariant for %s not Ready", pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: RequeueDuration}, nil
 	}
@@ -134,7 +136,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	vlankrmfn := fn.ResourceListProcessorFunc(vlanf.Run)
 	vlanFor := vlanf.GetConfig().For
 
-	configInjectf := configinjectfn.New(r.porchClient)
+	configInjectf := configinjectfn.New(r.apiReader)
 	configInjectkrmfn := fn.ResourceListProcessorFunc(configInjectf.Run)
 	configInjectFor := configInjectf.GetConfig().For
 
@@ -146,7 +148,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		// get package revision resourceList
 		prr := &porchv1alpha1.PackageRevisionResources{}
-		if err := r.porchClient.Get(ctx, req.NamespacedName, prr); err != nil {
+		if err := r.apiReader.Get(ctx, req.NamespacedName, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("cannot get package revision resources: %s", err.Error()))
 			log.Error(err, "cannot get package revision resources")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get package revision resources")
@@ -196,7 +198,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// but if the package is in publish state the updates cannot be done
 		// so we stop here
 		if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-			r.recorder.Event(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is published, no update possible")
+			r.recorder.Eventf(pr, corev1.EventTypeNormal, "CannotRefreshClaims", "package is %s, no update possible", pr.Spec.Lifecycle)
 			log.Info("package is published, no updates possible",
 				"repo", pr.Spec.RepositoryName,
 				"package", pr.Spec.PackageName,
@@ -296,12 +298,9 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 		log.Info("generic specializer root kptfile", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "kptfile", kptfile)
 
-		kptf := kptfilelibv1.KptFile{Kptfile: rl.Items.GetRootKptfile()}
-		pr.Status.Conditions = porchcondition.GetPorchConditions(kptf.GetConditions())
-		// TODO do we need to update the status?
 		if err = r.porchClient.Update(ctx, prr); err != nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "cannot update packagerevision resources")
-			log.Error(err, "cannot update packagerevision resources")
+			log.Error(err, "cannot update packagerevision resources", "PackageRevision", pr.Name)
 			return ctrl.Result{}, err
 		}
 	}

@@ -11,3 +11,7 @@ packages:
         config:
           dir: "mocks/external/{{ .InterfaceName | lower }}"
           outpkg: "mocks"
+      Reader:
+        config:
+          dir: "mocks/external/{{ .InterfaceName | lower }}"
+          outpkg: "mocks"

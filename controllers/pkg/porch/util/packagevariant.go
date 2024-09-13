@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func PackageVariantReady(ctx context.Context, pr *porchv1alpha1.PackageRevision, c client.Client) (bool, error) {
+func PackageVariantReady(ctx context.Context, pr *porchv1alpha1.PackageRevision, c client.Reader) (bool, error) {
 	// If the package revision is owned by a PackageVariant, check the Ready condition
 	// of the package variant.
 	owned := false

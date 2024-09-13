@@ -47,6 +47,7 @@ const (
 	DelayAnnotationName          = "approval.nephio.org/delay"
 	PolicyAnnotationName         = "approval.nephio.org/policy"
 	InitialPolicyAnnotationValue = "initial"
+	AlwaysPolicyAnnotationValue  = "always"
 )
 
 func init() {
@@ -68,7 +69,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.apiReader = mgr.GetAPIReader()
 	r.baseClient = mgr.GetClient()
-	r.porchClient = cfg.PorchClient
 	r.porchRESTClient = cfg.PorchRESTClient
 	r.recorder = mgr.GetEventRecorderFor("approval-controller")
 	r.requeueDuration = time.Duration(cfg.ApprovalRequeueDuration) * time.Second
@@ -83,7 +83,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 type reconciler struct {
 	apiReader       client.Reader
 	baseClient      client.Client
-	porchClient     client.Client
 	porchRESTClient rest.Interface
 	recorder        record.EventRecorder
 	requeueDuration time.Duration
@@ -114,7 +113,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// of the package variant. If it is not Ready, then we should not approve yet. The
 	// lack of readiness could indicate an error which even impacts whether or not the
 	// readiness gates have been properly set.
-	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.porchClient)
+	pvReady, err := porchutil.PackageVariantReady(ctx, pr, r.apiReader)
 	if err != nil {
 		r.recorder.Event(pr, corev1.EventTypeWarning,
 			"Error", fmt.Sprintf("could not get owning PackageVariant: %s", err.Error()))
@@ -123,8 +122,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !pvReady {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"NotApproved", "owning PackageVariant not Ready")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			"NotApproved", "owning PackageVariant for %s not Ready", pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -132,8 +131,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// All policies require readiness gates to be met, so if they
 	// are not, we are done for now.
 	if !porchconds.PackageRevisionIsReady(pr.Spec.ReadinessGates, pr.Status.Conditions) {
-		r.recorder.Event(pr, corev1.EventTypeNormal,
-			"NotApproved", "readiness gates not met")
+		r.recorder.Eventf(pr, corev1.EventTypeNormal,
+			"NotApproved", "readiness gates not met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -143,6 +142,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	switch policy {
 	case InitialPolicyAnnotationValue:
 		approve, err = r.policyInitial(ctx, pr)
+	case AlwaysPolicyAnnotationValue:
+		approve, err = true, nil
 	default:
 		r.recorder.Eventf(pr, corev1.EventTypeWarning,
 			"InvalidPolicy", "invalid %q annotation value: %q", PolicyAnnotationName, policy)
@@ -159,7 +160,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if !approve {
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
-			"NotApproved", "approval policy %q not met", policy)
+			"NotApproved", "approval policy %q not met for %s", policy, pr.Spec.PackageName)
 
 		return ctrl.Result{RequeueAfter: r.requeueDuration}, nil
 	}
@@ -210,7 +211,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			"Error", "error %s: %s", action, err.Error())
 	} else {
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
-			reason, "all approval policies met")
+			reason, "all approval policies met for %s: %s", pr.Spec.PackageName, reason)
 	}
 
 	return ctrl.Result{}, err
@@ -254,7 +255,7 @@ func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 
 func (r *reconciler) policyInitial(ctx context.Context, pr *porchv1alpha1.PackageRevision) (bool, error) {
 	var prList porchv1alpha1.PackageRevisionList
-	if err := r.baseClient.List(ctx, &prList); err != nil {
+	if err := r.apiReader.List(ctx, &prList); err != nil {
 		return false, err
 	}
 

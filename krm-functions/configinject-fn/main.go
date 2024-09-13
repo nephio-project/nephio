@@ -25,7 +25,7 @@ import (
 
 func main() {
 	r := &fnr.FnR{
-		Client: nil,
+		Reader: nil,
 	}
 
 	if err := fn.AsMain(fn.ResourceListProcessorFunc(r.Run)); err != nil {
