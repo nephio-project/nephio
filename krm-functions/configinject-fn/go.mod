@@ -6,7 +6,7 @@ replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
-	github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d
+	github.com/nephio-project/api v1.0.0
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/porch v1.3.1
 	k8s.io/api v0.30.3
