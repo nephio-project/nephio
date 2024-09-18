@@ -1,7 +1,7 @@
 presubmits:
   - name: presubmit-nephio-go-test
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1817817865340850176
@@ -11,7 +11,7 @@ presubmits:
         - unit
   - name: presubmit-nephio-golangci-lint
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1817817865340850176
@@ -21,7 +21,7 @@ presubmits:
         - lint
   - name: presubmit-nephio-gosec
     decorate: true
-    run_if_changed: "(\\.go|Makefile)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1817817865340850176
@@ -71,7 +71,7 @@ presubmits:
           cp -R results ${ARTIFACTS}/    
   - name: presubmit-nephio-lichen
     decorate: true
-    run_if_changed: "^.*.go$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1817817865340850176
