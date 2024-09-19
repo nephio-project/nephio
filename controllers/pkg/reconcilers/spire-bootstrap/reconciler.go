@@ -26,14 +26,11 @@ import (
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
-	vaultClient "github.com/nephio-project/nephio/controllers/pkg/vault-client"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-
-	vault "github.com/hashicorp/vault/api"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -112,100 +109,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, errors.Wrap(err, msg)
 	}
 
-	vaultAddress := types.NamespacedName{Name: "vault-config", Namespace: "default"}
-	vaultconfigMap := &v1.ConfigMap{}
-	err = r.Get(ctx, vaultAddress, vaultconfigMap)
-	if err != nil {
-		log.Error(err, "unable to fetch ConfigMap")
-		return reconcile.Result{}, err
-	}
-
-	vaultAddr := vaultconfigMap.Data["VAULT_ADDR"]
-
-	jwtSVID, err := resource.GetJWT(ctx)
-	if err != nil {
-		log.Error(err, "Unable to get jwtSVID")
-	}
-	fmt.Println("JWTTT: ", jwtSVID)
-
-	clientToken, err := vaultClient.AuthenticateToVault(vaultAddr, jwtSVID.Marshal(), "dev")
-	if err != nil {
-		log.Error(err, "Error authenticating to Vault:")
-	}
-
-	log.Info("Successfully authenticated to Vault.", "Client token:", clientToken)
-
-	fmt.Println(clientToken)
-
-	config := vault.DefaultConfig()
-	config.Address = vaultAddr
-	client, err := vault.NewClient(config)
-	if err != nil {
-		log.Error(err, "Unable to create Vault client:")
-	}
-
-	client.SetToken(clientToken)
-
-	for _, secret := range secrets.Items {
-		if strings.Contains(secret.GetName(), cl.Name) {
-			secret := secret
-			fmt.Println("TESTING IFFFFFFF")
-			vaultClient.StoreKubeconfig(ctx, secret, client, "/kubeconfigs/"+cl.Name, cl.Name)
-		}
-	}
-
-	kubeconfig, err := vaultClient.FetchKubeconfig(client, "secret/kubeconfigs/"+cl.Name, cl.Name)
-	if err != nil {
-		log.Error(err, "Error retrieving secret:")
-	}
-
-	decodedKubeConfig, err := base64.StdEncoding.DecodeString(kubeconfig)
-	if err != nil {
-		fmt.Println("Error decoding base64:", err)
-	}
-
-	log.Info("Secret retrieved:", "Secret for cluster", cl.Name)
-
-	Client, err := createK8sClientFromKubeconfig(decodedKubeConfig)
-
-	createK8sSATokenResources(Client)
-	if err != nil {
-		fmt.Println("Error creating K8s", err)
-	}
-
-	kubeconfigCM, err := r.createKubeconfigConfigMap(ctx, Client, cl.Name)
-	if err != nil {
-		fmt.Println("Error creating K8s kubeconfig configmap", err)
-	}
-
-	r.Update(ctx, kubeconfigCM)
-
-	err = updateClusterListConfigMap(Client, cl.Name)
-	if err != nil {
-		fmt.Println("Cluster list could not be updated...: ", err)
-	}
-
-	// Get the spire-server service
-	spireService := &v1.Service{}
-	err = r.Get(ctx, types.NamespacedName{Name: "spire-server", Namespace: "spire"}, spireService)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to get spire-server service: %v", err)
-	}
-
-	// Get the ClusterIP
-	clusterIP := spireService.Spec.ClusterIP
-
-	// Get the port
-	var port string
-	if len(spireService.Spec.Ports) > 0 {
-		port = fmt.Sprint(spireService.Spec.Ports[0].Port)
-	}
-
-	// Construct the service address
-	serviceAddress := fmt.Sprintf("%s:%s", clusterIP, port)
-
-	fmt.Printf("SPIRE Server service address: %s\n", serviceAddress)
-
 	spireAgentCM, err := createSpireAgentConfigMap(Client, "spire-agent", "spire", cl.Name, serviceAddress, port)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get spireAgent ConfigMap: %v", err)
@@ -216,6 +119,50 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			secret := secret // required to prevent gosec warning: G601 (CWE-118): Implicit memory aliasing in for loop
 			clusterClient, ok := cluster.Cluster{Client: r.Client}.GetClusterClient(&secret)
 			if ok {
+
+				jwtSVID, err := resource.GetJWT(ctx)
+				if err != nil {
+					log.Error(err, "Unable to get jwtSVID")
+				}
+				fmt.Println("JWTTT: ", jwtSVID)
+
+				createK8sSATokenResources(clusterClient)
+				if err != nil {
+					fmt.Println("Error creating K8s", err)
+				}
+
+				kubeconfigCM, err := r.createKubeconfigConfigMap(ctx, clusterClient, cl.Name)
+				if err != nil {
+					fmt.Println("Error creating K8s kubeconfig configmap", err)
+				}
+
+				r.Update(ctx, kubeconfigCM)
+
+				err = updateClusterListConfigMap(clusterClient, cl.Name)
+				if err != nil {
+					fmt.Println("Cluster list could not be updated...: ", err)
+				}
+
+				// Get the spire-server service
+				spireService := &v1.Service{}
+				err = r.Get(ctx, types.NamespacedName{Name: "spire-server", Namespace: "spire"}, spireService)
+				if err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to get spire-server service: %v", err)
+				}
+
+				// Get the ClusterIP
+				clusterIP := spireService.Spec.ClusterIP
+
+				// Get the port
+				var port string
+				if len(spireService.Spec.Ports) > 0 {
+					port = fmt.Sprint(spireService.Spec.Ports[0].Port)
+				}
+
+				// Construct the service address
+				serviceAddress := fmt.Sprintf("%s:%s", clusterIP, port)
+
+				fmt.Printf("SPIRE Server service address: %s\n", serviceAddress)
 				clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 				if err != nil {
 					msg := "cannot get clusterClient"
@@ -286,7 +233,7 @@ func createK8sClientFromKubeconfig(kubeconfigData []byte) (*kubernetes.Clientset
 	return clientset, nil
 }
 
-func createK8sSATokenResources(clientset *kubernetes.Clientset) error {
+func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 	// Create ServiceAccount
 	sa := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
