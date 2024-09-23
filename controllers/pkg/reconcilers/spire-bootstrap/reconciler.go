@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -109,7 +108,26 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, errors.Wrap(err, msg)
 	}
 
-	spireAgentCM, err := createSpireAgentConfigMap(Client, "spire-agent", "spire", cl.Name, serviceAddress, port)
+	// Get the spire-server service
+	spireService := &v1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: "spire-server", Namespace: "spire"}, spireService)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get spire-server service: %v", err)
+	}
+
+	// Get the ClusterIP
+	clusterIP := spireService.Spec.ClusterIP
+
+	// Get the port
+	var port string
+	if len(spireService.Spec.Ports) > 0 {
+		port = fmt.Sprint(spireService.Spec.Ports[0].Port)
+	}
+
+	// Construct the service address
+	serviceAddress := fmt.Sprintf("%s:%s", clusterIP, port)
+
+	spireAgentCM, err := createSpireAgentConfigMap("spire-agent", "spire", cl.Name, clusterIP, port)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get spireAgent ConfigMap: %v", err)
 	}
@@ -126,43 +144,25 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				}
 				fmt.Println("JWTTT: ", jwtSVID)
 
-				createK8sSATokenResources(clusterClient)
+				createK8sSATokenResources(clusterClient, ctx)
 				if err != nil {
 					fmt.Println("Error creating K8s", err)
 				}
 
-				kubeconfigCM, err := r.createKubeconfigConfigMap(ctx, clusterClient, cl.Name)
-				if err != nil {
-					fmt.Println("Error creating K8s kubeconfig configmap", err)
-				}
+				// kubeconfigCM, err := r.createKubeconfigConfigMap(ctx, clusterClient, cl.Name)
+				// if err != nil {
+				// 	fmt.Println("Error creating K8s kubeconfig configmap", err)
+				// }
 
-				r.Update(ctx, kubeconfigCM)
+				// r.Update(ctx, kubeconfigCM)
 
-				err = updateClusterListConfigMap(clusterClient, cl.Name)
-				if err != nil {
-					fmt.Println("Cluster list could not be updated...: ", err)
-				}
-
-				// Get the spire-server service
-				spireService := &v1.Service{}
-				err = r.Get(ctx, types.NamespacedName{Name: "spire-server", Namespace: "spire"}, spireService)
-				if err != nil {
-					return ctrl.Result{}, fmt.Errorf("failed to get spire-server service: %v", err)
-				}
-
-				// Get the ClusterIP
-				clusterIP := spireService.Spec.ClusterIP
-
-				// Get the port
-				var port string
-				if len(spireService.Spec.Ports) > 0 {
-					port = fmt.Sprint(spireService.Spec.Ports[0].Port)
-				}
-
-				// Construct the service address
-				serviceAddress := fmt.Sprintf("%s:%s", clusterIP, port)
+				// err = updateClusterListConfigMap(clusterClient, cl.Name)
+				// if err != nil {
+				// 	fmt.Println("Cluster list could not be updated...: ", err)
+				// }
 
 				fmt.Printf("SPIRE Server service address: %s\n", serviceAddress)
+
 				clusterClient, ready, err := clusterClient.GetClusterClient(ctx)
 				if err != nil {
 					msg := "cannot get clusterClient"
@@ -217,23 +217,20 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return reconcile.Result{}, nil
 }
 
-func createK8sClientFromKubeconfig(kubeconfigData []byte) (*kubernetes.Clientset, error) {
-	// Load the kubeconfig from the decoded data
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigData)
+func createK8sSATokenResources(clusterClient cluster.ClusterClient, ctx context.Context) error {
+	log := log.FromContext(ctx)
+
+	client, ready, err := clusterClient.GetClusterClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load kubeconfig: %v", err)
+		msg := "cannot get clusterClient"
+		log.Error(err, msg)
+		return errors.Wrap(err, msg)
+	}
+	if !ready {
+		log.Info("cluster not ready")
+		return nil
 	}
 
-	// Create the Kubernetes clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Kubernetes clientset: %v", err)
-	}
-
-	return clientset, nil
-}
-
-func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 	// Create ServiceAccount
 	sa := &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -241,8 +238,7 @@ func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 			Namespace: "spire",
 		},
 	}
-	_, err := clientset.CoreV1().ServiceAccounts("spire").Create(context.TODO(), sa, metav1.CreateOptions{})
-	if err != nil {
+	if err := client.Create(ctx, sa); err != nil {
 		return fmt.Errorf("failed to create ServiceAccount: %v", err)
 	}
 
@@ -259,8 +255,7 @@ func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 			},
 		},
 	}
-	_, err = clientset.RbacV1().ClusterRoles().Create(context.TODO(), cr, metav1.CreateOptions{})
-	if err != nil {
+	if err := client.Create(ctx, cr); err != nil {
 		return fmt.Errorf("failed to create ClusterRole: %v", err)
 	}
 
@@ -282,8 +277,7 @@ func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 			Name:     "system:auth-delegator",
 		},
 	}
-	_, err = clientset.RbacV1().ClusterRoleBindings().Create(context.TODO(), crbAuthDelegator, metav1.CreateOptions{})
-	if err != nil {
+	if err := client.Create(ctx, crbAuthDelegator); err != nil {
 		return fmt.Errorf("failed to create ClusterRoleBinding (auth-delegator): %v", err)
 	}
 
@@ -305,8 +299,7 @@ func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 			Name:     "pod-reader",
 		},
 	}
-	_, err = clientset.RbacV1().ClusterRoleBindings().Create(context.TODO(), crbPodReader, metav1.CreateOptions{})
-	if err != nil {
+	if err := client.Create(ctx, crbPodReader); err != nil {
 		return fmt.Errorf("failed to create ClusterRoleBinding (pod-reader): %v", err)
 	}
 
@@ -321,8 +314,7 @@ func createK8sSATokenResources(clusterClient cluster.ClusterClient) error {
 		},
 		Type: v1.SecretTypeServiceAccountToken,
 	}
-	_, err = clientset.CoreV1().Secrets("spire").Create(context.TODO(), secret, metav1.CreateOptions{})
-	if err != nil {
+	if err := client.Create(ctx, secret); err != nil {
 		return fmt.Errorf("failed to create Secret: %v", err)
 	}
 
@@ -450,7 +442,7 @@ func updateClusterListConfigMap(clientset *kubernetes.Clientset, clusterName str
 	return nil
 }
 
-func createSpireAgentConfigMap(clientset *kubernetes.Clientset, name string, namespace string, cluster string, serverAddress string, serverPort string) (*v1.ConfigMap, error) {
+func createSpireAgentConfigMap(name string, namespace string, cluster string, serverAddress string, serverPort string) (*v1.ConfigMap, error) {
 	configMapData := map[string]string{
 		"agent.conf": `
 agent {
