@@ -6,6 +6,8 @@ github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d/go.mod h1:prNhhUAODrB2VqHVead9tB8nLU9ffY4e4jjBwLMNO1M=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
+github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
+github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cenkalti/backoff/v4 v4.0.0/go.mod h1:eEew/i+1Q6OrCDZh3WiXYv3+nJwBASZ8Bog/87DQnVg=
@@ -34,6 +36,8 @@ github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8b
 github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-fed/httpsig v1.1.0 h1:9M+hb0jkEICD8/cAiNqEB66R87tTINszBRTjwjQzWcI=
 github.com/go-fed/httpsig v1.1.0/go.mod h1:RCMrTZvN1bJYtofsG4rd5NaO5obxQ5xBkdiS7xsT7bM=
+github.com/go-jose/go-jose/v4 v4.0.2 h1:R3l3kkBds16bO7ZFAEEcofK0MkrAJt3jlJznWZG0nvk=
+github.com/go-jose/go-jose/v4 v4.0.2/go.mod h1:WVf9LFMHh/QVrmqrOfqun0C45tMe3RoiKJMPvgWwLfY=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/zapr v1.3.0 h1:XGdV8XW8zdwFiwOA2Dryh1gj2KRQyOOoNmBy4EplIcQ=
@@ -122,8 +126,8 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/nephio-project/api v1.0.0 h1:uHu2SP2nHpx7B9if0MZrw5BqAKBf2dG2Ssp6bp6R6lY=
-github.com/nephio-project/api v1.0.0/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
+github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d h1:hs1ml1d3MaLBLn5yhfz2RPA9B8VGXMGJhZSjyDXJDQY=
+github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3 h1:RNwnrA6AmFLFZkmJa6rVX6PTpf4QxlCF5oYWdpsap1g=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3/go.mod h1:mQqKgxdpWotKvgZKbfFHPK0gLJ4Z9CsJb/tEUoeDpLs=
 github.com/nephio-project/porch v1.3.1 h1:CFZa6kaLViGU7vGMy9sgGGvom5HUxwGwyOiz5zfuCZ8=
@@ -164,6 +168,8 @@ github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 h1:n661drycOFuPLCN
 github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
+github.com/spiffe/go-spiffe/v2 v2.3.0 h1:g2jYNb/PDMB8I7mBGL2Zuq/Ur6hUhoroxGQFyD6tTj8=
+github.com/spiffe/go-spiffe/v2 v2.3.0/go.mod h1:Oxsaio7DBgSNqhAO9i/9tLClaVlfRok7zvJnTV8ZyIY=
 github.com/srl-labs/ygotsrl/v22 v22.11.1 h1:Dxb7q7IB8xZc0XOZC53ZPBATxA8dJ+oJMC+2FYToId8=
 github.com/srl-labs/ygotsrl/v22 v22.11.1/go.mod h1:VuNY6D0aYZvR9UeGSWOzgATBsis3ynw84TwiYuhS+pc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -182,6 +188,8 @@ github.com/xlab/treeprint v1.2.0 h1:HzHnuAF1plUN2zGlAFHbSQP2qJ0ZAD3XF5XD7OesXRQ=
 github.com/xlab/treeprint v1.2.0/go.mod h1:gj5Gd3gPdKtR1ikdDK6fnFLdmIS0X30kTTuNd/WEJu0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
+github.com/zeebo/errs v1.3.0 h1:hmiaKqgYZzcVgRL1Vkc1Mn2914BbzB0IBxs+ebeutGs=
+github.com/zeebo/errs v1.3.0/go.mod h1:sgbWHsvVuTPHcqJJGQ1WhI5KbWlHYz+2+2C/LSEtCw4=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
