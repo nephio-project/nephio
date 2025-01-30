@@ -480,3 +480,43 @@ postsubmits:
             items:
               - key: .dockerconfigjson
                 path: config.json
+
+  - name: build-push-nephio-krm-func-gen-kust-res-image
+    cluster: default
+    always_run: true
+    branches:
+    - "main"
+    annotations:
+      description: Build and Push Nephio KRM Gen Kustomize Resources Image to DockerHub
+    decorate: true
+    decoration_config:
+      censor_secrets: true
+    max_concurrency: 1
+    extra_refs:
+    - org: nephio-project
+      repo: nephio
+      base_ref: main
+      path_alias: "nephio_build"
+    spec:
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=krm-functions/gen-kustomize-res/Dockerfile --destination=nephio/gen-kustomize-res:${BUILD_ID} --destination=nephio/gen-kustomize-res:latest
+        volumeMounts:
+          - name: kaniko-secret
+            mountPath: /kaniko/.docker/
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+      volumes:
+        - name: kaniko-secret
+          secret:
+            secretName: regcred
+            items:
+              - key: .dockerconfigjson
+                path: config.json
