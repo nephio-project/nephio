@@ -1,0 +1,46 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: kpt.dev/v1
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: testpkg
+- apiVersion: kustomize.config.k8s.io/v1beta1
+  kind: Kustomization
+  metadata:
+    name: upsert-kustomize-res
+    annotations:
+      internal.config.kubernetes.io/path: kustomization.yaml
+  resources:
+  - nf-deployment.yaml
+  - resources.yaml
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kptfile.kpt.dev
+    annotations:
+      config.kubernetes.io/local-config: "true"
+  data:
+    name: local-data
+    namespace: default
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      internal.config.kubernetes.io/path: "resources.yaml"
+      internal.config.kubernetes.io/index: "1"
+    name: test-data
+    namespace: default
+  data:
+    apple: pear
+- apiVersion: workload.nephio.org/v1alpha1
+  kind: NFDeployment
+  metadata:
+    name: amf-example
+    namespace: amf-example
+    annotations:
+      internal.config.kubernetes.io/path: nf-deployment.yaml
+  spec:
+    provider: amf.free5gc.io

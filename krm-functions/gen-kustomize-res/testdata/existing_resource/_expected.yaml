@@ -1,0 +1,34 @@
+apiVersion: config.kubernetes.io/v1
+kind: ResourceList
+items:
+- apiVersion: kpt.dev/v1
+  kind: Kptfile
+  metadata:
+    annotations:
+      config.kubernetes.io/local-config: "true"
+    name: testpkg
+- apiVersion: kustomize.config.k8s.io/v1beta1
+  kind: Kustomization
+  metadata:
+    name: my-kust
+    annotations:
+      internal.config.kubernetes.io/path: kustomization.yaml
+      internal.config.kubernetes.io/index: "2"
+  labels:
+  - includeSelectors: true
+    pairs:
+      app: myapp
+  resources:
+  - deployment.yaml
+  - service.yaml
+  - resources.yaml
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    annotations:
+      internal.config.kubernetes.io/path: "resources.yaml"
+      internal.config.kubernetes.io/index: "1"
+    name: test-data
+    namespace: default
+  data:
+    apple: pear

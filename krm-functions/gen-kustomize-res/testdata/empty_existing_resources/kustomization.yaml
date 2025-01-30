@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: my-kust
+  annotations:
+    internal.config.kubernetes.io/path: kustomization.yaml
+    internal.config.kubernetes.io/index: "2"
+labels:
+- includeSelectors: true
+  pairs:
+    app: myapp
+resources: []

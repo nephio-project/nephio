@@ -1,0 +1,9 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: NFDeployment
+metadata:
+  name: amf-example
+  namespace: amf-example
+  annotations:
+    internal.config.kubernetes.io/path: nf-deployment.yaml
+spec:
+  provider: amf.free5gc.io
