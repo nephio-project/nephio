@@ -1,0 +1,50 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: o2ims:events-role
+rules:
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create]
+  - apiGroups: ["o2ims.provisioning.oran.org"]
+    resources: [provisioningrequests,provisioningrequests/status,provisioningrequests/finalizers]
+    verbs: [get, list, watch, update, patch]
+  - apiGroups: ["cluster.x-k8s.io"]
+    resources: [clusters]
+    verbs:  [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: o2ims:events
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: o2ims:events-role
+subjects:
+  - kind: ServiceAccount
+    name: porch-server
+    namespace: porch-system
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: porch-sa-test
+  namespace: porch-system
+  labels:
+    app: testo2ims
+spec:
+  serviceAccountName: porch-server
+  ## In case you have reached docker limit
+  # imagePullSecrets:
+  # - name: docker-registry
+  containers:
+  - image: busybox:1.29
+    imagePullPolicy: IfNotPresent
+    name: busybox
+    command:
+    - /bin/sh
+    args:
+    - -c
+    - sleep 100000
+
