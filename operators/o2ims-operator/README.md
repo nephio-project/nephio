@@ -30,21 +30,23 @@ It will also configure a secret which the operator can use for development purpo
 
 
 ```bash
-# Get private repository
-git clone https://github.com/arora-sagar/o2ims-operator.git
+# Get the repository
+git clone https://github.com/nephio-project/nephio.git
 cd o2ims-operator
 # Create a virtual environment
 virtualenv venv -p python3
 source venv
 # Install requirements
 pip install -r requirements.txt
-## Set kernel parameters (run these commands after system restart or when new VM/system is created)
+# Set kernel parameters (run these commands after system restart or when new VM/system is created)
 sudo sysctl -w fs.inotify.max_user_watches=524288
 sudo sysctl -w fs.inotify.max_user_instances=512
 sudo sysctl -w kernel.keys.maxkeys=500000
 sudo sysctl -w kernel.keys.maxbytes=1000000
-## Run the create-cluster.sh script to create the mgmt cluster and development environment
-./ci-scripts/create-cluster.sh
+# Get the CRD from the Nephio API repo and place it in o2ims-operator/config/crd/bases/
+curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
+# Run the create-cluster.sh script to create the mgmt cluster and development environment
+./tests/create-cluster.sh
 ```
 
 ### Existing Nephio mgmt Cluster
@@ -53,25 +55,14 @@ sudo sysctl -w kernel.keys.maxbytes=1000000
 
 ```bash
 kubectl exec -it -n porch-system porch-sa-test -- cat /var/run/secrets/kubernetes.io/serviceaccount/token &> /tmp/porch-token
+# Get the CRD from the Nephio API repo and place it in o2ims-operator/config/crd/bases/
+curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
 ## Create CRD
-kubectl create -f `pwd`/config/crd/bases
+kubectl create -f ./config/crd/bases
 export TOKEN=/tmp/porch-token 
 # Exposing the Kube proxy for development after killing previous proxy sessions
 pkill kubectl
 nohup kubectl proxy --port 8080 &>/dev/null &
-```
-
-To start the operator: 
-
-```bash
-## To run in debug mode use the "--debug" flag or "-v --log-format=full"
-kopf run controller/manager.py
-```
-
-Open another terminal to provision a cluster:
-
-```bash
-kubectl create -f ci-scripts/sample_provisioning_request.yaml
 ```
 
 #### Containerized Development Environment
@@ -91,7 +82,20 @@ kind load docker-image o2ims:latest -n mgmt
 Deploy the O2 IMS operator:
 
 ```bash
-kubectl -f deployment/operator.yaml
+kubectl -f tests/deployment/operator.yaml
+```
+
+### To Start the Operator: 
+
+```bash
+## To run in debug mode use the "--debug" flag or "-v --log-format=full"
+kopf run controllers/manager.py
+```
+
+Open another terminal to provision a cluster:
+
+```bash
+kubectl create -f tests/sample_provisioning_request.yaml
 ```
 
 ### Redeploying
@@ -106,8 +110,8 @@ kind delete cluster -n edge
 
 O2IMS operator listens for ProvisioningRequest CR and once it is created it goes through different stages 
 
-1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controller/provisioning_request_validation_controller.py) validates the the provisioning requests. Currently it checks if the field `spec.templateParameters.clusterName` and `spec.templateParameters.clusterProvisioner`. At the moment only `capi` handled clusters are support
-2. `ProvisioningRequest creation`: The controller [provisioning_request_controller.py](./controller/provisioning_request_controller.py) takes care of creating the a package variant for Porch which can be applied to the cluster where porch is running. After applying package variant it waits for the cluster to be created and it follows the creation via querying `clusters.cluster.x-k8s.io` endpoint. Later we will add querying of packageRevisions also but at the moment their is a problem with querying packageRevisions because sometimes Porch is not able to process the request
+1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controllers/provisioning_request_validation_controller.py) validates the the provisioning requests. Currently it checks if the field `spec.templateParameters.clusterName` and `spec.templateParameters.clusterProvisioner`. At the moment only `capi` handled clusters are support
+2. `ProvisioningRequest creation`: The controller [provisioning_request_controller.py](./controllers/provisioning_request_controller.py) takes care of creating the a package variant for Porch which can be applied to the cluster where porch is running. After applying package variant it waits for the cluster to be created and it follows the creation via querying `clusters.cluster.x-k8s.io` endpoint. Later we will add querying of packageRevisions also but at the moment their is a problem with querying packageRevisions because sometimes Porch is not able to process the request
 
 Output of a **Success workflow**:
 
@@ -202,7 +206,7 @@ kubectl delete packagevariant provisioning-request-sample
 kubectl delete provisioningrequest provisioning-request-sample
 kubectl delete pod porch-server-7c5485b96b-tk7sr -n porch-system # Get the pod name from kubectl
 # Once deleted and new Porch Server is up
-kubectl create -f ci-scripts/sample_provisioning_request.yaml
+kubectl create -f tests/sample_provisioning_request.yaml
 ```
 
 ### Deletion request O2IMS cluster
@@ -212,7 +216,7 @@ This is not supported so you have to delete the cluster manually
 First delete the provisioning request:
 
 ```bash
-kubectl delete -f ci-scripts/sample_provisioning_request.yaml
+kubectl delete -f tests/sample_provisioning_request.yaml
 ```
 
 Then delete the resources, replace **edge** with your cluster name and change **mgmt** cluster repository name with your cluster management cluster repository name. 
