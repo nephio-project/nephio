@@ -9,9 +9,8 @@ spec:
   templateVersion: v3.0.0
   templateParameters:
     clusterName: edge
-    clusterProvisioner: capi
-    creationTimeout: 200
     labels:
       nephio.org/site-type: edge
       nephio.org/region: europe-paris-west
       nephio.org/owner: nephio-o2ims
+

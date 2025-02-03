@@ -87,6 +87,8 @@ kubectl -f tests/deployment/operator.yaml
 
 ### To Start the Operator: 
 
+Note that there are some constants in manager.py that can be tuned before running the operator.
+
 ```bash
 ## To run in debug mode use the "--debug" flag or "-v --log-format=full"
 kopf run controllers/manager.py
@@ -100,7 +102,7 @@ kubectl create -f tests/sample_provisioning_request.yaml
 
 ### Redeploying
 
-To redeploy the cluster, or to recreate the development environment, one must delete the created cluster. The Nephio mgmt cluster will be deleted automatically when running `create-cluster.sh`, but the cluster deployed by this operator has a name in the `clusterName` field of the spec. For example, in `sample_provisioning_request.yaml` it will be `edge`, thus:
+To redeploy the cluster, or to recreate the development environment, one must delete the created cluster. The Nephio mgmt cluster will be deleted automatically when running `create-cluster.sh`, but the cluster deployed by this operator has a name in the `clusterName` field. For example, it may be `edge`, thus:
 
 ```bash
 kind delete cluster -n edge
@@ -110,7 +112,7 @@ kind delete cluster -n edge
 
 O2IMS operator listens for ProvisioningRequest CR and once it is created it goes through different stages 
 
-1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controllers/provisioning_request_validation_controller.py) validates the the provisioning requests. Currently it checks if the field `spec.templateParameters.clusterName` and `spec.templateParameters.clusterProvisioner`. At the moment only `capi` handled clusters are support
+1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controllers/provisioning_request_validation_controller.py) validates the provisioning requests. Currently it checks if the field `clusterName` and `clusterProvisioner`. At the moment only `capi` handled clusters are support
 2. `ProvisioningRequest creation`: The controller [provisioning_request_controller.py](./controllers/provisioning_request_controller.py) takes care of creating the a package variant for Porch which can be applied to the cluster where porch is running. After applying package variant it waits for the cluster to be created and it follows the creation via querying `clusters.cluster.x-k8s.io` endpoint. Later we will add querying of packageRevisions also but at the moment their is a problem with querying packageRevisions because sometimes Porch is not able to process the request
 
 Output of a **Success workflow**:
@@ -125,9 +127,9 @@ metadata:
   annotations:
     provisioningrequests.o2ims.provisioning.oran.org/kopf-managed: "yes"
     provisioningrequests.o2ims.provisioning.oran.org/last-ha-a.A3qw: |
-      {"spec":{"description":"Provisioning request for setting up a test kind cluster.","name":"test-env-Provisioning","templateName":"nephio-workload-cluster","templateParameters":{"clusterName":"edge","clusterProvisioner":"capi","creationTimeout":200,"labels":{"nephio.org/region":"europe-paris-west","nephio.org/site-type":"edge"}},"templateVersion":"v3.0.0"}}
+      {"spec":{"description":"Provisioning request for setting up a test kind cluster.","name":"test-env-Provisioning","templateName":"nephio-workload-cluster","templateParameters":{"clusterName":"edge","labels":{"nephio.org/region":"europe-paris-west","nephio.org/site-type":"edge"},"templateVersion":"v3.0.0"}}
     provisioningrequests.o2ims.provisioning.oran.org/last-handled-configuration: |
-      {"spec":{"description":"Provisioning request for setting up a test kind cluster.","name":"test-env-Provisioning","templateName":"nephio-workload-cluster","templateParameters":{"clusterName":"edge","clusterProvisioner":"capi","creationTimeout":200,"labels":{"nephio.org/region":"europe-paris-west","nephio.org/site-type":"edge"}},"templateVersion":"v3.0.0"}}
+      {"spec":{"description":"Provisioning request for setting up a test kind cluster.","name":"test-env-Provisioning","templateName":"nephio-workload-cluster","templateParameters":{"clusterName":"edge","labels":{"nephio.org/region":"europe-paris-west","nephio.org/site-type":"edge"},"templateVersion":"v3.0.0"}}
   creationTimestamp: "2025-01-31T13:50:46Z"
   generation: 1
   name: provisioning-request-sample
@@ -139,14 +141,13 @@ spec:
   templateName: nephio-workload-cluster
   templateParameters:
     clusterName: edge
-    clusterProvisioner: capi
-    creationTimeout: 200
-    labels:
-      nephio.org/region: europe-paris-west
-      nephio.org/site-type: edge
+      labels:
+        nephio.org/site-type: edge
+        nephio.org/region: europe-paris-west
+        nephio.org/owner: nephio-o2ims
   templateVersion: v3.0.0
 status:
-  provisionedResources:
+  provisionedResourceSet:
     oCloudInfrastructureResourceIds:
     - cb92ece1-7272-4e01-9d5c-11e47b2e2473
     oCloudNodeClusterId: 09470fe4-cff6-4362-a7d6-badc77dbf059

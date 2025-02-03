@@ -18,6 +18,7 @@ from utils import *
 import time
 import uuid
 
+
 def check_creation_request_status(
     request_name: str = None,
     namespace: str = "default",
@@ -41,7 +42,8 @@ def check_creation_request_status(
 
     return output
 
-# Creating a package variant 
+
+# Creating a package variant
 def cluster_creation_request(
     request_name: str = None,
     template_name: str = None,
@@ -160,6 +162,7 @@ def cluster_creation_request(
     }
     return output
 
+
 # Checking the status of cluster creation
 # TODO check the status of package revision
 def cluster_creation_status(
@@ -221,7 +224,7 @@ def cluster_creation_status(
     if provisioning_state == "fulfilled":
         output.update(
             {
-                "provisionedResources": {
+                "provisionedResourceSet": {
                     "oCloudNodeClusterId": str(uuid.uuid4()),
                     "oCloudInfrastructureResourceIds": [str(uuid.uuid4())],
                 }

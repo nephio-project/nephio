@@ -315,7 +315,10 @@ def delete_package_revision(name: str = None, namespace: str = None, logger=None
 
     return response
 
-def check_o2ims_provisioning_request(name: str = None, namespace: str = None, logger=None):
+
+def check_o2ims_provisioning_request(
+    name: str = None, namespace: str = None, logger=None
+):
     """
     :param name: cluster name
     :type name: str
@@ -344,14 +347,22 @@ def check_o2ims_provisioning_request(name: str = None, namespace: str = None, lo
         logger.debug("check_o2ims_provisioning_request error: %s" % (e))
         return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
     if r.status_code in [200] and "status" in r.json().keys():
-        response = {"status": True, "provisioningStatus": r.json()["status"]["provisioningStatus"]}
-        if "provisionedResources" in r.json()["status"]:
-            response.update({"provisionedResources": ["status"]["provisionedResources"]})            
+        response = {
+            "status": True,
+            "provisioningStatus": r.json()["status"]["provisioningStatus"],
+        }
+        if "provisionedResourceSet" in r.json()["status"]:
+            response.update(
+                {"provisionedResourceSet": ["status"]["provisionedResourceSet"]}
+            )
     elif r.status_code in [200] and "status" not in r.json().keys():
-        response = {"status": True, "provisioningStatus": {
-            "provisioningMessage": "Cluster provisioning request received",
-            "provisioningState": "progressing",
-        }}
+        response = {
+            "status": True,
+            "provisioningStatus": {
+                "provisioningMessage": "Cluster provisioning request received",
+                "provisioningState": "progressing",
+            },
+        }
     elif r.status_code in [401, 403]:
         response = {"status": False, "reason": "Unauthorized"}
     elif r.status_code == 404:
@@ -359,7 +370,7 @@ def check_o2ims_provisioning_request(name: str = None, namespace: str = None, lo
         creation_status = get_package_variant(
             name=request_name, namespace=namespace, logger=logger
         )
-        response.update({"pv":creation_status["status"]})
+        response.update({"pv": creation_status["status"]})
     else:
         response = {
             "status": False,
@@ -367,6 +378,7 @@ def check_o2ims_provisioning_request(name: str = None, namespace: str = None, lo
         }
     logger.debug(f"check_o2ims_provisioning_request response: {r.json()}")
     return response
+
 
 def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
     """

@@ -25,11 +25,11 @@ def validate_cluster_creation_request(params: dict = None):
     :rtype: dict
     """
     # Checking if clusterName and clusterProvisioner are in parameters
-    if all(p in params for p in ("clusterName", "clusterProvisioner")):
+    if "clusterName" in params:
         request_validation = {"status": True}
     else:
         request_validation = {
-            "reason": "clusterName,clusterProvisioner is missing in template parameters",
+            "reason": "clusterName is missing in template parameters",
             "status": False,
         }
 
