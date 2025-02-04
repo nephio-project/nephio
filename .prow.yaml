@@ -481,13 +481,13 @@ postsubmits:
               - key: .dockerconfigjson
                 path: config.json
 
-  - name: build-push-nephio-krm-func-gen-kust-res-image
+  - name: build-push-nephio-krm-func-gen-kust-res-dev-image
     cluster: default
     always_run: true
     branches:
     - "main"
     annotations:
-      description: Build and Push Nephio KRM Gen Kustomize Resources Image to DockerHub
+      description: Build and Push Nephio KRM Gen Kustomize Resources Dev Image to DockerHub
     decorate: true
     decoration_config:
       censor_secrets: true
