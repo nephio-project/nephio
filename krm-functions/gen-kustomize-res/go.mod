@@ -1,4 +1,4 @@
-module github.com/kispaljr/krm-functions/upsert-resource
+module github.com/nephio-project/nephio/krm-functions/gen-kustomize-res
 
 go 1.22.2
 
