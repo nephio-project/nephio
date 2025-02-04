@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+      internal.config.kubernetes.io/path: "resources.yaml"
+      internal.config.kubernetes.io/index: "1"
+  name: test-data
+  namespace: default
+data:
+  apple: pear
