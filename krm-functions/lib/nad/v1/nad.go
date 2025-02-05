@@ -146,7 +146,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 	case VlanClaimOnly:
 		return nadConfigStruct, nil
 	case IpVlanType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Capabilities: Capabilities{Ips: true},
@@ -159,7 +159,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 		}
 		return nadConfigStruct, nil
 	case MacVlanType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Capabilities: Capabilities{Ips: true},
@@ -178,7 +178,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 		}
 		return nadConfigStruct, nil
 	case SriovType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Capabilities: Capabilities{
@@ -193,7 +193,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 		}
 		return nadConfigStruct, nil
 	case VlanType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Ipam: Ipam{
@@ -204,7 +204,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 		}
 		return nadConfigStruct, nil
 	case BridgeType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Ipam: Ipam{
@@ -215,7 +215,7 @@ func (r *NadStruct) getNadConfig() (NadConfig, error) {
 		}
 		return nadConfigStruct, nil
 	case OtherType:
-		if nadConfigStruct.Plugins == nil || len(nadConfigStruct.Plugins) == 0 {
+		if len(nadConfigStruct.Plugins) == 0 {
 			nadConfigStruct.Plugins = []PluginCniType{
 				{
 					Capabilities: Capabilities{
