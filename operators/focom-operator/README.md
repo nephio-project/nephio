@@ -59,17 +59,23 @@ make deploy IMG=your-docker-repository/focom-operator-poc:2.0.0
 - Access to a Kubernetes v1.11.3+ cluster.
 - oapi-codegen installed with: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
 - setup-env test: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-- export KUBEBUILDER_ASSETS=$(pwd)/testbin/k8s/1.26.0-darwin-arm64 for the above
 
 ### To run the tests locally
 
 Set up the setup-envtest from the root folder of the project.
 ```sh
-setup-envtest use 1.31 --bin-dir=./bin
-cd internal
-go test ./controller/...
+# For example, to use envtest 1.31 on macOS with an ARM processor, run:
+setup-envtest use 1.31 --bin-dir=./testbin
+export KUBEBUILDER_ASSETS="$(pwd)/testbin/k8s/1.31.0-darwin-arm64"
+go test -v ./internal/controller/...
 ```
 
+To run e2e tests inside the test folder, set up a kind cluster, for example:
+
+```sh
+kind create cluster
+make test-e2e
+```
 
 
 ### To Deploy on the cluster
