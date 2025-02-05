@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-GOSEC_VER ?= 2.15.0
+GOSEC_VER ?= 2.22.0
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
