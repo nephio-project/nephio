@@ -1,6 +1,9 @@
 # This includes the following default targets:
-#   gosec,
+#   gosec, golangci-lint
 include ../../default-gosec.mk
+include ../../default-go-lint.mk
+
+GO_VERSION = 1.23.5
 
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
@@ -131,8 +134,8 @@ unit: test
 test-e2e:
 	go test ./test/e2e/ -v -ginkgo.v
 
-.PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
+.PHONY: lint-local
+lint-local: golangci-lint ## Run golangci-lint linter
 	$(GOLANGCI_LINT) run
 
 .PHONY: lint-fix

@@ -4,6 +4,7 @@ run:
 issues:
   exclude-dirs:
     - "vendor"
+    - "test"
 
   exclude-files:
     - ".*\\_test.go$"

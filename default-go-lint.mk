@@ -1,4 +1,4 @@
-#  Copyright 2023 The Nephio Authors.
+#  Copyright 2023-2025 The Nephio Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 
-GOLANG_CI_VER ?= v1.57
+GOLANG_CI_VER ?= v1.62.2
+GO_VERSION ?= 1.22.0
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
@@ -22,7 +23,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
 	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-	 golangci-lint run ./... -v
+	 golangci-lint run ./... -v --go=${GO_VERSION} --exclude-generated=true
 else
-	golangci-lint run ./... -v
+	golangci-lint run ./... -v --go=${GO_VERSION} --exclude-generated=true
 endif
