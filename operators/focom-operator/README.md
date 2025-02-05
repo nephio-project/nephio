@@ -51,6 +51,7 @@ To deploy the operator on the cluster, run the following command:
 make deploy IMG=your-docker-repository/focom-operator-poc:2.0.0
 ```
 
+
 ### Prerequisites
 - go version v1.22.0+
 - docker version 17.03+.

@@ -1,4 +1,4 @@
-module github.com/dekstroza/focom-operator
+module github.com/nephio-project/nephio/operators/focom-operator
 
 go 1.23.0
 
