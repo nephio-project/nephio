@@ -1,8 +1,11 @@
-# This includes the following default targets:
-#   gosec, golangci-lint
+# These includes get the following targets
+# from the top level Make files:
+#   gosec, golangci-lint, fmt, vet
 include ../../default-gosec.mk
 include ../../default-go-lint.mk
+include ../../default-go-misc.mk
 
+# Override golangci-lint target version
 GO_VERSION = 1.23.5
 
 # VERSION defines the project version for the bundle.
@@ -113,14 +116,6 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
-
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
