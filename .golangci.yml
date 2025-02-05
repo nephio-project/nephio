@@ -1,4 +1,6 @@
 run:
+  build-tags:
+    - "-buildvcs=false"
   timeout: 10m
 
 issues:

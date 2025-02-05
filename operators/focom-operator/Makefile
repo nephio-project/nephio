@@ -5,9 +5,6 @@ include ../../default-gosec.mk
 include ../../default-go-lint.mk
 include ../../default-go-misc.mk
 
-# Override golangci-lint target version
-GO_VERSION = 1.23.5
-
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:

@@ -12,9 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-GOLANG_CI_VER ?= v1.62.2
-GO_VERSION ?= 1.22.0
+GOLANG_CI_VER ?= v1.63.4
 GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
 include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
@@ -23,7 +21,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
 	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-	 golangci-lint run ./... -v --go=${GO_VERSION}
+	 golangci-lint run ./... -v
 else
-	golangci-lint run ./... -v --go=${GO_VERSION}
+	golangci-lint run ./... -v
 endif
