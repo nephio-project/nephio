@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"

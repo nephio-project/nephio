@@ -19,10 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

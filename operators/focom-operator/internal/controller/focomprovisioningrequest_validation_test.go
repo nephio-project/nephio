@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
-	provisioningv1alpha1 "github.com/dekstroza/focom-operator/api/provisioning/v1alpha1"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
+	provisioningv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

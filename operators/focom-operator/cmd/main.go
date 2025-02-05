@@ -19,7 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -36,8 +36,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	provisioningv1alpha1 "github.com/dekstroza/focom-operator/api/provisioning/v1alpha1"
-	"github.com/dekstroza/focom-operator/internal/controller"
+	provisioningv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
-	provisioningv1alpha1 "github.com/dekstroza/focom-operator/api/provisioning/v1alpha1"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
+	provisioningv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )

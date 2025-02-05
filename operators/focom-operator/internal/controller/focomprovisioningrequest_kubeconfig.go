@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"

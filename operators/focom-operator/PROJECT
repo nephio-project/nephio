@@ -10,7 +10,7 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: focom-operator
-repo: github.com/dekstroza/focom-operator
+repo: github.com/nephio-project/nephio/operators/focom-operator
 resources:
 - api:
     crdVersion: v1
@@ -18,7 +18,7 @@ resources:
   domain: nephio.org
   group: focom
   kind: OCloud
-  path: github.com/dekstroza/focom-operator/api/v1alpha1
+  path: github.com/nephio-project/nephio/operators/focom-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -27,7 +27,7 @@ resources:
   domain: nephio.org
   group: focom
   kind: FocomProvisioningRequest
-  path: github.com/dekstroza/focom-operator/api/v1alpha1
+  path: github.com/nephio-project/nephio/operators/focom-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -35,6 +35,6 @@ resources:
   domain: nephio.org
   group: provisioning
   kind: TemplateInfo
-  path: github.com/dekstroza/focom-operator/api/provisioning/v1alpha1
+  path: github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1
   version: v1alpha1
 version: "3"

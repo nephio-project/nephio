@@ -19,12 +19,13 @@ package controller
 import (
 	"context"
 	"fmt"
-	focomv1alpha1 "github.com/dekstroza/focom-operator/api/focom/v1alpha1"
+	"time"
+
 	"github.com/go-logr/logr"
+	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
