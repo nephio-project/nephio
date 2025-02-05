@@ -24,4 +24,7 @@ vendor
 go.work
 go.work.sum
 lcov.info
+
+# go tools artifacts
 coverage_unit.html
+*-results.html
