@@ -23,7 +23,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
 	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
-	 golangci-lint run ./... -v --go=${GO_VERSION} --exclude-generated=true
+	 golangci-lint run ./... -v --go=${GO_VERSION}
 else
-	golangci-lint run ./... -v --go=${GO_VERSION} --exclude-generated=true
+	golangci-lint run ./... -v --go=${GO_VERSION}
 endif
