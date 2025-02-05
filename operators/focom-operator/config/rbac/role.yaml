@@ -1,0 +1,44 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - focomprovisioningrequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - focomprovisioningrequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - focomprovisioningrequests/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - provisioning.oran.org
+  resources:
+  - templateinfoes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

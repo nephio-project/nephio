@@ -1,0 +1,23 @@
+# permissions for end users to view focomprovisioningrequests.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: focom-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: focomprovisioningrequest-viewer-role
+rules:
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - focomprovisioningrequests
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - focomprovisioningrequests/status
+  verbs:
+  - get

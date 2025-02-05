@@ -1,0 +1,6 @@
+## Append samples of your project ##
+resources:
+- focom_v1alpha1_ocloud.yaml
+- focom_v1alpha1_focomprovisioningrequest.yaml
+- provisioning_v1alpha1_templateinfo.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

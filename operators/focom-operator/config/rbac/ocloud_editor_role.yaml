@@ -1,0 +1,27 @@
+# permissions for end users to edit oclouds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: focom-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: ocloud-editor-role
+rules:
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - oclouds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - oclouds/status
+  verbs:
+  - get

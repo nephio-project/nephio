@@ -1,0 +1,27 @@
+apiVersion: focom.nephio.org/v1alpha1
+kind: FocomProvisioningRequest
+metadata:
+  name: cluster1
+  namespace: eolm-focom # Optional but strongly recommended. If not specified, K8S deploys it into the "default" ns.
+                        # Also we can set the ns in the Kustomization, but then it's gitops engine dependent.
+spec:
+  name: "my cluster 1 provisioning request"
+  description: |
+    some longer description of this
+    provisioning reuest
+  oCloudId: "ocloud-1"
+  oCloudNamespace: eolm-focom
+  templateName: "red-hat-cluster-template"
+  templateVersion: "1.0.0"
+  templateParameters:
+    oCloudSiteId: "location1"
+    tags:
+      - "vendor=a"
+      - "location=location1"
+    inputData:
+      hw:
+        hwConfigParams: "some params"
+    caas:
+      siteConfigParams: "some params"
+      policyTemplateParams: "some params"
+

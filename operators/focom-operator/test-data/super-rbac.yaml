@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: access-clusterrolebindings
+rules:
+- apiGroups: ["provisioning.nephio.org"] # Specify the API group
+  resources: ["templateinfoes"] # Specify the resource
+  verbs: ["list", "get", "watch"] # Grant necessary permissions
+- apiGroups: ["*"] # Optionally keep access to all API groups
+  resources: ["*"] # All resources
+  verbs: ["*"] # Full access
+- nonResourceURLs: ["*"] # Grants access to non-resource endpoints. Use with caution.
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: access-clusterrolebindings-binding
+subjects:
+- kind: ServiceAccount
+  name: focom-operator-controller-manager
+  namespace: focom-operator-system # Ensure the namespace matches your setup
+roleRef:
+  kind: ClusterRole
+  name: access-clusterrolebindings
+  apiGroup: rbac.authorization.k8s.io
+
