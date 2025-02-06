@@ -1,5 +1,5 @@
 ###########################################################################
-# Copyright 2022-2025 The Nephio Authors.
+# Copyright 2025 The Nephio Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,14 @@ HTTPS_VERIFY = bool(os.getenv("HTTPS_VERIFY", False))
 TOKEN = os.getenv("TOKEN", "/var/run/secrets/kubernetes.io/serviceaccount/token")
 TOKEN = os.popen(f"cat {TOKEN}").read()
 KUBERNETES_BASE_URL = str(os.getenv("KUBERNETES_BASE_URL", "http://127.0.0.1:8080"))
-GIT_REPOSITORY = os.getenv("GIT_REPOSITORY", "catalog-infra-capi")
+UPSTREAM_PKG_REPO = os.getenv("UPSTREAM_PKG_REPO", "catalog-infra-capi")
+
+HEADERS_DICT = {
+    "Content-type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": "kopf o2ims operator/python",
+    "Authorization": "Bearer {}".format(TOKEN),
+}
 
 
 def create_package_variant(
@@ -59,27 +66,10 @@ def create_package_variant(
     :return: response
     :rtype: dict
     """
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "kopf o2ims operator/python",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
     if logger:
         logger.debug("create_package_variant")
-    try:
-        r = requests.get(
-            f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants/{name}",
-            headers=headers,
-            verify=HTTPS_VERIFY,
-        )
-    except Exception as e:
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if r.status_code in [200]:
-        response = {"status": True, "name": name}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404 and pv_param["create"]:
+    r = get_package_variant(name, namespace, logger)
+    if "reason" in r and r["reason"] == "notFound" and pv_param["create"]:
         pv_body = {
             "apiVersion": "config.porch.kpt.dev/v1alpha1",
             "kind": "PackageVariant",
@@ -105,7 +95,7 @@ def create_package_variant(
             )
         r = requests.post(
             f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants",
-            headers=headers,
+            headers=HEADERS_DICT,
             json=pv_body,
             verify=HTTPS_VERIFY,
         )
@@ -124,57 +114,12 @@ def create_package_variant(
             response = {"status": False, "reason": r.json()["message"]}
         else:
             response = {"status": False, "reason": r.json()}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": f"notFound"}
-    elif r.status_code == 500:
-        response = {"status": False, "reason": "k8sApi server is not reachable"}
+    elif r["status"] == True and "name" in r:
+        response = {"status": r["status"], "name": r["name"]}
     else:
-        response = {"status": False, "reason": r.json()}
+        response = {"status": r["status"], "reason": r["reason"]}
     if logger:
         logger.debug(response)
-    return response
-
-
-def delete_package_variant(name: str = None, namespace: str = None, logger=None):
-    """
-    :param name: name of the package variant
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
-    """
-
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "kopf o2ims operator/python",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
-
-    try:
-        r = requests.delete(
-            f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants/{name}",
-            headers=headers,
-            verify=HTTPS_VERIFY,
-        )
-    except Exception as e:
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if logger:
-        logger.debug(
-            "response of the request to delete package variant %s is %s"
-            % (r.request.url, r.json())
-        )
-    if r.status_code in [200, 202, 204]:
-        response = {"status": True, "name": name}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": "notFound"}
-    else:
-        response = {"status": False, "reason": r.json()}
     return response
 
 
@@ -189,18 +134,12 @@ def get_package_variant(name: str = None, namespace: str = None, logger=None):
     :return: response
     :rtype: dict
     """
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "kopf o2ims operator/python",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
     if logger:
         logger.debug("get package variant")
     try:
         r = requests.get(
             f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants/{name}",
-            headers=headers,
+            headers=HEADERS_DICT,
             verify=HTTPS_VERIFY,
         )
     except Exception as e:
@@ -218,112 +157,12 @@ def get_package_variant(name: str = None, namespace: str = None, logger=None):
         response = {"status": False, "reason": "unauthorized"}
     elif r.status_code == 404:
         response = {"status": False, "reason": f"notFound"}
+    elif r.status_code == 500:
+        response = {"status": False, "reason": "k8sApi server is not reachable"}
     else:
         response = {"status": False, "reason": r.json()}
     if logger:
         logger.debug("Status %s" % (response))
-    return response
-
-
-def get_package_revisions_for_package_variant(
-    name: str = None, namespace: str = None, logger=None
-):
-    """
-    :param name: cluster name
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
-    """
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
-    if logger:
-        logger.debug("get_package_revisions_for_package_variant")
-    try:
-        r = requests.get(
-            f"{KUBERNETES_BASE_URL}/apis/porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagerevisions",
-            headers=headers,
-            verify=HTTPS_VERIFY,
-        )
-    except Exception as e:
-        if logger:
-            logger.debug("get_packaage_revisions error: %s" % (e))
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if logger:
-        logger.debug(
-            f"response of the request {r.request.url} to get package revision is {r}"
-        )
-    if r.status_code in [200]:
-        pv_revs = r.json()
-        packages_lifecycle = []
-        for pv_rev in pv_revs["items"]:
-            if name in pv_rev["spec"]["packageName"]:
-                packages_lifecycle.append(
-                    {
-                        "name": pv_rev["metadata"]["name"],
-                        "lifecycle": pv_rev["spec"]["lifecycle"],
-                    }
-                )
-        response = {"status": True, "packages": packages_lifecycle}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": f"notFound"}
-    else:
-        response = {
-            "status": False,
-            "reason": f"Error in querying for package revision",
-        }
-    return response
-
-
-def delete_package_revision(name: str = None, namespace: str = None, logger=None):
-    """
-    :param name: name of the package variant
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: status
-    :return: response
-    :rtype: dict
-    """
-
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
-
-    try:
-        r = requests.delete(
-            f"{KUBERNETES_BASE_URL}/apis/porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagerevisions/{name}",
-            headers=headers,
-            verify=HTTPS_VERIFY,
-        )
-    except Exception as e:
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if logger:
-        logger.debug(
-            "response of the request to delete package revision %s is %s"
-            % (r.request.url, r.json())
-        )
-    if r.status_code in [200, 202, 204]:
-        response = {"status": True, "name": name}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": "notFound"}
-    else:
-        response = {"status": False, "reason": r.json()}
-
     return response
 
 
@@ -340,19 +179,13 @@ def check_o2ims_provisioning_request(
     :return: response
     :rtype: dict
     """
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
-
     if logger:
         logger.debug("get_capi_cluster")
 
     try:
         r = requests.get(
             f"{KUBERNETES_BASE_URL}/apis/o2ims.provisioning.oran.org/v1alpha1/provisioningrequests",
-            headers=headers,
+            headers=HEADERS_DICT,
             verify=HTTPS_VERIFY,
         )
     except Exception as e:
@@ -405,18 +238,13 @@ def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
     :return: response
     :rtype: dict
     """
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer {}".format(TOKEN),
-    }
     if logger:
         logger.debug("get_capi_cluster")
 
     try:
         r = requests.get(
             f"{KUBERNETES_BASE_URL}/apis/cluster.x-k8s.io/v1beta1/namespaces/{namespace}/clusters/{name}",
-            headers=headers,
+            headers=HEADERS_DICT,
             verify=HTTPS_VERIFY,
         )
     except Exception as e:

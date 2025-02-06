@@ -1,5 +1,5 @@
 ###########################################################################
-# Copyright 2022-2025 The Nephio Authors.
+# Copyright 2025 The Nephio Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ def cluster_creation_request(
     """
 
     # Git repository location
-    repo_location = GIT_REPOSITORY
+    repo_location = UPSTREAM_PKG_REPO
     # Add validation for clusterName
     cluster_name = params["clusterName"]
     params.pop("clusterName")

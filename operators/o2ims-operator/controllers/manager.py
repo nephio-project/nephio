@@ -1,5 +1,5 @@
 ###########################################################################
-# Copyright 2022-2025 The Nephio Authors.
+# Copyright 2025 The Nephio Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -126,7 +126,6 @@ async def create_fn(spec, logger, status, patch: kopf.Patch, memo: kopf.Memo, **
 
     if creation_request_output["provisioningState"] == "failed":
         raise kopf.PermanentError("Cluster creation permanently failed")
-        return
 
     @kopf.subhandler()
     def sub_creation(*, patch, **kwargs):

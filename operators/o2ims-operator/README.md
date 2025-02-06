@@ -54,11 +54,10 @@ curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercon
 #### Non-containerized Development Environment
 
 ```bash
+kubectl create -f tests/deployment/sa-test-pod.yaml
 kubectl exec -it -n porch-system porch-sa-test -- cat /var/run/secrets/kubernetes.io/serviceaccount/token &> /tmp/porch-token
-# Get the CRD from the Nephio API repo and place it in o2ims-operator/config/crd/bases/
-curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
-## Create CRD
-kubectl create -f ./config/crd/bases
+# Create the CRD from the Nephio API repo
+kubectl create -f https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
 export TOKEN=/tmp/porch-token 
 # Exposing the Kube proxy for development after killing previous proxy sessions
 pkill kubectl
@@ -82,7 +81,7 @@ kind load docker-image o2ims:latest -n mgmt
 Deploy the O2 IMS operator:
 
 ```bash
-kubectl -f tests/deployment/operator.yaml
+kubectl create -f tests/deployment/operator.yaml
 ```
 
 ### To Start the Operator: 

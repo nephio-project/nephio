@@ -6,7 +6,7 @@ networking:
   serviceSubnet: "10.97.0.0/16"
 nodes:
 - role: control-plane
-  image: kindest/node:v1.27.1
+  image: kindest/node:v1.31.0
   extraMounts:
   - hostPath: /var/run/docker.sock
     containerPath: /var/run/docker.sock

@@ -1,5 +1,5 @@
 ###########################################################################
-# Copyright 2022-2025 The Nephio Authors.
+# Copyright 2025 The Nephio Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ spec:
 #        command: ["sleep","10000"]
         imagePullPolicy: IfNotPresent
         env:
-          - name: 'GIT_REPOSITORY'
+          - name: 'UPSTREAM_PKG_REPO'
             value: 'catalog-infra-capi'
           - name: 'KUBERNETES_BASE_URL'
             value: 'https://kubernetes.default.svc'
@@ -110,12 +110,6 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "100m"
-        # livenessProbe:
-        #   httpGet:
-        #     path: /healthz
-        #     port: 8080
-        #   initialDelaySeconds: 2
-        #   periodSeconds: 5
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       serviceAccountName: o2ims-operator
