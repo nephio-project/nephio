@@ -232,3 +232,35 @@ do
  kpt alpha rpkg delete $pkg -ndefault
 done
 ```
+
+## Unit Testing
+
+Unit tests are contained in the `tests` directory, and are intended to test pieces of the O2IMS Operator in the `controllers` directory. Currently unit tests are not comprehensive, but provide expected coverage of core utility components. 
+
+Prior to running the tests, install the requirements:
+```bash
+pip3 install -r ./tests/unit_test_requirements.txt
+```
+
+To run all tests in `test_utils.py` with abridged output:
+ ```bash
+pytest ./tests/test_utils.py
+```
+
+Output:
+```bash
+==================================================================== test session starts ====================================================================
+platform linux -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: /home/dkosteck/Documents/nephio/operators/o2ims-operator
+collected 61 items                                                                                                                                          
+
+tests/test_utils.py .............................................................                                                                     [100%]
+
+==================================================================== 61 passed in 0.14s =====================================================================
+
+```
+
+To run with verbose output (showing individual test results):
+ ```bash
+pytest -v ./tests/test_utils.py
+```
