@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"testing"
 
 	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
@@ -37,15 +38,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
+const (
+	ORAN_PROV_REQ_CRD_PATH = "../../test-data/"
+	ORAN_PROV_REQ_CRD_FILE = "o2ims.provisioning.oran.org_provisioningrequests.yaml"
+)
+
 // TestIntegrationBuildRemoteClient_CreateProvisioningRequest tests building a remote client
 // that attempts discovery on a real ephemeral EnvTest server.
-func TestIntegrationBuildRemoteClient_CreateProvisioningRequest(t *testing.T) {
+func TestIntegrationBuildRemoteClientCreateProvisioningRequest(t *testing.T) {
+
+	// get the o2ims provrequest CRD
+    err := fetchCRDFromRepo()
+	require.NoError(t, err, "failed to fetch o2ims.provrequest CRD")
+
 	// 1. Start an EnvTest environment for the "remote" cluster
 	remoteEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			// Path(s) to the CRDs for your "remote" cluster
 			"../../config/crd/bases",
-			"../../oran-provisioning-crd",
+			ORAN_PROV_REQ_CRD_PATH,
 		},
 	}
 
@@ -155,6 +166,9 @@ func TestIntegrationBuildRemoteClient_CreateProvisioningRequest(t *testing.T) {
 	// ... set more fields if needed
 	err = remoteCl.Create(context.Background(), remoteObj)
 	require.NoError(t, err, "should succeed creating the resource in remote envtest cluster")
+
+	removeCRDsFromLocal()
+	require.NoError(t, err, "failed to clen up afetr test")
 }
 
 // kubeconfigFromEnvTestConfig builds a minimal kubeconfig from an EnvTest *rest.Config
@@ -196,4 +210,23 @@ func kubeconfigFromEnvTestConfig(cfg *rest.Config) ([]byte, error) {
 		CurrentContext: contextName,
 	}
 	return clientcmd.Write(apiCfg)
+}
+
+// A function to pull CRDs from another repo (e.g., a remote GitHub repository)
+func fetchCRDFromRepo() error {
+    // Get the CRD from github
+    cmd := exec.Command("curl", "-o", ORAN_PROV_REQ_CRD_PATH + ORAN_PROV_REQ_CRD_FILE,
+	"https://raw.githubusercontent.com/nephio-project/api/main/config/crd/bases/" + ORAN_PROV_REQ_CRD_FILE)
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("failed to fetch CRD from GitHub: %w", err)
+    }
+    return nil
+}
+
+func removeCRDsFromLocal() error {
+    cmd := exec.Command("rm", "-f", ORAN_PROV_REQ_CRD_PATH + ORAN_PROV_REQ_CRD_FILE)
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("failed to remove CRD from local: %w", err)
+    }
+    return nil
 }
