@@ -48,7 +48,7 @@ const (
 func TestIntegrationBuildRemoteClientCreateProvisioningRequest(t *testing.T) {
 
 	// get the o2ims provrequest CRD
-    err := fetchCRDFromRepo()
+	err := fetchCRDFromRepo()
 	require.NoError(t, err, "failed to fetch o2ims.provrequest CRD")
 
 	// 1. Start an EnvTest environment for the "remote" cluster
@@ -214,19 +214,19 @@ func kubeconfigFromEnvTestConfig(cfg *rest.Config) ([]byte, error) {
 
 // A function to pull CRDs from another repo (e.g., a remote GitHub repository)
 func fetchCRDFromRepo() error {
-    // Get the CRD from github
-    cmd := exec.Command("curl", "-o", ORAN_PROV_REQ_CRD_PATH + ORAN_PROV_REQ_CRD_FILE,
-	"https://raw.githubusercontent.com/nephio-project/api/main/config/crd/bases/" + ORAN_PROV_REQ_CRD_FILE)
-    if err := cmd.Run(); err != nil {
-        return fmt.Errorf("failed to fetch CRD from GitHub: %w", err)
-    }
-    return nil
+	// Get the CRD from github
+	cmd := exec.Command("curl", "-o", ORAN_PROV_REQ_CRD_PATH+ORAN_PROV_REQ_CRD_FILE,
+		"https://raw.githubusercontent.com/nephio-project/api/main/config/crd/bases/"+ORAN_PROV_REQ_CRD_FILE)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to fetch CRD from GitHub: %w", err)
+	}
+	return nil
 }
 
 func removeCRDsFromLocal() error {
-    cmd := exec.Command("rm", "-f", ORAN_PROV_REQ_CRD_PATH + ORAN_PROV_REQ_CRD_FILE)
-    if err := cmd.Run(); err != nil {
-        return fmt.Errorf("failed to remove CRD from local: %w", err)
-    }
-    return nil
+	cmd := exec.Command("rm", "-f", ORAN_PROV_REQ_CRD_PATH+ORAN_PROV_REQ_CRD_FILE)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to remove CRD from local: %w", err)
+	}
+	return nil
 }
