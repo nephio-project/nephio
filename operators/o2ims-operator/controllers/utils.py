@@ -26,7 +26,6 @@ TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 KUBERNETES_TYPE = str(os.getenv("KUBERNETES_TYPE", "vanilla")).lower()
 # Labels to put inside the owned resources
 LABEL = {"owner": "o2ims.provisioning.oran.org.provisioningrequests"}
-
 # Log level of the controller
 LOG_LEVEL = str(os.getenv("LOG_LEVEL", "INFO"))
 # To verify HTTPs certificates when communicating with cluster
@@ -40,9 +39,11 @@ UPSTREAM_PKG_REPO = os.getenv("UPSTREAM_PKG_REPO", "catalog-infra-capi")
 HEADERS_DICT = {
     "Content-type": "application/json",
     "Accept": "application/json",
-    "User-Agent": "kopf o2ims operator/python",
+    "User-Agent": "kopf_o2ims_operator/python",
     "Authorization": "Bearer {}".format(TOKEN),
 }
+CLUSTER_PROVISIONER = str(os.getenv("CLUSTER_PROVISIONER", "capi"))
+CREATION_TIMEOUT = int(os.getenv("CREATION_TIMEOUT", 1800))
 
 
 def create_package_variant(
@@ -112,6 +113,8 @@ def create_package_variant(
             response = {"status": False, "reason": "notFound"}
         elif r.status_code == 400:
             response = {"status": False, "reason": r.json()["message"]}
+        elif r.status_code == 500:
+            response = {"status": False, "reason": "k8sApi server is not reachable"}
         else:
             response = {"status": False, "reason": r.json()}
     elif r["status"] == True and "name" in r:
@@ -217,6 +220,8 @@ def check_o2ims_provisioning_request(
             name=name, namespace=namespace, logger=logger
         )
         response.update({"pv": creation_status["status"]})
+    elif r.status_code == 500:
+        response = {"status": False, "reason": "k8sApi server is not reachable"}
     else:
         response = {
             "status": False,
@@ -257,6 +262,8 @@ def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
         response = {"status": False, "reason": "unauthorized"}
     elif r.status_code == 404:
         response = {"status": False, "reason": "notFound"}
+    elif r.status_code == 500:
+        response = {"status": False, "reason": "k8sApi server is not reachable"}
     else:
         response = {
             "status": False,

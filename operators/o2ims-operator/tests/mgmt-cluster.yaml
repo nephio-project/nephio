@@ -1,6 +1,6 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: mgmt
+name: o2ims-mgmt
 networking:
   podSubnet: "10.196.0.0/16"
   serviceSubnet: "10.97.0.0/16"

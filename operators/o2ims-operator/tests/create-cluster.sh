@@ -2,9 +2,11 @@
 
 ## A script to create a kind cluster for testing the operator
 set -eo pipefail
-NEPHIO_TAG=main #v3.0.0
+NEPHIO_TAG=main
 kpt_dir=/tmp
 CATALOG_REPO=https://github.com/nephio-project/catalog.git
+
+echo "------Deploying Nephio components from tag $NEPHIO_TAG------"
 
 # Create a kpt package
 create_kpt_package() {
@@ -17,9 +19,9 @@ create_kpt_package() {
 }
 
 ## Always delete the cluster 
-kind delete cluster -n mgmt || true
+kind delete cluster -n o2ims-mgmt || true
 kind create cluster --config="$(dirname "$0")"/mgmt-cluster.yaml --wait 5m
-kubectl cluster-info --context kind-mgmt
+kubectl cluster-info --context kind-o2ims-mgmt
 
 # Gitea
 create_kpt_package $CATALOG_REPO/distros/sandbox/gitea@origin gitea

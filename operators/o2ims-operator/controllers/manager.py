@@ -14,16 +14,13 @@
 # limitations under the License.
 ##########################################################################
 
-from utils import LOG_LEVEL
+from utils import LOG_LEVEL, CLUSTER_PROVISIONER, CREATION_TIMEOUT
 from provisioning_request_controller import *
 from provisioning_request_validation_controller import *
 from datetime import datetime
 import logging
 import kopf
 import os
-
-CLUSTER_PROVISIONER = str(os.getenv("CLUSTER_PROVISIONER", "capi"))
-CREATION_TIMEOUT = int(os.getenv("CREATION_TIMEOUT", 1800))
 
 
 @kopf.on.startup()
@@ -157,21 +154,3 @@ async def create_fn(spec, logger, status, patch: kopf.Patch, memo: kopf.Memo, **
 def get_current_timestamp(**kwargs):
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-
-## TODO
-# @kopf.timer(f"o2ims.provisioning.oran.org","provisioningrequests", initial_delay=30, interval=30.0, idle=100)
-# def reconcile_fn(spec, namespace, logger, patch, **kwargs):
-#     #fetch the current cm
-#     pass
-
-## TODO
-# @kopf.on.delete(f"o2ims.provisioning.oran.org","provisioningrequests",optional=True)
-# def delete_fn(spec, name, namespace, logger, **kwargs):
-#     #Delete deployment
-#     pass
-
-## TODO
-# @kopf.on.update(f"o2ims.provisioning.oran.org","provisioningrequests")
-# def update_fn(diff, spec, namespace, logger, patch, **kwargs):
-#     ## rejecting metadata related changes
-#     pass

@@ -6,7 +6,7 @@ This operator implements O-RAN O2 IMS for K8s based cloud management.
 
 ### Development Requirements:
 
-- Python3.10
+- Python3.11
 - requirements.txt installed in development environment
 
 ### Nephio Management Cluster Requirements:
@@ -32,10 +32,10 @@ It will also configure a secret which the operator can use for development purpo
 ```bash
 # Get the repository
 git clone https://github.com/nephio-project/nephio.git
-cd o2ims-operator
+cd operators/o2ims-operator
 # Create a virtual environment
 virtualenv venv -p python3
-source venv
+source venv/bin/activate
 # Install requirements
 pip install -r requirements.txt
 # Set kernel parameters (run these commands after system restart or when new VM/system is created)
@@ -43,10 +43,14 @@ sudo sysctl -w fs.inotify.max_user_watches=524288
 sudo sysctl -w fs.inotify.max_user_instances=512
 sudo sysctl -w kernel.keys.maxkeys=500000
 sudo sysctl -w kernel.keys.maxbytes=1000000
-# Get the CRD from the Nephio API repo and place it in o2ims-operator/config/crd/bases/
-curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
 # Run the create-cluster.sh script to create the mgmt cluster and development environment
 ./tests/create-cluster.sh
+```
+
+Operator CRD is can be fetched via below command, though the above cluster creation script automatically fetches and apply this CRD.
+
+```bash
+curl --create-dirs -O --output-dir ./config/crd/bases/ https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
 ```
 
 ### Existing Nephio mgmt Cluster
@@ -75,13 +79,19 @@ docker build -t o2ims:latest -f Dockerfile .
 Push this image in your cluster, here we are using a `kind` cluster so we will push using the below command:
 
 ```bash
-kind load docker-image o2ims:latest -n mgmt
+kind load docker-image o2ims:latest -n o2ims-mgmt
 ```
+
+`NOTE`: `o2ims-mgmt` is the name of the kind cluster. It is good to mention cluster name if you have multiple clusters.
 
 Deploy the O2 IMS operator:
 
 ```bash
-kubectl create -f tests/deployment/operator.yaml
+kpt pkg get --for-deployment https://github.com/nephio-project/catalog.git
+/nephio/optional/o2ims@origin/main /tmp/o2ims
+kpt fn render /tmp/o2ims
+kpt live init /tmp/o2ims
+kpt live apply /tmp/o2ims --reconcile-timeout=15m --output=table
 ```
 
 ### To Start the Operator: 
@@ -96,7 +106,11 @@ kopf run controllers/manager.py
 Open another terminal to provision a cluster:
 
 ```bash
-kubectl create -f tests/sample_provisioning_request.yaml
+kpt pkg get --for-deployment https://github.com/nephio-project/catalog.git
+/nephio/optional/o2ims@origin/main /tmp/o2ims
+kpt fn render /tmp/o2ims
+kpt live init /tmp/o2ims
+kpt live apply /tmp/o2ims --reconcile-timeout=15m --output=table
 ```
 
 ### Redeploying
@@ -114,7 +128,7 @@ O2IMS operator listens for ProvisioningRequest CR and once it is created it goes
 1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controllers/provisioning_request_validation_controller.py) validates the provisioning requests. Currently it checks if the field `clusterName` and `clusterProvisioner`. At the moment only `capi` handled clusters are support
 2. `ProvisioningRequest creation`: The controller [provisioning_request_controller.py](./controllers/provisioning_request_controller.py) takes care of creating the a package variant for Porch which can be applied to the cluster where porch is running. After applying package variant it waits for the cluster to be created and it follows the creation via querying `clusters.cluster.x-k8s.io` endpoint. Later we will add querying of packageRevisions also but at the moment their is a problem with querying packageRevisions because sometimes Porch is not able to process the request
 
-Output of a **Success workflow**:
+Output of a **Successful workflow**:
 
 <details>
 <summary>The output is similar to:</summary>
@@ -157,6 +171,38 @@ status:
 ```
 
 </details>
+
+## Unit Testing
+
+Unit tests are contained in the `tests` directory, and are intended to test pieces of the O2IMS Operator in the `controllers` directory. Currently unit tests are not comprehensive, but provide expected coverage of core utility components.
+
+Prior to running the tests, install the requirements:
+```bash
+pip3 install -r ./tests/unit_test_requirements.txt
+```
+
+To run all tests in `test_utils.py` with abridged output:
+ ```bash
+pytest ./tests/test_utils.py
+```
+
+Output:
+```bash
+==================================================================== test session starts ====================================================================
+platform linux -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
+rootdir: /home/dkosteck/Documents/nephio/operators/o2ims-operator
+collected 61 items
+
+tests/test_utils.py .............................................................                                                                     [100%]
+
+==================================================================== 61 passed in 0.14s =====================================================================
+
+```
+
+To run with verbose output (showing individual test results):
+ ```bash
+pytest -v ./tests/test_utils.py
+```
 
 ## Known issues
 
@@ -230,36 +276,4 @@ do
  kpt alpha rpkg propose-delete $pkg -ndefault
  kpt alpha rpkg delete $pkg -ndefault
 done
-```
-
-## Unit Testing
-
-Unit tests are contained in the `tests` directory, and are intended to test pieces of the O2IMS Operator in the `controllers` directory. Currently unit tests are not comprehensive, but provide expected coverage of core utility components. 
-
-Prior to running the tests, install the requirements:
-```bash
-pip3 install -r ./tests/unit_test_requirements.txt
-```
-
-To run all tests in `test_utils.py` with abridged output:
- ```bash
-pytest ./tests/test_utils.py
-```
-
-Output:
-```bash
-==================================================================== test session starts ====================================================================
-platform linux -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
-rootdir: /home/dkosteck/Documents/nephio/operators/o2ims-operator
-collected 61 items                                                                                                                                          
-
-tests/test_utils.py .............................................................                                                                     [100%]
-
-==================================================================== 61 passed in 0.14s =====================================================================
-
-```
-
-To run with verbose output (showing individual test results):
- ```bash
-pytest -v ./tests/test_utils.py
 ```

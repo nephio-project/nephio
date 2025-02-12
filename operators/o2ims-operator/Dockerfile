@@ -14,12 +14,12 @@
 # limitations under the License.
 ##########################################################################
 
-FROM python:3.11-alpine3.17 AS builder
+FROM python:3.12.9-alpine3.21 AS builder
 COPY controllers/ /src/
 COPY requirements.txt /
 RUN pip install --user -r /requirements.txt --no-cache-dir
 ############### Target
-FROM python:3.11-alpine3.17 AS target
+FROM python:3.12.9-alpine3.21 AS target
 COPY --from=builder /root/.local \
                    /src/ \
                   /root/.local
