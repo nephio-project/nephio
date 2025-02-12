@@ -5,6 +5,14 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests
@@ -30,6 +38,14 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - focom.nephio.org
+  resources:
+  - oclouds
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - provisioning.oran.org
   resources:

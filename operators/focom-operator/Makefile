@@ -200,7 +200,7 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: build-k8s-deployment
 build-k8s-deployment: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default > kpt-package/focom-operator.yaml
+	$(KUSTOMIZE) build config/default > kpt-package/focom-operator-bundle.yaml
 
 
 .PHONY: undeploy

@@ -41,10 +41,12 @@ type FocomProvisioningRequestReconciler struct {
 // Finalizer used for deleting remote CR
 const focomFinalizer = "focom.nephio.org/finalizer"
 
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds,verbs=get;list;watch
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
