@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: o2ims-mgmt
+networking:
+  podSubnet: "10.196.0.0/16"
+  serviceSubnet: "10.97.0.0/16"
+nodes:
+- role: control-plane
+  image: kindest/node:v1.31.0
+  extraMounts:
+  - hostPath: /var/run/docker.sock
+    containerPath: /var/run/docker.sock
