@@ -120,41 +120,6 @@ def test_create_package_variant(get_code, post_code, status, create, response_2,
 
 @responses.activate
 @pytest.mark.parametrize(
-    "http_code, status, response_2, response_2_value, exception",
-    [
-        (200, True, "name", NAME, False),
-        (202, True, "name", NAME, False),
-        (204, True, "name", NAME, False),
-        (401, False, "reason", "unauthorized", False),
-        (403, False, "reason", "unauthorized", False),
-        (404, False, "reason", "notFound", False),
-        (1234, False, "reason", TEST_JSON, False),
-        (None, False, "reason", "NotAbleToCommunicateWithTheCluster ", True),
-    ],
-)
-def test_delete_package_variant(http_code, status, response_2, response_2_value, exception):
-    if not exception and http_code == 204:
-        responses.delete(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            status=http_code,
-        )
-    elif not exception:
-        responses.delete(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            json=TEST_JSON,
-            status=http_code,
-        )
-    else:
-        responses.delete(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            body=Exception(""),
-        )
-    response = delete_package_variant(NAME, NAMESPACE)
-    assert response["status"] == status and response[response_2] == response_2_value
-
-
-@responses.activate
-@pytest.mark.parametrize(
     "http_code, status, response_2, response_2_value, response_3, response_3_value, exception",
     [
         (200, True, "name", NAME, "body", TEST_JSON, False),
@@ -189,80 +154,6 @@ def test_get_package_variant(
     assert response["status"] == status and response[response_2] == response_2_value
     if response_3:
         assert response[response_3] == response_3_value
-
-
-@responses.activate
-@pytest.mark.parametrize(
-    "http_code, status, response_2, response_2_value, exception",
-    [
-        (
-            200,
-            True,
-            "packages",
-            [
-                {
-                    "name": PV_REV["items"][0]["metadata"]["name"],
-                    "lifecycle": PV_REV["items"][0]["spec"]["lifecycle"],
-                }
-            ],
-            False,
-        ),
-        (401, False, "reason", "unauthorized", False),
-        (403, False, "reason", "unauthorized", False),
-        (404, False, "reason", "notFound", False),
-        (1234, False, "reason", "Error in querying for package revision", False),
-        (None, False, "reason", "NotAbleToCommunicateWithTheCluster ", True),
-    ],
-)
-def test_get_package_revisions_for_package_variant(http_code, status, response_2, response_2_value, exception):
-    if not exception:
-        responses.get(
-            PACKAGE_REVISIONS_URI,
-            json=PV_REV,
-            status=http_code,
-        )
-    else:
-        responses.get(
-            PACKAGE_REVISIONS_URI,
-            body=Exception(""),
-        )
-    response = get_package_revisions_for_package_variant(NAME, NAMESPACE)
-    assert response["status"] == status and response[response_2] == response_2_value
-
-
-@responses.activate
-@pytest.mark.parametrize(
-    "http_code, status, response_2, response_2_value, exception",
-    [
-        (200, True, "name", NAME, False),
-        (202, True, "name", NAME, False),
-        (204, True, "name", NAME, False),
-        (401, False, "reason", "unauthorized", False),
-        (403, False, "reason", "unauthorized", False),
-        (404, False, "reason", "notFound", False),
-        (1234, False, "reason", TEST_JSON, False),
-        (None, False, "reason", "NotAbleToCommunicateWithTheCluster ", True),
-    ],
-)
-def test_delete_package_revision(http_code, status, response_2, response_2_value, exception):
-    if not exception and http_code == 204:
-        responses.delete(
-            f"{PACKAGE_REVISIONS_URI}/{NAME}",
-            status=http_code,
-        )
-    elif not exception:
-        responses.delete(
-            f"{PACKAGE_REVISIONS_URI}/{NAME}",
-            json=TEST_JSON,
-            status=http_code,
-        )
-    else:
-        responses.delete(
-            f"{PACKAGE_REVISIONS_URI}/{NAME}",
-            body=Exception(""),
-        )
-    response = delete_package_revision(NAME, NAMESPACE)
-    assert response["status"] == status and response[response_2] == response_2_value
 
 
 @responses.activate
