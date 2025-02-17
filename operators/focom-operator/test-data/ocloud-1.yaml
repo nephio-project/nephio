@@ -1,0 +1,13 @@
+apiVersion: focom.nephio.org/v1alpha1
+kind: OCloud
+metadata:
+  name: ocloud-1
+  namespace: eolm-focom # Optional but strongly recommended. If not specified, K8S deploys it into the "default" ns.
+                        # Also we can set the ns in the Kustomization, but then it's gitops engine dependent.
+
+spec:
+  o2imsSecret:
+    secretRef:  # a pattern from Flux and cluster reg.
+      name: ocloud-1-o2ims-endpoint
+      namespace: eolm-focom # Optional, defaults to the same namespace
+

@@ -1,0 +1,8 @@
+apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: focom-operator
+  annotations:
+    config.kubernetes.io/local-config: "true"
+info:
+  description: FOCOM Operator for Nephio

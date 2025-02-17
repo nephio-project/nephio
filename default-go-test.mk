@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-GO_VERSION ?= 1.22.2
 TEST_COVERAGE_FILE=lcov.info
 TEST_COVERAGE_HTML_FILE=coverage_unit.html
 TEST_COVERAGE_FUNC_FILE=func_coverage.out
@@ -28,7 +26,7 @@ unit: test
 .PHONY: test
 test: ## Run unit tests (go test)
 ifeq ($(CONTAINER_RUNNABLE), 0)
-		$(RUN_CONTAINER_COMMAND) docker.io/library/golang:${GO_VERSION}-alpine3.19 \
+		$(RUN_CONTAINER_COMMAND) docker.io/nephio/gotests:1885274380137664512 \
          sh -e -c "go test ./... -v -coverprofile ${TEST_COVERAGE_FILE}; \
          go tool cover -html=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_HTML_FILE}; \
          go tool cover -func=${TEST_COVERAGE_FILE} -o ${TEST_COVERAGE_FUNC_FILE}"

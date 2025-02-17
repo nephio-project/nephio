@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: provisioningrequest-access
+rules:
+- apiGroups: ["o2ims.provisioning.oran.org"]
+  resources: ["provisioningrequests"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: provisioningrequest-access-binding
+subjects:
+- kind: ServiceAccount
+  name: controller-manager
+  namespace: system
+roleRef:
+  kind: ClusterRole
+  name: provisioningrequest-access
+  apiGroup: rbac.authorization.k8s.io
+

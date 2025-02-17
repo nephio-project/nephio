@@ -17,8 +17,8 @@ limitations under the License.
 package condkptsdk
 
 import (
+	"errors"
 	"fmt"
-
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -100,9 +100,10 @@ func (r *sdk) Run() (bool, error) {
 	kfko := r.rl.Items.GetRootKptfile()
 	if kfko == nil {
 		msg := "mandatory Kptfile is missing from the package"
-		fn.Log(msg)
-		r.rl.Results.Errorf(msg)
-		return false, fmt.Errorf(msg)
+		err := errors.New(msg)
+		fn.Logf("%s, error: %s\n", msg, err.Error())
+		r.rl.Results.Errorf("%s, error: %s\n", msg, err.Error())
+		return false, fmt.Errorf(err.Error(), msg)
 	}
 	r.kptfile = kptfilelibv1.KptFile{Kptfile: kfko}
 

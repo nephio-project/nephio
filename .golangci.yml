@@ -1,9 +1,12 @@
 run:
+  build-tags:
+    - "-buildvcs=false"
   timeout: 10m
 
 issues:
   exclude-dirs:
     - "vendor"
+    - "test"
 
   exclude-files:
     - ".*\\_test.go$"
