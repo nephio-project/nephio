@@ -73,13 +73,13 @@ nohup kubectl proxy --port 8080 &>/dev/null &
 Build a Docker image: 
 
 ```bash
-docker build -t o2ims:latest -f Dockerfile .
+docker build -t o2ims-operator:latest -f Dockerfile .
 ```
 
 Push this image in your cluster, here we are using a `kind` cluster so we will push using the below command:
 
 ```bash
-kind load docker-image o2ims:latest -n o2ims-mgmt
+kind load docker-image o2ims-operator:latest -n o2ims-mgmt
 ```
 
 `NOTE`: `o2ims-mgmt` is the name of the kind cluster. It is good to mention cluster name if you have multiple clusters.
