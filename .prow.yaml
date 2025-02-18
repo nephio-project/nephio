@@ -105,7 +105,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/workspace/nephio_build/ --dockerfile=operators/nephio-controller-manager/Dockerfile --destination=nephio/nephio-operator:${BUILD_ID} --destination=nephio/nephio-operator:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=operators/nephio-controller-manager/Dockerfile --destination=nephio/nephio-operator:${BUILD_ID} --destination=nephio/nephio-operator:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
