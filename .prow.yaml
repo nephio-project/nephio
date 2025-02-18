@@ -105,7 +105,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/workspace/nephio_build/ --dockerfile=operators/nephio-controller-manager/Dockerfile --destination=nephio/nephio-operator:${BUILD_ID} --destination=nephio/nephio-operator:latest
+          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=operators/nephio-controller-manager/Dockerfile --destination=nephio/nephio-operator:${BUILD_ID} --destination=nephio/nephio-operator:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
@@ -145,7 +145,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=operators/o2ims-operator/Dockerfile --destination=nephio/o2ims-operator:${BUILD_ID} --destination=nephio/o2ims-operator:latest
+          executor --context=/home/prow/go/src/nephio_build/operators/o2ims-operator/ --dockerfile=Dockerfile --destination=nephio/o2ims-operator:${BUILD_ID} --destination=nephio/o2ims-operator:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
@@ -185,7 +185,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/ --dockerfile=operators/focom-operator/Dockerfile --destination=nephio/focom-operator:${BUILD_ID} --destination=nephio/focom-operator:latest
+          executor --context=/home/prow/go/src/nephio_build/operators/focom-operator/ --dockerfile=Dockerfile --destination=nephio/focom-operator:${BUILD_ID} --destination=nephio/focom-operator:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
