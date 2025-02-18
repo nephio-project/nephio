@@ -18,7 +18,6 @@ package spirebootstrap
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -26,7 +25,6 @@ import (
 	"github.com/nephio-project/nephio/controllers/pkg/cluster"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
-	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -34,7 +32,6 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -220,158 +217,4 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *kubernetes.Clientset, clustername string) (*v1.ConfigMap, error) {
-	log := log.FromContext(ctx)
-
-	log.Info("Creating Kubeconfig ConfigMap for the cluster", "clusterName", clustername)
-
-	cmName := types.NamespacedName{Name: "kubeconfigs", Namespace: "spire"}
-	restrictedKC := &v1.ConfigMap{}
-	err := r.Get(ctx, cmName, restrictedKC)
-	if err != nil {
-		msg := "failed to get existing ConfigMap"
-		log.Error(err, msg)
-		return nil, errors.Wrap(err, msg)
-	}
-
-	// Retrieve the ServiceAccount token
-	secret, err := clientset.CoreV1().Secrets("spire").Get(ctx, "agent-sa-secret", metav1.GetOptions{})
-	if err != nil {
-		msg := "failed to get Service Account token"
-		log.Error(err, msg)
-		return nil, errors.Wrap(err, msg)
-	}
-	token := string(secret.Data["token"])
-
-	// Retrieve the cluster's CA certificate
-	configMap, err := clientset.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-root-ca.crt", metav1.GetOptions{})
-	if err != nil {
-		msg := "failed to get cluster CA"
-		log.Error(err, msg)
-		return nil, errors.Wrap(err, msg)
-	}
-	caCert := configMap.Data["ca.crt"]
-	caCertEncoded := strings.TrimSpace(base64.StdEncoding.EncodeToString([]byte(caCert)))
-
-	config := KubernetesConfig{
-		APIVersion: "v1",
-		Kind:       "Config",
-		Clusters: []Cluster{
-			{
-				Name: clustername,
-				Cluster: ClusterDetail{
-					CertificateAuthorityData: caCertEncoded,
-					Server:                   clientset.RESTClient().Get().URL().String(),
-				},
-			},
-		},
-		Contexts: []Context{
-			{
-				Name: "spire-kubeconfig@" + clustername,
-				Context: ContextDetails{
-					Cluster:   clustername,
-					Namespace: "spire",
-					User:      spirekubeconfig,
-				},
-			},
-		},
-		Users: []User{
-			{
-				Name: spirekubeconfig,
-				User: UserDetail{
-					Token: token,
-				},
-			},
-		},
-		CurrentContext: "spire-kubeconfig@" + clustername,
-	}
-
-	// Convert to YAML
-	yamlData, err := yaml.Marshal(&config)
-	if err != nil {
-		msg := "failed to create kubeconfig CM"
-		log.Error(err, msg)
-		return nil, errors.Wrap(err, msg)
-	}
-
-	// Generate a unique key for the new kubeconfig
-	newConfigKey := fmt.Sprintf("kubeconfig-%s", clustername)
-
-	// Add the new kubeconfig to the existing ConfigMap
-	if restrictedKC.Data == nil {
-		restrictedKC.Data = make(map[string]string)
-	}
-	restrictedKC.Data[newConfigKey] = string(yamlData)
-
-	log.Info("Kubeconfig added to the ConfigMap successfully", "clusterName", clustername)
-
-	return restrictedKC, nil
-}
-
-func (r *reconciler) updateClusterListConfigMap(ctx context.Context, clusterName string) error {
-	log := log.FromContext(ctx)
-
-	log.Info("Updating Cluster List...", "ClusterName", clusterName)
-
-	// Get the ConfigMap
-	cm := &v1.ConfigMap{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: "spire",
-		Name:      "clusters",
-	}, cm); err != nil {
-		msg := "failed to create kubeconfig CM"
-		log.Error(err, msg)
-		return errors.Wrap(err, msg)
-	}
-
-	// Get the clusters.conf data
-	clustersConf, ok := cm.Data["clusters.conf"]
-	if !ok {
-		// Initialize with basic structure if not exists
-		clustersConf = "clusters = {\n}"
-	}
-
-	// Remove any initial whitespace if present
-	clustersConf = strings.TrimPrefix(clustersConf, "|")
-	clustersConf = strings.TrimSpace(clustersConf)
-
-	// Check if cluster already exists
-	if strings.Contains(clustersConf, fmt.Sprintf(`"%s"`, clusterName)) {
-		return nil
-	}
-
-	// Add new cluster with proper indentation
-	newCluster := fmt.Sprintf(`      "%s" = {
-        service_account_allow_list = ["spire:spire-agent"]
-        kube_config_file = "/run/spire/kubeconfigs/kubeconfig-%s"
-      }`, clusterName, clusterName)
-
-	// Insert the new cluster before the last closing brace
-	lastBraceIndex := strings.LastIndex(clustersConf, "}")
-	if lastBraceIndex != -1 {
-		clustersConf = clustersConf[:lastBraceIndex] + newCluster + "\n" + clustersConf[lastBraceIndex:]
-	} else {
-		return fmt.Errorf("invalid clusters.conf format")
-	}
-
-	// Format the final content with pipe operator and proper indentation
-	formattedConf := "|\n    " + strings.Replace(clustersConf, "\n", "\n    ", -1)
-
-	// Update the ConfigMap
-	cm.Data = map[string]string{
-		"clusters.conf": formattedConf,
-	}
-
-	// Apply the changes
-	if err := r.Update(ctx, cm); err != nil {
-		msg := "error updating Cluster List ConfigMap"
-		log.Error(err, msg)
-		return errors.Wrap(err, msg)
-	}
-
-	log.Info("Cluster added to the Cluster List", "clusterName", clusterName)
-
-	return nil
 }
