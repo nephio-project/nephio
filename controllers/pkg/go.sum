@@ -122,8 +122,8 @@ github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/nephio-project/api v1.0.0 h1:uHu2SP2nHpx7B9if0MZrw5BqAKBf2dG2Ssp6bp6R6lY=
-github.com/nephio-project/api v1.0.0/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
+github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d h1:hs1ml1d3MaLBLn5yhfz2RPA9B8VGXMGJhZSjyDXJDQY=
+github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3 h1:RNwnrA6AmFLFZkmJa6rVX6PTpf4QxlCF5oYWdpsap1g=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3/go.mod h1:mQqKgxdpWotKvgZKbfFHPK0gLJ4Z9CsJb/tEUoeDpLs=
 github.com/nephio-project/porch v1.3.1 h1:CFZa6kaLViGU7vGMy9sgGGvom5HUxwGwyOiz5zfuCZ8=
