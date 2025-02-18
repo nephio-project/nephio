@@ -27,6 +27,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/srl-labs/ygotsrl/v22 v22.11.1
 	github.com/stretchr/testify v1.9.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.3
@@ -34,13 +35,11 @@ require (
 	sigs.k8s.io/cluster-api v1.8.3
 	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/kustomize/kyaml v0.17.2
-	sigs.k8s.io/yaml v1.4.0		
-	gopkg.in/yaml.v2 v2.4.0
+	sigs.k8s.io/yaml v1.4.0
 
 )
 
 require (
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -67,6 +66,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kentik/patricia v1.2.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

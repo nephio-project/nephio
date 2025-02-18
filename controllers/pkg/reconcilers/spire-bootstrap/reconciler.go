@@ -107,7 +107,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// Get the ClusterIP
-	clusterIP, err := resource.GetServiceExternalIP(spireService)
+	clusterIP, err := getServiceExternalIP(spireService)
 	if err != nil {
 		msg := "Can't get spire-server IP address"
 		log.Error(err, msg)
@@ -121,7 +121,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// Construct the service address
-	spireAgentCM, err := resource.CreateSpireAgentConfigMap("spire-agent", "spire", cl.Name, clusterIP, port)
+	spireAgentCM, err := createSpireAgentConfigMap("spire-agent", "spire", cl.Name, clusterIP, port)
 	if err != nil {
 		msg := "failed to create spireAgent ConfigMap"
 		log.Error(err, msg)
@@ -214,7 +214,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *kubernetes.Clientset, clustername string) (*v1.ConfigMap, error) {
 	log := log.FromContext(ctx)
 
-	log.Info("Creating Kubeconfig ConfigMap...")
+	log.Info("Creating Kubeconfig ConfigMap for the cluster", "clusterName", clustername)
 
 	cmName := types.NamespacedName{Name: "kubeconfigs", Namespace: "spire"}
 	restrictedKC := &v1.ConfigMap{}
@@ -294,7 +294,7 @@ func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *k
 	}
 	restrictedKC.Data[newConfigKey] = string(yamlData)
 
-	log.Info("Kubeconfig added to the ConfigMap successfully")
+	log.Info("Kubeconfig added to the ConfigMap successfully", "clusterName", clustername)
 
 	return restrictedKC, nil
 }
@@ -302,7 +302,7 @@ func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *k
 func (r *reconciler) updateClusterListConfigMap(ctx context.Context, clusterName string) error {
 	log := log.FromContext(ctx)
 
-	log.Info("Updating Cluster List...")
+	log.Info("Updating Cluster List...", "ClusterName", clusterName)
 
 	// Get the ConfigMap
 	cm := &v1.ConfigMap{}
