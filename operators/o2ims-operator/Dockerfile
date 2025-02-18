@@ -15,13 +15,28 @@
 ##########################################################################
 
 FROM python:3.12.9-alpine3.21 AS builder
-COPY controllers/ /src/
-COPY requirements.txt /
-RUN pip install --user -r /requirements.txt --no-cache-dir
-############### Target
-FROM python:3.12.9-alpine3.21 AS target
-COPY --from=builder /root/.local \
-                   /src/ \
-                  /root/.local
-ENV PATH=/root/.local/bin:$PATH
-CMD ["kopf", "run", "/root/.local/manager.py", "--all-namespaces"]
+
+# Create a non-root user
+RUN addgroup --gid 65535 o2ims && \
+    adduser --uid 65535 --disabled-password --home /home/o2ims -G o2ims o2ims
+
+# Set working directory
+WORKDIR /usr/o2ims
+
+# Copy application files
+COPY --chown=o2ims:o2ims controllers/ src/
+COPY --chown=o2ims:o2ims requirements.txt requirements.txt
+
+# Switch to non-root user
+USER o2ims
+
+# Create a virtual environment and install dependencies
+RUN python -m venv /home/o2ims/venv && \
+    /home/o2ims/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# Set environment variables
+ENV PATH="/home/o2ims/venv/bin:${PATH}" \
+    VIRTUAL_ENV="/home/o2ims/venv"
+
+# Run the application
+CMD ["kopf", "run", "/usr/o2ims/src/manager.py", "--all-namespaces"]
