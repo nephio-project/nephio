@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/operators/nephio-controller-manager
 
-go 1.22.0
+go 1.23.5
 
 replace (
 	github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg

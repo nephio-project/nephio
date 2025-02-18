@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/ipam-fn
 
-go 1.22.0
+go 1.23.5
 
 replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 
