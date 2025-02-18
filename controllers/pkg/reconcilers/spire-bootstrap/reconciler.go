@@ -146,26 +146,37 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				kubeconfig := secret.Data["value"]
 				config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
 				if err != nil {
-					log.Error(err, "failed to get kubeconfig")
+					msg := "failed to get kubeconfig"
+					log.Error(err, msg)
+					return ctrl.Result{}, errors.Wrap(err, msg)
+
 				}
 				clientset, err := kubernetes.NewForConfig(config)
 				if err != nil {
-					log.Error(err, "failed to create rest config")
+					msg := "failed to create rest config"
+					log.Error(err, msg)
+					return ctrl.Result{}, errors.Wrap(err, msg)
 				}
 
 				kubeconfigCM, err := r.createKubeconfigConfigMap(ctx, clientset, cl.Name)
 				if err != nil {
-					log.Error(err, "Error creating K8s kubeconfig configmap")
+					msg := "Error creating Kubeconfig configmap"
+					log.Error(err, msg)
+					return ctrl.Result{}, errors.Wrap(err, msg)
 				}
 
 				err = r.Update(ctx, kubeconfigCM)
 				if err != nil {
-					log.Error(err, "failed to create rest config")
+					msg := "failed to Update Kubeconfig list configmap"
+					log.Error(err, msg)
+					return ctrl.Result{}, errors.Wrap(err, msg)
 				}
 
 				err = r.updateClusterListConfigMap(ctx, cl.Name)
 				if err != nil {
-					log.Error(err, "Cluster list could not be updated...: ")
+					msg := "Cluster List could not be updated"
+					log.Error(err, msg)
+					return ctrl.Result{}, errors.Wrap(err, msg)
 				}
 
 				remoteNamespace := configMap.Namespace
