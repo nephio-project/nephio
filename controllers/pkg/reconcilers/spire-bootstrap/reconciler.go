@@ -167,10 +167,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 				if err != nil {
 					log.Error(err, "Cluster list could not be updated...: ")
 				}
-				if !ready {
-					log.Info("cluster not ready")
-					return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
-				}
 
 				remoteNamespace := configMap.Namespace
 				ns := &v1.Namespace{}
@@ -181,7 +177,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						return ctrl.Result{RequeueAfter: 30 * time.Second}, errors.Wrap(err, msg)
 					}
 					msg := fmt.Sprintf("namespace: %s, does not exist, retry...", remoteNamespace)
-					log.Info(msg)
+					log.Error(err, msg)
 					return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 				}
 
@@ -217,6 +213,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *kubernetes.Clientset, clustername string) (*v1.ConfigMap, error) {
 	log := log.FromContext(ctx)
+
+	log.Info("Creating Kubeconfig ConfigMap...")
 
 	cmName := types.NamespacedName{Name: "kubeconfigs", Namespace: "spire"}
 	restrictedKC := &v1.ConfigMap{}
@@ -296,11 +294,15 @@ func (r *reconciler) createKubeconfigConfigMap(ctx context.Context, clientset *k
 	}
 	restrictedKC.Data[newConfigKey] = string(yamlData)
 
+	log.Info("Kubeconfig added to the ConfigMap successfully")
+
 	return restrictedKC, nil
 }
 
 func (r *reconciler) updateClusterListConfigMap(ctx context.Context, clusterName string) error {
 	log := log.FromContext(ctx)
+
+	log.Info("Updating Cluster List...")
 
 	// Get the ConfigMap
 	cm := &v1.ConfigMap{}
@@ -357,6 +359,8 @@ func (r *reconciler) updateClusterListConfigMap(ctx context.Context, clusterName
 		log.Error(err, msg)
 		return errors.Wrap(err, msg)
 	}
+
+	log.Info("Cluster added to the Cluster List", "clusterName", clusterName)
 
 	return nil
 }

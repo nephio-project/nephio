@@ -3,7 +3,6 @@ module github.com/nephio-project/nephio/controllers/pkg
 go 1.22.0
 
 replace (
-	github.com/nephio-project/nephio/controllers/pkg/resource => ../../controllers/pkg/resource
 	github.com/nephio-project/nephio/krm-functions/configinject-fn => ../../krm-functions/configinject-fn
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
@@ -16,7 +15,6 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-cmp v0.6.0
 	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
@@ -36,10 +34,13 @@ require (
 	sigs.k8s.io/cluster-api v1.8.3
 	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/kustomize/kyaml v0.17.2
-	sigs.k8s.io/yaml v1.4.0
+	sigs.k8s.io/yaml v1.4.0		
+	gopkg.in/yaml.v2 v2.4.0
+
 )
 
 require (
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -96,7 +97,6 @@ require (
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.30.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
