@@ -1,5 +1,19 @@
+#  Copyright 2023-2025 The Nephio Authors.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 # Build the manager binary
-FROM golang:1.23@sha256:ff787165114376423b784ea19442b4a7988c58789f3aa97560f57f0aea87460e AS builder
+FROM golang:1.23.5@sha256:e213430692e5c31aba27473cdc84cfff2896d0c097e984bef67b6a44c75a8181 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
