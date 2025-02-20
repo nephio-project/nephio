@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.23 AS builder
+FROM golang:1.23@sha256:ff787165114376423b784ea19442b4a7988c58789f3aa97560f57f0aea87460e AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o /u
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static:nonroot@sha256:6ec5aa99dc335666e79dc64e4a6c8b89c33a543a1967f20d360922a80dd21f02
 #FROM alpine:latest
 WORKDIR /
 COPY --from=builder /usr/local/bin/manager .
