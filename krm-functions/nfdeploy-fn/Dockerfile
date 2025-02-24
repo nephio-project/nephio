@@ -20,6 +20,6 @@ WORKDIR /go/src/krm-functions/nfdeploy-fn
 RUN go install 
 RUN go build -o /usr/local/bin/function ./
 
-FROM gcr.io/distroless/static:latest@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
+FROM gcr.io/distroless/static@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
 COPY --from=0 /usr/local/bin/function /usr/local/bin/function
 ENTRYPOINT ["function"]

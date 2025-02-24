@@ -1,4 +1,4 @@
-#  Copyright 2025-2025 The Nephio Authors.
+#  Copyright 2025 The Nephio Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,6 +20,6 @@ WORKDIR /go/src/krm-functions/gen-kustomize-res
 RUN go install
 RUN go build -o /usr/local/bin/function ./
 
-FROM gcr.io/distroless/static:latest@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
+FROM gcr.io/distroless/static@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
 COPY --from=0 /usr/local/bin/function /usr/local/bin/function
 ENTRYPOINT ["function"]
