@@ -15,18 +15,18 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-cmp v0.6.0
 	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e
-	github.com/nephio-project/api v1.0.1-0.20231127124455-cf14bd57b08d
+	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3
-	github.com/nephio-project/porch v1.3.1
+	github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a //v4.0.0
 	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 	github.com/openconfig/ygot v0.28.3
 	github.com/pkg/errors v0.9.1
 	github.com/srl-labs/ygotsrl/v22 v22.11.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
@@ -84,13 +84,13 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
-	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/term v0.23.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect

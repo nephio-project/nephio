@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
-	porchconds "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
@@ -130,7 +129,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	// All policies require readiness gates to be met, so if they
 	// are not, we are done for now.
-	if !porchconds.PackageRevisionIsReady(pr.Spec.ReadinessGates, pr.Status.Conditions) {
+	if !porchv1alpha1.PackageRevisionIsReady(pr.Spec.ReadinessGates, pr.Status.Conditions) {
 		r.recorder.Eventf(pr, corev1.EventTypeNormal,
 			"NotApproved", "readiness gates not met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
 

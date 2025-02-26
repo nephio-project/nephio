@@ -6,8 +6,8 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/google/go-cmp v0.6.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/nephio-project/porch v1.3.1
-	github.com/stretchr/testify v1.9.0
+	github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a //v4.0.0
+	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
 	sigs.k8s.io/kustomize/kyaml v0.17.2
@@ -34,9 +34,9 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

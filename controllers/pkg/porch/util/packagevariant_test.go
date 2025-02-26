@@ -52,7 +52,7 @@ status:
 	return nil
 }
 
-func TestPackageRevisionIsReady(t *testing.T) {
+func TestPackageVariantReady(t *testing.T) {
 	tr := true
 	cases := map[string]struct {
 		mockClient      *fakeClient
