@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-FROM golang:1.23-alpine
+FROM golang:1.23.5-alpine@sha256:sha256:47d337594bd9e667d35514b241569f95fb6d95727c24b19468813d596d5ae596
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
 COPY krm-functions/ krm-functions/
@@ -20,6 +20,6 @@ WORKDIR /go/src/krm-functions/gen-kustomize-res
 RUN go install
 RUN go build -o /usr/local/bin/function ./
 
-FROM gcr.io/distroless/static:latest
+FROM gcr.io/distroless/static@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
 COPY --from=0 /usr/local/bin/function /usr/local/bin/function
 ENTRYPOINT ["function"]

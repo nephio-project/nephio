@@ -14,7 +14,7 @@
 # limitations under the License.
 ##########################################################################
 
-FROM python:3.12.9-alpine3.21 AS builder
+FROM python:3.12.9-alpine3.21@sha256:28b8a72c4e0704dd2048b79830e692e94ac2d43d30c914d54def6abf74448a4e AS builder
 
 # Create a non-root user
 RUN addgroup --gid 65535 o2ims && \
