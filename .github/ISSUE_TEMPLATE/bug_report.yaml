@@ -2,6 +2,7 @@ name: 🐛Bug Report
 description: File a bug report here
 title: "[BUG]: "
 labels: ["bug"]
+projects: ["Nephio Project"]
 body:
   - type: markdown
     attributes:
