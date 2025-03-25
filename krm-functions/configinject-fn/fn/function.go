@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -42,8 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const revisionPrefix = "v"
 
 type FnR struct {
 	client.Reader
@@ -334,9 +331,4 @@ func getForName(annotations map[string]string) string {
 	}
 	split := strings.Split(forFullName, ".")
 	return split[len(split)-1]
-}
-
-func getRevisionNbr(rev string) (int, error) {
-	rev = strings.TrimPrefix(rev, revisionPrefix)
-	return strconv.Atoi(rev)
 }
