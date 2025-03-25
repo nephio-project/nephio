@@ -6,7 +6,7 @@ require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
 	github.com/google/go-cmp v0.6.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a //v4.0.0
+	github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 //v4.0.0
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
