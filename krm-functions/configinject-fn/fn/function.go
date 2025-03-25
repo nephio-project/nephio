@@ -164,22 +164,15 @@ func (f *FnR) desiredOwnedResourceList(forObj *fn.KubeObject) (fn.KubeObjects, e
 			fn.Logf("configinject pr name %s\n", prName)
 
 			if porchv1alpha1.LifecycleIsPublished(pr.Spec.Lifecycle) {
-				if strings.HasPrefix(pr.Spec.Revision, revisionPrefix) {
+				if pr.Spec.Revision > 0 {
+					fn.Logf("configinject revision %d\n", pr.Spec.Revision)
 
-					fn.Logf("configinject revision %s\n", pr.Spec.Revision)
-
-					newRev, err := getRevisionNbr(pr.Spec.Revision)
-					if err != nil {
-						return nil, err
-					}
+					newRev := pr.Spec.Revision
 					if latestPR, ok := prmap[prName]; ok {
 						// both the latest pr and the new pr are published
 						// update the map with the latest pr
 						// if the revision of the new pr is better than the one of the latest pr in the map
-						latestRev, err := getRevisionNbr(latestPR.Spec.Revision)
-						if err != nil {
-							return nil, err
-						}
+						latestRev := latestPR.Spec.Revision
 						if newRev > latestRev {
 							prmap[prName] = pr.DeepCopy()
 						}
