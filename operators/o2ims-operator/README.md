@@ -6,7 +6,7 @@ This operator implements O-RAN O2 IMS for K8s based cloud management.
 
 ### Development Requirements:
 
-- Python3.11
+- >= Python3.11
 - requirements.txt installed in development environment
 
 ### Nephio Management Cluster Requirements:
@@ -73,13 +73,14 @@ nohup kubectl proxy --port 8080 &>/dev/null &
 Build a Docker image: 
 
 ```bash
-docker build -t o2ims-operator:latest -f Dockerfile .
+cd operators/o2ims-operator/
+make docker-build
 ```
 
 Push this image in your cluster, here we are using a `kind` cluster so we will push using the below command:
 
 ```bash
-kind load docker-image o2ims-operator:latest -n o2ims-mgmt
+kind load docker-image nephio/o2ims-operator:latest -n o2ims-mgmt
 ```
 
 `NOTE`: `o2ims-mgmt` is the name of the kind cluster. It is good to mention cluster name if you have multiple clusters.
@@ -176,32 +177,32 @@ status:
 
 Unit tests are contained in the `tests` directory, and are intended to test pieces of the O2IMS Operator in the `controllers` directory. Currently unit tests are not comprehensive, but provide expected coverage of core utility components.
 
-Prior to running the tests, install the requirements:
+Prior to running the tests, install tox in your environment:
 ```bash
-pip3 install -r ./tests/unit_test_requirements.txt
+pip install tox
 ```
 
-To run all tests in `test_utils.py` with abridged output:
+To run all tests in `test_utils.py` targeting a specific python version:
  ```bash
-pytest ./tests/test_utils.py
+tox -e py312
 ```
 
 Output:
 ```bash
-==================================================================== test session starts ====================================================================
-platform linux -- Python 3.13.0, pytest-8.3.4, pluggy-1.5.0
-rootdir: /home/dkosteck/Documents/nephio/operators/o2ims-operator
-collected 61 items
+py312: commands[0]> pytest --maxfail=1 --disable-warnings -q -v
+=========================================================================================== test session starts ===========================================================================================
+platform linux -- Python 3.12.3, pytest-8.3.4, pluggy-1.5.0
+cachedir: .tox/py312/.pytest_cache
+rootdir: /home/fiachra/git/nordix_github/nephio/operators/o2ims-operator
+plugins: cov-6.0.0
+collected 39 items                                                                                                                                                                                        
 
-tests/test_utils.py .............................................................                                                                     [100%]
+tests/test_utils.py .......................................                                                                                                                                         [100%]
 
-==================================================================== 61 passed in 0.14s =====================================================================
+=========================================================================================== 39 passed in 0.12s ============================================================================================
+  py312: OK (0.27=setup[0.02]+cmd[0.25] seconds)
+  congratulations :) (0.30 seconds)
 
-```
-
-To run with verbose output (showing individual test results):
- ```bash
-pytest -v ./tests/test_utils.py
 ```
 
 ## Known issues
