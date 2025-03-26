@@ -78,8 +78,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 h1:xWvZh6xgsyxodSAmBaWOB8SPjB3hxsCDSveNtpQB8Aw=
 github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
-github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a h1:+eT2cuhkHQCQnqLIGFTxGwSxEWSo/6JCRONxDv3QL7U=
-github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a/go.mod h1:qTSJ+76tfrMC4DsPJVp+kUf6ifON4pum9xryVzH+7sc=
+github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 h1:cR3fDvGca3kC/HDh/MIUTZpEINYEkwHhkt2hqWBR4QU=
+github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08/go.mod h1:4HnJ5dr5/DR18vUqfKJsZy/XmcN3JCTH4kvnZUQl0bg=
 github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c h1:zNeqCNUXERQOPbFvcDv8zbEGtZSpTWar/fgqwvKKklo=
 github.com/nokia/k8s-ipam v0.0.4-0.20230614172255-e361e59e279c/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
 github.com/onsi/ginkgo/v2 v2.19.0 h1:9Cnnf7UHo57Hy3k6/m5k3dRfGTMXGvxhHFvkDTCTpvA=

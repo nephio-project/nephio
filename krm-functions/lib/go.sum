@@ -54,8 +54,8 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/2gBQ3RWajuToeY6ZtZTIKv2v7ThUy5KKusIT0yc0=
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
-github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a h1:+eT2cuhkHQCQnqLIGFTxGwSxEWSo/6JCRONxDv3QL7U=
-github.com/nephio-project/porch v1.3.2-0.20250218094517-254bf735735a/go.mod h1:qTSJ+76tfrMC4DsPJVp+kUf6ifON4pum9xryVzH+7sc=
+github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 h1:cR3fDvGca3kC/HDh/MIUTZpEINYEkwHhkt2hqWBR4QU=
+github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08/go.mod h1:4HnJ5dr5/DR18vUqfKJsZy/XmcN3JCTH4kvnZUQl0bg=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
