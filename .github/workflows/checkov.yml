@@ -1,0 +1,20 @@
+name: Checkov Security Scan
+
+on:
+  pull_request:
+    branches:
+      - main  # Run on PRs targeting 'main'
+
+jobs:
+  security_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR Code
+        uses: actions/checkout@v3
+
+      - name: Run Checkov Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: "."
+          output_format: "github_failed_only"  # Only show failures
+
