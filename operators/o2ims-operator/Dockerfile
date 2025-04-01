@@ -29,7 +29,7 @@ RUN python -m venv /home/o2ims/venv && \
     /home/o2ims/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY --chown=o2ims:o2ims /operators/o2ims-operator/controllers/ src/
+COPY --chown=root:root --chmod=755 /operators/o2ims-operator/controllers/ src/
 
 # Switch to non-root user
 USER o2ims

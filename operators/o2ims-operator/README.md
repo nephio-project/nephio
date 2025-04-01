@@ -88,8 +88,7 @@ kind load docker-image nephio/o2ims-operator:latest -n o2ims-mgmt
 Deploy the O2 IMS operator:
 
 ```bash
-kpt pkg get --for-deployment https://github.com/nephio-project/catalog.git
-/nephio/optional/o2ims@origin/main /tmp/o2ims
+kpt pkg get --for-deployment https://github.com/nephio-project/catalog.git/nephio/optional/o2ims@origin/main /tmp/o2ims
 kpt fn render /tmp/o2ims
 kpt live init /tmp/o2ims
 kpt live apply /tmp/o2ims --reconcile-timeout=15m --output=table
