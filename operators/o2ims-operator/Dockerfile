@@ -23,16 +23,16 @@ RUN addgroup --gid 65535 o2ims && \
 # Set working directory
 WORKDIR /usr/o2ims
 
+# Copy requirements first and install dependencies
+COPY --chown=o2ims:o2ims /operators/o2ims-operator/requirements.txt requirements.txt
+RUN python -m venv /home/o2ims/venv && \
+    /home/o2ims/venv/bin/pip install --no-cache-dir -r requirements.txt
+
 # Copy application files
-COPY --chown=o2ims:o2ims controllers/ src/
-COPY --chown=o2ims:o2ims requirements.txt requirements.txt
+COPY --chown=root:root --chmod=755 /operators/o2ims-operator/controllers/ src/
 
 # Switch to non-root user
 USER o2ims
-
-# Create a virtual environment and install dependencies
-RUN python -m venv /home/o2ims/venv && \
-    /home/o2ims/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Set environment variables
 ENV PATH="/home/o2ims/venv/bin:${PATH}" \
