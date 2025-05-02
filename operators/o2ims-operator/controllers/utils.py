@@ -79,7 +79,7 @@ def create_package_variant(
                 "upstream": {
                     "repo": f"{pv_param['repo_location']}",
                     "package": f"{pv_param['template_name']}",
-                    "revision": f"{pv_param['template_version']}",
+                    "workspaceName": f"{pv_param['template_version']}",
                 },
                 "downstream": {
                     # TODO: should the repo be configurable instead of being hardcoded?
