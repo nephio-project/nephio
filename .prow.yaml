@@ -81,7 +81,7 @@ presubmits:
 postsubmits:
   - name: build-push-nephio-operator-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -121,7 +121,7 @@ postsubmits:
 
   - name: build-push-o2-ims-operator-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -161,7 +161,7 @@ postsubmits:
                 
   - name: build-push-nephio-focom-operator-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -201,7 +201,7 @@ postsubmits:
 
   - name: build-push-nephio-krm-func-config-inject-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -241,7 +241,7 @@ postsubmits:
   
   - name: build-push-nephio-krm-func-dnn-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -281,7 +281,7 @@ postsubmits:
 
   - name: build-push-nephio-krm-func-gen-configmap-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -321,7 +321,7 @@ postsubmits:
   
   - name: build-push-nephio-krm-func-interface-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -361,7 +361,7 @@ postsubmits:
 
   - name: build-push-nephio-krm-func-ipam-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -401,7 +401,7 @@ postsubmits:
   
   - name: build-push-nephio-krm-func-nad-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -441,7 +441,7 @@ postsubmits:
   
   - name: build-push-nephio-krm-func-nfdeploy-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -481,7 +481,7 @@ postsubmits:
   
   - name: build-push-nephio-krm-func-ueransim-deploy-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -521,7 +521,7 @@ postsubmits:
  
   - name: build-push-nephio-krm-func-vlan-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
@@ -561,7 +561,7 @@ postsubmits:
 
   - name: build-push-nephio-krm-func-gen-kust-res-dev-image
     cluster: default
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     branches:
     - "main"
     annotations:
