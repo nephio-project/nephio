@@ -1,7 +1,7 @@
 presubmits:
   - name: presubmit-nephio-go-test
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1885274380137664512
@@ -11,7 +11,7 @@ presubmits:
         - unit
   - name: presubmit-nephio-golangci-lint
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1885274380137664512
@@ -21,7 +21,7 @@ presubmits:
         - lint
   - name: presubmit-nephio-gosec
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1885274380137664512
@@ -31,7 +31,7 @@ presubmits:
         - gosec
   - name: presubmit-nephio-license-header-check
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1885274380137664512
@@ -42,7 +42,7 @@ presubmits:
           /usr/local/bin/checklicense.sh > ${ARTIFACTS}/license_headers_results.txt
   - name: presubmit-nephio-scancode-toolkit
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/scancode-toolkit:v31.2.5
@@ -58,7 +58,7 @@ presubmits:
             memory: 1Gi
   - name: presubmit-nephio-fossology
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: fossology/fossology:scanner
@@ -71,7 +71,7 @@ presubmits:
           cp -R results ${ARTIFACTS}/    
   - name: presubmit-nephio-lichen
     decorate: true
-    run_if_changed: "(\\.go|Makefile|\\.mk)$"
+    always_run: true
     spec:
       containers:
       - image: nephio/gotests:1885274380137664512
