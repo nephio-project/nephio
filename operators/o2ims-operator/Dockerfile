@@ -14,29 +14,29 @@
 # limitations under the License.
 ##########################################################################
 
-FROM python:3.12.9-alpine3.21@sha256:28b8a72c4e0704dd2048b79830e692e94ac2d43d30c914d54def6abf74448a4e AS builder
+FROM python:3.12.10-alpine3.21@sha256:4cad1c099a56dafcfee656a1bdd88c97a1372db02e14fcffa9b1869515956deb AS builder
 
-# Create a non-root user
-RUN addgroup --gid 65535 o2ims && \
-    adduser --uid 65535 --disabled-password --home /home/o2ims -G o2ims o2ims
+# Create a non-root user and group
+RUN addgroup -g 65535 o2ims && \
+    adduser -u 65535 -G o2ims -D -h /home/o2ims o2ims
+
+# Define environment variables
+ENV VIRTUAL_ENV=/home/o2ims/venv \
+    PATH=/home/o2ims/venv/bin:$PATH
 
 # Set working directory
 WORKDIR /usr/o2ims
 
-# Copy requirements first and install dependencies
-COPY --chown=o2ims:o2ims /operators/o2ims-operator/requirements.txt requirements.txt
-RUN python -m venv /home/o2ims/venv && \
-    /home/o2ims/venv/bin/pip install --no-cache-dir -r requirements.txt
+# Copy and install dependencies
+COPY --chown=o2ims:o2ims requirements.txt .
+RUN python -m venv $VIRTUAL_ENV && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY --chown=root:root --chmod=755 /operators/o2ims-operator/controllers/ src/
+# Copy application source
+COPY --chown=o2ims:o2ims controllers/ ./src/
 
 # Switch to non-root user
 USER o2ims
 
-# Set environment variables
-ENV PATH="/home/o2ims/venv/bin:${PATH}" \
-    VIRTUAL_ENV="/home/o2ims/venv"
-
-# Run the application
+# Entrypoint
 CMD ["kopf", "run", "/usr/o2ims/src/manager.py", "--all-namespaces"]
