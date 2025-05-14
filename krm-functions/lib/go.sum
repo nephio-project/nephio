@@ -2,6 +2,8 @@ github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d/go.mod h1:prNhhUAODrB2VqHVead9tB8nLU9ffY4e4jjBwLMNO1M=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
+github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae h1:gRrSRqhtdnRlWKOEMjPmSi+k9c5fsvkkqCq7C68EPus=
+github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae/go.mod h1:XkAefeTAUd4Z7GZP5j09dDFIrERgApb/bvXSNyMdMpU=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -54,8 +56,6 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 h1:n6/2gBQ3RWajuToeY6ZtZTIKv2v7ThUy5KKusIT0yc0=
 github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00/go.mod h1:Pm3mSP3c5uWn86xMLZ5Sa7JB9GsEZySvHYXCTK4E9q4=
-github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 h1:cR3fDvGca3kC/HDh/MIUTZpEINYEkwHhkt2hqWBR4QU=
-github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08/go.mod h1:4HnJ5dr5/DR18vUqfKJsZy/XmcN3JCTH4kvnZUQl0bg=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

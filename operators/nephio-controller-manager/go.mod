@@ -8,6 +8,7 @@ replace (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
+	github.com/nephio-project/porch/v4 => github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae
 )
 
 require (
@@ -67,7 +68,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230609191131-85aa39064ef8 // indirect
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000 // indirect
-	github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 // indirect
+	github.com/nephio-project/porch/v4 v4.0.0 // indirect
 	github.com/openconfig/gnmi v0.9.1 // indirect
 	github.com/openconfig/goyang v1.4.0 // indirect
 	github.com/openconfig/ygot v0.28.3 // indirect

@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/google/go-cmp/cmp"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
+	kptv1 "github.com/nephio-project/porch/v4/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

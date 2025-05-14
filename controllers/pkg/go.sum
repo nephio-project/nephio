@@ -6,6 +6,8 @@ github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20230427202446-3255accc518d/go.mod h1:prNhhUAODrB2VqHVead9tB8nLU9ffY4e4jjBwLMNO1M=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d h1:kgC/R6Kl+tBjsRvcPr4Beae1MiHumNMtbmUTy7qlPZI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
+github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae h1:gRrSRqhtdnRlWKOEMjPmSi+k9c5fsvkkqCq7C68EPus=
+github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae/go.mod h1:XkAefeTAUd4Z7GZP5j09dDFIrERgApb/bvXSNyMdMpU=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cenkalti/backoff/v4 v4.0.0/go.mod h1:eEew/i+1Q6OrCDZh3WiXYv3+nJwBASZ8Bog/87DQnVg=
@@ -126,8 +128,6 @@ github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 h1:xWvZh6xgsy
 github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0/go.mod h1:9w+JbXeyiT3KZrrXab0pzaWtiUk4upvgLzpqOtSmbpI=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3 h1:RNwnrA6AmFLFZkmJa6rVX6PTpf4QxlCF5oYWdpsap1g=
 github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3/go.mod h1:mQqKgxdpWotKvgZKbfFHPK0gLJ4Z9CsJb/tEUoeDpLs=
-github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 h1:cR3fDvGca3kC/HDh/MIUTZpEINYEkwHhkt2hqWBR4QU=
-github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08/go.mod h1:4HnJ5dr5/DR18vUqfKJsZy/XmcN3JCTH4kvnZUQl0bg=
 github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4 h1:4v0n24tsumwuz1BDGKoGWxZMFtqAlYpI87gE/enMUUI=
 github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4/go.mod h1:ZVMmhD6jllAAO3YGIZFXUQbKRtEiIYgZ772bn/1GVz4=
 github.com/onsi/ginkgo/v2 v2.19.1 h1:QXgq3Z8Crl5EL1WBAC98A5sEBHARrAJNzAmMxzLcRF0=

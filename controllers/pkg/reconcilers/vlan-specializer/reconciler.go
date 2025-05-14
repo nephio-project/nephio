@@ -32,7 +32,7 @@ import (
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
 	function "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
-	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
+	porchv1alpha1 "github.com/nephio-project/porch/v4/api/porch/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"

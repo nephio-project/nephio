@@ -2,7 +2,10 @@ module github.com/nephio-project/nephio/krm-functions/interface-fn
 
 go 1.23.5
 
-replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+replace (
+	github.com/nephio-project/nephio/krm-functions/lib => ../lib
+	github.com/nephio-project/porch/v4 => github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae
+)
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
@@ -25,7 +28,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
@@ -41,7 +43,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 // indirect
+	github.com/nephio-project/porch/v4 v4.0.0-00010101000000-000000000000 // indirect
+	github.com/onsi/gomega v1.33.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
