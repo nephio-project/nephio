@@ -34,7 +34,7 @@ import (
 	porchclient "github.com/nephio-project/nephio/controllers/pkg/porch/client"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
-	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
+	porchv1alpha1 "github.com/nephio-project/porch/v4/api/porch/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"

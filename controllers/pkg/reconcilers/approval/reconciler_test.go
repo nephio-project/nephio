@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	mockReader "github.com/nephio-project/nephio/controllers/pkg/mocks/external/reader"
-	porchapi "github.com/nephio-project/porch/api/porch/v1alpha1"
+	porchapi "github.com/nephio-project/porch/v4/api/porch/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

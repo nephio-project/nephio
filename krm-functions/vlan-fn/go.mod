@@ -2,7 +2,10 @@ module github.com/nephio-project/nephio/krm-functions/vlan-fn
 
 go 1.23.5
 
-replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
+replace (
+	github.com/nephio-project/nephio/krm-functions/lib => ../lib
+	github.com/nephio-project/porch/v4 => github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae
+)
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
@@ -44,7 +47,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 // indirect
+	github.com/nephio-project/porch/v4 v4.0.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect

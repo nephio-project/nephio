@@ -7,6 +7,7 @@ replace (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
+	github.com/nephio-project/porch/v4 => github.com/Nordix/porch/v4 v4.0.0-20250512131947-47a5e1bd41ae
 )
 
 require (
@@ -21,7 +22,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3
-	github.com/nephio-project/porch v1.3.2-0.20250324012614-dfee31103d08 //v4.0.0
+	github.com/nephio-project/porch/v4 v4.0.0
 	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 	github.com/openconfig/ygot v0.28.3
 	github.com/pkg/errors v0.9.1

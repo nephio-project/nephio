@@ -22,9 +22,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 
-	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
-	porchconfig "github.com/nephio-project/porch/api/porchconfig/v1alpha1"
-	pvapi "github.com/nephio-project/porch/controllers/packagevariants/api/v1alpha1"
+	porchv1alpha1 "github.com/nephio-project/porch/v4/api/porch/v1alpha1"
+	porchconfig "github.com/nephio-project/porch/v4/api/porchconfig/v1alpha1"
+	pvapi "github.com/nephio-project/porch/v4/controllers/packagevariants/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
