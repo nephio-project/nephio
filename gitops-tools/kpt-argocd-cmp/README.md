@@ -1,6 +1,8 @@
 # kpt-argocd-cmp
 Nephio heavily relies on kpt to package, render, mutate, validate and generate Kubernetes objects. ArgoCD doesn't currently have a built-in plugin to handle installation of manifests, and, as such, this repo introduces a plugin specifically built to render the kpt package pipeline properly. It consists of two [Conifg Management Plugins](https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/) (CMPs) for ArgoCD that handle the creation of package applications and local configs.
 
+This work is adapted from the [treactor-krm-functions/argo](https://github.com/treactor/treactor-krm-functions/tree/main/argo) PoC.
+
 ## kpt-repo
 This plugin creates an "app-of-apps" style ArgoCD Application that takes a source repository and looks for Kptfiles to create ArgoCD applications for the cooresponding packages.
 
