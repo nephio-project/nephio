@@ -1,0 +1,7 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ConfigManagementPlugin
+metadata:
+  name: kpt-repo
+spec:
+  generate:
+    command: [/usr/local/bin/kpt-repo]
