@@ -22,7 +22,7 @@ func outputArgoApplication(kptFile *fn.KubeObject, path string) error {
 	dirPath := os.Getenv("ARGOCD_APP_SOURCE_PATH") + "/" + filepath.Dir(path)
 	fmt.Fprintf(os.Stderr, "dirPath:\n")
         fmt.Fprintf(os.Stderr, dirPath)
-	name := kptFile.GetName()
+	name := os.Getenv("ARGOCD_APP_NAME") + "-" + kptFile.GetName()
 	
 	repo_url := kptFile.GetString("repo")
 
