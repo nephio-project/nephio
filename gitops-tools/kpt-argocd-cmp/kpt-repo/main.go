@@ -15,13 +15,13 @@ func init() {
 }
 
 func outputArgoApplication(kptFile *fn.KubeObject, path string) error {
-	destinationName := os.Getenv("ARGOCD_ENV_DESTINATION_NAME") 
-	projectName := os.Getenv("ARGOCD_APP_PROJECT_NAME") 
+	destinationName := os.Getenv("ARGOCD_ENV_DESTINATION_NAME")
+	projectName := os.Getenv("ARGOCD_APP_PROJECT_NAME")
 	if destinationName == "" || projectName == "" {
 		return nil
 	}
 	dirPath := os.Getenv("ARGOCD_APP_SOURCE_PATH") + "/" + filepath.Dir(path)
-	
+
 	log.Printf("INFO: CMP Inputs - destinationName='%s', projectName='%s', dirPath='%s'", destinationName, projectName, dirPath)
 
 	name := os.Getenv("ARGOCD_APP_NAME") + "-" + kptFile.GetName()
@@ -65,20 +65,20 @@ spec:
 	}
 	err = ko.SetNestedField(dirPath, "spec", "source", "path")
 	if err != nil {
-                        return err
-        }
+		return err
+	}
 	err = ko.SetNestedField(destinationName, "spec", "destination", "name")
 	if err != nil {
-                        return err
-        }
+		return err
+	}
 	err = ko.SetNestedField(projectName, "spec", "project")
 	if err != nil {
-                        return err
-        }
+		return err
+	}
 	err = ko.SetName(name)
 	if err != nil {
-                        return err
-        }
+		return err
+	}
 
 	log.Printf("INFO: Successfully generated Argo CD Application '%s'.", name)
 
@@ -96,7 +96,12 @@ func main() {
 			}
 
 			if strings.HasSuffix(path, "Kptfile") {
-				bytes, err := os.ReadFile(path)
+				cleanedPath := filepath.Clean(path)
+				if !strings.HasPrefix(cleanedPath, ".") {
+					log.Println("ERROR: Invalid path")
+					return nil
+				}
+				bytes, err := os.ReadFile(cleanedPath)
 				if err != nil {
 					return err
 				}

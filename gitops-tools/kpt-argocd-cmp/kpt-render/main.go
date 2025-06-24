@@ -3,17 +3,16 @@ package main
 import (
 	"fmt"
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"os"
 	"path/filepath"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func init() {
-        log.SetOutput(os.Stderr)
-        log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetOutput(os.Stderr)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
-
 
 func main() {
 	err := filepath.Walk(".",
@@ -32,13 +31,13 @@ func main() {
 					log.Printf("INFO: Ignoring non-KRM file (failed to parse KubeObjects): %s", path)
 					return nil
 				}
-				for _, ko := range kos{
+				for _, ko := range kos {
 					kustomizationGK := schema.GroupKind{Group: "kustomize.config.k8s.io", Kind: "Kustomization"}
 					isKustomization := ko.IsGroupKind(kustomizationGK)
 					isLocalConfig := ko.GetAnnotation("config.kubernetes.io/local-config") == "true"
 
 					if !isKustomization && !isLocalConfig {
-						log.Printf("INFO: Resource included for deployment: %s/%s (kind: %s, path: %s)", 
+						log.Printf("INFO: Resource included for deployment: %s/%s (kind: %s, path: %s)",
 							ko.GetNamespace(), ko.GetName(), ko.GetKind(), path)
 						fmt.Print(ko.String())
 						fmt.Println("---")
