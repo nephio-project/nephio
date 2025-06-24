@@ -9,6 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+func init() {
+        log.SetOutput(os.Stderr)
+        log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+}
+
+
 func main() {
 	err := filepath.Walk(".",
 		func(path string, info os.FileInfo, err error) error {
@@ -18,13 +24,12 @@ func main() {
 			if !info.IsDir() {
 				bytes, err := os.ReadFile(path)
 				if err != nil {
+					log.Printf("ERROR: Failed to read file %s: %v", path, err)
 					return err
 				}
 				kos, err := fn.ParseKubeObjects(bytes)
 				if err != nil {
-					// ignore non KRM files
-					fmt.Fprintf(os.Stderr, "Ignored:\n")
-					fmt.Fprintf(os.Stderr, path)
+					log.Printf("INFO: Ignoring non-KRM file (failed to parse KubeObjects): %s", path)
 					return nil
 				}
 				for _, ko := range kos{
@@ -33,13 +38,13 @@ func main() {
 					isLocalConfig := ko.GetAnnotation("config.kubernetes.io/local-config") == "true"
 
 					if !isKustomization && !isLocalConfig {
-						fmt.Fprintf(os.Stderr, "Hit:\n")
-                                        	fmt.Fprintf(os.Stderr, path)					
+						log.Printf("INFO: Resource included for deployment: %s/%s (kind: %s, path: %s)", 
+							ko.GetNamespace(), ko.GetName(), ko.GetKind(), path)
 						fmt.Print(ko.String())
 						fmt.Println("---")
 					} else {
-						fmt.Fprintf(os.Stderr, "Miss:\n")
-                                        	fmt.Fprintf(os.Stderr, path)					
+						log.Printf("INFO: Resource ignored (local config or Kustomization file): %s/%s (kind: %s, path: %s)",
+							ko.GetNamespace(), ko.GetName(), ko.GetKind(), path)
 					}
 				}
 			}
@@ -47,6 +52,6 @@ func main() {
 			return nil
 		})
 	if err != nil {
-		log.Println(err)
+		log.Printf("ERROR: Error walking directory: %v", err)
 	}
 }

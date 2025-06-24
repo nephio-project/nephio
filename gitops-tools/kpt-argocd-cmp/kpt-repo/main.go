@@ -9,21 +9,22 @@ import (
 	"strings"
 )
 
+func init() {
+	log.SetOutput(os.Stderr)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+}
+
 func outputArgoApplication(kptFile *fn.KubeObject, path string) error {
 	destinationName := os.Getenv("ARGOCD_ENV_DESTINATION_NAME") 
-	fmt.Fprintf(os.Stderr, "destination:\n")
-       	fmt.Fprintf(os.Stderr, destinationName)
 	projectName := os.Getenv("ARGOCD_APP_PROJECT_NAME") 
-	fmt.Fprintf(os.Stderr, "projectName:\n")
-        fmt.Fprintf(os.Stderr, projectName)
 	if destinationName == "" || projectName == "" {
 		return nil
 	}
 	dirPath := os.Getenv("ARGOCD_APP_SOURCE_PATH") + "/" + filepath.Dir(path)
-	fmt.Fprintf(os.Stderr, "dirPath:\n")
-        fmt.Fprintf(os.Stderr, dirPath)
-	name := os.Getenv("ARGOCD_APP_NAME") + "-" + kptFile.GetName()
 	
+	log.Printf("INFO: CMP Inputs - destinationName='%s', projectName='%s', dirPath='%s'", destinationName, projectName, dirPath)
+
+	name := os.Getenv("ARGOCD_APP_NAME") + "-" + kptFile.GetName()
 	repo_url := kptFile.GetString("repo")
 
 	ko, err := fn.ParseKubeObject([]byte(`
@@ -60,8 +61,12 @@ spec:
 	ko.SetNestedField(destinationName, "spec", "destination", "name")
 	ko.SetNestedField(projectName, "spec", "project")
 	ko.SetName(name)
+
+	log.Printf("INFO: Successfully generated Argo CD Application '%s'.", name)
+
 	fmt.Print(ko.String())
 	fmt.Println("---")
+
 	return nil
 }
 
@@ -81,10 +86,9 @@ func main() {
 				if err != nil {
 					return err
 				}
-				fmt.Fprintf(os.Stderr, "path:\n")
-        			fmt.Fprintf(os.Stderr, path)
 				err = outputArgoApplication(ko, path)
 				if err != nil {
+					log.Printf("ERROR: Failed to generate Argo Application from Kptfile: %v", err)
 					return err
 				}
 			}
@@ -92,7 +96,7 @@ func main() {
 			return nil
 		})
 	if err != nil {
-		log.Println(err)
+		log.Printf("ERROR: Failed to walk directory: %v", err)
 		os.Exit(1)
 	}
 }

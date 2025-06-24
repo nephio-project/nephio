@@ -18,6 +18,8 @@ IMAGE_NAME ?= kpt-render-plugin
 IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 include ../../../detect-container-runtime.mk
+include ../../../default-go.mk
+include ../../../default-help.mk
 
 ##@ Container images
 .PHONY: docker-build

@@ -1,25 +1,27 @@
-ARG BUILDER_IMAGE=golang:1.24.2
-ARG BASE_IMAGE=quay.io/argoproj/argocd:v2.14.6
+# Build
+ARG BUILDER_IMAGE=golang:1.24.3
+ARG BASE_IMAGE=quay.io/argoproj/argocd:v3.0.9
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build
+FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS build
+
 ENV CGO_ENABLED=0
-WORKDIR /go/src/
+ENV GO111MODULE=on
 
-RUN mkdir kpt-repo
+WORKDIR /go/src/kpt-repo
 
-COPY go.mod go.sum kpt-repo/
-RUN cd kpt-repo && go mod download && cd ..
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
-ARG TARGETOS TARGETARCH
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /usr/local/bin/kpt-repo
 
-#############################################
+ARG TARGETOS
+ARG TARGETARCH
+RUN GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build -trimpath -ldflags="-s -w" -o /usr/local/bin/kpt-repo
 
-FROM $BASE_IMAGE
+# Final Image
+FROM ${BASE_IMAGE}
+
 COPY --from=build /usr/local/bin/kpt-repo /usr/local/bin/kpt-repo
-
-############################################
 
 WORKDIR /home/argocd/cmp-server/config
 COPY kpt-repo-plugin.yaml ./plugin.yaml
