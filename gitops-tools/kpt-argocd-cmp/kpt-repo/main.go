@@ -53,14 +53,32 @@ spec:
 		return err
 	}
 	if repo_url == "" {
-		ko.SetNestedField(os.Getenv("ARGOCD_APP_SOURCE_REPO_URL"), "spec", "source", "repoURL")
+		err := ko.SetNestedField(os.Getenv("ARGOCD_APP_SOURCE_REPO_URL"), "spec", "source", "repoURL")
+		if err != nil {
+			return err
+		}
 	} else {
-		ko.SetNestedField(repo_url, "spec", "source", "repoURL")
+		err := ko.SetNestedField(repo_url, "spec", "source", "repoURL")
+		if err != nil {
+			return err
+		}
 	}
-	ko.SetNestedField(dirPath, "spec", "source", "path")
-	ko.SetNestedField(destinationName, "spec", "destination", "name")
-	ko.SetNestedField(projectName, "spec", "project")
-	ko.SetName(name)
+	err = ko.SetNestedField(dirPath, "spec", "source", "path")
+	if err != nil {
+                        return err
+        }
+	err = ko.SetNestedField(destinationName, "spec", "destination", "name")
+	if err != nil {
+                        return err
+        }
+	err = ko.SetNestedField(projectName, "spec", "project")
+	if err != nil {
+                        return err
+        }
+	err = ko.SetName(name)
+	if err != nil {
+                        return err
+        }
 
 	log.Printf("INFO: Successfully generated Argo CD Application '%s'.", name)
 
