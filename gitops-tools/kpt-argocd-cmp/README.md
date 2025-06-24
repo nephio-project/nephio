@@ -7,7 +7,7 @@ This work is adapted from the [treactor-krm-functions/argo](https://github.com/t
 This plugin creates an "app-of-apps" style ArgoCD Application that takes a source repository and looks for Kptfiles to create ArgoCD applications for the cooresponding packages.
 
 ## kpt-render
-The applications created by `kpt-repo` will target a second plugin, `kpt-render`, that filters out KRM files with `config.kubernetes.io/local-config: "true"` or that are Kustomize files. This deals with a primary limitation of ArgoCD, where for plain yaml packages it will attempt to install `local-config` manifests into the destination cluster.  
+The applications created by `kpt-repo` will target a second plugin, `kpt-render`, that filters out KRM files with the `config.kubernetes.io/local-config: "true"` annotation, or,  that are Kustomize files. This deals with a primary limitation of ArgoCD, where for plain yaml packages, it will attempt to install the `local-config` manifests into the destination cluster.  
 
 ## patch.sh
 This file applies the plugins to the `argocd-repo-server` pod, using the images created via the corresponding Dockerfiles and pushed to a registery. Once patched, `argo-repo-server` will create containers for each plugin based on the images provided, and start the plugins. 
