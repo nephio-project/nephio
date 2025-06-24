@@ -21,7 +21,12 @@ func main() {
 				return err
 			}
 			if !info.IsDir() {
-				bytes, err := os.ReadFile(path)
+				cleanedPath := filepath.Clean(path)
+				if !strings.HasPrefix(cleanedPath, ".") {
+					log.Println("ERROR: Invalid path")
+					return nil
+				}
+				bytes, err := os.ReadFile(cleanedPath)
 				if err != nil {
 					log.Printf("ERROR: Failed to read file %s: %v", path, err)
 					return err
