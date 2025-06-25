@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func init() {
@@ -23,10 +22,6 @@ func main() {
 			}
 			if !info.IsDir() {
 				cleanedPath := filepath.Clean(path)
-				if !strings.HasPrefix(cleanedPath, ".") {
-					log.Println("ERROR: Invalid path")
-					return nil
-				}
 				bytes, err := os.ReadFile(cleanedPath)
 				if err != nil {
 					log.Printf("ERROR: Failed to read file %s: %v", path, err)
