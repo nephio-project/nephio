@@ -14,7 +14,7 @@
 
 IMAGE_TAG ?= latest
 REGISTRY ?= docker.io/nephio
-IMAGE_NAME ?= kpt-render-plugin
+IMAGE_NAME ?= kpt-render-argo-cmp
 IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 include ../../../detect-container-runtime.mk
