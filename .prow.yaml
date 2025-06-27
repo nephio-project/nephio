@@ -119,7 +119,7 @@ postsubmits:
               - key: .dockerconfigjson
                 path: config.json
 
-  - name: build-push-argocd-kpt-repo-plugin-dev-image
+  - name: build-push-kpt-repo-argo-cmp-dev-image
     cluster: default
     always_run: true
     branches:
@@ -143,7 +143,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/gitops-tools/kpt-argocd-cmp/kpt-repo/ --dockerfile=Dockerfile --destination=nephio/kpt-repo-plugin:${BUILD_ID} --destination=nephio/kpt-repo-plugin:latest
+          executor --context=/home/prow/go/src/nephio_build/gitops-tools/kpt-argocd-cmp/kpt-repo/ --dockerfile=Dockerfile --destination=nephio/kpt-repo-argo-cmp:${BUILD_ID} --destination=nephio/kpt-repo-argo-cmp:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/
@@ -159,7 +159,7 @@ postsubmits:
               - key: .dockerconfigjson
                 path: config.json
 
-  - name: build-push-argocd-kpt-render-plugin-dev-image
+  - name: build-push-kpt-render-argo-cmp-dev-image
     cluster: default
     always_run: true
     branches:
@@ -183,7 +183,7 @@ postsubmits:
         - "/bin/sh"
         - "-c"
         - |
-          executor --context=/home/prow/go/src/nephio_build/gitops-tools/kpt-argocd-cmp/kpt-render/ --dockerfile=Dockerfile --destination=nephio/kpt-render-plugin:${BUILD_ID} --destination=nephio/kpt-render-plugin:latest
+          executor --context=/home/prow/go/src/nephio_build/gitops-tools/kpt-argocd-cmp/kpt-render/ --dockerfile=Dockerfile --destination=nephio/kpt-render-argo-cmp:${BUILD_ID} --destination=nephio/kpt-render-argo-cmp:latest
         volumeMounts:
           - name: kaniko-secret
             mountPath: /kaniko/.docker/

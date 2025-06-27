@@ -3,8 +3,8 @@ kubectl patch deployment argocd-repo-server -n argocd --type json -p='[
     "op": "add",
     "path": "/spec/template/spec/containers/-",
     "value": {
-      "name": "kpt-repo-plugin",
-      "image": "docker.io/nephio/kpt-repo-plugin:latest",
+      "name": "kpt-repo-argo-cmp",
+      "image": "docker.io/nephio/kpt-repo-argo-cmp:latest",
       "command": ["/var/run/argocd/argocd-cmp-server"],
       "securityContext": {
           "runAsNonRoot": true,
@@ -30,8 +30,8 @@ kubectl patch deployment argocd-repo-server -n argocd --type json -p='[
     "op": "add",
     "path": "/spec/template/spec/containers/-",
     "value": {
-      "name": "kpt-render-plugin",
-      "image": "docker.io/nephio/kpt-render-plugin:latest",
+      "name": "kpt-render-argo-cmp",
+      "image": "docker.io/nephio/kpt-render-argo-cmp:latest",
       "command": ["/var/run/argocd/argocd-cmp-server"],
       "securityContext": {
           "runAsNonRoot": true,
