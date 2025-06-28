@@ -1,0 +1,74 @@
+name: Checkov Security Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions: read-all
+jobs:
+  security_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      ### Step 1: Checkout Repo
+      - name: _Checkout PR Code
+        uses: actions/checkout@v3
+
+      ### Step 2: Run Checkov Scan 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: _Install Checkov
+        run: pip install checkov
+      - name: _Install jq
+        run: sudo apt-get install jq
+
+      - name: _Run Checkov Scan (JSON)
+        run: |
+          echo "PWD: $(pwd)"
+          SKIP_PATHS=$(find . -type d -iname "*test*" | sed 's/^/--skip-path /' | tr '\n' ' ')
+          echo "Using SKIP_PATHS: $SKIP_PATHS"
+          checkov -d . $SKIP_PATHS \
+          --skip-path ./.github/checkov-scan/checkov_raw_report.json \
+          --output json > ./.github/checkov-scan/checkov_raw_report.json || true
+
+      ### Step 3: Build and Run Go code to enrich severity
+      - name: _Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: _Build Severity Enricher
+        run: | 
+          cd .github/checkov-scan
+          go build -o enrich-severity main.go
+
+      - name: _Run Severity Enricher
+        run: ./.github/checkov-scan/enrich-severity -input ./.github/checkov-scan/checkov_raw_report.json -map .github/checkov-scan/severity_map.json -output checkov_enriched.json
+
+      ### Step 4: Use jq to generate filtered report
+      - name: Generate Final Checkov Report using jq
+        run: |
+          jq -f .github/checkov-scan/summary_report.jq checkov_enriched.json | tee checkov_scan_report.json
+
+      ### Step 5: Upload raw scan report as artifact
+      - name: Upload Scan Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference_checkov_raw_report
+          path: ./.github/checkov-scan/checkov_raw_report.json
+
+      ### Step 6: Fail PR if High/Critical/Medium severity findings exist
+      - name: Fail PR if High/Critical/Medium Findings Exist
+        run: |
+          count=$(jq '[.[] | select(.results.failed_checks) | .results.failed_checks[] | select(.severity == "MEDIUM" or .severity == "HIGH" or .severity == "CRITICAL")] | length' checkov_enriched.json)
+          if [ "$count" -gt 0 ]; then
+            echo "::error ::$count HIGH/MEDIUM/CRITICAL findings detected."
+            exit 1
+          fi
