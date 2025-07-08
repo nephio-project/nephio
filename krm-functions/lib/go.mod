@@ -3,7 +3,7 @@ module github.com/nephio-project/nephio/krm-functions/lib
 go 1.24.3
 
 require (
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250702115044-9bfead305c54
 	github.com/google/go-cmp v0.7.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/nephio-project/porch v1.5.0

@@ -41,8 +41,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20250605065354-afe329cf801e h1:vJlcRAKPWKZacDR3D/fjVQVQlVXAuz+qjg9m58l7QpI=
 github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20250605065354-afe329cf801e/go.mod h1:prNhhUAODrB2VqHVead9tB8nLU9ffY4e4jjBwLMNO1M=
-github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e h1:PbxX7cjL4UAO8PFTsgiul96xjzckj3et1jMeAact8Sc=
-github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
+github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250702115044-9bfead305c54 h1:6zDBUBC9dyXsGJbaCpSiQfUnVKIpoO7dhdWHUOmlRQo=
+github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250702115044-9bfead305c54/go.mod h1:Pnd3ImgaWS3OBVjztSiGMACMf+CDs20l5nT5Oljy/tA=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/PuerkitoBio/purell v1.1.1 h1:WEQqlqaGbrPkxLJWfBwQmfEAE1Z7ONdDLqrN38tNFfI=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=

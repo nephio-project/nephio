@@ -3,7 +3,7 @@ module github.com/treactor/treactor-kpt-functions/argo/kpt-render
 go 1.24.3
 
 require (
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250702115044-9bfead305c54
 	k8s.io/apimachinery v0.24.0
 )
 

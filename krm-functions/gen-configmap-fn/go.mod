@@ -5,7 +5,7 @@ go 1.24.3
 replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 
 require (
-	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250702115044-9bfead305c54
 	github.com/stretchr/testify v1.10.0
 	k8s.io/apimachinery v0.30.3
 	sigs.k8s.io/kustomize/kyaml v0.17.2
