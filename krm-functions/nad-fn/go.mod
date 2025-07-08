@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/nad-fn
 
-go 1.24.4
+go 1.24.3
 
 replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 

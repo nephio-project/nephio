@@ -1,6 +1,6 @@
 module github.com/treactor/treactor-kpt-functions/argo/kpt-repo
 
-go 1.24.4
+go 1.24.3
 
 require github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e
 

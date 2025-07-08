@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/testing/mockeryutils
 
-go 1.24.4
+go 1.24.3
 
 require github.com/stretchr/testify v1.10.0
 
