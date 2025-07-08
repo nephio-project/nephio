@@ -96,7 +96,7 @@ func TestNewFromGoStruct(t *testing.T) {
 	}
 	config, err := configSpec.String()
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Errorf("%s", err.Error())
 	}
 	cases := map[string]struct {
 		input       *nadv1.NetworkAttachmentDefinition

@@ -20,7 +20,7 @@ include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 .PHONY: lint
 lint: ## Run Go linter against the codebase
 ifeq ($(CONTAINER_RUNNABLE), 0)
-	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
+	$(RUN_CONTAINER_COMMAND) docker.io/nephio/gotests:1922925584309030912 \
 	golangci-lint run ./... -v
 else
 	golangci-lint run ./... -v
