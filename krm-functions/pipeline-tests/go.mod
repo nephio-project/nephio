@@ -1,8 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/pipeline-tests
 
-go 1.23.8
-
-toolchain go1.24.4
+go 1.24.4
 
 // always test the latest versions of all functions/libs
 replace (

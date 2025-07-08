@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/operators/focom-operator
 
-go 1.23.5
+go 1.24.4
 
 require (
 	github.com/go-logr/logr v1.4.2

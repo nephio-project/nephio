@@ -1,8 +1,6 @@
 module github.com/nephio-project/nephio/controllers/pkg
 
-go 1.23.8
-
-toolchain go1.24.4
+go 1.24.4
 
 replace (
 	github.com/nephio-project/nephio/krm-functions/configinject-fn => ../../krm-functions/configinject-fn
