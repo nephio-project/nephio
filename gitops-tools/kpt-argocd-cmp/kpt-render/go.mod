@@ -2,7 +2,10 @@ module github.com/treactor/treactor-kpt-functions/argo/kpt-render
 
 go 1.23.5
 
-require github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e
+require (
+	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20250605065354-afe329cf801e
+	k8s.io/apimachinery v0.24.0
+)
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/api v0.0.0-20250605065354-afe329cf801e // indirect
@@ -29,7 +32,6 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apimachinery v0.24.0 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220401212409-b28bf2818661 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.7-0.20220418212550-9d5491c2e20c // indirect
