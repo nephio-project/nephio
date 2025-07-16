@@ -1,46 +1,57 @@
+---
 name: OpenSSF Scorecard
-
-# Declare default permissions as read only.
-permissions: read-all
-
-on:
-  schedule:
-    - cron: '30 1 * * 6'
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+push:
+  branches:
+    - main
+pull_request:
+  branches:
+    - main
 jobs:
-  analysis:
+  scorecard:
+    name: OpenSSF Scorecard
     runs-on: ubuntu-latest
+    continue-on-error: false
     permissions:
       security-events: write
       id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit  # TODO: change to 'egress-policy: block'
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - name: Run analysis
-        uses: ossf/scorecard-action@v2.4.0
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@v2.4.2
         with:
           results_file: results.sarif
           results_format: sarif
           publish_results: true
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4.6.0
+      - name: Upload SARIF file
+        uses: actions/upload-artifact@v3
         with:
-          name: SARIF file
+          name: SARIF-results
           path: results.sarif
           retention-days: 5
+      - name: Upload JSON file
+        uses: actions/upload-artifact@v3
+        with:
+          name: JSON-results
+          path: results.json
+          retention-days: 5
+      - name: Upload HTML file
+        uses: actions/upload-artifact@v3
+        with:
+          name: HTML-results
+          path: results.html
+          retention-days: 5
+      - name: Run validation scripts
+        run: |
+          ./scripts/validate_scorecard_workflow.sh
+          ./scripts/validate_docs.sh
       - name: Upload to code-scanning
-        uses: github/codeql-action/upload-sarif@v3.28.9
+        uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif
-          token: ${{ secrets.GITHUB_TOKEN }}
-    
