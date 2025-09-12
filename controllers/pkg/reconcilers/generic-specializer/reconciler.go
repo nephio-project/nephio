@@ -286,6 +286,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 						log.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
 					}
 				}
+
+				if porchv1alpha1.PackageRevisionIsReady(pr.Spec.ReadinessGates, porchcondition.GetPorchConditions(kptfile.Status.Conditions)) {
+					r.recorder.Eventf(pr, corev1.EventTypeNormal, "PackageRevision is Ready", "readiness gates met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
+					return ctrl.Result{}, nil
+				}
 			}
 		}
 
