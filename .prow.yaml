@@ -67,10 +67,12 @@ presubmits:
           args:
             - "-c"
             - |
+              set -eE
+              
               SCAN_DIR="${PWD}"
               ALLOWLIST="${SCAN_DIR}/allowlist.json"
 
-              OPS=("repo" "nomos" "ojo" "copyright" "keyword")
+              OPS=("repo" "nomos" "ojo" "copyright" "keyword" "scan-dir")
 
               for op in "${OPS[@]}"; do
                 echo "Running fossologyscanner operation: $op"
@@ -78,8 +80,7 @@ presubmits:
                   "$op" \
                   --report SPDX_JSON \
                   --dir-path "$SCAN_DIR" \
-                  --allowlist-path "$ALLOWLIST" \
-                  --scan-dir || true
+                  --allowlist-path "$ALLOWLIST" || true
               done
 
               if [ -d results ]; then
