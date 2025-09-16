@@ -72,19 +72,16 @@ presubmits:
 
               SCAN_DIR="${PWD}"
               ALLOWLIST="${SCAN_DIR}/allowlist.json"
-              ROOT_COMPONENT="nephio-project"
 
-              # Define the operations you want to run
               OPS=("repo" "nomos" "ojo" "copyright" "keyword")
 
               for op in "${OPS[@]}"; do
                 echo "Running fossologyscanner operation: $op"
                 /bin/fossologyscanner \
-                  --report SPDX_JSON \
                   "$op" \
+                  --report SPDX_JSON \
                   --dir-path "$SCAN_DIR" \
-                  --allowlist-path "$ALLOWLIST" \
-                  --root-component-name "$ROOT_COMPONENT" || true
+                  --allowlist-path "$ALLOWLIST" || true
               done
 
               if [ -d results ]; then
