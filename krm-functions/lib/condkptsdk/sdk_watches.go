@@ -29,8 +29,8 @@ func (r *sdk) callGlobalWatches() error {
 		if r.debug {
 			fn.Logf("stage1: global watch: %v\n", resCtx.existingResource)
 		}
-		if resCtx.gvkKindCtx.callbackFn != nil {
-			if err := resCtx.gvkKindCtx.callbackFn(resCtx.existingResource); err != nil {
+		if resCtx.callbackFn != nil {
+			if err := resCtx.callbackFn(resCtx.existingResource); err != nil {
 				if r.debug {
 					fn.Logf("stage1: global watch returned an error %v\n", err.Error())
 				}

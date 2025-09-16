@@ -160,17 +160,17 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, newRes
 		case *kptv1.Condition:
 			//fn.Logf("add existing condition: %v\n", x)
 			x := *d
-			r.resourceCtx.existingCondition = &x
+			r.existingCondition = &x
 			return nil
 		case *fn.KubeObject:
 			r.gvkKindCtx = *kc
 			x := *d
 			if newResource {
 				//fn.Logf("add new resource: %v\n", x)
-				r.resourceCtx.newResource = &x
+				r.newResource = &x
 			} else {
 				//fn.Logf("add existing resource: %v\n", x)
-				r.resourceCtx.existingResource = &x
+				r.existingResource = &x
 			}
 			return nil
 		default:
@@ -187,7 +187,7 @@ func (r *resources) set(refs []sdkObjectReference, kc *gvkKindCtx, x any, newRes
 
 func (r *resources) delete(refs []sdkObjectReference) error {
 	if len(refs) == 0 {
-		r.resourceCtx.existingCondition = nil
+		r.existingCondition = nil
 		return nil
 	}
 	// check if resource exists
@@ -203,11 +203,11 @@ func (r *resources) get(refs []sdkObjectReference) map[corev1.ObjectReference]*r
 		resCtxs := map[corev1.ObjectReference]*resourceCtx{}
 		if len(r.resources) == 0 {
 			// specific get
-			resCtxs[corev1.ObjectReference{}] = r.resourceCtx.Deepcopy()
+			resCtxs[corev1.ObjectReference{}] = r.Deepcopy()
 		} else {
 			// wildcard get
 			for sdkRef, res := range r.resources {
-				resCtxs[sdkRef.ref] = res.resourceCtx.Deepcopy()
+				resCtxs[sdkRef.ref] = res.Deepcopy()
 			}
 		}
 		return resCtxs
@@ -219,7 +219,7 @@ func (r *resources) get(refs []sdkObjectReference) map[corev1.ObjectReference]*r
 		resCtxs := map[corev1.ObjectReference]*resourceCtx{}
 		for sdkRef, res := range r.resources {
 			if sdkRef.gvkKind == refs[0].gvkKind {
-				resCtxs[sdkRef.ref] = res.resourceCtx.Deepcopy()
+				resCtxs[sdkRef.ref] = res.Deepcopy()
 			}
 		}
 		return resCtxs
