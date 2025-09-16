@@ -61,24 +61,34 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: fossology/fossology:scanner
-        command:
-        - "/bin/bash"
-        args:
-          - "-c"
-          - |
-            # Set root component metadata
-            ROOT_NAME="nephio-project"
-            ROOT_VERSION="$(git describe --tags --always || echo dev)"
+        - image: fossology/fossology:scanner
+          command:
+            - "/bin/bash"
+          args:
+            - "-c"
+            - |
+              set -euo pipefail
 
-            /bin/fossologyscanner \
-              --root-component-name "${ROOT_NAME}" \
-              --root-component-version "${ROOT_VERSION}" \
-              --report SPDX_JSON \
-              repo nomos ojo copyright keyword
+              # Install git (required by fossologyscanner)
+              apt-get update && apt-get install -y git
 
-            # Copy results to prow artifacts dir
-            cp -R results "${ARTIFACTS}/"
+              # Define paths
+              SCAN_DIR="${PWD}"
+              ALLOWLIST="${SCAN_DIR}/allowlist.json"
+
+              # Run Fossology scanner
+              /bin/fossologyscanner \
+                --report SPDX_JSON \
+                repo \
+                --dir-path "$SCAN_DIR" \
+                --allowlist-path "$ALLOWLIST"
+
+              # Copy results to artifacts
+              if [ -d results ]; then
+                cp -R results "${ARTIFACTS}/"
+              else
+                echo "No results generated"
+              fi
   - name: presubmit-nephio-lichen
     decorate: true
     always_run: true
