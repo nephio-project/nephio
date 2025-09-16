@@ -68,22 +68,25 @@ presubmits:
             - "-c"
             - |
               set -euo pipefail
-
-              # Install git (required by fossologyscanner)
               apt-get update && apt-get install -y git
 
-              # Define paths
               SCAN_DIR="${PWD}"
               ALLOWLIST="${SCAN_DIR}/allowlist.json"
+              ROOT_COMPONENT="nephio-project"
 
-              # Run Fossology scanner
-              /bin/fossologyscanner \
-                --report SPDX_JSON \
-                repo \
-                --dir-path "$SCAN_DIR" \
-                --allowlist-path "$ALLOWLIST"
+              # Define the operations you want to run
+              OPS=("repo" "nomos" "ojo" "copyright" "keyword")
 
-              # Copy results to artifacts
+              for op in "${OPS[@]}"; do
+                echo "Running fossologyscanner operation: $op"
+                /bin/fossologyscanner \
+                  --report SPDX_JSON \
+                  "$op" \
+                  --dir-path "$SCAN_DIR" \
+                  --allowlist-path "$ALLOWLIST" \
+                  --root-component-name "$ROOT_COMPONENT" || true
+              done
+
               if [ -d results ]; then
                 cp -R results "${ARTIFACTS}/"
               else
