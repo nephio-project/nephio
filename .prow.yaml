@@ -67,9 +67,6 @@ presubmits:
           args:
             - "-c"
             - |
-              set -euo pipefail
-              apt-get update && apt-get install -y git
-
               SCAN_DIR="${PWD}"
               ALLOWLIST="${SCAN_DIR}/allowlist.json"
 
@@ -81,7 +78,8 @@ presubmits:
                   "$op" \
                   --report SPDX_JSON \
                   --dir-path "$SCAN_DIR" \
-                  --allowlist-path "$ALLOWLIST" || true
+                  --allowlist-path "$ALLOWLIST" \
+                  --scan-dir || true
               done
 
               if [ -d results ]; then
