@@ -65,10 +65,20 @@ presubmits:
         command:
         - "/bin/bash"
         args:
-        - "-c"
-        - |
-          /bin/fossologyscanner --report SPDX_JSON repo nomos ojo copyright keyword
-          cp -R results ${ARTIFACTS}/    
+          - "-c"
+          - |
+            # Set root component metadata
+            ROOT_NAME="nephio-project"
+            ROOT_VERSION="$(git describe --tags --always || echo dev)"
+
+            /bin/fossologyscanner \
+              --root-component-name "${ROOT_NAME}" \
+              --root-component-version "${ROOT_VERSION}" \
+              --report SPDX_JSON \
+              repo nomos ojo copyright keyword
+
+            # Copy results to prow artifacts dir
+            cp -R results "${ARTIFACTS}/"
   - name: presubmit-nephio-lichen
     decorate: true
     always_run: true
