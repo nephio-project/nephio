@@ -66,7 +66,7 @@ func (r *FocomProvisioningRequestReconciler) Reconcile(ctx context.Context, req 
 	}
 
 	// 2. Check if being deleted
-	if !fpr.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !fpr.DeletionTimestamp.IsZero() {
 		return r.handleDeletion(ctx, &fpr, logger)
 	}
 

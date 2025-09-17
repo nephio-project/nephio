@@ -43,7 +43,7 @@ type KubeObjectExt[T1 any] struct {
 func (r *KubeObjectExt[T1]) GetGoStruct() (*T1, error) {
 	validateTypeOrPanic[T1]()
 	var x T1
-	err := r.KubeObject.As(&x)
+	err := r.As(&x)
 	return &x, err
 }
 

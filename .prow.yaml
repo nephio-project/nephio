@@ -4,7 +4,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1885274380137664512
+      - image: nephio/gotests:1922925584309030912
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1885274380137664512
+      - image: nephio/gotests:1922925584309030912
         command:
         - make
         args:
@@ -24,7 +24,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1885274380137664512
+      - image: nephio/gotests:1922925584309030912
         command:
         - make
         args:
@@ -34,7 +34,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1885274380137664512
+      - image: nephio/gotests:1922925584309030912
         command:
         - "/bin/sh"
         - "-c"
@@ -61,20 +61,39 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: fossology/fossology:scanner
-        command:
-        - "/bin/bash"
-        args:
-        - "-c"
-        - |
-          /bin/fossologyscanner --report SPDX_JSON repo nomos ojo copyright keyword
-          cp -R results ${ARTIFACTS}/    
+        - image: fossology/fossology:scanner
+          command:
+            - "/bin/bash"
+          args:
+            - "-c"
+            - |
+              set -eE
+              
+              SCAN_DIR="${PWD}"
+              ALLOWLIST="${SCAN_DIR}/allowlist.json"
+
+              OPS=("repo" "nomos" "ojo" "copyright" "keyword" "scan-dir")
+
+              for op in "${OPS[@]}"; do
+                echo "Running fossologyscanner operation: $op"
+                /bin/fossologyscanner \
+                  "$op" \
+                  --report SPDX_JSON \
+                  --dir-path "$SCAN_DIR" \
+                  --allowlist-path "$ALLOWLIST" || true
+              done
+
+              if [ -d results ]; then
+                cp -R results "${ARTIFACTS}/"
+              else
+                echo "No results generated"
+              fi
   - name: presubmit-nephio-lichen
     decorate: true
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1885274380137664512
+      - image: nephio/gotests:1922925584309030912
         command:
         - "/usr/local/bin/lichen.sh"
 

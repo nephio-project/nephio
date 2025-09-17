@@ -44,7 +44,7 @@ func Run(rl *fn.ResourceList) (success bool, err error) {
 	existingKustObj := getExistingKustomization(rl)
 	if existingKustObj != nil {
 		// merge the inputs to the kustomization resources list
-		existingKustResources, _, _ := existingKustObj.SubObject.NestedStringSlice("resources")
+		existingKustResources, _, _ := existingKustObj.NestedStringSlice("resources")
 		if len(existingKustResources) != 0 {
 			targetKustResList = mergeAndRemoveDuplicates(existingKustResources, getNonLocalConfig(rl))
 		} else {
@@ -65,7 +65,7 @@ func Run(rl *fn.ResourceList) (success bool, err error) {
 		targetKustObj = *newKustObj
 	}
 	// update the resources list
-	err = targetKustObj.SubObject.SetNestedStringSlice(targetKustResList, "resources")
+	err = targetKustObj.SetNestedStringSlice(targetKustResList, "resources")
 	if err != nil {
 		rl.LogResult(err)
 		return false, nil

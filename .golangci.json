@@ -1,0 +1,52 @@
+{
+  "formatters": {
+    "enable": [
+      "gofmt"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        ".*\\_test.go$",
+        "vendor",
+        "test",
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ]
+    }
+  },
+  "linters": {
+    "default": "none",
+    "enable": [
+      "errcheck",
+      "govet",
+      "ineffassign",
+      "nosprintfhostport",
+      "staticcheck",
+      "unused"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        ".*\\_test.go$",
+        "vendor",
+        "test",
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ],
+      "presets": [
+        "comments",
+        "common-false-positives",
+        "legacy",
+        "std-error-handling"
+      ]
+    }
+  },
+  "run": {
+    "build-tags": [
+      "-buildvcs=false"
+    ]
+  },
+  "version": "2"
+}

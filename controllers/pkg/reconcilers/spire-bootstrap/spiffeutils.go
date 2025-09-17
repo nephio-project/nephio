@@ -231,7 +231,7 @@ func (r *reconciler) updateClusterListConfigMap(ctx context.Context, clusterName
 	}
 
 	// Format the final content with pipe operator and proper indentation
-	formattedConf := "|\n    " + strings.Replace(clustersConf, "\n", "\n    ", -1)
+	formattedConf := "|\n    " + strings.ReplaceAll(clustersConf, "\n", "\n    ")
 
 	// Update the ConfigMap
 	cm.Data = map[string]string{

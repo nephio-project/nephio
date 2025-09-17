@@ -86,7 +86,7 @@ type reconciler struct {
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	cr := &porchv1alpha1.PackageRevision{}
-	if err := r.Client.Get(ctx, req.NamespacedName, cr); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, cr); err != nil {
 		// There's no need to requeue if we no longer exist. Otherwise we'll be
 		// requeued implicitly because we return an error.
 		if resource.IgnoreNotFound(err) != nil {
@@ -165,7 +165,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 func (r *reconciler) GetClusterClient(ctx context.Context, clusterName string) (cluster.ClusterClient, bool, error) {
 	// we need to find the cluster client secret
 	secrets := &corev1.SecretList{}
-	if err := r.Client.List(ctx, secrets); err != nil {
+	if err := r.List(ctx, secrets); err != nil {
 		return nil, false, err
 	}
 	clusterSecret := corev1.Secret{}
