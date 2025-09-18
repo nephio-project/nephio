@@ -277,3 +277,12 @@ do
  kpt alpha rpkg delete $pkg -ndefault
 done
 ```
+
+## Provisioning Request Phases:
+
+Enumeration value 	Description 
+PENDING 	The ProvisioningRequest is waiting to be processed by the O-Cloud (IMS). 
+PROGRESSING 	The O-Cloud (IMS) is processing the ProvisioningRequest and executing the actions to fulfill it. 
+FULFILLED 	The ProvisioningRequest has been successfully processed and completed by the O-Cloud (IMS). 
+FAILED 	The ProvisioningRequest could not be fully processed by the O-Cloud (IMS). 
+DELETING 	The ProvisioningRequest is in the process of being deleted by the O-Cloud (IMS). 
