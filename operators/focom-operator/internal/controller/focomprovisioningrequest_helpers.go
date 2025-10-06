@@ -99,6 +99,7 @@ func (r *FocomProvisioningRequestReconciler) createRemoteProvisioningRequest(
 	if remoteName == "" {
 		remoteName = string(uuid.NewUUID())
 	}
+	
 	// Decode user-provided templateParameters from runtime.RawExtension
 	templateParams, err := decodeRawParameters(fpr.Spec.TemplateParameters)
 	if err != nil {

@@ -3,6 +3,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import os
 import logging
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -14,9 +15,9 @@ def trigger_action():
     
     if data.get('templateName')=='' or data.get('templateVersion')=='' or data.get('templateParameters')=='':
         logging.info("One of the Parameter from templateName,templateVersion,templateParameters is null.. ")
-        return jsonify({"status":{"updateTime":"","message":f"O2IMS Deployment Failed,{e}","provisioningPhase":"FAILED"}}),500
-
-
+        now = datetime.now()
+        dt_string = now.strftime("%Y-%m-%d %H:%M:%S")
+        return jsonify({"status":{"updateTime":dt_string,"message":f"O2IMS Deployment Failed,{e}","provisioningPhase":"FAILED"}}),500
     o2ims_cr={
             'apiVersion': 'o2ims.provisioning.oran.org/v1alpha1',
             'kind': 'ProvisioningRequest',
@@ -34,14 +35,7 @@ def trigger_action():
                 'templateVersion': data.get('templateVersion')
             }   
     }
-
-    # deploy cr in new thread
-    # return response 201 with empty body async
     try:
-        #environment = os.getenv("RUNNING_ENVIRONMENT")
-        #if environment == "TEST":
-        #    config.load_kube_config()
-        #else:
         config.load_incluster_config()
         api = client.CustomObjectsApi()
         response = api.create_cluster_custom_object(
