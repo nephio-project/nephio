@@ -43,7 +43,7 @@ HEADERS_DICT = {
     "Authorization": "Bearer {}".format(TOKEN),
 }
 CLUSTER_PROVISIONER = str(os.getenv("CLUSTER_PROVISIONER", "capi"))
-CREATION_TIMEOUT = int(os.getenv("CREATION_TIMEOUT", 1800))
+lCREATION_TIMEOUT = int(os.getenv("CREATION_TIMEOUT", 1800))
 
 
 def create_package_variant(
