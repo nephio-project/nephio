@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn/testhelpers"
 )
 
 // MustParseKubeObjects reads a list of KubeObjects from the given YAML file or fails the test

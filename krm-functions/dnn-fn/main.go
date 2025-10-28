@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	dnn_fn "github.com/nephio-project/nephio/krm-functions/dnn-fn/fn"
 )
 

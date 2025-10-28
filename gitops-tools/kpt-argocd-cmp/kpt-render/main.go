@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/kptdev/krm-functions-sdk/go/fn"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func init() {

@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The Nephio Authors.
+Copyright 2023-2025 The Nephio Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	invv1alpha1 "github.com/nokia/k8s-ipam/apis/inv/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,28 +33,24 @@ type nodeEventHandler struct {
 	client client.Client
 }
 
-// Create enqueues a request for all ip allocation within the ipam
-func (e *nodeEventHandler) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *nodeEventHandler) Create(ctx context.Context, evt event.TypedCreateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	e.add(ctx, evt.Object, q)
 }
 
-// Create enqueues a request for all ip allocation within the ipam
-func (e *nodeEventHandler) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *nodeEventHandler) Update(ctx context.Context, evt event.TypedUpdateEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	e.add(ctx, evt.ObjectOld, q)
 	e.add(ctx, evt.ObjectNew, q)
 }
 
-// Create enqueues a request for all ip allocation within the ipam
-func (e *nodeEventHandler) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *nodeEventHandler) Delete(ctx context.Context, evt event.TypedDeleteEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	e.add(ctx, evt.Object, q)
 }
 
-// Create enqueues a request for all ip allocation within the ipam
-func (e *nodeEventHandler) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *nodeEventHandler) Generic(ctx context.Context, evt event.TypedGenericEvent[client.Object], q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	e.add(ctx, evt.Object, q)
 }
 
-func (e *nodeEventHandler) add(ctx context.Context, obj runtime.Object, queue adder) {
+func (e *nodeEventHandler) add(ctx context.Context, obj client.Object, queue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 	cr, ok := obj.(*invv1alpha1.Node)
 	if !ok {
 		return

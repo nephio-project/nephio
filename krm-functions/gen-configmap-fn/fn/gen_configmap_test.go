@@ -17,9 +17,10 @@ limitations under the License.
 package fn
 
 import (
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/kptdev/krm-functions-sdk/go/fn"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorCases(t *testing.T) {

@@ -29,7 +29,7 @@ We use a go struct to generate a new KRM resource since this allows type safety
 
 ### reading an existing resource from a package
 
-we use the [kpt fn sdk](https://github.com/GoogleContainerTools/kpt-functions-sdk) for this
+we use the [kpt fn sdk](https://github.com/kptdev/krm-functions-sdk) for this
 
 ### validation of attributes within spec and status
 
@@ -46,8 +46,8 @@ The resourcelist of the kpt package is consumed through a library. As such addin
 ## see also
 
 - [https://go.dev](https://go.dev)
-- [configuration as data](https://github.com/GoogleContainerTools/kpt/blob/main/docs/design-docs/06-config-as-data.md)
+- [configuration as data](https://github.com/kptdev/kpt/blob/main/docs/design-docs/06-config-as-data.md)
 - [cad concepts](https://kpt.dev/book/02-concepts/)
 - [kpt](https://kpt.dev/book/02-concepts/03-functions)
 - [porch](https://kpt.dev/guides/porch-user-guide)
-- [kpt fn sdk](https://github.com/GoogleContainerTools/kpt-functions-sdk)
+- [kpt fn sdk](https://github.com/kptdev/krm-functions-sdk)

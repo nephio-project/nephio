@@ -14,7 +14,7 @@ The `condkptsdk` performs 3 main tasks:
 - lifecycle (CRUD) operation on behalf of the function/controllers
 - readiness gates on behalf of the functions/controllers
 
-The `condkptsdk` is implemented using [golang](https://go.dev) for now and is implemented on top of the [kpt fn sdk](https://github.com/GoogleContainerTools/kpt-functions-sdk)
+The `condkptsdk` is implemented using [golang](https://go.dev) for now and is implemented on top of the [kpt fn sdk](https://github.com/kptdev/krm-functions-sdk)
 
 ## Design
 
@@ -546,8 +546,8 @@ func (f *nadFn) updateResourceFn(forObj *fn.KubeObject, objs fn.KubeObjects) (*f
 ## see also
 
 - [golang](https://go.dev)
-- [configuration as data](https://github.com/GoogleContainerTools/kpt/blob/main/docs/design-docs/06-config-as-data.md)
+- [configuration as data](https://github.com/kptdev/kpt/blob/main/docs/design-docs/06-config-as-data.md)
 - [cad concepts](https://kpt.dev/book/02-concepts/)
 - [kpt](https://kpt.dev/book/02-concepts/03-functions)
 - [porch](https://kpt.dev/guides/porch-user-guide)
-- [kpt fn sdk](https://github.com/GoogleContainerTools/kpt-functions-sdk)
+- [kpt fn sdk](https://github.com/kptdev/krm-functions-sdk)

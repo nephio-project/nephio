@@ -17,9 +17,10 @@ limitations under the License.
 package main
 
 import (
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
+
+	"github.com/kptdev/krm-functions-sdk/go/fn"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
 )
 

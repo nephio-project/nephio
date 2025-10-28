@@ -23,13 +23,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn/testhelpers"
 	"sigs.k8s.io/yaml"
 )
 
 // NOTE: functions in this file are candidates to be eventually merged to
-// github.com/GoogleContainerTools/kpt-functions-sdk/go/fn/testhelpers
+// github.com/kptdev/krm-functions-sdk/go/fn/testhelpers
 
 // RunGoldenTests provides the functionality of its upstream counterpart: testhelpers.RunGoldenTests, but with
 // some extra functionality (i.e. _expected_error.txt, _expected_results.yaml, _actual_output.yaml).
