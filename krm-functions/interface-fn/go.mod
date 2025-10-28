@@ -5,7 +5,7 @@ go 1.24.3
 replace github.com/nephio-project/nephio/krm-functions/lib => ../lib
 
 require (
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/kptdev/krm-functions-sdk/go/fn v0.0.0-20251015063938-03a9634d0809
 	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20230605213956-a1e470f419a4

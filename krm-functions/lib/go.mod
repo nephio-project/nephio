@@ -4,7 +4,7 @@ go 1.24.3
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/kptdev/krm-functions-sdk/go/fn v0.0.0-20251015063938-03a9634d0809
 	github.com/nephio-project/porch v1.5.3
 	github.com/stretchr/testify v1.10.0

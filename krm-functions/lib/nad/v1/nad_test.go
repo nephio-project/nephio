@@ -96,7 +96,7 @@ func TestNewFromGoStruct(t *testing.T) {
 	}
 	config, err := configSpec.String()
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Errorf("error: %s", err.Error())
 	}
 	cases := map[string]struct {
 		input       *nadv1.NetworkAttachmentDefinition
@@ -106,7 +106,7 @@ func TestNewFromGoStruct(t *testing.T) {
 			input: &nadv1.NetworkAttachmentDefinition{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
+					Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",
