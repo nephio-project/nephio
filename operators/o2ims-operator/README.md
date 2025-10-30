@@ -16,6 +16,7 @@ This operator implements O-RAN O2 IMS for K8s based cloud management.
 
 ## Create Development Environment
 
+
 ### Including Nephio mgmt Cluster
 
 The following will create a kind cluster and install required components such as:
