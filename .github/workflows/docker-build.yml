@@ -62,7 +62,7 @@ jobs:
     - uses: actions/checkout@v4
     - run: |
         find krm-functions -name Dockerfile -exec dirname {} \; | while read dir; do
-          docker build -f "$dir/Dockerfile" "$dir"
+          docker build -f "$dir/Dockerfile" .
         done
 
   gitops-tools:
