@@ -1,5 +1,5 @@
 # Build
-ARG BUILDER_IMAGE=golang:1.23.8@sha256:ec5612bbd9e96d5b80a8b968cea06a4a9b985fe200ff6da784bf607063273c59
+ARG BUILDER_IMAGE=golang:1.24.3@sha256:81bf5927dc91aefb42e2bc3a5abdbe9bb3bae8ba8b107e2a4cf43ce3402534c6
 ARG BASE_IMAGE=quay.io/argoproj/argocd:v3.0.6
 
 FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS build
