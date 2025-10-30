@@ -87,8 +87,8 @@ github.com/hansthienpondt/nipam v0.0.5 h1:83Mdwdgx3l9tvio8u8ufan97MWx49n38IJwgSB
 github.com/hansthienpondt/nipam v0.0.5/go.mod h1:dJI5FdzV6iaQyaOH4htGqJNs6wGieJeX3lhPj1Ah19U=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e h1:/1ot/S2PsOCPXCgKMmsv0n0mniZ+VkdSgZK7nlPmZRg=
-github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e/go.mod h1:0UZ99qGMJxitNGUyNbz4Lo/BH3gYfRh8j4JZGa8ywwo=
+github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6 h1:oTB1wbR+94UKg7OPvT7WMnoRwqbjrBRVXJbrJgnLrBI=
+github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6/go.mod h1:0UZ99qGMJxitNGUyNbz4Lo/BH3gYfRh8j4JZGa8ywwo=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

@@ -2,7 +2,7 @@
 
 ### Purpose of this controller
 The purpose of this controller is to create a single binary for all the nephio management controllers for example specializer controllers,
-bootstrap controller, repo-controller, edge watcher etc.
+bootstrap controller, repo-controller, etc.
 
 ### Design
 nephio/operators/nephio-controller-manager operator is the operator manager, which will manage all the nephio management controllers. 

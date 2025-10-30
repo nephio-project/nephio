@@ -48,7 +48,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e // indirect
+	github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kentik/patricia v1.2.0 // indirect

@@ -13,7 +13,7 @@ require (
 	code.gitea.io/sdk/gitea v0.22.0
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-cmp v0.7.0
-	github.com/henderiw-nephio/network v0.0.0-20230626193806-04743403261e
+	github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6
 	github.com/kptdev/krm-functions-sdk/go/fn v0.0.0-20251015063938-03a9634d0809
 	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
