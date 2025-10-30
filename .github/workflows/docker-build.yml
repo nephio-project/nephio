@@ -1,0 +1,46 @@
+name: Docker Build Validation
+
+on:
+  pull_request:
+
+jobs:
+  nephio-operator:
+    if: contains(github.event.pull_request.changed_files, 'operators/nephio-controller-manager/') || contains(github.event.pull_request.changed_files, 'controllers/pkg')
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/nephio-controller-manager/Dockerfile .
+
+  o2ims-operator:
+    if: contains(github.event.pull_request.changed_files, 'operators/o2ims-operator/')
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/o2ims-operator/Dockerfile operators/o2ims-operator
+
+  focom-operator:
+    if: contains(github.event.pull_request.changed_files, 'operators/focom-operator/')
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/focom-operator/Dockerfile operators/focom-operator
+
+  krm-functions:
+    if: contains(github.event.pull_request.changed_files, 'krm-functions/')
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        find krm-functions -name Dockerfile -exec dirname {} \; | while read dir; do
+          docker build -f "$dir/Dockerfile" "$dir"
+        done
+
+  gitops-tools:
+    if: contains(github.event.pull_request.changed_files, 'gitops-tools/')
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        find gitops-tools -name Dockerfile -exec dirname {} \; | while read dir; do
+          docker build -f "$dir/Dockerfile" "$dir"
+        done
