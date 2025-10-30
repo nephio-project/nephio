@@ -22,7 +22,7 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
@@ -121,7 +121,7 @@ func (o *KubeObjectExt[T1]) SetNestedFieldKeepFormatting(value interface{}, fiel
 //
 // NOTE: This functionality should be solved in the upstream SDK.
 // Merging the code below to the upstream SDK is in progress and tracked in this issue:
-// https://github.com/GoogleContainerTools/kpt/issues/3923
+// https://github.com/kptdev/kpt/issues/3923
 func SetNestedFieldKeepFormatting(obj *fn.KubeObject, value interface{}, fields ...string) error {
 	oldNode := yamlNodeOf(&obj.SubObject)
 	if len(fields) == 0 {

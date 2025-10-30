@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
 	nephiorefv1alpha1 "github.com/nephio-project/api/references/v1alpha1"

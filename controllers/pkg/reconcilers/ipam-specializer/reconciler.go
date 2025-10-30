@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	function "github.com/nephio-project/nephio/krm-functions/ipam-fn/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"

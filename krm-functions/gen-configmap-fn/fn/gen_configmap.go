@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"

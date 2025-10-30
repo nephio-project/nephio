@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	tlib "github.com/nephio-project/nephio/krm-functions/lib/test"
 
 	dnn_fn "github.com/nephio-project/nephio/krm-functions/dnn-fn/fn"

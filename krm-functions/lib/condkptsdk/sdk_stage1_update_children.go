@@ -20,7 +20,7 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
 	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"

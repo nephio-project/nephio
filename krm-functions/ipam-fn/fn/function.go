@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/krm-functions/lib/condkptsdk"
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	resourcev1alpha1 "github.com/nokia/k8s-ipam/apis/resource/common/v1alpha1"

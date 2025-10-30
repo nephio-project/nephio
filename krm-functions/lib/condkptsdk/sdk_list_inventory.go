@@ -16,7 +16,7 @@ limitations under the License.
 
 package condkptsdk
 
-import "github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+import "github.com/kptdev/krm-functions-sdk/go/fn"
 
 func (r *sdk) listInventory() {
 	for _, entry := range r.inv.list() {
