@@ -30,25 +30,29 @@ jobs:
           gitops-tools:
             - 'gitops-tools/**'
 
-  docker-build:
+  nephio-operator:
     needs: changes
+    if: needs.changes.outputs.nephio-operator == 'true'
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        include:
-        - name: nephio-operator
-          dockerfile: operators/nephio-controller-manager/Dockerfile
-          context: .
-        - name: o2ims-operator
-          dockerfile: operators/o2ims-operator/Dockerfile
-          context: operators/o2ims-operator
-        - name: focom-operator
-          dockerfile: operators/focom-operator/Dockerfile
-          context: operators/focom-operator
-    if: needs.changes.outputs[matrix.name] == 'true'
     steps:
     - uses: actions/checkout@v4
-    - run: docker build -f ${{ matrix.dockerfile }} ${{ matrix.context }}
+    - run: docker build -f operators/nephio-controller-manager/Dockerfile .
+
+  o2ims-operator:
+    needs: changes
+    if: needs.changes.outputs.o2ims-operator == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/o2ims-operator/Dockerfile operators/o2ims-operator
+
+  focom-operator:
+    needs: changes
+    if: needs.changes.outputs.focom-operator == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/focom-operator/Dockerfile operators/focom-operator
 
   krm-functions:
     needs: changes
