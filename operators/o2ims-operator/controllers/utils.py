@@ -272,3 +272,23 @@ def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
     if logger:
         logger.debug(f"get_capi_cluster response: {r.json()}")
     return response
+
+def validate_cluster_creation_request(params: dict = None):
+    """
+    :param params: parameters of cluster creation request
+    :type params: dict
+    :return: None
+    :rtype: None
+    """
+  
+    # Validate templateName
+    if not params.get('templateName'):
+        raise ValueError("Parameter 'templateName' is empty or missing.")
+
+    # Validate templateVersion
+    if not params.get('templateVersion'):
+        raise ValueError("Parameter 'templateVersion' is empty or missing.")
+
+    # Validate templateParameters
+    if not params.get('templateParameters'):
+        raise ValueError("Parameter 'templateParameters' is empty or missing.")
