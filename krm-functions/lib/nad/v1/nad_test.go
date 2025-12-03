@@ -20,9 +20,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	"github.com/google/go-cmp/cmp"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -96,7 +96,7 @@ func TestNewFromGoStruct(t *testing.T) {
 	}
 	config, err := configSpec.String()
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Errorf("error: %s", err.Error())
 	}
 	cases := map[string]struct {
 		input       *nadv1.NetworkAttachmentDefinition
@@ -106,7 +106,7 @@ func TestNewFromGoStruct(t *testing.T) {
 			input: &nadv1.NetworkAttachmentDefinition{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: nadv1.SchemeGroupVersion.Identifier(),
-					Kind:       reflect.TypeFor[nadv1.NetworkAttachmentDefinition]().Name(),
+					Kind:       reflect.TypeOf(nadv1.NetworkAttachmentDefinition{}).Name(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "a",

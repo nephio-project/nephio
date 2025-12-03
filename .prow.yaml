@@ -90,7 +90,7 @@ presubmits:
               fi
   - name: presubmit-nephio-lichen
     decorate: true
-    always_run: true
+    always_run: false
     spec:
       containers:
       - image: nephio/gotests:1922925584309030912

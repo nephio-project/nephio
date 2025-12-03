@@ -1,0 +1,77 @@
+name: Docker Build Validation
+
+on:
+  pull_request:
+
+jobs:
+  changes:
+    runs-on: ubuntu-22.04
+    outputs:
+      nephio-operator: ${{ steps.filter.outputs.nephio-operator }}
+      o2ims-operator: ${{ steps.filter.outputs.o2ims-operator }}
+      focom-operator: ${{ steps.filter.outputs.focom-operator }}
+      krm-functions: ${{ steps.filter.outputs.krm-functions }}
+      gitops-tools: ${{ steps.filter.outputs.gitops-tools }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          nephio-operator:
+            - 'operators/nephio-controller-manager/**'
+            - 'controllers/pkg/**'
+          o2ims-operator:
+            - 'operators/o2ims-operator/**'
+          focom-operator:
+            - 'operators/focom-operator/**'
+          krm-functions:
+            - 'krm-functions/**'
+          gitops-tools:
+            - 'gitops-tools/**'
+
+  nephio-operator:
+    needs: changes
+    if: needs.changes.outputs.nephio-operator == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/nephio-controller-manager/Dockerfile .
+
+  o2ims-operator:
+    needs: changes
+    if: needs.changes.outputs.o2ims-operator == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/o2ims-operator/Dockerfile operators/o2ims-operator
+
+  focom-operator:
+    needs: changes
+    if: needs.changes.outputs.focom-operator == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker build -f operators/focom-operator/Dockerfile operators/focom-operator
+
+  krm-functions:
+    needs: changes
+    if: needs.changes.outputs.krm-functions == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        find krm-functions -name Dockerfile -exec dirname {} \; | while read dir; do
+          docker build -f "$dir/Dockerfile" .
+        done
+
+  gitops-tools:
+    needs: changes
+    if: needs.changes.outputs.gitops-tools == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        find gitops-tools -name Dockerfile -exec dirname {} \; | while read dir; do
+          docker build -f "$dir/Dockerfile" "$dir"
+        done

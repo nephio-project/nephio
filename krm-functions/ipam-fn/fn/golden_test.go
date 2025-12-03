@@ -19,7 +19,7 @@ package fn
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	tst "github.com/nephio-project/nephio/krm-functions/lib/test"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/ipam"
 )

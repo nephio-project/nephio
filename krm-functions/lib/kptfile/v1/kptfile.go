@@ -19,7 +19,7 @@ package v1
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"

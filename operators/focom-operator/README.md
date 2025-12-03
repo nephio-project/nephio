@@ -1,5 +1,5 @@
 # focom-operator
-Starting point implementation of FOCOM operator, which reconciles FOCOM provisioning requests into oran provisioning requests.
+Starting point implementation of FOCOM operator, which reconciles FOCOM provisioning requests into O-RAN provisioning requests.
 
 ## Description
 Reconciling FOCOM provisioning requests into oran provisioning requests, will look for correct TemplateInfo referenced in the request. Current validation only 

@@ -185,7 +185,7 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: kpt
 kpt: $(KPT) ## Download kpt locally if necessary.
 $(KPT): $(LOCALBIN)
-	test -s $(LOCALBIN)/kpt || GOBIN=$(LOCALBIN) go install -v github.com/GoogleContainerTools/kpt@$(KPT_VERSION)
+	test -s $(LOCALBIN)/kpt || GOBIN=$(LOCALBIN) go install -v github.com/kptdev/kpt@$(KPT_VERSION)
 
 .PHONY: kptgen
 kptgen: $(KPTGEN) ## Download kptgen locally if necessary.

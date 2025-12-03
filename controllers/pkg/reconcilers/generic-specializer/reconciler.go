@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
 	porchutil "github.com/nephio-project/nephio/controllers/pkg/porch/util"

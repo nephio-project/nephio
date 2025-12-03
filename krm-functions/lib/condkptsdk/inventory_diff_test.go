@@ -18,8 +18,8 @@ package condkptsdk
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
