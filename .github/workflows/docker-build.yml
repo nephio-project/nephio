@@ -32,46 +32,74 @@ jobs:
 
   nephio-operator:
     needs: changes
-    if: needs.changes.outputs.nephio-operator == 'true'
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: docker build -f operators/nephio-controller-manager/Dockerfile .
+    - name: Build or skip
+      run: |
+        if [[ "${{ needs.changes.outputs.nephio-operator }}" == "true" ]]; then
+          docker build -f operators/nephio-controller-manager/Dockerfile .
+        else
+          echo "No changes detected - skipping build"
+          exit 0
+        fi
 
   o2ims-operator:
     needs: changes
-    if: needs.changes.outputs.o2ims-operator == 'true'
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: docker build -f operators/o2ims-operator/Dockerfile operators/o2ims-operator
+    - name: Build or skip
+      run: |
+        if [[ "${{ needs.changes.outputs.o2ims-operator }}" == "true" ]]; then
+          docker build -f operators/o2ims-operator/Dockerfile operators/o2ims-operator
+        else
+          echo "No changes detected - skipping build"
+          exit 0
+        fi
 
   focom-operator:
     needs: changes
-    if: needs.changes.outputs.focom-operator == 'true'
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: docker build -f operators/focom-operator/Dockerfile operators/focom-operator
+    - name: Build or skip
+      run: |
+        if [[ "${{ needs.changes.outputs.focom-operator }}" == "true" ]]; then
+          docker build -f operators/focom-operator/Dockerfile operators/focom-operator
+        else
+          echo "No changes detected - skipping build"
+          exit 0
+        fi
 
   krm-functions:
     needs: changes
-    if: needs.changes.outputs.krm-functions == 'true'
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: |
-        find krm-functions -name Dockerfile -exec dirname {} \; | while read dir; do
-          docker build -f "$dir/Dockerfile" .
-        done
+    - name: Build or skip
+      run: |
+        if [[ "${{ needs.changes.outputs.krm-functions }}" == "true" ]]; then
+          find krm-functions -name Dockerfile -exec dirname {} \; | while read dir; do
+            docker build -f "$dir/Dockerfile" .
+          done
+        else
+          echo "No changes detected - skipping build"
+          exit 0
+        fi
 
   gitops-tools:
     needs: changes
-    if: needs.changes.outputs.gitops-tools == 'true'
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: |
-        find gitops-tools -name Dockerfile -exec dirname {} \; | while read dir; do
-          docker build -f "$dir/Dockerfile" "$dir"
-        done
+    - name: Build or skip
+      run: |
+        if [[ "${{ needs.changes.outputs.gitops-tools }}" == "true" ]]; then
+          find gitops-tools -name Dockerfile -exec dirname {} \; | while read dir; do
+            docker build -f "$dir/Dockerfile" "$dir"
+          done
+        else
+          echo "No changes detected - skipping build"
+          exit 0
+        fi
