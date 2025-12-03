@@ -22,6 +22,17 @@ import logging
 import kopf
 import os
 
+from flask import Flask
+import threading
+from api import app  # Import the Flask app
+
+
+
+# Start Flask in a separate thread
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
+threading.Thread(target=run_flask, daemon=True).star
 
 @kopf.on.startup()
 def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):

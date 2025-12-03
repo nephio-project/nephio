@@ -126,6 +126,20 @@ kind delete cluster -n edge
 
 O2IMS operator listens for ProvisioningRequest CR and once it is created it goes through different stages 
 
+Following are the Provisioning Request Phases:
+
+
+
+| Status   | Description |
+| ---      | ---         |
+| `PENDING`  | The ProvisioningRequest is waiting to be processed by the O-Cloud (IMS). |
+| `PROGRESSING` | The O-Cloud (IMS) is processing the ProvisioningRequest and executing the actions to fulfill it. |
+| `FULFILLED` | The ProvisioningRequest has been successfully processed and completed by the O-Cloud (IMS). |
+| `FAILED` | The ProvisioningRequest could not be fully processed by the O-Cloud (IMS). |
+| `DELETING` |  	The ProvisioningRequest is in the process of being deleted by the O-Cloud (IMS). |
+
+
+
 1. `ProvisioningRequest validation`: The controller [provisioning_request_validation_controller.py](./controllers/provisioning_request_validation_controller.py) validates the provisioning requests. Currently it checks if the field `clusterName` and `clusterProvisioner`. At the moment only `capi` handled clusters are support
 2. `ProvisioningRequest creation`: The controller [provisioning_request_controller.py](./controllers/provisioning_request_controller.py) takes care of creating the a package variant for Porch which can be applied to the cluster where porch is running. After applying package variant it waits for the cluster to be created and it follows the creation via querying `clusters.cluster.x-k8s.io` endpoint. Later we will add querying of packageRevisions also but at the moment their is a problem with querying packageRevisions because sometimes Porch is not able to process the request
 
@@ -278,3 +292,4 @@ do
  kpt alpha rpkg delete $pkg -ndefault
 done
 ```
+
