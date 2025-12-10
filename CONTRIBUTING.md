@@ -10,6 +10,8 @@ We welcome all contributions, suggestions, and feedback, so please do not hesita
     - [3. Submit Pull Requests](#3-submit-pull-requests)
       - [How to Create a PR](#how-to-create-a-pr)
       - [Developer Certificate of Origin (DCO) Sign off](#developer-certificate-of-origin-dco-sign-off)
+      - [Code Review of the Pull Request](#code-review-of-the-pull-request)
+      - [Possible problems and quirks](#possible-problems-and-quirks)
 
 ## Engage with us
 
@@ -135,3 +137,42 @@ This can easily be done with the `-s` command line option to append this automat
 ```sh
 git commit -s -m 'This is my commit message'
 ```
+#### Code Review of the Pull Request
+
+Nephio Project uses [Prow](https://docs.prow.k8s.io/) among many other tools to test and manage the Pull Requests. Prow also allows to interact with PR through ['slash' commands](https://prow.nephio.io/command-help)
+
+##### The Code Review Process
+The **author** submits a PR
+- Step 0: [Prow bot](https://github.com/apps/nephio-prow) assigns reviewers and approvers for the PR based on [OWNERS files](https://www.kubernetes.dev/docs/guide/owners/) please note that single repository can have multiple OWNERS files, bot will choose reviewers and approvers from file nearest to changed code 
+- Step 1: Prow tests the PR
+If the author is not (yet) a member of Nephio GitHub organization Prow will add label 'needs-ok-to-test' which will prevent Prow from running tests on it. This is a security measure as many tests allow to execute arbitrary code, create objects in infrastructure and so on. To allow the tests to run any member of organization can use command
+/ok-to-test in comment, then tests will run. Status of their execution will be visible on PR page itself or if one wants to see logs, previous runs etc those are available on [Prow's Dashboard](https://prow.nephio.io/)
+Definions of those tests are either in local [inrepoconfig](https://docs.prow.k8s.io/docs/inrepoconfig/) file .prow.yaml or in [central Prow configuration](https://github.com/nephio-project/test-infra/tree/main/prow/config)
+- Step 2: Review of the PR
+Reviewers check the code quality, correctness, software engineering best practices, coding style and so on.
+Anyone in the organization can act as a reviewer with the exception of the individual who opened the PR
+If PR content looks good to them, a reviewer types /lgtm (**looks** **good** **to** **me**) in the PR comment or review; Prow bot will then apply 'lgtm' label to the PR, this can be canceled by removing label or using '/lgtm cancel' command
+- Step 3: Approval of the PR
+Only people listed in the relevant OWNERS file in section 'approvers', either directly or through an alias, can act as approvers, including the individual who opened the PR.
+Approvers check for acceptance criteria, compatibility with other features, forwards/backwards compatibility, API definitions and so on.
+If the code changes gets their approval, an approver types /approve in a PR comment or review; this as well can be canceled with '/approve cancel' command
+Prow bot applies an approved label
+- Step 4: Automation merges the PR
+If all of the following conditions are met:
+  - All required labels are present (lgtm, approved)
+  - No blocking labels are present (do-not-merge/hold, needs-rebase)
+  - There are no presubmit prow jobs failing 
+  - Then the PR will automatically be merged
+
+##### Possible problems and quirks
+
+- Approval and lgtm process
+  - Technically anyone who is a member of the Nephio GitHub organization can /lgtm a PR which can be both good (reviews from non-members are encouraged as a way of demonstrating experience and intent to become a member or reviewer) and bad (/lgtm’s from members may be a sign that our OWNERS files are too small, or that the existing reviewers are too busy). Note to approvers (who can do both approve and lgtm) - if possible please leave lgtm to other in the spirit of having at least two sets of eyes on every change.
+  - Reviewers, and approvers are unresponsive
+Please do not rely on GitHub notifications sent to approvers/reviewers or mentions like “pinging @the_rewiever for approval” - those are really hard to filter and reviewers/approvers are very busy people. If your PR doesn't get enough attention consider asking for the review in respective Slack channels.
+- Prow things
+  - If the presubmit job fails there's a message posted by Prow bot that explains steps how to re-run it, for example with command /test my_awesome_presubmit_test
+  - Sometimes it takes a while to merge the PR after it was approved, PR queue can be observed on [Prow's Tide status dashboard](https://prow.nephio.io/tide)
+  - If the PR gets final step like approve or lgtm done after 12 hours pass since presubmit tests were run they are getting re-triggered
+- GitHub things
+  - EasyCLA sometimes improperly checks the status, it can be re-triggered with `/easycla` command or it often sorts out when you close and re-open the PR
