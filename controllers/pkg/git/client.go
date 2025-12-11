@@ -6,6 +6,18 @@ import (
 	gittypes "github.com/nephio-project/nephio/controllers/pkg/git/types"
 )
 
+// ProviderType represents the type of git provider
+type ProviderType string
+
+const (
+	// ProviderGitea represents Gitea git provider
+	ProviderGitea ProviderType = "gitea"
+	// ProviderGitHub represents GitHub git provider
+	ProviderGitHub ProviderType = "github"
+	// ProviderGitLab represents GitLab git provider
+	ProviderGitLab ProviderType = "gitlab"
+)
+
 //go:generate mockery --name=Client --output=. --outpkg=git
 type Client interface {
 	Start(ctx context.Context)

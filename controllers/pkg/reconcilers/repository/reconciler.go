@@ -52,20 +52,35 @@ const (
 // SetupWithManager sets up the controller with the Manager.
 func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
 	cfg, ok := c.(*ctrlconfig.ControllerConfig)
-	// Sending the porchclient to git server, this will be used to get
-	// the secret objects for git server client authentication. The client
-	// of the manager of this controller cannot be used at this point.
-	// Should this be conditional ? Only if we have repo/token reconciler
-
-	var e error
-	r.gitClient, e = giteaclient.GetClient(ctx, resource.NewAPIPatchingApplicator(cfg.PorchClient))
-	if e != nil {
-		return nil, e
-	}
-
 	if !ok {
 		return nil, fmt.Errorf("cannot initialize, expecting controllerConfig, got: %s", reflect.TypeOf(c).Name())
 	}
+
+	// Sending the porchclient to git server, this will be used to get
+	// the secret objects for git server client authentication. The client
+	// of the manager of this controller cannot be used at this point.
+	porchClient := resource.NewAPIPatchingApplicator(cfg.PorchClient)
+
+	// Initialize git clients for all supported providers
+	r.gitClients = make(map[git.ProviderType]git.Client)
+
+	// Initialize Gitea client
+	if giteaClient, err := giteaclient.GetClient(ctx, porchClient); err == nil {
+		r.gitClients[git.ProviderGitea] = giteaClient
+	} else {
+		// Gitea client initialization failed, but continue - it might not be needed
+		log.FromContext(ctx).Info("failed to initialize gitea client", "error", err)
+	}
+
+	// Future: Initialize GitHub client when supported
+	// if githubClient, err := githubclient.GetClient(ctx, porchClient); err == nil {
+	//     r.gitClients[git.ProviderGitHub] = githubClient
+	// }
+
+	// Future: Initialize GitLab client when supported
+	// if gitlabClient, err := gitlabclient.GetClient(ctx, porchClient); err == nil {
+	//     r.gitClients[git.ProviderGitLab] = gitlabClient
+	// }
 
 	if err := infrav1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, err
@@ -82,8 +97,8 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 type reconciler struct {
 	resource.APIPatchingApplicator
-	gitClient git.Client
-	finalizer *resource.APIFinalizer
+	gitClients map[git.ProviderType]git.Client
+	finalizer  *resource.APIFinalizer
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -100,8 +115,26 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
+	// Detect provider from annotation (defaults to gitea for backward compatibility)
+	provider := git.ProviderGitea
+	if cr.Annotations != nil {
+		if p, ok := cr.Annotations["nephio.org/git-provider"]; ok {
+			provider = git.ProviderType(p)
+			log.Info("detected git provider from annotation", "provider", provider)
+		}
+	}
+
+	// Get the pre-initialized git client for the provider
+	gitClient, exists := r.gitClients[provider]
+	if !exists {
+		// Provider not supported or client not initialized
+		log.Info("git provider not supported or client not initialized", "provider", provider)
+		cr.SetConditions(infrav1alpha1.Ready())
+		return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+	}
+
 	// check if client exists otherwise retry
-	if !r.gitClient.IsInitialized() {
+	if !gitClient.IsInitialized() {
 		err := fmt.Errorf("git server unreachable")
 		log.Error(err, "cannot connect to git server")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
@@ -114,7 +147,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		// Delete the repo from the git server
 		// when successful remove the finalizer
 		if cr.Spec.Lifecycle.DeletionPolicy == commonv1alpha1.DeletionDelete {
-			if err := r.deleteRepo(ctx, r.gitClient, cr); err != nil {
+			if err := r.deleteRepo(ctx, gitClient, cr); err != nil {
 				log.Error(err, "cannot delete repo in git server")
 				return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 			}
@@ -138,7 +171,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	// upsert repo in git server
-	if err := r.upsertRepo(ctx, r.gitClient, cr); err != nil {
+	if err := r.upsertRepo(ctx, gitClient, cr); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())

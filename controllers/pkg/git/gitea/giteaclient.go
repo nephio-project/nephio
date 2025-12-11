@@ -25,7 +25,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
-	git "github.com/nephio-project/nephio/controllers/pkg/git"
+	"github.com/nephio-project/nephio/controllers/pkg/git"
 	gittypes "github.com/nephio-project/nephio/controllers/pkg/git/types"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	corev1 "k8s.io/api/core/v1"

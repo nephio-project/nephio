@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	gitclient "github.com/nephio-project/nephio/controllers/pkg/git"
+	git "github.com/nephio-project/nephio/controllers/pkg/git"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -36,7 +36,7 @@ func TestClient(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    gitclient.Client
+		want    git.Client
 		wantErr bool
 	}{
 
