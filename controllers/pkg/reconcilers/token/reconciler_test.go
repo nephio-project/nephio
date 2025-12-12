@@ -33,7 +33,7 @@ import (
 
 type fields struct {
 	APIPatchingApplicator resource.APIPatchingApplicator
-	gitClient             git.Client
+	gitClients            map[git.ProviderType]git.Client
 	finalizer             *resource.APIFinalizer
 }
 type args struct {
@@ -78,7 +78,7 @@ func TestDeleteToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &reconciler{
 				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
-				gitClient:             tt.fields.gitClient,
+				gitClients:            tt.fields.gitClients,
 				finalizer:             tt.fields.finalizer,
 			}
 
@@ -189,7 +189,7 @@ func TestCreateToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &reconciler{
 				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
-				gitClient:             tt.fields.gitClient,
+				gitClients:            tt.fields.gitClients,
 				finalizer:             tt.fields.finalizer,
 			}
 
@@ -205,6 +205,7 @@ func TestCreateToken(t *testing.T) {
 func initMockeryMocks(tt *tokenTests) {
 	mockGitClient := new(git.MockClient)
 	tt.args.gitClient = mockGitClient
-	tt.fields.gitClient = mockGitClient
+	tt.fields.gitClients = make(map[git.ProviderType]git.Client)
+	tt.fields.gitClients[git.ProviderGitea] = mockGitClient
 	mockeryutils.InitMocks(&mockGitClient.Mock, tt.mocks)
 }

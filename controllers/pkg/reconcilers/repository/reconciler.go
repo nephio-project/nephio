@@ -115,13 +115,11 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
-	// Detect provider from annotation (defaults to gitea for backward compatibility)
+	// Detect provider from spec (defaults to gitea for backward compatibility)
 	provider := git.ProviderGitea
-	if cr.Annotations != nil {
-		if p, ok := cr.Annotations["nephio.org/git-provider"]; ok {
-			provider = git.ProviderType(p)
-			log.Info("detected git provider from annotation", "provider", provider)
-		}
+	if cr.Spec.Provider != nil {
+		provider = git.ProviderType(*cr.Spec.Provider)
+		log.Info("detected git provider from spec", "provider", provider)
 	}
 
 	// Get the pre-initialized git client for the provider
