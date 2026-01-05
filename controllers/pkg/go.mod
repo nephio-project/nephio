@@ -12,7 +12,9 @@ replace (
 require (
 	code.gitea.io/sdk/gitea v0.22.0
 	github.com/go-logr/logr v1.4.2
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/go-cmp v0.7.0
+	github.com/google/go-github/v66 v66.0.0
 	github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6
 	github.com/kptdev/krm-functions-sdk/go/fn v0.0.0-20251015063938-03a9634d0809
 	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
@@ -39,6 +41,13 @@ require (
 )
 
 require (
+	github.com/aws/aws-lambda-go v1.51.1
+	github.com/aws/aws-sdk-go v1.44.206
+	github.com/google/go-github/v71 v71.0.0
+	golang.org/x/oauth2 v0.30.0 // indirect
+)
+
+require (
 	github.com/42wim/httpsig v1.2.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -58,9 +67,11 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kentik/patricia v1.2.0 // indirect
@@ -87,7 +98,6 @@ require (
 	go4.org/netipx v0.0.0-20230303233057-f1b76eb4bb35 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
@@ -108,3 +118,5 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
+
+replace github.com/nephio-project/api => ../../../api

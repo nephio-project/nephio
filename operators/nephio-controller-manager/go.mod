@@ -3,6 +3,7 @@ module github.com/nephio-project/nephio/operators/nephio-controller-manager
 go 1.24.3
 
 replace (
+	github.com/nephio-project/api => ../../../api
 	github.com/nephio-project/nephio/controllers/pkg => ../../controllers/pkg
 	github.com/nephio-project/nephio/krm-functions/configinject-fn => ../../krm-functions/configinject-fn
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
