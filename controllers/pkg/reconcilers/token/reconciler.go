@@ -25,6 +25,7 @@ import (
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	git "github.com/nephio-project/nephio/controllers/pkg/git"
 	giteaclient "github.com/nephio-project/nephio/controllers/pkg/git/gitea"
+	githubclient "github.com/nephio-project/nephio/controllers/pkg/git/github"
 	"github.com/nephio-project/nephio/controllers/pkg/git/types"
 	ctrlconfig "github.com/nephio-project/nephio/controllers/pkg/reconcilers/config"
 	reconcilerinterface "github.com/nephio-project/nephio/controllers/pkg/reconcilers/reconciler-interface"
@@ -76,9 +77,9 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 	}
 
 	// Future: Initialize GitHub client when supported
-	// if githubClient, err := githubclient.GetClient(ctx, porchClient); err == nil {
-	//     r.gitClients[git.ProviderGitHub] = githubClient
-	// }
+	if githubClient, err := githubclient.GetClient(ctx, porchClient); err == nil {
+		r.gitClients[git.ProviderGitHub] = githubClient
+	}
 
 	// Future: Initialize GitLab client when supported
 	// if gitlabClient, err := gitlabclient.GetClient(ctx, porchClient); err == nil {
