@@ -47,13 +47,15 @@ metadata:
   namespace: default
 type: Opaque
 stringData:
-  app_id: "<your-github-app-id>"
-  installation_id: "<your-installation-id>"
+  app_id: "123456"
+  installation_id: "12345678"
   private_key: |
     -----BEGIN RSA PRIVATE KEY-----
     <your-private-key-content>
     -----END RSA PRIVATE KEY-----
 ```
+
+**Important**: Both `app_id` and `installation_id` must be quoted as strings in YAML.
 
 Or using kubectl:
 
