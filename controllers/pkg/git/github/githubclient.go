@@ -112,14 +112,15 @@ func (r *gc) Start(ctx context.Context) {
 			}
 
 			// Extract GitHub App credentials from secret
+			personalAccessToken := string(secret.Data["personal_access_token"])
 			appID := string(secret.Data["app_id"])
 			installID := string(secret.Data["installation_id"])
 			privateKeyPEM := string(secret.Data["private_key"])
 
 			r.l.Info("extracted credentials from secret", "appID", appID, "installID", installID, "privateKeyLength", len(privateKeyPEM))
 
-			if appID == "" || installID == "" || privateKeyPEM == "" {
-				r.l.Error(fmt.Errorf("missing credentials in secret"), "secret must contain app_id, installation_id, and private_key")
+			if appID == "" || installID == "" || privateKeyPEM == "" || personalAccessToken == "" {
+				r.l.Error(fmt.Errorf("missing credentials in secret"), "secret must contain app_id, installation_id, personal_access_token and private_key")
 				break
 			}
 
@@ -129,30 +130,13 @@ func (r *gc) Start(ctx context.Context) {
 				r.l.Error(err, "Failed to parse private key")
 				break
 			}
-
-			// Generate JWT for GitHub App
-			jwtToken, err := generateJWT(appID, privateKey)
-			if err != nil {
-				r.l.Error(err, "Failed to generate JWT", "appID", appID)
-				break
-			}
-			r.l.Info("JWT generated successfully", "jwtLength", len(jwtToken))
-
-			// Get installation access token
-			installToken, err := getInstallationToken(jwtToken, installID)
-			if err != nil {
-				r.l.Error(err, "Failed to get installation token", "installID", installID)
-				break
-			}
-			r.l.Info("Installation token retrieved successfully", "tokenLength", len(installToken))
-
-			// Create GitHub client with installation token
-			githubClient := github.NewClient(nil).WithAuthToken(installToken)
-
-			// Store credentials for token refresh
+			// Store credentials for installation token refresh
 			r.appID = appID
 			r.installID = installID
 			r.privateKey = privateKey
+
+			// Create GitHub client with personal access token
+			githubClient := github.NewClient(nil).WithAuthToken(personalAccessToken)
 			r.githubClient = githubClient
 			r.l.Info("github init done")
 			return
