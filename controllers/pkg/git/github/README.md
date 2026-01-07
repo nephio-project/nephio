@@ -4,10 +4,12 @@ This package provides a GitHub client implementation for Nephio controllers usin
 
 ## Authentication Method
 
-This client uses **GitHub App authentication** instead of personal access tokens for improved security and flexibility:
+This client uses a **hybrid authentication approach**:
 
-1. **JWT (JSON Web Token)**: Generated using the GitHub App's private key and App ID
-2. **Installation Token**: Short-lived access token obtained by exchanging the JWT
+1. **Personal Access Token (PAT)**: Used for regular GitHub API operations (repository CRUD, user info, etc.)
+2. **GitHub App Installation Tokens**: Generated on-demand via `CreateAccessToken()` for time-limited access (valid 1 hour)
+
+The client requires GitHub App credentials (App ID, Installation ID, Private Key) to generate installation tokens, but uses a PAT for standard operations.
 
 ## Prerequisites
 
@@ -47,6 +49,7 @@ metadata:
   namespace: default
 type: Opaque
 stringData:
+  personal_access_token: "ghp_your_personal_access_token_here"
   app_id: "123456"
   installation_id: "12345678"
   private_key: |
@@ -55,17 +58,31 @@ stringData:
     -----END RSA PRIVATE KEY-----
 ```
 
-**Important**: Both `app_id` and `installation_id` must be quoted as strings in YAML.
+**Important**: 
+- Both `app_id` and `installation_id` must be quoted as strings in YAML
+- `personal_access_token` is your GitHub Personal Access Token (PAT) for regular operations
+- `private_key` is the GitHub App's private key for generating installation tokens
 
 Or using kubectl:
 
 ```bash
 kubectl create secret generic github-user-secret \
+  --from-literal=personal_access_token="ghp_your_token_here" \
   --from-literal=app_id="123456" \
   --from-literal=installation_id="12345678" \
   --from-file=private_key=path/to/your-app.private-key.pem \
   -n default
 ```
+
+### Generating a Personal Access Token (PAT)
+
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Click "Generate new token" → "Generate new token (classic)"
+3. Set a note (e.g., "Nephio Controller")
+4. Select scopes:
+   - `repo` (Full control of private repositories)
+   - `admin:org` → `read:org` (if working with organization repos)
+5. Click "Generate token" and copy the token (starts with `ghp_`)
 
 ## Environment Variables
 
@@ -115,12 +132,15 @@ if err != nil {
 
 ## How It Works
 
-1. **Initialization**: The client retrieves GitHub App credentials from the Kubernetes secret
-2. **JWT Generation**: Creates a JWT signed with the private key, valid for 10 minutes
-3. **Installation Token**: Exchanges the JWT for an installation access token via GitHub API
-4. **API Operations**: Uses the installation token for all GitHub API operations
-5. **Token Generation**: `CreateAccessToken()` generates new installation tokens on-demand (valid 1 hour)
-6. **Token Lifecycle**: Installation tokens expire automatically after 1 hour and cannot be explicitly deleted
+1. **Initialization**: The client retrieves credentials from the Kubernetes secret
+   - Personal Access Token for GitHub API operations
+   - GitHub App credentials (App ID, Installation ID, Private Key) for token generation
+2. **Regular Operations**: Uses the Personal Access Token for all standard GitHub API calls (create repo, get user info, etc.)
+3. **Installation Token Generation**: When `CreateAccessToken()` is called:
+   - Generates a JWT signed with the GitHub App's private key (valid 10 minutes)
+   - Exchanges the JWT for an installation access token via GitHub API
+   - Returns the installation token (valid 1 hour)
+4. **Token Lifecycle**: Installation tokens expire automatically after 1 hour and cannot be explicitly deleted
 
 ## Token Management
 
@@ -139,29 +159,41 @@ The `CreateAccessToken()` method generates GitHub installation tokens on-demand:
 
 These methods satisfy the `git.Client` interface while working within GitHub App's token model.
 
-## Security Benefits
+## Security Considerations
 
+**Regular Operations (PAT-based)**:
+- Uses Personal Access Token tied to a user account
+- Long-lived token (manual rotation recommended)
+- Requires appropriate scopes (`repo`, `read:org`)
+
+**Installation Tokens (GitHub App-based)**:
 - **Scoped Permissions**: GitHub Apps can be granted specific, granular permissions
-- **Installation-level**: Works at the organization/repository level, not tied to a user
-- **Short-lived Tokens**: Installation tokens expire after 1 hour (vs. PATs which are long-lived)
-- **Auditable**: All actions are logged as performed by the GitHub App
-- **No User Context**: Doesn't require a specific user's PAT, making it more maintainable
+- **Installation-level**: Works at the organization/repository level
+- **Short-lived**: Installation tokens expire after 1 hour
+- **Auditable**: Actions are logged as performed by the GitHub App
+- **On-demand Generation**: Tokens created only when needed
 
-## Differences from Personal Access Tokens (PAT)
+## Token Comparison
 
-| Feature | GitHub App | Personal Access Token |
-|---------|-----------|----------------------|
-| Scope | Organization/Installation | User account |
-| Lifetime | 1 hour (on-demand generation) | No expiration (manual rotation) |
-| Permissions | Fine-grained | Broad account access |
-| Audit Trail | App-attributed actions | User-attributed actions |
-| Rate Limits | Higher (5000 req/hr) | Lower (5000 req/hr shared) |
+| Feature | Personal Access Token (Regular Ops) | Installation Token (CreateAccessToken) |
+|---------|-------------------------------------|----------------------------------------|
+| Use Case | Repository CRUD, User Info | Time-limited delegated access |
+| Lifetime | No expiration (manual rotation) | 1 hour (auto-expires) |
+| Scope | User account permissions | GitHub App installation permissions |
+| Generation | Manual via GitHub UI | Programmatic on-demand |
+| Audit Trail | User-attributed actions | App-attributed actions |
+| Rate Limits | 5000 req/hr (per user) | 5000 req/hr (per installation) |
 
 ## Troubleshooting
 
 ### "Cannot get secret" error
 - Ensure the secret exists in the `default` namespace
 - Verify the secret name matches `GIT_SECRET_NAME` environment variable (default: `github-user-secret`)
+
+### "401 Bad credentials" error
+- Verify the `personal_access_token` is correct and not expired
+- Ensure the PAT has the required scopes (`repo`, `read:org` if needed)
+- Check that the token hasn't been revoked in GitHub settings
 
 ### "Failed to parse private key" error
 - Ensure the private key is in PEM format
