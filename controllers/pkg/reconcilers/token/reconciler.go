@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	commonv1alpha1 "github.com/nephio-project/api/common/v1alpha1"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
@@ -48,6 +49,8 @@ const (
 	finalizer = "infra.nephio.org/finalizer"
 	// errors
 	errUpdateStatus = "cannot update status"
+	// GitHub installation tokens expire after 1 hour
+	githubTokenRefreshInterval = 55 * time.Minute
 )
 
 //+kubebuilder:rbac:groups=infra.nephio.org,resources=tokens,verbs=get;list;watch;create;update;patch;delete
@@ -179,24 +182,47 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 	cr.SetConditions(infrav1alpha1.Ready())
+
+	// For GitHub, requeue after 55 minutes to regenerate installation token before it expires
+	if provider == git.ProviderGitHub {
+		log.Info("scheduling token refresh for github", "interval", githubTokenRefreshInterval)
+		return ctrl.Result{RequeueAfter: githubTokenRefreshInterval}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
+	}
+
 	return ctrl.Result{}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 }
 
 func (r *reconciler) createToken(ctx context.Context, gitClient git.Client, cr *infrav1alpha1.Token) error {
 	log := log.FromContext(ctx)
-	tokens, _, err := gitClient.ListAccessTokens(types.ListAccessTokensOptions{})
-	if err != nil {
-		log.Error(err, "cannot list tokens")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return err
-	}
-	tokenFound := false
-	for _, token := range tokens {
-		if token.Name == cr.GetTokenName() {
-			tokenFound = true
-			break
+
+	// Detect provider from annotation
+	provider := git.ProviderGitea
+	if cr.Annotations != nil {
+		if p, ok := cr.Annotations["nephio.org/git-provider"]; ok {
+			provider = git.ProviderType(p)
 		}
 	}
+
+	// For GitHub, always regenerate token (installation tokens expire after 1 hour)
+	// For other providers, check if token already exists
+	tokenFound := false
+	if provider != git.ProviderGitHub {
+		tokens, _, err := gitClient.ListAccessTokens(types.ListAccessTokensOptions{})
+		if err != nil {
+			log.Error(err, "cannot list tokens")
+			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
+			return err
+		}
+		for _, token := range tokens {
+			if token.Name == cr.GetTokenName() {
+				tokenFound = true
+				break
+			}
+		}
+	} else {
+		log.Info("regenerating github installation token")
+	}
+
 	if !tokenFound {
 		u, _, err := gitClient.GetMyUserInfo()
 		if err != nil {
@@ -216,7 +242,11 @@ func (r *reconciler) createToken(ctx context.Context, gitClient git.Client, cr *
 			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 			return err
 		}
-		log.Info("token created", "name", cr.GetName())
+		if provider == git.ProviderGitHub {
+			log.Info("github installation token refreshed", "name", cr.GetName())
+		} else {
+			log.Info("token created", "name", cr.GetName())
+		}
 		secret := &corev1.Secret{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: corev1.SchemeGroupVersion.Identifier(),
