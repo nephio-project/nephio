@@ -60,6 +60,7 @@ make deploy IMG=your-docker-repository/focom-operator-poc:2.0.0
 - oapi-codegen installed with: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
 - setup-env test: go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
+
 ### To run the tests locally
 
 Set up the setup-envtest from the root folder of the project.
