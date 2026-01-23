@@ -21,8 +21,8 @@ presubmits:
         - lint
         resources:
           requests:
-            cpu: 4
-            memory: 4Gi
+            cpu: 2
+            memory: 2Gi
   - name: presubmit-nephio-gosec
     decorate: true
     always_run: true
