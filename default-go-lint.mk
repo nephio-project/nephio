@@ -23,5 +23,6 @@ ifeq ($(CONTAINER_RUNNABLE), 0)
 	$(RUN_CONTAINER_COMMAND) docker.io/golangci/golangci-lint:${GOLANG_CI_VER}-alpine \
 	golangci-lint run ./... -v
 else
+	@which golangci-lint > /dev/null || (wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.63.4)
 	golangci-lint run ./... -v
 endif

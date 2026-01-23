@@ -14,7 +14,7 @@
 
 .SHELLFLAGS = -ec
 
-GO_VERSION ?= 1.22.2
+GO_VERSION ?= 1.25.6
 IMG_REGISTRY ?= docker.io/nephio
 
 # find all subdirectories with a go.mod file in them

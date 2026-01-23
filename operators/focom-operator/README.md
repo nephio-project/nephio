@@ -53,7 +53,7 @@ make deploy IMG=your-docker-repository/focom-operator-poc:2.0.0
 
 
 ### Prerequisites
-- go version v1.22.0+
+- go version v1.25.6+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.

@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/gen-kustomize-res
 
-go 1.24.3
+go 1.25.6
 
 require (
 	github.com/kptdev/krm-functions-sdk/go/fn v0.0.0-20251015063938-03a9634d0809
