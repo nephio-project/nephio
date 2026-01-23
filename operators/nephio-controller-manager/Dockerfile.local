@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 # Builds a debug image
-FROM gcr.io/distroless/static@sha256:6ec5aa99dc335666e79dc64e4a6c8b89c33a543a1967f20d360922a80dd21f02
+FROM gcr.io/distroless/static@sha256:ce63a16e0f7063787ebb4eb28e72d477b00b4726f79874b3205a965ffd797ab2
 WORKDIR /
 COPY bin/manager .
 USER 65532:65532
