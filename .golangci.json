@@ -46,7 +46,9 @@
   "run": {
     "build-tags": [
       "-buildvcs=false"
-    ]
+    ],
+    "concurrency": 4,
+    "timeout": "10m"
   },
   "version": "2"
 }
