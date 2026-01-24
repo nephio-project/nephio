@@ -19,10 +19,6 @@ presubmits:
         - make
         args:
         - lint
-        resources:
-          requests:
-            cpu: 2
-            memory: 2Gi
   - name: presubmit-nephio-gosec
     decorate: true
     always_run: true
