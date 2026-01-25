@@ -15,8 +15,7 @@
 ##########################################################################
 
 import os
-from datetime import datetime
-from dateutil.tz import tzutc
+
 import requests
 
 requests.packages.urllib3.disable_warnings()

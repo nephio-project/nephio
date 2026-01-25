@@ -14,18 +14,15 @@
 # limitations under the License.
 ##########################################################################
 
-from utils import LOG_LEVEL, CLUSTER_PROVISIONER, CREATION_TIMEOUT
+import logging
+import threading
+
+import kopf
+
+from api import app  # Import the Flask app
+from controllers.utils import LOG_LEVEL, CLUSTER_PROVISIONER, CREATION_TIMEOUT
 from provisioning_request_controller import *
 from provisioning_request_validation_controller import *
-from datetime import datetime
-import logging
-import kopf
-import os
-
-from flask import Flask
-import threading
-from api import app  # Import the Flask app
-
 
 
 # Start Flask in a separate thread
