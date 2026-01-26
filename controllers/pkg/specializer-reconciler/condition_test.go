@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 )
 
 func TestGetPorchConditions(t *testing.T) {
