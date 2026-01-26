@@ -26,7 +26,6 @@ spec: # comment
       labels: # comment
         # comment
         app: nginx # comment
-      creationTimestamp: null
     spec: # comment
       containers: # comment
       - name: nginx # comment

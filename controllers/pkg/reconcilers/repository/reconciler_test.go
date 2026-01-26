@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	giteaclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/giteaclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -256,7 +257,7 @@ func TestDeleteRepo(t *testing.T) {
 }
 
 func initMockeryMocks(tt *repoTest) {
-	mockGClient := new(giteaclient.MockGiteaClient)
+	mockGClient := new(giteaclientmocks.MockGiteaClient)
 	tt.args.giteaClient = mockGClient
 	tt.fields.giteaClient = mockGClient
 	mockeryutils.InitMocks(&mockGClient.Mock, tt.mocks)

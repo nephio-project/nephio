@@ -8,7 +8,7 @@ require (
 	github.com/kptdev/krm-functions-sdk/go/fn v1.0.1
 	github.com/stretchr/testify v1.10.0
 	k8s.io/apimachinery v0.34.1
-	sigs.k8s.io/kustomize/kyaml v0.20.1
+	sigs.k8s.io/kustomize/kyaml v0.21.0
 )
 
 require (

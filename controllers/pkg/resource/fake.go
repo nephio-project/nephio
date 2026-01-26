@@ -48,6 +48,9 @@ type MockUpdateFn func(ctx context.Context, obj client.Object, opts ...client.Up
 // A MockPatchFn is used to mock client.Client's Patch implementation.
 type MockPatchFn func(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error
 
+// A MockApplyFn is used to mock client.Client's Apply implementation.
+type MockApplyFn func(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error
+
 // A MockSubResourceGetFn is used to mock client.SubResourceClient's get implementation.
 type MockSubResourceGetFn func(ctx context.Context, obj, subResource client.Object, opts ...client.SubResourceGetOption) error
 
@@ -155,6 +158,13 @@ func NewMockPatchFn(err error, ofn ...ObjectFn) MockPatchFn {
 	}
 }
 
+// NewMockApplyFn returns a MockApplyFn that returns the supplied error.
+func NewMockApplyFn(err error) MockApplyFn {
+	return func(_ context.Context, _ runtime.ApplyConfiguration, _ ...client.ApplyOption) error {
+		return err
+	}
+}
+
 // NewMockSubResourceCreateFn returns a MockSubResourceCreateFn that returns the supplied error.
 func NewMockSubResourceCreateFn(err error, ofn ...ObjectFn) MockSubResourceCreateFn {
 	return func(_ context.Context, obj, subResource client.Object, _ ...client.SubResourceCreateOption) error {
@@ -210,6 +220,7 @@ type MockClient struct {
 	MockDeleteAllOf MockDeleteAllOfFn
 	MockUpdate      MockUpdateFn
 	MockPatch       MockPatchFn
+	MockApply       MockApplyFn
 
 	MockStatusCreate MockSubResourceCreateFn
 	MockStatusUpdate MockSubResourceUpdateFn
@@ -234,6 +245,7 @@ func NewMockClient() *MockClient {
 		MockDeleteAllOf: NewMockDeleteAllOfFn(nil),
 		MockUpdate:      NewMockUpdateFn(nil),
 		MockPatch:       NewMockPatchFn(nil),
+		MockApply:       NewMockApplyFn(nil),
 
 		MockStatusUpdate: NewMockSubResourceUpdateFn(nil),
 		MockStatusPatch:  NewMockSubResourcePatchFn(nil),
@@ -275,6 +287,11 @@ func (c *MockClient) Update(ctx context.Context, obj client.Object, opts ...clie
 // Patch calls MockClient's MockPatch function.
 func (c *MockClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
 	return c.MockPatch(ctx, obj, patch, opts...)
+}
+
+// Apply calls MockClient's MockApply function.
+func (c *MockClient) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+	return c.MockApply(ctx, obj, opts...)
 }
 
 // Status returns status writer for status sub-resource

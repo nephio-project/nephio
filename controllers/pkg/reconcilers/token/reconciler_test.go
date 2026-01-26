@@ -23,6 +23,7 @@ import (
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
+	giteaclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/giteaclient"
 	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
@@ -93,7 +94,7 @@ func TestDeleteToken(t *testing.T) {
 
 func TestCreateToken(t *testing.T) {
 
-	clientMock := new(mocks.MockClient)
+	clientMock := new(client.MockClient)
 	clientMock.On("Get", nil, mock.AnythingOfType("types.NamespacedName"), mock.AnythingOfType("*v1.Secret")).Return(nil).Run(func(args mock.Arguments) {})
 	clientMock.On("Patch", nil, mock.AnythingOfType("*v1.Secret"), mock.AnythingOfType("*resource.patch")).Return(nil).Run(func(args mock.Arguments) {})
 
@@ -203,7 +204,7 @@ func TestCreateToken(t *testing.T) {
 }
 
 func initMockeryMocks(tt *tokenTests) {
-	mockGiteaClient := new(giteaclient.MockGiteaClient)
+	mockGiteaClient := new(giteaclientmocks.MockGiteaClient)
 	tt.args.giteaClient = mockGiteaClient
 	tt.fields.giteaClient = mockGiteaClient
 	mockeryutils.InitMocks(&mockGiteaClient.Mock, tt.mocks)

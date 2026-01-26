@@ -111,14 +111,7 @@ items:
     cniType: sriov
     attachmentType: vlan
     ipFamilyPolicy: dualstack
-  status:
-    ipClaimStatus:
-    - prefix: 10.0.0.2/24
-      gateway: 10.0.0.1
-    - prefix: 1000::2/64
-      gateway: 1000::1
-    vlanClaimStatus:
-      vlanID: 10
+  status: {ipClaimStatus: [{prefix: 10.0.0.2/24, gateway: 10.0.0.1}, {prefix: '1000::2/64', gateway: '1000::1'}], vlanClaimStatus: {vlanID: 10}}
 - apiVersion: vlan.resource.nephio.org/v1alpha1
   kind: VLANClaim
   metadata:
