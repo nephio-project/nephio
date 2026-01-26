@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
@@ -37,7 +38,6 @@ import (
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	vlanfn "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
-	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"

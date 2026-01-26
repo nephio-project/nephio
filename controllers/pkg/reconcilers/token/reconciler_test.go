@@ -23,8 +23,8 @@ import (
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
-	giteaclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/giteaclient"
 	"github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
+	giteaclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/giteaclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	"github.com/stretchr/testify/mock"
