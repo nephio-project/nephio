@@ -35,8 +35,8 @@ tidy:
 
 ##@ Go tests & formatting
 
-.PHONY: unit lint gosec test unit-clean 
-unit lint gosec test: ## These targets are delegated to the Makefiles of individual Go modules
+.PHONY: unit lint gosec test unit-clean fmt
+unit lint gosec test fmt: ## These targets are delegated to the Makefiles of individual Go modules
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done
