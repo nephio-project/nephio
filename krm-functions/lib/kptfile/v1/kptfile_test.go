@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/kptdev/krm-functions-sdk/go/fn"
 	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
+	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/stretchr/testify/assert"
 )
 
