@@ -18,7 +18,7 @@ import time
 import uuid
 from datetime import datetime
 
-from controllers.utils import check_o2ims_provisioning_request, UPSTREAM_PKG_REPO, create_package_variant, \
+from utils import check_o2ims_provisioning_request, UPSTREAM_PKG_REPO, create_package_variant, \
     get_package_variant, get_capi_cluster, TIME_FORMAT
 
 

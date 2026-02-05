@@ -30,3 +30,6 @@ coverage_unit.html
 *-results.html
 
 .sonarlint*
+
+# Python files
+__pycache__/

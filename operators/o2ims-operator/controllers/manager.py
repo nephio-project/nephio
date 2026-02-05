@@ -16,20 +16,32 @@
 
 import logging
 import threading
-
+from datetime import datetime
 import kopf
 
-from api import app  # Import the Flask app
-from controllers.utils import LOG_LEVEL, CLUSTER_PROVISIONER, CREATION_TIMEOUT
-from provisioning_request_controller import *
-from provisioning_request_validation_controller import *
+from northbound_restapi import app  # Import the Flask app
+from utils import (
+    LOG_LEVEL,
+    CLUSTER_PROVISIONER, 
+    CREATION_TIMEOUT,
+    TIME_FORMAT,
+    )
+from provisioning_request_controller import (
+    check_creation_request_status,
+    cluster_creation_request,
+    cluster_creation_status,
+    )
+
+from provisioning_request_validation_controller import (
+    validate_cluster_creation_request,
+    )
 
 
-# Start Flask in a separate thread
+# Start northbound rest endpoint for FOCOM
 def run_flask():
     app.run(host='0.0.0.0', port=5000)
 
-threading.Thread(target=run_flask, daemon=True).star
+threading.Thread(target=run_flask, daemon=True).start
 
 @kopf.on.startup()
 def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
@@ -40,12 +52,14 @@ def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
         settings.posting.level = logging.ERROR
     if LOG_LEVEL == "WARNING":
         settings.posting.level = logging.WARNING
-    settings.persistence.finalizer = f"provisioningrequests.o2ims.provisioning.oran.org"
+    if LOG_LEVEL == "DEBUG":
+        settings.posting.level = logging.DEBUG
+    settings.persistence.finalizer = "provisioningrequests.o2ims.provisioning.oran.org"
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
-        prefix=f"provisioningrequests.o2ims.provisioning.oran.org"
+        prefix="provisioningrequests.o2ims.provisioning.oran.org"
     )
     settings.persistence.diffbase_storage = kopf.AnnotationsDiffBaseStorage(
-        prefix=f"provisioningrequests.o2ims.provisioning.oran.org",
+        prefix="provisioningrequests.o2ims.provisioning.oran.org",
         key="last-handled-configuration",
     )
     memo.cluster_provisioner = CLUSTER_PROVISIONER
@@ -53,8 +67,8 @@ def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
 
 
 ## kopf.event is designed to show events in kubectl get events. For clusterscope resources currently it is not possible to show events
-@kopf.on.resume(f"o2ims.provisioning.oran.org", "provisioningrequests")
-@kopf.on.create(f"o2ims.provisioning.oran.org", "provisioningrequests")
+@kopf.on.resume("o2ims.provisioning.oran.org", "provisioningrequests")
+@kopf.on.create("o2ims.provisioning.oran.org", "provisioningrequests")
 async def create_fn(spec, logger, status, patch: kopf.Patch, memo: kopf.Memo, **kwargs):
     metadata_name = kwargs["body"]["metadata"]["name"]
     # Template name will be treated as package name
