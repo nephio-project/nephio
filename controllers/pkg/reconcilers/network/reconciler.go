@@ -44,7 +44,6 @@ import (
 	"github.com/openconfig/ygot/ygot"
 
 	"github.com/pkg/errors"
-	"github.com/srl-labs/ygotsrl/v22"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
