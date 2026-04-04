@@ -384,3 +384,45 @@ func TestDeleteCondition(t *testing.T) {
 		})
 	}
 }
+
+var fWithPipeline = `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: pkg-test
+  annotations:
+    config.kubernetes.io/local-config: "true"
+pipeline:
+  mutators:
+  - image: gcr.io/example/fn-a:latest
+    condition: "items.size() > 0"
+  - image: gcr.io/example/fn-b:latest
+  validators:
+  - image: gcr.io/example/fn-v:latest
+    condition: "false"
+`
+
+func TestGetFunctionCondition(t *testing.T) {
+	cases := map[string]struct {
+		image string
+		want  string
+	}{
+		"MutatorWithCondition":    {image: "gcr.io/example/fn-a:latest", want: "items.size() > 0"},
+		"MutatorWithoutCondition": {image: "gcr.io/example/fn-b:latest", want: ""},
+		"ValidatorWithCondition":  {image: "gcr.io/example/fn-v:latest", want: "false"},
+		"UnknownImage":            {image: "gcr.io/example/fn-x:latest", want: ""},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ko, err := fn.ParseKubeObject([]byte(fWithPipeline))
+			if err != nil {
+				t.Fatalf("ParseKubeObject: %v", err)
+			}
+			kf := KptFile{Kptfile: ko}
+			got := kf.GetFunctionCondition(tc.image)
+			if got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

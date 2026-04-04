@@ -1,0 +1,13 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: WorkloadCluster
+metadata:
+  name: cluster01
+  annotations:
+    config.kubernetes.io/local-config: "true"
+spec:
+  clusterName: cluster01
+  cnis:
+  - macvlan
+  - ipvlan
+  - sriov
+  masterInterface: eth1

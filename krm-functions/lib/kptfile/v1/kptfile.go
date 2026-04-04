@@ -178,7 +178,7 @@ func (r *KptFile) Pipeline() *fn.SubObject {
 	return r.Kptfile.GetMap(pipelineFieldName)
 }
 
-func (r *KptFile) GetMutators() fn.SubObjects {
+func (r *KptFile) GetMutators() fn.SliceSubObjects {
 	p := r.Pipeline()
 	if p == nil {
 		return nil
@@ -186,7 +186,7 @@ func (r *KptFile) GetMutators() fn.SubObjects {
 	return p.GetSlice(mutatorsFieldName)
 }
 
-func (r *KptFile) GetValidators() fn.SubObjects {
+func (r *KptFile) GetValidators() fn.SliceSubObjects {
 	p := r.Pipeline()
 	if p == nil {
 		return nil
@@ -196,15 +196,15 @@ func (r *KptFile) GetValidators() fn.SubObjects {
 
 func (r *KptFile) GetFunctionCondition(image string) string {
 	for _, m := range r.GetMutators() {
-		entryImage := m.GetFieldString("image")
+		entryImage := m.GetString("image")
 		if entryImage == image {
-			return m.GetFieldString("condition")
+			return m.GetString("condition")
 		}
 	}
 	for _, v := range r.GetValidators() {
-		entryImage := v.GetFieldString("image")
+		entryImage := v.GetString("image")
 		if entryImage == image {
-			return m.GetFieldString("condition")
+			return v.GetString("condition")
 		}
 	}
 	return ""

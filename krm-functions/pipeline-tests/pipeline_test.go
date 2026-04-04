@@ -33,6 +33,15 @@ import (
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy/vlan"
 )
 
+const (
+	ipamImage = "docker.io/nephio/ipam-fn:latest"
+	vlanImage = "docker.io/nephio/vlan-fn:latest"
+	nfImage   = "docker.io/nephio/nfdeploy-fn:latest"
+	ifImage   = "docker.io/nephio/interface-fn:latest"
+	dnnImage  = "docker.io/nephio/dnn-fn:latest"
+	nadImage  = "docker.io/nephio/nad-fn:latest"
+)
+
 const testdir = "testdata"
 
 func nfFn(rl *fn.ResourceList) (bool, error) {
@@ -137,6 +146,42 @@ func TestPipelines(t *testing.T) {
 			inputDir := filepath.Join(testdir, tc.inputDir)
 			expectedDir := filepath.Join(testdir, tc.expectedDataDir)
 			tlib.RunGoldenTestForPipelineOfFuncs(t, inputDir, tc.pipeline, expectedDir)
+		})
+	}
+}
+
+// TestPipelinesWithConditions tests that functions with a CEL condition: "false" in the Kptfile
+// pipeline are skipped during rendering, consistent with local `kpt fn render` behavior.
+func TestPipelinesWithConditions(t *testing.T) {
+	tcs := []struct {
+		inputDir        string
+		expectedDataDir string
+		pipeline        []tlib.PipelineFunction
+	}{
+		{
+			// ipam-fn has condition: "false" in the Kptfile, so it is skipped.
+			// VLAN and all other functions still run normally.
+			inputDir:        "upf_pkg_cond",
+			expectedDataDir: "conditional_skip_ipam",
+			pipeline: []tlib.PipelineFunction{
+				{Image: nfImage, Run: fn.ResourceListProcessorFunc(nfFn)},
+				{Image: ifImage, Run: fn.ResourceListProcessorFunc(if_fn.Run)},
+				{Image: dnnImage, Run: fn.ResourceListProcessorFunc(dnn_fn.Run)},
+				{Image: ipamImage, Run: fn.ResourceListProcessorFunc(ipamFn.Run)},
+				{Image: vlanImage, Run: fn.ResourceListProcessorFunc(vlanFn.Run)},
+				{Image: nadImage, Run: fn.ResourceListProcessorFunc(nad_fn.Run)},
+				{Image: ifImage, Run: fn.ResourceListProcessorFunc(if_fn.Run)},
+				{Image: dnnImage, Run: fn.ResourceListProcessorFunc(dnn_fn.Run)},
+				{Image: nfImage, Run: fn.ResourceListProcessorFunc(nfFn)},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.expectedDataDir, func(t *testing.T) {
+			inputDir := filepath.Join(testdir, tc.inputDir)
+			expectedDir := filepath.Join(testdir, tc.expectedDataDir)
+			tlib.RunGoldenTestForPipelineWithConditions(t, inputDir, tc.pipeline, expectedDir)
 		})
 	}
 }

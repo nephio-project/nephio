@@ -1,0 +1,22 @@
+apiVersion: infra.nephio.org/v1alpha1
+kind: Network
+metadata:
+  name: vpc-internal
+spec:
+  topology: nephio
+  routingTables:
+  - name: vpc-internal
+    prefixes:
+    - prefix: 172:1::/32
+    - prefix: 172.1.0.0/16
+    interfaces:
+    - kind: bridgedomain
+      bridgeDomainName: vpc-internal 
+  bridgeDomains: 
+  - name: vpc-internal
+    interfaces:
+    - kind: interface
+      selector:
+        matchExpressions:
+        - {key: nephio.org/cluster-name, operator: Exists}
+      attachmentType: vlan
