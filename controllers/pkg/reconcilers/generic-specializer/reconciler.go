@@ -40,6 +40,7 @@ import (
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
+	"github.com/nephio-project/nephio/krm-functions/lib/cel"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -162,34 +163,55 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&ipamFor)) {
-			// run the function SDK
-			_, err = ipamkrmfn.Process(rl)
-			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
-				log.Error(err, "ipam function run failed")
-				return ctrl.Result{}, nil
+			// check if ipam function should be skipped based on Kptfile condition
+			if ok, err := cel.EvaluateConditionForImage(rl, "docker.io/nephio/ipam-fn:latest"); err != nil {
+				log.Error(err, "failed to evaluate ipam condition")
+			} else if ok {
+				// run the function SDK
+				_, err = ipamkrmfn.Process(rl)
+				if err != nil {
+					r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
+					log.Error(err, "ipam function run failed")
+					return ctrl.Result{}, nil
+				}
+				log.Info("ipam specializer fn run successful")
+			} else {
+				log.Info("skipping ipam function due to condition")
 			}
-			log.Info("ipam specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&vlanFor)) {
-			// run the function SDK
-			_, err = vlankrmfn.Process(rl)
-			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
-				log.Error(err, "vlan function run failed")
-				return ctrl.Result{}, nil
+			// check if vlan function should be skipped based on Kptfile condition
+			if ok, err := cel.EvaluateConditionForImage(rl, "docker.io/nephio/vlan-fn:latest"); err != nil {
+				log.Error(err, "failed to evaluate vlan condition")
+			} else if ok {
+				// run the function SDK
+				_, err = vlankrmfn.Process(rl)
+				if err != nil {
+					r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
+					log.Error(err, "vlan function run failed")
+					return ctrl.Result{}, nil
+				}
+				log.Info("vlan specializer fn run successful")
+			} else {
+				log.Info("skipping vlan function due to condition")
 			}
-			log.Info("vlan specializer fn run successful")
 		}
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&configInjectFor)) {
-			// run the function SDK
-			_, err = configInjectkrmfn.Process(rl)
-			if err != nil {
-				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
-				log.Error(err, "configInject function run failed")
-				return ctrl.Result{}, nil
+			// check if configInject function should be skipped based on Kptfile condition
+			if ok, err := cel.EvaluateConditionForImage(rl, "docker.io/nephio/configinject-fn:latest"); err != nil {
+				log.Error(err, "failed to evaluate configInject condition")
+			} else if ok {
+				// run the function SDK
+				_, err = configInjectkrmfn.Process(rl)
+				if err != nil {
+					r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
+					log.Error(err, "configInject function run failed")
+					return ctrl.Result{}, nil
+				}
+				log.Info("configInject specializer fn run successful")
+			} else {
+				log.Info("skipping configInject function due to condition")
 			}
-			log.Info("configInject specializer fn run successful")
 		}
 		workloadClusterObjs := rl.Items.Where(fn.IsGroupVersionKind(infrav1alpha1.WorkloadClusterGroupVersionKind))
 		clusterName := r.getClusterName(ctx, workloadClusterObjs)

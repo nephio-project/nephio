@@ -30,6 +30,9 @@ const (
 	readinessGatesFieldName = "readinessGates"
 	statusFieldName         = "status"
 	conditionsFieldName     = "conditions"
+	pipelineFieldName       = "pipeline"
+	mutatorsFieldName       = "mutators"
+	validatorsFieldName     = "validators"
 )
 
 type KptFile struct {
@@ -169,4 +172,40 @@ func (r *KptFile) IsReady(ctPrefix string) bool {
 		}
 	}
 	return found
+}
+
+func (r *KptFile) Pipeline() *fn.SubObject {
+	return r.Kptfile.GetMap(pipelineFieldName)
+}
+
+func (r *KptFile) GetMutators() fn.SubObjects {
+	p := r.Pipeline()
+	if p == nil {
+		return nil
+	}
+	return p.GetSlice(mutatorsFieldName)
+}
+
+func (r *KptFile) GetValidators() fn.SubObjects {
+	p := r.Pipeline()
+	if p == nil {
+		return nil
+	}
+	return p.GetSlice(validatorsFieldName)
+}
+
+func (r *KptFile) GetFunctionCondition(image string) string {
+	for _, m := range r.GetMutators() {
+		entryImage := m.GetFieldString("image")
+		if entryImage == image {
+			return m.GetFieldString("condition")
+		}
+	}
+	for _, v := range r.GetValidators() {
+		entryImage := v.GetFieldString("image")
+		if entryImage == image {
+			return m.GetFieldString("condition")
+		}
+	}
+	return ""
 }

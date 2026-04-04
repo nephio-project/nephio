@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	"github.com/nephio-project/nephio/krm-functions/lib/cel"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/kptrl"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
@@ -38,6 +39,7 @@ type Config struct {
 	For         corev1.ObjectReference
 	PorchClient client.Client
 	KRMfunction fn.ResourceListProcessor
+	Image       string
 }
 
 // +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions,verbs=get;list;watch;create;update;patch;delete
@@ -50,6 +52,7 @@ func Setup(mgr ctrl.Manager, cfg Config) error {
 		For:         cfg.For,
 		porchClient: cfg.PorchClient,
 		krmfn:       cfg.KRMfunction,
+		image:       cfg.Image,
 	}
 
 	// TBD how does the proxy cache work with the injector for updates
@@ -64,6 +67,7 @@ type reconciler struct {
 	For         corev1.ObjectReference
 	porchClient client.Client
 	krmfn       fn.ResourceListProcessor
+	image       string
 
 	l logr.Logger
 }
@@ -97,6 +101,14 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if err != nil {
 			r.l.Error(err, "cannot get resourceList")
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
+		}
+
+		// check if function should be skipped based on Kptfile condition
+		if ok, err := cel.EvaluateConditionForImage(rl, r.image); err != nil {
+			r.l.Error(err, "failed to evaluate condition")
+		} else if !ok {
+			r.l.Info("skipping function due to condition", "image", r.image)
+			return ctrl.Result{}, nil
 		}
 
 		// run the function SDK

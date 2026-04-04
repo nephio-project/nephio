@@ -25,6 +25,7 @@ import (
 
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	"github.com/kptdev/krm-functions-sdk/go/fn/testhelpers"
+	"github.com/nephio-project/nephio/krm-functions/lib/cel"
 	"sigs.k8s.io/yaml"
 )
 
@@ -107,6 +108,33 @@ func RunGoldenTestForPipeline(t *testing.T, inputDir string, krmFunctions []fn.R
 
 	for i, krm_fn := range krmFunctions {
 		_, err = krm_fn.Process(rl)
+		if err != nil {
+			CheckRunError(t, expectedDataDir, fmt.Errorf("in Step %v of the pipeline: %v", i+1, err))
+			break
+		}
+	}
+
+	CheckResults(t, expectedDataDir, rl)
+	CheckExpectedOutput(t, expectedDataDir, rl)
+}
+
+type PipelineFunction struct {
+	Image string
+	Run   fn.ResourceListProcessorFunc
+}
+
+func RunGoldenTestForPipelineWithConditions(t *testing.T, inputDir string, krmFunctions []PipelineFunction, expectedDataDir string) {
+	var err error
+	rl := ParseResourceListFromDir(t, inputDir)
+
+	for i, krm_fn := range krmFunctions {
+		if ok, err := cel.EvaluateConditionForImage(rl, krm_fn.Image); err != nil {
+			t.Fatalf("Step %v condition evaluation failed: %v", i+1, err)
+		} else if !ok {
+			continue // Skip function
+		}
+
+		_, err = krm_fn.Run.Process(rl)
 		if err != nil {
 			CheckRunError(t, expectedDataDir, fmt.Errorf("in Step %v of the pipeline: %v", i+1, err))
 			break
