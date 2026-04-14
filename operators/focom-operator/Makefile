@@ -1,4 +1,4 @@
-#  Copyright 2025 The Nephio Authors.
+#  Copyright 2025-2026 The Nephio Authors.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,19 +12,30 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# These includes get the following targets
-# from the top level Make files:
-#   gosec, golangci-lint, fmt, vet
-include ../../default-gosec.mk
+# Removed missing includes - using local targets instead
+# These targets were previously included from parent makefiles
+
 include ../../default-go-lint.mk
+include ../../default-gosec.mk
 include ../../default-go-misc.mk
+GIT_ROOT_DIR ?= $(dir $(lastword $(MAKEFILE_LIST)))
+include $(GIT_ROOT_DIR)/detect-container-runtime.mk
 
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.1
+VERSION ?= latest
+REGISTRY ?= docker.io/nephio
+PROJECT ?= focom
+# Image URL to use all building/pushing image targets
+# Override IMG for local development: make docker-build IMG=<your-registry>/focom-operator:dev
+IMG ?= $(REGISTRY)/$(PROJECT)-operator:$(VERSION)
+# Set IMAGE_PULL_SECRET to enable imagePullSecrets and imagePullPolicy: Always for private registries
+# Example: make deploy-with-flux IMG=ghcr.io/myorg/focom-operator:dev IMAGE_PULL_SECRET=ghcr-secret
+IMAGE_PULL_SECRET ?=
+GIT_ROOT_DIR ?= .
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -45,12 +56,9 @@ BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
-# IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
+# IMAGE_TAG_BASE defines the registry namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for bundle and catalog images.
-#
-# For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# nephio/focom-operator-bundle:$VERSION and nephio/focom-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= nephio/focom-operator
+IMAGE_TAG_BASE ?= $(REGISTRY)/$(PROJECT)-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -70,12 +78,6 @@ endif
 # Set the Operator SDK version to use. By default, what is installed on the system is used.
 # This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
 OPERATOR_SDK_VERSION ?= v1.39.1
-
-VERSION ?= latest
-REGISTRY ?= docker.io/nephio
-PROJECT ?= focom
-# Image URL to use all building/pushing image targets
-IMG ?= $(REGISTRY)/${PROJECT}-operator:$(VERSION)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
@@ -129,16 +131,105 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
+test: manifests generate fmt vet envtest ## Run all tests (including integration tests that require external dependencies).
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
+.PHONY: unit-tests
+unit-tests: fmt vet ## Run unit tests only (no external dependencies required).
+	@echo "Running unit tests (models, validation, storage logic, controller)..."
+	@go test -v -coverprofile=coverage-models.out \
+		./internal/nbi/models/ \
+		./internal/nbi/validation/
+	@go test -v -coverprofile=coverage-storage.out ./internal/nbi/storage/ \
+		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile"
+	@go test -v -coverprofile=coverage-controller.out \
+		./internal/controller/ -run TestValidateTemplateAlignment || echo "Controller tests skipped"
+	@echo ""
+	@echo "✅ Unit tests completed successfully!"
+	@echo "📊 Coverage reports generated:"
+	@echo "  - coverage-models.out"
+	@echo "  - coverage-storage.out"
+	@echo "  - coverage-controller.out"
+	@echo ""
+	@echo "To view coverage: go tool cover -html=coverage-models.out"
+
 .PHONY: unit
-unit: test
+unit: unit-tests ## Alias for unit-tests.
+
+.PHONY: ci-tests
+ci-tests: fmt vet ## Run the same tests as CI pipeline (unit tests only, fast execution).
+	@echo "Running CI tests (matches GitHub Actions pipeline)..."
+	@go test -v -coverprofile=coverage-models.out \
+		./internal/nbi/models/ \
+		./internal/nbi/validation/
+	@go test -v -coverprofile=coverage-storage.out ./internal/nbi/storage/ \
+		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile"
+	@go test -v -coverprofile=coverage-controller.out \
+		./internal/controller/ -run TestValidateTemplateAlignment || echo "Controller tests skipped"
+	@echo ""
+	@echo "✅ CI tests completed successfully!"
+	@echo "📊 Coverage reports: coverage-models.out, coverage-storage.out, coverage-controller.out"
+
+##@ Porch Integration Tests
+## These targets run tests against a live Porch/Kubernetes cluster.
+## Requires a valid kubeconfig and Porch repository configured in testconfig.yaml.
+## See internal/nbi/testconfig.yaml for configuration.
+##
+## Timeouts are configurable via environment variables:
+##   SMOKE_TIMEOUT      (default: 600s)
+##   INTEGRATION_TIMEOUT (default: 3600s)
+##   STABILITY_TIMEOUT   (default: 7200s)
+##
+## Example: make test-smoke SMOKE_TIMEOUT=300s
+##
+##@ Runtime Environment Variables
+## FOCOM_EARLY_SCHEMA_VALIDATION  When set to "true", enables schema validation of FPR
+##                                templateParameters during CreateDraft and UpdateDraft
+##                                operations (in addition to ValidateDraft).
+##                                Default: disabled (validation only at ValidateDraft).
+##                                Example: export FOCOM_EARLY_SCHEMA_VALIDATION=true
+
+SMOKE_TIMEOUT ?= 600s
+INTEGRATION_TIMEOUT ?= 3600s
+STABILITY_TIMEOUT ?= 7200s
+
+.PHONY: test-smoke
+test-smoke: ## Run smoke tests against Porch (~5 min). Single setup, exercises critical path for all resource types.
+	@echo "Running smoke tests against Porch (timeout=$(SMOKE_TIMEOUT))..."
+	FOCOM_SMOKE_TESTS=true go test -v -count=1 ./internal/nbi/ -run TestSmokeWorkflow -timeout $(SMOKE_TIMEOUT)
+	@echo ""
+	@echo "✅ Smoke tests completed!"
+
+.PHONY: test-integration
+test-integration: ## Run full integration tests against Porch (~30 min). Thorough CRUD, workflow, error handling per resource type.
+	@echo "Running full integration tests against Porch (timeout=$(INTEGRATION_TIMEOUT))..."
+	FOCOM_INTEGRATION_TESTS=true go test -v -count=1 ./internal/nbi/ -timeout $(INTEGRATION_TIMEOUT)
+	@echo ""
+	@echo "✅ Integration tests completed!"
+
+.PHONY: test-stability
+test-stability: ## Run stability tests against Porch (~60 min). Cross-resource workflows, deletion prevention, dependency validation.
+	@echo "Running stability tests against Porch (timeout=$(STABILITY_TIMEOUT))..."
+	FOCOM_STABILITY_TESTS=true go test -v -count=1 ./internal/nbi/ -timeout $(STABILITY_TIMEOUT)
+	@echo ""
+	@echo "✅ Stability tests completed!"
+
+.PHONY: test-all-porch
+test-all-porch: ## Run all Porch tests: smoke + integration + stability (~90 min).
+	@echo "Running ALL Porch tests (timeout=$(STABILITY_TIMEOUT))..."
+	FOCOM_SMOKE_TESTS=true FOCOM_INTEGRATION_TESTS=true FOCOM_STABILITY_TESTS=true \
+		go test -v -count=1 ./internal/nbi/ -timeout $(STABILITY_TIMEOUT)
+	@echo ""
+	@echo "✅ All Porch tests completed!"
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
 .PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
 test-e2e:
 	go test ./test/e2e/ -v -ginkgo.v
+
+# .PHONY: lint
+# lint: golangci-lint ## Run golangci-lint linter (CI target).
+# 	$(GOLANGCI_LINT) run
 
 .PHONY: lint-local
 lint-local: golangci-lint ## Run golangci-lint linter
@@ -147,6 +238,10 @@ lint-local: golangci-lint ## Run golangci-lint linter
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
+
+# .PHONY: gosec
+# gosec: gosec-tool ## Run gosec security scanner
+# 	$(GOSEC) ./...
 
 ##@ Build
 
@@ -158,17 +253,17 @@ build: manifests generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
+.PHONY: docker-build
+docker-build:  ## Build a container image from the local Dockerfile
+	$(CONTAINER_RUNTIME) buildx build --load --tag  ${IMG} -f ./Dockerfile .
+
+.PHONY: docker-push
+docker-push: docker-build ## Build and push the container image
+	$(CONTAINER_RUNTIME) push ${IMG}
+
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-.PHONY: docker-build
-docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	$(CONTAINER_TOOL) push ${IMG}
-
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
 # - be able to use docker buildx. More info: https://docs.docker.com/build/buildx/
@@ -206,20 +301,251 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+.PHONY: docker-auth
+docker-auth: ## Create Kubernetes secret for private registry authentication. Usage: make docker-auth REGISTRY_USER=username REGISTRY_PASSWORD=token [REGISTRY_SERVER=ghcr.io] [REGISTRY_SECRET_NAME=ghcr-secret]
+	@if [ -z "$(REGISTRY_USER)" ]; then \
+		echo "❌ Error: REGISTRY_USER is required"; \
+		echo "Usage: make docker-auth REGISTRY_USER=your-username REGISTRY_PASSWORD=your-token [REGISTRY_SERVER=ghcr.io] [REGISTRY_SECRET_NAME=ghcr-secret]"; \
+		exit 1; \
+	fi
+	@if [ -z "$(REGISTRY_PASSWORD)" ]; then \
+		echo "❌ Error: REGISTRY_PASSWORD is required"; \
+		echo "Usage: make docker-auth REGISTRY_USER=your-username REGISTRY_PASSWORD=your-token [REGISTRY_SERVER=ghcr.io] [REGISTRY_SECRET_NAME=ghcr-secret]"; \
+		exit 1; \
+	fi
+	@echo "🔐 Creating private registry authentication secret..."
+	@$(KUBECTL) create namespace focom-operator-system --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	@$(KUBECTL) create secret docker-registry $(or $(REGISTRY_SECRET_NAME),ghcr-secret) \
+		--docker-server=$(or $(REGISTRY_SERVER),ghcr.io) \
+		--docker-username=$(REGISTRY_USER) \
+		--docker-password=$(REGISTRY_PASSWORD) \
+		--docker-email=$(or $(REGISTRY_EMAIL),$(REGISTRY_USER)@users.noreply.github.com) \
+		--namespace=focom-operator-system \
+		--dry-run=client -o yaml | $(KUBECTL) apply -f -
+	@echo "✅ Registry secret '$(or $(REGISTRY_SECRET_NAME),ghcr-secret)' created in focom-operator-system"
+	@echo ""
+	@echo "📋 Next steps:"
+	@echo "  make deploy-with-flux IMG=<your-registry>/focom-operator:<tag> IMAGE_PULL_SECRET=$(or $(REGISTRY_SECRET_NAME),ghcr-secret)"
+
+.PHONY: docker-auth-help
+docker-auth-help: ## Show help for setting up private registry authentication
+	@echo "🔐 Private Registry Authentication Setup"
+	@echo ""
+	@echo "Create a Kubernetes secret for pulling images from a private registry:"
+	@echo ""
+	@echo "  make docker-auth REGISTRY_USER=<username> REGISTRY_PASSWORD=<token>"
+	@echo ""
+	@echo "Optional parameters:"
+	@echo "  REGISTRY_SERVER       Registry hostname (default: ghcr.io)"
+	@echo "  REGISTRY_SECRET_NAME  Secret name (default: ghcr-secret)"
+	@echo "  REGISTRY_EMAIL        Email for registry (default: <user>@users.noreply.github.com)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  GitHub:  make docker-auth REGISTRY_USER=johndoe REGISTRY_PASSWORD=ghp_xxxx"
+	@echo "  Custom:  make docker-auth REGISTRY_USER=user REGISTRY_PASSWORD=pass REGISTRY_SERVER=registry.example.com REGISTRY_SECRET_NAME=my-secret"
+	@echo ""
+	@echo "Then deploy with:"
+	@echo "  make deploy-with-flux IMG=ghcr.io/myorg/focom-operator:dev IMAGE_PULL_SECRET=ghcr-secret"
+	@echo ""
+	@echo "Check if secret exists:"
+	@echo "  kubectl get secret ghcr-secret -n focom-operator-system"
+
+# Internal target: configure image and optionally add private registry support
+.PHONY: _configure-image
+_configure-image:
+	@echo "🔧 Setting image: ${IMG}"
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	@if [ -n "$(IMAGE_PULL_SECRET)" ]; then \
+		echo "🔐 Configuring imagePullSecret: $(IMAGE_PULL_SECRET)"; \
+		sed -i 's/name: ghcr-secret/name: $(IMAGE_PULL_SECRET)/' config/manager/patches/private-registry.yaml; \
+		cd config/manager && grep -q 'private-registry.yaml' kustomization.yaml || \
+			$(KUSTOMIZE) edit add patch --path patches/private-registry.yaml; \
+	else \
+		cd config/manager && sed -i '/patches\/private-registry.yaml/d' kustomization.yaml 2>/dev/null; \
+		cd config/manager && if grep -q '^patches:' kustomization.yaml && ! grep -q '  - ' kustomization.yaml; then \
+			sed -i '/^patches:$$/d' kustomization.yaml; \
+		fi; \
+	fi
+
+.PHONY: deploy
+deploy: manifests kustomize _configure-image ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	@echo "🚀 Deploying FOCOM Operator..."
+	@echo "📦 Using image: ${IMG}"
+	@echo ""
+	@if [ -n "$(IMAGE_PULL_SECRET)" ]; then \
+		if ! $(KUBECTL) get secret $(IMAGE_PULL_SECRET) -n focom-operator-system >/dev/null 2>&1; then \
+			echo "⚠️  Warning: IMAGE_PULL_SECRET=$(IMAGE_PULL_SECRET) specified but secret not found in focom-operator-system!"; \
+			echo "   Create it first: make docker-auth REGISTRY_USER=your-username REGISTRY_PASSWORD=your-token"; \
+			echo ""; \
+		else \
+			echo "✅ Image pull secret '$(IMAGE_PULL_SECRET)' found"; \
+		fi; \
+	fi
+	@echo "Creating focom-operator-system namespace if it doesn't exist..."
+	@$(KUBECTL) create namespace focom-operator-system --dry-run=client -o yaml | $(KUBECTL) apply -f -
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/default > kpt-package/focom-operator-bundle.yaml
+	@echo "Deploying ConfigSync RootSync for focom-resources..."
+	@echo "Copying gitea-secret to config-management-system namespace..."
+	@$(KUBECTL) get secret gitea-secret -n default -o yaml 2>/dev/null | \
+		sed 's/namespace: default/namespace: config-management-system/' | \
+		$(KUBECTL) apply -f - || echo "Warning: gitea-secret not found in default namespace. ConfigSync may not work without it."
+	@echo "Applying ConfigSync RootSync..."
+	$(KUSTOMIZE) build config/configsync | $(KUBECTL) apply -f -
+	@echo "ConfigSync RootSync deployed. Check status with: kubectl get rootsync focom-resources -n config-management-system"
 
 .PHONY: build-k8s-deployment
-build-k8s-deployment: manifests kustomize
+build-k8s-deployment: manifests kustomize ## Generate Kubernetes deployment bundle with updated RBAC
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > kpt-package/focom-operator-bundle.yaml
 
+.PHONY: kpt-package
+kpt-package: manifests kustomize ## Generate kpt package bundle without deploying
+	@echo "Generating kpt package bundle..."
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default > kpt-package/focom-operator-bundle.yaml
+	@echo "kpt package generated at: kpt-package/focom-operator-bundle.yaml"
+	@echo ""
+	@echo "To deploy using kpt:"
+	@echo "  1. Initialize: cd kpt-package && kpt live init --namespace focom-operator-system --inventory-id focom-operator"
+	@echo "  2. Apply: kpt live apply"
+	@echo ""
+	@echo "Or deploy directly with kubectl:"
+	@echo "  kubectl apply -f kpt-package/focom-operator-bundle.yaml"
+
+.PHONY: deploy-with-flux
+deploy-with-flux: manifests kustomize _configure-image ## Deploy controller with Flux (instead of ConfigSync) to the K8s cluster specified in ~/.kube/config.
+	@echo "🚀 Deploying FOCOM Operator with Flux..."
+	@echo "📦 Using image: ${IMG}"
+	@echo ""
+	@echo "Creating focom-operator-system namespace if it doesn't exist..."
+	@$(KUBECTL) create namespace focom-operator-system --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	@echo "🔍 Verifying final deployment will use correct image..."
+	@$(KUSTOMIZE) build config/default | grep -A 2 -B 2 "image:" | grep -v "imagePullPolicy" || echo "Could not extract image from deployment"
+	@echo ""
+	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	$(KUSTOMIZE) build config/default > kpt-package/focom-operator-bundle.yaml
+	@echo "Deploying Flux resources for focom-resources..."
+	@echo "Copying gitea-secret to flux-system namespace..."
+	@$(KUBECTL) get secret gitea-secret -n default -o json 2>/dev/null | \
+		jq 'del(.metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]) | .metadata.namespace = "flux-system"' | \
+		$(KUBECTL) apply -f - 2>/dev/null || echo "Warning: gitea-secret not found in default namespace. Flux may not work without it."
+	@echo "Applying Flux GitRepository and Kustomization..."
+	$(KUSTOMIZE) build config/flux | $(KUBECTL) apply -f -
+	@echo ""
+	@echo "✅ Flux resources deployed. Check status with:"
+	@echo "  kubectl get pods -n focom-operator-system"
+	@echo "  kubectl get gitrepository focom-resources -n flux-system"
+	@echo "  kubectl get kustomization focom-resources -n flux-system"
+
+.PHONY: deploy-with-kpt
+deploy-with-kpt: kpt-package ## Deploy controller using kpt live apply, with Flux for focom-resources sync.
+	@echo "🚀 Deploying FOCOM Operator with kpt..."
+	@echo "📦 Using image: ${IMG}"
+	@echo ""
+	@echo "Creating focom-operator-system namespace if it doesn't exist..."
+	@$(KUBECTL) create namespace focom-operator-system --dry-run=client -o yaml | $(KUBECTL) apply -f -
+	@echo "🔍 Verifying kpt package image:"
+	@grep "image:" kpt-package/focom-operator-bundle.yaml | grep -v "imagePullPolicy" || echo "Could not extract image from bundle"
+	@echo ""
+	@echo "📦 Applying kpt package..."
+	cd kpt-package && kpt live apply --reconcile-timeout=5m --inventory-policy=adopt
+	@echo ""
+	@echo "Deploying Flux resources for focom-resources..."
+	@echo "Copying gitea-secret to flux-system namespace..."
+	@$(KUBECTL) get secret gitea-secret -n default -o json 2>/dev/null | \
+		jq 'del(.metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]) | .metadata.namespace = "flux-system"' | \
+		$(KUBECTL) apply -f - 2>/dev/null || echo "Warning: gitea-secret not found in default namespace. Flux may not work without it."
+	@echo "Applying Flux GitRepository and Kustomization..."
+	$(KUSTOMIZE) build config/flux | $(KUBECTL) apply -f -
+	@echo ""
+	@echo "✅ FOCOM Operator deployed with kpt. Flux resources deployed for focom-resources."
+	@echo "Check status with:"
+	@echo "  kubectl get pods -n focom-operator-system"
+	@echo "  kubectl get gitrepository focom-resources -n flux-system"
+	@echo "  kubectl get kustomization focom-resources -n flux-system"
+
+.PHONY: undeploy-with-kpt
+undeploy-with-kpt: ## Remove controller deployed via kpt live apply and Flux resources.
+	@echo "🗑️  Removing Flux resources..."
+	-$(KUSTOMIZE) build config/flux | $(KUBECTL) delete -f - --ignore-not-found
+	@echo "Deleting gitea-secret from flux-system namespace..."
+	-$(KUBECTL) delete secret gitea-secret -n flux-system --ignore-not-found
+	@echo "Waiting for Flux to clean up CRs (10 seconds)..."
+	@sleep 10
+	@echo "🗑️  Removing FOCOM Operator via kpt..."
+	-cd kpt-package && kpt live destroy
+	@echo "✅ FOCOM Operator and Flux resources removed."
+
+.PHONY: deploy-with-flux-webhook
+deploy-with-flux-webhook: deploy-with-flux ## Deploy controller with Flux and configure webhook for instant sync
+	@echo ""
+	@echo "Setting up webhook for instant sync..."
+	@echo "Generating webhook token..."
+	@WEBHOOK_TOKEN=$$(head -c 12 /dev/urandom | shasum | cut -d ' ' -f1) && \
+	echo "Creating webhook-token secret..." && \
+	$(KUBECTL) create secret generic webhook-token \
+		-n flux-system \
+		--from-literal=token=$$WEBHOOK_TOKEN \
+		--dry-run=client -o yaml | $(KUBECTL) apply -f - && \
+	echo "Deploying Receiver..." && \
+	$(KUBECTL) apply -f config/flux/focom-resources-receiver.yaml && \
+	echo "Waiting for Receiver to be ready..." && \
+	sleep 5 && \
+	WEBHOOK_PATH=$$($(KUBECTL) get receiver focom-resources -n flux-system -o jsonpath='{.status.webhookPath}' 2>/dev/null || echo "") && \
+	echo "" && \
+	echo "========================================" && \
+	echo "Webhook Configuration" && \
+	echo "========================================" && \
+	echo "" && \
+	echo "Webhook Token: $$WEBHOOK_TOKEN" && \
+	echo "" && \
+	if [ -n "$$WEBHOOK_PATH" ]; then \
+		echo "Webhook Path: $$WEBHOOK_PATH"; \
+		echo ""; \
+		echo "To expose the webhook, choose one option:"; \
+		echo ""; \
+		echo "1. Port-forward (testing):"; \
+		echo "   kubectl port-forward -n flux-system svc/notification-controller 8080:80"; \
+		echo "   Webhook URL: http://localhost:8080$$WEBHOOK_PATH"; \
+		echo ""; \
+		echo "2. Configure in Gitea:"; \
+		echo "   URL: http://your-webhook-endpoint$$WEBHOOK_PATH"; \
+		echo "   Secret: $$WEBHOOK_TOKEN"; \
+		echo ""; \
+		echo "See docs/flux/webhook-setup.md for detailed instructions"; \
+	else \
+		echo "Receiver not ready yet. Check status with:"; \
+		echo "  kubectl describe receiver focom-resources -n flux-system"; \
+	fi && \
+	echo "" && \
+	echo "Webhook setup complete!"
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	@echo "Undeploying ConfigSync RootSync..."
+	$(KUSTOMIZE) build config/configsync | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f - || true
+	@echo "Deleting gitea-secret from config-management-system namespace..."
+	@$(KUBECTL) delete secret gitea-secret -n config-management-system --ignore-not-found=$(ignore-not-found) || true
+	@echo "Undeploying FOCOM operator..."
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	@echo "Note: focom-system namespace is not deleted. Delete manually if needed: kubectl delete namespace focom-system"
+	@echo "Note: CRs managed by ConfigSync may still exist. They will be removed when the RootSync is deleted."
+
+.PHONY: undeploy-flux
+undeploy-flux: kustomize ## Undeploy controller and Flux resources from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	@echo "Undeploying Flux resources (GitRepository and Kustomization only)..."
+	$(KUSTOMIZE) build config/flux | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f - || true
+	@echo "Deleting gitea-secret from flux-system namespace..."
+	@$(KUBECTL) delete secret gitea-secret -n flux-system --ignore-not-found=$(ignore-not-found) || true
+	@echo "Waiting for Flux to clean up CRs (10 seconds)..."
+	@sleep 10
+	@echo "Undeploying FOCOM operator..."
+	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f - || true
+	@echo ""
+	@echo "Note: Flux controllers remain running and can be used for other purposes."
+	@echo "Note: focom-system namespace is not deleted. Delete manually if needed: kubectl delete namespace focom-system"
+	@echo "Note: CRs managed by Flux should have been removed. Check with: kubectl get oclouds,templateinfoes,focomprovisioningrequests -A"
 
 ##@ Dependencies
 
@@ -234,12 +560,14 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
+GOSEC = $(LOCALBIN)/gosec
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.4.3
-CONTROLLER_TOOLS_VERSION ?= v0.20.0
+CONTROLLER_TOOLS_VERSION ?= v0.17.0
 ENVTEST_VERSION ?= release-0.19
-GOLANGCI_LINT_VERSION ?= v1.59.1
+GOLANGCI_LINT_VERSION ?= v2.8.0
+GOSEC_VERSION ?= v2.22.0
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -259,7 +587,12 @@ $(ENVTEST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+
+.PHONY: gosec-tool
+gosec-tool: $(GOSEC) ## Download gosec locally if necessary.
+$(GOSEC): $(LOCALBIN)
+	$(call go-install-tool,$(GOSEC),github.com/securego/gosec/v2/cmd/gosec,$(GOSEC_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

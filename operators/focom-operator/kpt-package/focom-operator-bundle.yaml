@@ -11,7 +11,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.0
   name: focomprovisioningrequests.focom.nephio.org
 spec:
   group: focom.nephio.org
@@ -96,7 +96,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.0
   name: oclouds.focom.nephio.org
 spec:
   group: focom.nephio.org
@@ -168,7 +168,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.0
   name: templateinfoes.provisioning.oran.org
 spec:
   group: provisioning.oran.org
@@ -343,6 +343,7 @@ rules:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests
+  - oclouds
   verbs:
   - create
   - delete
@@ -355,24 +356,38 @@ rules:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests/finalizers
+  - oclouds/finalizers
   verbs:
   - update
 - apiGroups:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests/status
+  - oclouds/status
   verbs:
   - get
   - patch
   - update
 - apiGroups:
-  - focom.nephio.org
+  - porch.kpt.dev
   resources:
-  - oclouds
+  - packagerevisionresources
+  - packagerevisions
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisions/approval
+  verbs:
+  - get
+  - update
 - apiGroups:
   - provisioning.oran.org
   resources:
@@ -385,6 +400,20 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - provisioning.oran.org
+  resources:
+  - templateinfoes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - provisioning.oran.org
+  resources:
+  - templateinfoes/status
+  verbs:
+  - get
+  - patch
+  - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -578,6 +607,25 @@ spec:
   selector:
     control-plane: controller-manager
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: focom-operator
+    control-plane: controller-manager
+  name: focom-operator-controller-manager-nbi-service
+  namespace: focom-operator-system
+spec:
+  ports:
+  - name: nbi-http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    control-plane: controller-manager
+  type: ClusterIP
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -604,9 +652,27 @@ spec:
         - --metrics-bind-address=:8443
         - --leader-elect
         - --health-probe-bind-address=:8081
+        - --enable-nbi=true
+        - --nbi-port=8080
         command:
         - /manager
-        image: docker.io/nephio/focom-operator:0.0.1
+        env:
+        - name: FOCOM_NAMESPACE
+          value: focom-system
+        - name: NBI_STORAGE_BACKEND
+          value: porch
+        - name: NBI_STAGE
+          value: "2"
+        - name: PORCH_NAMESPACE
+          value: default
+        - name: PORCH_REPOSITORY
+          value: focom-resources
+        - name: KUBERNETES_BASE_URL
+          value: https://kubernetes.default.svc
+        - name: PORCH_HTTPS_VERIFY
+          value: "false"
+        image: docker.io/nephio/focom-operator:latest
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /healthz
@@ -614,6 +680,13 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
         name: manager
+        ports:
+        - containerPort: 8080
+          name: nbi-http
+          protocol: TCP
+        - containerPort: 8081
+          name: health-probe
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /readyz
@@ -632,6 +705,8 @@ spec:
           capabilities:
             drop:
             - ALL
+      imagePullSecrets:
+      - name: ghcr-secret
       securityContext:
         runAsNonRoot: true
       serviceAccountName: focom-operator-controller-manager

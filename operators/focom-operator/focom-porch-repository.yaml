@@ -1,0 +1,15 @@
+apiVersion: config.porch.kpt.dev/v1alpha1
+kind: Repository
+metadata:
+  name: focom-resources
+  namespace: default
+spec:
+  type: git
+  content: Package
+  deployment: true
+  git:
+    repo: http://172.18.0.200:3000/nephio/focom-resources.git
+    branch: main
+    directory: /
+    secretRef:
+      name: gitea-secret

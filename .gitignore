@@ -33,3 +33,6 @@ coverage_unit.html
 
 # Python files
 __pycache__/
+
+# IDE Directories
+.idea

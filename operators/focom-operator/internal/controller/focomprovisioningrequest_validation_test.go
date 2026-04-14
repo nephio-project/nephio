@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Nephio Authors.
+Copyright 2025-2026 The Nephio Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ func TestValidateTemplateAlignment(t *testing.T) {
 	_ = focomv1alpha1.AddToScheme(scheme)
 	_ = provisioningv1alpha1.AddToScheme(scheme)
 
-	// Create a TemplateInfo matching name: "my-template-1.0" in "default"
+	// Create a TemplateInfo with sanitized name matching SanitizeID("my-template" + "-" + "1.0") = "my-template-1-0"
 	tplInfo := provisioningv1alpha1.TemplateInfo{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-template-1.0",
+			Name:      "my-template-1-0",
 			Namespace: "default",
 		},
 		Spec: provisioningv1alpha1.TemplateInfoSpec{

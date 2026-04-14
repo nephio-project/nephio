@@ -1,5 +1,5 @@
-# focom-operator
-Starting point implementation of FOCOM operator, which reconciles FOCOM provisioning requests into O-RAN provisioning requests.
+# FOCOM SMO Service
+Starting point implementation of FOCOM SMO Service, which reconciles FOCOM provisioning requests into oran provisioning requests.
 
 ## Description
 Reconciling FOCOM provisioning requests into oran provisioning requests, will look for correct TemplateInfo referenced in the request. Current validation only 
@@ -36,24 +36,24 @@ make
 To build the docker image, run the following command:
 
 ```sh
-make docker-build docker-push IMG=your-docker-repository/focom-operator-poc:2.0.0
+make docker-build docker-push IMG=your-docker-repository/focom-operator:2.0.0
 ```
 
 
 Kpt packages are included in the folder kpt-package, focom-operator.yaml file (is generated)/can be generaated by running make, where IMG is the image built previously:
 
 ```sh
-make build-k8s-deployment IMG=your-docker-repository/focom-operator-poc:2.0.0
+make build-k8s-deployment IMG=your-docker-repository/focom-operator:2.0.0
 ```
-To deploy the operator on the cluster, run the following command:
+To deploy the FOCOM SMO Service on the cluster, run the following command:
 
 ```sh
-make deploy IMG=your-docker-repository/focom-operator-poc:2.0.0
+make deploy IMG=your-docker-repository/focom-operator:2.0.0
 ```
 
 
 ### Prerequisites
-- go version v1.25.6+
+- go version v1.22.0+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
@@ -82,7 +82,7 @@ make test-e2e
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh
-make docker-build docker-push IMG=<some-registry>/focom-operator:tag
+make docker-build docker-push IMG=<some-registry>/focom-operator:<tag>
 ```
 
 **NOTE:** This image ought to be published in the personal registry you specified.
@@ -98,7 +98,7 @@ make install
 **Deploy the Manager to the cluster with the image specified by `IMG`:**
 
 ```sh
-make deploy IMG=<some-registry>/focom-operator:tag
+make deploy IMG=<some-registry>/focom-operator:<tag>
 ```
 
 > **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
@@ -151,6 +151,16 @@ fetch → handle deletion → ensure finalizer → validate → build remote →
     Ensure remote resource (create or poll) → set status → requeue if needed
    ```
 
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `NBI_PORT` | `8080` | HTTP server port for the NBI API |
+| `NBI_STORAGE_BACKEND` | `memory` | Storage backend (`memory` or `porch`) |
+| `NBI_STAGE` | `1` | Implementation stage (1, 2, or 3) |
+| `FOCOM_NAMESPACE` | `focom-system` | Default namespace for FOCOM resources |
+| `FOCOM_EARLY_SCHEMA_VALIDATION` | `false` | When set to `true`, validates FPR `templateParameters` against the referenced TemplateInfo `templateParameterSchema` during CreateDraft and UpdateDraft operations. When disabled (default), schema validation only runs during the ValidateDraft step. |
+
 ## Notes
     - Code needs testcases and better refactoring of certain parts.
     - Code needs to ensure that templateParameters are immutable, this could be done with validating webhook.
@@ -165,7 +175,7 @@ Following are the steps to build the installer and distribute this project to us
 1. Build the installer for the image built and published in the registry:
 
 ```sh
-make build-installer IMG=<some-registry>/focom-operator:tag
+make build-installer IMG=<some-registry>/focom-operator:<tag>
 ```
 
 NOTE: The makefile target mentioned above generates an 'install.yaml'

@@ -1,0 +1,25 @@
+apiVersion: config.porch.kpt.dev/v1alpha1
+kind: Repository
+metadata:
+  name: focom-resources
+  namespace: default
+spec:
+  # Repository type (always 'git' for Git-backed storage)
+  type: git
+
+  # Content type (always 'Package' for Kpt packages)
+  content: Package
+
+  # Deployment flag (set to true to enable package deployment)
+  deployment: true
+
+  # Git repository configuration
+  git:
+    # Git repository URL
+    repo: http://172.18.0.200:3000/nephio/focom-resources.git
+
+    # Branch to use (typically 'main' or 'master')
+    branch: main
+
+    # Directory within the repository (use '/' for root)
+    directory: /

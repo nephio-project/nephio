@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Nephio Authors.
+Copyright 2025-2026 The Nephio Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,6 +46,10 @@ const (
 // TestIntegrationBuildRemoteClient_CreateProvisioningRequest tests building a remote client
 // that attempts discovery on a real ephemeral EnvTest server.
 func TestIntegrationBuildRemoteClientCreateProvisioningRequest(t *testing.T) {
+	// Skip if envtest binaries (etcd, kube-apiserver) are not installed
+	if _, err := exec.LookPath("etcd"); err != nil {
+		t.Skip("Skipping integration test: envtest binaries not installed (run 'setup-envtest use' to install)")
+	}
 
 	// get the o2ims provrequest CRD
 	err := fetchCRDFromRepo()

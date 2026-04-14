@@ -1,0 +1,85 @@
+# Example Test Configuration for FOCOM NBI Integration Tests
+# Copy this file to testconfig.yaml and customize for your environment
+#
+# Note: Environment variables take precedence over this file:
+#   NBI_STORAGE_BACKEND - Override storage.backend
+#   KUBERNETES_BASE_URL - Override porch.kubernetesURL
+#   TOKEN - Override porch.token
+#   PORCH_NAMESPACE - Override porch.namespace
+#   PORCH_REPOSITORY - Override porch.repository
+
+# Storage backend configuration
+storage:
+  # Backend type: "memory" or "porch"
+  # - "memory": In-memory storage (fast, no external dependencies)
+  # - "porch": Nephio Porch storage (requires Kubernetes cluster with Porch)
+  backend: memory
+
+# Porch storage configuration (only used when storage.backend = "porch")
+porch:
+  # Use kubeconfig for authentication (recommended for local development)
+  # This handles exec-based auth, certificates, and other auth methods automatically
+  # useKubeconfig: true
+  
+  # Path to kubeconfig file (optional, auto-detected from KUBECONFIG env or ~/.kube/config)
+  # kubeconfig: /path/to/kubeconfig
+  
+  # Alternative: Token-based authentication (for in-cluster or simple setups)
+  # Kubernetes API URL (optional, auto-detected from KUBECONFIG if not specified)
+  # Example: https://your-cluster-api:6443
+  # kubernetesURL: ""
+  
+  # Authentication token (optional, auto-detected)
+  # Token resolution order:
+  #   1. This config value
+  #   2. TOKEN environment variable
+  #   3. /var/run/secrets/kubernetes.io/serviceaccount/token (in-cluster)
+  #   4. Extracted from KUBECONFIG file
+  # token: ""
+  
+  # Namespace for PackageRevisions
+  namespace: default
+  
+  # Porch repository name
+  repository: focom-resources
+  
+  # Verify HTTPS certificates (set to true for production)
+  httpsVerify: false
+
+# Test execution options
+test:
+  # Clean up resources after tests complete
+  cleanup: true
+  
+  # Use unique IDs to avoid conflicts between test runs
+  useUniqueIDs: true
+  
+  # Prefix for test resource IDs
+  resourcePrefix: "test-"
+  
+  # Timeout for test operations
+  timeout: 30s
+
+# ============================================================================
+# Example Configurations
+# ============================================================================
+
+# Example 1: Local development with in-memory storage (default)
+# storage:
+#   backend: memory
+
+# Example 2: Local development with Porch storage
+# storage:
+#   backend: porch
+# porch:
+#   namespace: default
+#   repository: focom-resources-test
+#   httpsVerify: false
+# # Token and kubernetesURL will be auto-detected from KUBECONFIG
+
+# Example 3: CI/CD with Porch storage (use environment variables)
+# export NBI_STORAGE_BACKEND=porch
+# export KUBERNETES_BASE_URL=https://cluster-api:6443
+# export TOKEN=$(kubectl create token focom-operator-test)
+# export PORCH_NAMESPACE=default
+# export PORCH_REPOSITORY=focom-resources-test

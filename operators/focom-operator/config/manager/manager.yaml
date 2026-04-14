@@ -63,13 +63,37 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
+          - --enable-nbi=true
+          - --nbi-port=8080
         image: controller:latest
         name: manager
+        env:
+        - name: FOCOM_NAMESPACE
+          value: "focom-system"
+        - name: NBI_STORAGE_BACKEND
+          value: "porch"
+        - name: NBI_STAGE
+          value: "2"
+        - name: PORCH_NAMESPACE
+          value: "default"
+        - name: PORCH_REPOSITORY
+          value: "focom-resources"
+        - name: KUBERNETES_BASE_URL
+          value: "https://kubernetes.default.svc"
+        - name: PORCH_HTTPS_VERIFY
+          value: "false"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
             - "ALL"
+        ports:
+        - containerPort: 8080
+          name: nbi-http
+          protocol: TCP
+        - containerPort: 8081
+          name: health-probe
+          protocol: TCP
         livenessProbe:
           httpGet:
             path: /healthz

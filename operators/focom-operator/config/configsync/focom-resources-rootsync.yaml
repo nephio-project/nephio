@@ -1,0 +1,52 @@
+---
+# RootSync for syncing FOCOM resources from Git to Kubernetes
+# This enables GitOps: Git repository is the source of truth for FOCOM CRs
+apiVersion: configsync.gke.io/v1beta1
+kind: RootSync
+metadata:
+  name: focom-resources
+  namespace: config-management-system
+spec:
+  # Source type: Git repository
+  sourceType: git
+  
+  # Source format: unstructured (allows any Kubernetes YAML)
+  sourceFormat: unstructured
+  
+  # Git configuration
+  git:
+    # Repository URL (from Porch Repository CR)
+    repo: http://172.18.0.200:3000/nephio/focom-resources.git
+    
+    # Branch to sync from
+    branch: main
+    
+    # Directory within repo (root = entire repo)
+    # Note: Porch creates packages in subdirectories like "ocloud-123-v1/"
+    dir: "/"
+    
+    # Authentication
+    auth: token
+    secretRef:
+      name: gitea-secret
+    
+    # Sync period (how often to check for changes)
+    period: 15s
+  
+  # Override settings
+  override:
+    # Namespace creation mode
+    # "implicit" = automatically create namespaces if they don't exist
+    # "explicit" = only use namespaces declared in the repo
+    namespaceStrategy: implicit
+    
+    # Optional: Limit which resource types to sync
+    # Uncomment to only sync FOCOM resources (ignores Kptfiles, etc.)
+    # resources:
+    # - group: focom.nephio.org
+    #   kinds:
+    #   - OCloud
+    #   - FocomProvisioningRequest
+    # - group: provisioning.oran.org
+    #   kinds:
+    #   - TemplateInfo

@@ -1,0 +1,1537 @@
+#  Copyright 2026 The Nephio Authors.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+openapi: 3.0.3
+info:
+  title: FOCOM North Bound Interface API
+  description: |
+    REST API for managing FOCOM provisioning requests through a North Bound Interface.
+    This API provides endpoints to create, read, update, and delete FOCOM provisioning requests
+    with support for draft revisions, validation, and approval workflows.
+  version: 1.0.0
+  contact:
+    name: Nephio Project
+    url: https://nephio.org
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  x-api-id: e9776a07-0813-4fca-9801-6f892f0a7c13
+  x-audience: external-public
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://focom-nbi.nephio.org/api/v1
+    description: Production server
+
+paths:
+  /focom-provisioning-requests:
+    get:
+      summary: List all FOCOM provisioning requests
+      description: List the current approved revision of all FOCOM provisioning requests
+      operationId: listFocomProvisioningRequests
+      tags:
+        - Provisioning Requests
+      responses:
+        "200":
+          description: OK - List of FOCOM provisioning requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocomProvisioningRequestInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/draft:
+    post:
+      summary: Create new FOCOM provisioning request draft
+      description: Create new FOCOM provisioning request in draft revision, referring to a FOCOM Managed Infrastructure Template
+      operationId: createFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocomProvisioningRequestData"
+      responses:
+        "201":
+          description: Created - FOCOM provisioning request draft created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}:
+    get:
+      summary: Get FOCOM provisioning request
+      description: Get the current approved FOCOM provisioning request revision plus provisioning request status reported from the O2ims IMS server
+      operationId: getFocomProvisioningRequest
+      tags:
+        - Provisioning Requests
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - FOCOM provisioning request details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete FOCOM provisioning request
+      description: Delete the complete FOCOM provisioning request to trigger decommissioning of the cluster
+      operationId: deleteFocomProvisioningRequest
+      tags:
+        - Provisioning Requests
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "202":
+          description: Accepted - Deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/draft:
+    get:
+      summary: Get FOCOM provisioning request draft
+      description: Get the draft FOCOM provisioning request revision if exists, can be in either "Draft" or "Validated" state
+      operationId: getFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - FOCOM provisioning request draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: Update FOCOM provisioning request draft
+      description: Update the current draft FOCOM provisioning request, only modifying specified parts
+      operationId: updateFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocomProvisioningRequestDataUpdate"
+      responses:
+        "200":
+          description: OK - FOCOM provisioning request draft updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict - Draft is in validated state and cannot be updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete FOCOM provisioning request draft
+      description: Delete/abandon the current draft FOCOM provisioning request
+      operationId: deleteFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "202":
+          description: Accepted - Draft deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Draft deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/draft/validate:
+    post:
+      summary: Validate FOCOM provisioning request draft
+      description: Validate the current draft FOCOM provisioning request. The draft is changed to "Validated" state only if validation returns success
+      operationId: validateFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/draft/reject:
+    post:
+      summary: Reject FOCOM provisioning request draft
+      description: Reject a draft in "Validated" state so that it is returned back to "Draft" state
+      operationId: rejectFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - Draft rejected and returned to Draft state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/draft/approve:
+    post:
+      summary: Approve FOCOM provisioning request draft
+      description: Approve the current draft FOCOM provisioning request. Only allowed if the draft is in "Validated" state
+      operationId: approveFocomProvisioningRequestDraft
+      tags:
+        - Draft Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - Draft approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/revisions:
+    get:
+      summary: List FOCOM provisioning request revisions
+      description: List all (current and previous) approved FOCOM provisioning request revisions
+      operationId: listFocomProvisioningRequestRevisions
+      tags:
+        - Revision Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+      responses:
+        "200":
+          description: OK - List of FOCOM provisioning request revisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/revisions/{revisionId}:
+    get:
+      summary: Get specific FOCOM provisioning request revision
+      description: Get the specific approved FOCOM provisioning request revision
+      operationId: getFocomProvisioningRequestRevision
+      tags:
+        - Revision Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "200":
+          description: OK - FOCOM provisioning request revision details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /focom-provisioning-requests/{provisioningRequestId}/revisions/{revisionId}/draft:
+    post:
+      summary: Create draft from revision
+      description: Create a FOCOM provisioning request in draft revision based on a previously approved revision
+      operationId: createDraftFromRevision
+      tags:
+        - Revision Management
+      parameters:
+        - $ref: "#/components/parameters/ProvisioningRequestId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "201":
+          description: Created - Draft created from revision successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FocomProvisioningRequestData"
+        "400":
+          description: Bad Request - Draft already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # OCloud Management Endpoints
+  /o-clouds:
+    get:
+      summary: List all OClouds
+      description: List the current approved revision of all OCloud configurations
+      operationId: listOClouds
+      tags:
+        - OCloud Management
+      responses:
+        "200":
+          description: OK - List of OCloud configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OCloudInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/draft:
+    post:
+      summary: Create new OCloud draft
+      description: Create new OCloud configuration in draft revision
+      operationId: createOCloudDraft
+      tags:
+        - OCloud Draft Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OCloudData"
+      responses:
+        "201":
+          description: Created - OCloud draft created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}:
+    get:
+      summary: Get OCloud configuration
+      description: Get the current approved OCloud configuration revision
+      operationId: getOCloud
+      tags:
+        - OCloud Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - OCloud configuration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete OCloud configuration
+      description: Delete the complete OCloud configuration
+      operationId: deleteOCloud
+      tags:
+        - OCloud Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "202":
+          description: Accepted - Deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/draft:
+    get:
+      summary: Get OCloud draft
+      description: Get the draft OCloud configuration revision if exists
+      operationId: getOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - OCloud draft configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: Update OCloud draft
+      description: Update the current draft OCloud configuration
+      operationId: updateOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OCloudDataUpdate"
+      responses:
+        "200":
+          description: OK - OCloud draft updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict - Draft is in validated state and cannot be updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete OCloud draft
+      description: Delete/abandon the current draft OCloud configuration
+      operationId: deleteOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "202":
+          description: Accepted - Draft deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Draft deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/draft/validate:
+    post:
+      summary: Validate OCloud draft
+      description: Validate the current draft OCloud configuration
+      operationId: validateOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/draft/reject:
+    post:
+      summary: Reject OCloud draft
+      description: Reject a draft in "Validated" state so that it is returned back to "Draft" state
+      operationId: rejectOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - Draft rejected and returned to Draft state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/draft/approve:
+    post:
+      summary: Approve OCloud draft
+      description: Approve the current draft OCloud configuration
+      operationId: approveOCloudDraft
+      tags:
+        - OCloud Draft Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - Draft approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/revisions:
+    get:
+      summary: List OCloud revisions
+      description: List all approved OCloud configuration revisions
+      operationId: listOCloudRevisions
+      tags:
+        - OCloud Revision Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+      responses:
+        "200":
+          description: OK - List of OCloud revisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OCloudData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/revisions/{revisionId}:
+    get:
+      summary: Get specific OCloud revision
+      description: Get the specific approved OCloud configuration revision
+      operationId: getOCloudRevision
+      tags:
+        - OCloud Revision Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "200":
+          description: OK - OCloud revision details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /o-clouds/{oCloudId}/revisions/{revisionId}/draft:
+    post:
+      summary: Create OCloud draft from revision
+      description: Create an OCloud configuration in draft revision based on a previously approved revision
+      operationId: createOCloudDraftFromRevision
+      tags:
+        - OCloud Revision Management
+      parameters:
+        - $ref: "#/components/parameters/OCloudId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "201":
+          description: Created - Draft created from revision successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OCloudData"
+        "400":
+          description: Bad Request - Draft already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # TemplateInfo Management Endpoints
+  /template-infos:
+    get:
+      summary: List all TemplateInfos
+      description: List the current approved revision of all TemplateInfo configurations
+      operationId: listTemplateInfos
+      tags:
+        - TemplateInfo Management
+      responses:
+        "200":
+          description: OK - List of TemplateInfo configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateInfoInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/draft:
+    post:
+      summary: Create new TemplateInfo draft
+      description: Create new TemplateInfo configuration in draft revision
+      operationId: createTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateInfoData"
+      responses:
+        "201":
+          description: Created - TemplateInfo draft created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}:
+    get:
+      summary: Get TemplateInfo configuration
+      description: Get the current approved TemplateInfo configuration revision
+      operationId: getTemplateInfo
+      tags:
+        - TemplateInfo Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - TemplateInfo configuration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoInfo"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete TemplateInfo configuration
+      description: Delete the complete TemplateInfo configuration
+      operationId: deleteTemplateInfo
+      tags:
+        - TemplateInfo Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "202":
+          description: Accepted - Deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/draft:
+    get:
+      summary: Get TemplateInfo draft
+      description: Get the draft TemplateInfo configuration revision if exists
+      operationId: getTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - TemplateInfo draft configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      summary: Update TemplateInfo draft
+      description: Update the current draft TemplateInfo configuration
+      operationId: updateTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateInfoDataUpdate"
+      responses:
+        "200":
+          description: OK - TemplateInfo draft updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict - Draft is in validated state and cannot be updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete TemplateInfo draft
+      description: Delete/abandon the current draft TemplateInfo configuration
+      operationId: deleteTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "202":
+          description: Accepted - Draft deletion request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Draft deletion request accepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/draft/validate:
+    post:
+      summary: Validate TemplateInfo draft
+      description: Validate the current draft TemplateInfo configuration
+      operationId: validateTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/draft/reject:
+    post:
+      summary: Reject TemplateInfo draft
+      description: Reject a draft in "Validated" state so that it is returned back to "Draft" state
+      operationId: rejectTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - Draft rejected and returned to Draft state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/draft/approve:
+    post:
+      summary: Approve TemplateInfo draft
+      description: Approve the current draft TemplateInfo configuration
+      operationId: approveTemplateInfoDraft
+      tags:
+        - TemplateInfo Draft Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - Draft approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "400":
+          description: Bad Request - Draft is not in validated state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/revisions:
+    get:
+      summary: List TemplateInfo revisions
+      description: List all approved TemplateInfo configuration revisions
+      operationId: listTemplateInfoRevisions
+      tags:
+        - TemplateInfo Revision Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+      responses:
+        "200":
+          description: OK - List of TemplateInfo revisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateInfoData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/revisions/{revisionId}:
+    get:
+      summary: Get specific TemplateInfo revision
+      description: Get the specific approved TemplateInfo configuration revision
+      operationId: getTemplateInfoRevision
+      tags:
+        - TemplateInfo Revision Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "200":
+          description: OK - TemplateInfo revision details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /template-infos/{templateInfoId}/revisions/{revisionId}/draft:
+    post:
+      summary: Create TemplateInfo draft from revision
+      description: Create a TemplateInfo configuration in draft revision based on a previously approved revision
+      operationId: createTemplateInfoDraftFromRevision
+      tags:
+        - TemplateInfo Revision Management
+      parameters:
+        - $ref: "#/components/parameters/TemplateInfoId"
+        - $ref: "#/components/parameters/RevisionId"
+      responses:
+        "201":
+          description: Created - Draft created from revision successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateInfoData"
+        "400":
+          description: Bad Request - Draft already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  parameters:
+    ProvisioningRequestId:
+      name: provisioningRequestId
+      in: path
+      required: true
+      description: Identifier of the FOCOM provisioning request
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440000"
+
+    RevisionId:
+      name: revisionId
+      in: path
+      required: true
+      description: Revision identifier for the FOCOM provisioning request
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440001"
+
+    OCloudId:
+      name: oCloudId
+      in: path
+      required: true
+      description: Identifier of the OCloud configuration
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440002"
+
+    TemplateInfoId:
+      name: templateInfoId
+      in: path
+      required: true
+      description: Identifier of the TemplateInfo configuration
+      schema:
+        type: string
+        format: uuid
+        example: "550e8400-e29b-41d4-a716-446655440003"
+
+  schemas:
+    FocomProvisioningRequestData:
+      type: object
+      description: Core data structure for FOCOM provisioning requests
+      properties:
+        provisioningRequestId:
+          type: string
+          format: uuid
+          description: Identifier of the focomProvisioningRequest instance assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        revisionId:
+          type: string
+          format: uuid
+          description: Revision identifier for each focomProvisioningRequest instance revision assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        namespace:
+          type: string
+          description: |
+            **DEPRECATED**: Use FOCOM_NAMESPACE environment variable instead.
+            Kubernetes namespace where the provisioning request will be created.
+            If not provided, the default namespace from FOCOM_NAMESPACE environment variable will be used.
+          deprecated: true
+          example: "focom-system"
+        name:
+          type: string
+          description: Human readable name of the focomProvisioningRequest instance
+          example: "edge-cluster-deployment"
+        description:
+          type: string
+          description: Human readable description of the focomProvisioningRequest instance
+          example: "Edge cluster deployment for manufacturing site A"
+        oCloudId:
+          type: string
+          description: ID of the O-Cloud registered in FOCOM
+          example: "manufacturing-ocloud-01"
+        oCloudNamespace:
+          type: string
+          description: |
+            **DEPRECATED**: Use FOCOM_NAMESPACE environment variable instead.
+            Namespace where the O-Cloud resource is located.
+            If not provided, the default namespace from FOCOM_NAMESPACE environment variable will be used.
+          deprecated: true
+          example: "focom-system"
+        templateName:
+          type: string
+          description: Name of the FOCOM Managed Infrastructure Template
+          example: "edge-cluster-template"
+        templateVersion:
+          type: string
+          description: Version of the template used as the basis for the declarative model
+          example: "v1.2.0"
+        templateParameters:
+          $ref: "#/components/schemas/KeyValuePairs"
+        focomProvisioningRequestRevisionState:
+          type: string
+          enum: ["DRAFT", "VALIDATED", "APPROVED"]
+          description: Revision state of the focomProvisioningRequest instance
+          example: "DRAFT"
+      required:
+        - name
+        - description
+        - oCloudId
+        - templateName
+        - templateVersion
+        - focomProvisioningRequestRevisionState
+
+    FocomProvisioningRequestDataUpdate:
+      type: object
+      description: Update structure for FOCOM provisioning request drafts
+      properties:
+        name:
+          type: string
+          description: Human readable name of the focomProvisioningRequest instance
+          example: "updated-edge-cluster-deployment"
+        description:
+          type: string
+          description: Human readable description of the focomProvisioningRequest instance
+          example: "Updated edge cluster deployment for manufacturing site A"
+        templateName:
+          type: string
+          description: Name of the FOCOM Managed Infrastructure Template (only allowed when creating new draft)
+          example: "edge-cluster-template-v2"
+        templateVersion:
+          type: string
+          description: Version of the template (only allowed when creating new draft)
+          example: "v2.0.0"
+        templateParameters:
+          $ref: "#/components/schemas/KeyValuePairs"
+
+    FocomProvisioningRequestInfo:
+      type: object
+      description: Complete information about a FOCOM provisioning request including status
+      properties:
+        focomProvisioningRequestData:
+          $ref: "#/components/schemas/FocomProvisioningRequestData"
+        oCloudProvisioningRequestReference:
+          type: string
+          description: Unique reference assigned by the O-Cloud service producer
+          example: "ocloud-ref-12345"
+        focomProvisioningStatus:
+          $ref: "#/components/schemas/FocomProvisioningStatus"
+        focomProvisionedResourceSet:
+          $ref: "#/components/schemas/FocomProvisionedResourceSet"
+      required:
+        - focomProvisioningRequestData
+        - oCloudProvisioningRequestReference
+        - focomProvisioningStatus
+
+    FocomProvisioningStatus:
+      type: object
+      description: Status information for FOCOM provisioning requests (based on FocomProvisioningRequestStatus)
+      properties:
+        phase:
+          type: string
+          description: Current phase of the provisioning request
+          example: "IN_PROGRESS"
+        message:
+          type: string
+          description: Status message
+          example: "Cluster provisioning in progress"
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Time when status was last updated
+          example: "2024-01-15T10:30:00Z"
+        remoteName:
+          type: string
+          description: The name of the remote resource in the target cluster
+          example: "remote-cluster-resource"
+
+    FocomProvisionedResourceSet:
+      type: object
+      description: Resources that have been successfully provisioned
+      properties:
+        clusterId:
+          type: string
+          description: Identifier of the provisioned cluster
+          example: "cluster-12345"
+        clusterEndpoint:
+          type: string
+          format: uri
+          description: Endpoint URL of the provisioned cluster
+          example: "https://cluster-12345.example.com:6443"
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProvisionedResource"
+          description: List of provisioned resources
+
+    ProvisionedResource:
+      type: object
+      description: Individual provisioned resource information
+      properties:
+        resourceId:
+          type: string
+          description: Unique identifier of the resource
+          example: "resource-67890"
+        resourceType:
+          type: string
+          description: Type of the provisioned resource
+          example: "compute-node"
+        resourceName:
+          type: string
+          description: Name of the provisioned resource
+          example: "worker-node-01"
+        status:
+          type: string
+          enum: ["ACTIVE", "INACTIVE", "ERROR"]
+          description: Status of the resource
+          example: "ACTIVE"
+      required:
+        - resourceId
+        - resourceType
+        - resourceName
+        - status
+
+    KeyValuePairs:
+      type: object
+      description: List of key-value pairs for template parameters
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          - type: object
+          - type: array
+      example:
+        cpu: "4"
+        memory: "8Gi"
+        storage: "100Gi"
+        replicas: 3
+        enableHA: true
+
+    ErrorResponse:
+      type: object
+      description: Standard error response
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Validation failed"
+        code:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        details:
+          type: string
+          description: Additional error details
+          example: "Template parameters are invalid"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-15T10:30:00Z"
+      required:
+        - error
+        - code
+        - timestamp
+
+    # OCloud Schemas
+    OCloudData:
+      type: object
+      description: Core data structure for OCloud configurations
+      properties:
+        oCloudId:
+          type: string
+          format: uuid
+          description: Identifier of the OCloud instance assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440002"
+        revisionId:
+          type: string
+          format: uuid
+          description: Revision identifier for each OCloud instance revision assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440011"
+        namespace:
+          type: string
+          description: |
+            **DEPRECATED**: Use FOCOM_NAMESPACE environment variable instead.
+            Kubernetes namespace where the OCloud will be created.
+            If not provided, the default namespace from FOCOM_NAMESPACE environment variable will be used.
+          deprecated: true
+          example: "focom-system"
+        name:
+          type: string
+          description: Human readable name of the OCloud instance
+          example: "manufacturing-ocloud-01"
+        description:
+          type: string
+          description: Human readable description of the OCloud instance
+          example: "Manufacturing site OCloud configuration"
+        o2imsSecret:
+          $ref: "#/components/schemas/O2imsSecret"
+        oCloudRevisionState:
+          type: string
+          enum: ["DRAFT", "VALIDATED", "APPROVED"]
+          description: Revision state of the OCloud instance
+          example: "DRAFT"
+      required:
+        - name
+        - description
+        - o2imsSecret
+        - oCloudRevisionState
+
+    OCloudDataUpdate:
+      type: object
+      description: Update structure for OCloud configuration drafts
+      properties:
+        name:
+          type: string
+          description: Human readable name of the OCloud instance
+          example: "updated-manufacturing-ocloud-01"
+        description:
+          type: string
+          description: Human readable description of the OCloud instance
+          example: "Updated manufacturing site OCloud configuration"
+        o2imsSecret:
+          $ref: "#/components/schemas/O2imsSecret"
+
+    OCloudInfo:
+      type: object
+      description: Complete information about an OCloud configuration including status
+      properties:
+        oCloudData:
+          $ref: "#/components/schemas/OCloudData"
+        oCloudStatus:
+          $ref: "#/components/schemas/OCloudStatus"
+      required:
+        - oCloudData
+        - oCloudStatus
+
+    OCloudStatus:
+      type: object
+      description: Status information for OCloud configurations (based on OCloudStatus CRD - currently empty in source)
+      properties:
+        message:
+          type: string
+          description: Status message
+          example: "OCloud configuration is active"
+
+    O2imsSecret:
+      type: object
+      description: Reference to O2IMS credentials secret
+      properties:
+        secretRef:
+          $ref: "#/components/schemas/SecretRef"
+      required:
+        - secretRef
+
+    SecretRef:
+      type: object
+      description: Reference to a Kubernetes secret
+      properties:
+        name:
+          type: string
+          description: Name of the secret
+          example: "o2ims-credentials"
+        namespace:
+          type: string
+          description: Namespace of the secret
+          example: "focom-system"
+      required:
+        - name
+        - namespace
+
+    # TemplateInfo Schemas
+    TemplateInfoData:
+      type: object
+      description: Core data structure for TemplateInfo configurations
+      properties:
+        templateInfoId:
+          type: string
+          format: uuid
+          description: Identifier of the TemplateInfo instance assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440003"
+        revisionId:
+          type: string
+          format: uuid
+          description: Revision identifier for each TemplateInfo instance revision assigned by FOCOM
+          readOnly: true
+          example: "550e8400-e29b-41d4-a716-446655440012"
+        namespace:
+          type: string
+          description: |
+            **DEPRECATED**: Use FOCOM_NAMESPACE environment variable instead.
+            Kubernetes namespace where the TemplateInfo will be created.
+            If not provided, the default namespace from FOCOM_NAMESPACE environment variable will be used.
+          deprecated: true
+          example: "focom-system"
+        name:
+          type: string
+          description: Human readable name of the TemplateInfo instance
+          example: "edge-cluster-template-info"
+        description:
+          type: string
+          description: Human readable description of the TemplateInfo instance
+          example: "Template information for edge cluster deployments"
+        templateName:
+          type: string
+          description: Name of the template
+          example: "edge-cluster-template"
+        templateVersion:
+          type: string
+          description: Version of the template
+          example: "v1.2.0"
+        templateParameterSchema:
+          type: string
+          description: JSON or YAML-based schema for template parameters
+          example: |
+            {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"},
+                "replicas": {"type": "integer"}
+              },
+              "required": ["cpu", "memory"]
+            }
+        templateInfoRevisionState:
+          type: string
+          enum: ["DRAFT", "VALIDATED", "APPROVED"]
+          description: Revision state of the TemplateInfo instance
+          example: "DRAFT"
+      required:
+        - name
+        - description
+        - templateName
+        - templateVersion
+        - templateParameterSchema
+        - templateInfoRevisionState
+
+    TemplateInfoDataUpdate:
+      type: object
+      description: Update structure for TemplateInfo configuration drafts
+      properties:
+        name:
+          type: string
+          description: Human readable name of the TemplateInfo instance
+          example: "updated-edge-cluster-template-info"
+        description:
+          type: string
+          description: Human readable description of the TemplateInfo instance
+          example: "Updated template information for edge cluster deployments"
+        templateName:
+          type: string
+          description: Name of the template
+          example: "edge-cluster-template-v2"
+        templateVersion:
+          type: string
+          description: Version of the template
+          example: "v2.0.0"
+        templateParameterSchema:
+          type: string
+          description: JSON or YAML-based schema for template parameters
+          example: |
+            {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"},
+                "replicas": {"type": "integer"},
+                "storage": {"type": "string"}
+              },
+              "required": ["cpu", "memory", "storage"]
+            }
+
+    TemplateInfoInfo:
+      type: object
+      description: Complete information about a TemplateInfo configuration including status
+      properties:
+        templateInfoData:
+          $ref: "#/components/schemas/TemplateInfoData"
+        templateInfoStatus:
+          $ref: "#/components/schemas/TemplateInfoStatus"
+      required:
+        - templateInfoData
+        - templateInfoStatus
+
+    TemplateInfoStatus:
+      type: object
+      description: Status information for TemplateInfo configurations (based on TemplateInfoStatus CRD - currently empty in source)
+      properties:
+        message:
+          type: string
+          description: Status message
+          example: "TemplateInfo configuration is active"
+
+  responses:
+    BadRequest:
+      description: Bad Request - Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Not Found - Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalServerError:
+      description: Internal Server Error - An unexpected error occurred
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Provisioning Requests
+    description: Operations for managing FOCOM provisioning requests
+  - name: Draft Management
+    description: Operations for managing draft revisions
+  - name: Revision Management
+    description: Operations for managing approved revisions
+  - name: OCloud Management
+    description: Operations for managing OCloud configurations
+  - name: OCloud Draft Management
+    description: Operations for managing OCloud draft revisions
+  - name: OCloud Revision Management
+    description: Operations for managing OCloud approved revisions
+  - name: TemplateInfo Management
+    description: Operations for managing TemplateInfo configurations
+  - name: TemplateInfo Draft Management
+    description: Operations for managing TemplateInfo draft revisions
+  - name: TemplateInfo Revision Management
+    description: Operations for managing TemplateInfo approved revisions
