@@ -119,6 +119,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
 
+		originalPaths := map[string]struct{}{}
+		for _, o := range rl.Items {
+			if path := o.GetAnnotation(kioutil.PathAnnotation); path != "" {
+				originalPaths[path] = struct{}{}
+			}
+		}
+
 		// run the function SDK
 		_, err = r.krmfn.Process(rl)
 		if err != nil {
@@ -126,12 +133,19 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			// TBD if we need to return here + check if kptfile is set
 			//return ctrl.Result{}, errors.Wrap(err, "function run failed")
 		}
+		survivingPaths := map[string]struct{}{}
 		for _, o := range rl.Items {
+			if path := o.GetAnnotation(kioutil.PathAnnotation); path != "" {
+				survivingPaths[path] = struct{}{}
+			}
 			log.Info("resourceList", "data", o.String())
 			// TBD what if we create new resources
 			// update the resources with the latest info
 			prr.Spec.Resources[o.GetAnnotation(kioutil.PathAnnotation)] = o.String()
 		}
+
+		syncDeletedResources(prr, originalPaths, survivingPaths)
+
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
 			log.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
@@ -146,4 +160,12 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	}
 	return ctrl.Result{}, nil
+}
+
+func syncDeletedResources(prr *porchv1alpha1.PackageRevisionResources, originalPaths, survivingPaths map[string]struct{}) {
+	for path := range originalPaths {
+		if _, exists := survivingPaths[path]; !exists {
+			delete(prr.Spec.Resources, path)
+		}
+	}
 }
