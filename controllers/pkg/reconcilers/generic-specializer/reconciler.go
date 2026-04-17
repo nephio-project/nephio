@@ -167,7 +167,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
 				log.Error(err, "ipam function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "ipam function run failed")
 			}
 			log.Info("ipam specializer fn run successful")
 		}
@@ -177,7 +177,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
 				log.Error(err, "vlan function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "vlan function run failed")
 			}
 			log.Info("vlan specializer fn run successful")
 		}
@@ -187,7 +187,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
 				log.Error(err, "configInject function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "configInject function run failed")
 			}
 			log.Info("configInject specializer fn run successful")
 		}
