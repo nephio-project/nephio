@@ -279,16 +279,23 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 					log.Error(err, "cannot get gostruct from kubeobject")
 					continue
 				}
-				for _, c := range kptfile.Status.Conditions {
-					if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
-						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
-						strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
-						log.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
+				// kptv1.KptFile.Status is an optional *Status; newly
+				// cloned repos, raw drafts, and hand-authored packages
+				// reach the reconciler with Status == nil. Ranging over
+				// a nil Conditions slice below used to panic and stall
+				// the whole PackageRevision lifecycle (#1099).
+				if kptfile.Status != nil {
+					for _, c := range kptfile.Status.Conditions {
+						if strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&vlanFor)+".") ||
+							strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&ipamFor)+".") ||
+							strings.HasPrefix(c.Type, kptfilelibv1.GetConditionType(&configInjectFor)+".") {
+							log.Info("generic specializer conditions", "packageName", pr.Spec.PackageName, "repository", pr.Spec.RepositoryName, "status", c.Status, "condition", c.Type, "message", c.Message)
+						}
 					}
-				}
 
-				if porchv1alpha1.PackageRevisionIsReady(pr.Spec.ReadinessGates, porchcondition.GetPorchConditions(kptfile.Status.Conditions)) {
-					r.recorder.Eventf(pr, corev1.EventTypeNormal, "PackageRevision is Ready", "readiness gates met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
+					if porchv1alpha1.PackageRevisionIsReady(pr.Spec.ReadinessGates, porchcondition.GetPorchConditions(kptfile.Status.Conditions)) {
+						r.recorder.Eventf(pr, corev1.EventTypeNormal, "PackageRevision is Ready", "readiness gates met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
+					}
 				}
 			}
 		}
