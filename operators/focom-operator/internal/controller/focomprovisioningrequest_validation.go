@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Nephio Authors.
+Copyright 2025-2026 The Nephio Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 
 	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	provisioningv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/models"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -32,9 +33,9 @@ func (r *FocomProvisioningRequestReconciler) validateTemplateAlignment(
 	ctx context.Context,
 	fpr *focomv1alpha1.FocomProvisioningRequest,
 ) error {
-	// Construct the name for TemplateInfo.
-	// This naming strategy can vary, but commonly: "<templateName>-<templateVersion>"
-	tplInfoName := fmt.Sprintf("%s-%s", fpr.Spec.TemplateName, fpr.Spec.TemplateVersion)
+	// Construct the name for TemplateInfo using the same sanitization as the NBI layer
+	// This ensures the controller looks up the CR with the correct sanitized name
+	tplInfoName := models.SanitizeID(fmt.Sprintf("%s-%s", fpr.Spec.TemplateName, fpr.Spec.TemplateVersion))
 
 	// Fetch TemplateInfo from the same namespace as the FPR (or a special "catalog" namespace if that's your design)
 	var tplInfo provisioningv1alpha1.TemplateInfo

@@ -16,11 +16,25 @@ limitations under the License.
 
 package main
 
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions;packagerevisionresources,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=porch.kpt.dev,resources=packagerevisions/approval,verbs=get;update
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds;focomprovisioningrequests,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds/status;focomprovisioningrequests/status,verbs=get;patch;update
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds/finalizers;focomprovisioningrequests/finalizers,verbs=update
+// +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes/status,verbs=get;patch;update
+// +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes/finalizers,verbs=update
+
 import (
+	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	"os"
+	"sync"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -38,6 +52,11 @@ import (
 
 	provisioningv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/provisioning/v1alpha1"
 	"github.com/nephio-project/nephio/operators/focom-operator/internal/controller"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/config"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/handlers"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/integration"
+	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/storage"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -54,12 +73,78 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+// initializeNBISystem initializes the complete NBI system with all components
+func initializeNBISystem(mgr ctrl.Manager, nbiConfig *config.NBIConfig) (*nbi.Server, error) {
+	setupLog.Info("Initializing NBI system", "stage", nbiConfig.Stage, "storageBackend", nbiConfig.StorageBackend)
+
+	// Initialize storage based on configuration
+	var storageImpl storage.StorageInterface
+
+	switch nbiConfig.StorageBackend {
+	case config.StorageBackendMemory:
+		storageImpl = storage.NewInMemoryStorage()
+		setupLog.Info("Initialized in-memory storage")
+	case config.StorageBackendPorch:
+		// Read configuration from environment variables with defaults
+		namespace := os.Getenv("PORCH_NAMESPACE")
+		if namespace == "" {
+			namespace = "default"
+		}
+
+		repository := os.Getenv("PORCH_REPOSITORY")
+		if repository == "" {
+			repository = "focom-resources"
+		}
+
+		httpsVerify := os.Getenv("PORCH_HTTPS_VERIFY") == "true"
+
+		porchConfig := &storage.PorchStorageConfig{
+			Namespace:   namespace,
+			Repository:  repository,
+			HTTPSVerify: httpsVerify,
+			// KubernetesURL and Token will be auto-detected from environment
+			// KUBERNETES_BASE_URL env var or default to "https://kubernetes.default.svc"
+			// TOKEN env var or service account token file
+		}
+
+		var err error
+		storageImpl, err = storage.NewPorchStorage(porchConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize Porch storage: %w", err)
+		}
+		setupLog.Info("Initialized Porch storage", "repository", porchConfig.Repository, "namespace", porchConfig.Namespace)
+	default:
+		return nil, fmt.Errorf("unsupported storage backend: %s", nbiConfig.StorageBackend)
+	}
+
+	// Initialize operator integration with Kubernetes client
+	operatorIntegration := integration.NewOperatorIntegration(mgr.GetClient(), nil)
+	setupLog.Info("Initialized operator integration")
+
+	// Create server configuration with operator integration
+	serverConfig := &nbi.ServerConfig{
+		Port:                  nbiConfig.Port,
+		RouterConfig:          handlers.DefaultRouterConfig(),
+		OperatorIntegration:   operatorIntegration,
+		DefaultNamespace:      nbiConfig.Namespace,
+		EarlySchemaValidation: nbiConfig.EarlySchemaValidation,
+	}
+
+	// Create and return the NBI server
+	server := nbi.NewServer(storageImpl, serverConfig)
+	setupLog.Info("NBI system initialization complete")
+
+	return server, nil
+}
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+	var enableNBI bool
+	var nbiPort int
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -71,6 +156,10 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	flag.BoolVar(&enableNBI, "enable-nbi", true,
+		"Enable the NBI REST API server alongside the controller manager.")
+	flag.IntVar(&nbiPort, "nbi-port", 8080,
+		"The port for the NBI REST API server.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -165,9 +254,73 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+	// Setup signal handler context for graceful shutdown
+	ctx := ctrl.SetupSignalHandler()
+
+	// Start NBI server if enabled
+	var nbiServer *nbi.Server
+	if enableNBI {
+		nbiConfig := config.DefaultNBIConfig()
+		nbiConfig.Port = nbiPort
+
+		// Load configuration from environment
+		if err := nbiConfig.LoadFromEnvironment(); err != nil {
+			setupLog.Error(err, "failed to load NBI configuration from environment")
+			os.Exit(1)
+		}
+
+		// Validate configuration
+		if err := nbiConfig.Validate(); err != nil {
+			setupLog.Error(err, "invalid NBI configuration")
+			os.Exit(1)
+		}
+
+		// Initialize NBI system
+		nbiServer, err = initializeNBISystem(mgr, nbiConfig)
+		if err != nil {
+			setupLog.Error(err, "failed to initialize NBI system")
+			os.Exit(1)
+		}
+
+		// Start NBI server
+		if err := nbiServer.Start(ctx); err != nil {
+			setupLog.Error(err, "failed to start NBI server")
+			os.Exit(1)
+		}
+
+		setupLog.Info("NBI server started", "port", nbiConfig.Port)
 	}
+
+	// Use WaitGroup to coordinate graceful shutdown
+	var wg sync.WaitGroup
+
+	// Start controller manager
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		setupLog.Info("starting manager")
+		if err := mgr.Start(ctx); err != nil {
+			setupLog.Error(err, "problem running manager")
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for shutdown signal and gracefully stop NBI server
+	<-ctx.Done()
+	setupLog.Info("shutdown signal received")
+
+	if nbiServer != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := nbiServer.Stop(shutdownCtx); err != nil {
+			setupLog.Error(err, "failed to stop NBI server gracefully")
+		} else {
+			setupLog.Info("NBI server stopped gracefully")
+		}
+	}
+
+	// Wait for controller manager to stop
+	wg.Wait()
+	setupLog.Info("shutdown complete")
 }

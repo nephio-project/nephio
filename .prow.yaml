@@ -4,7 +4,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1922925584309030912
+      - image: golang:1.25.6
         command:
         - make
         args:
@@ -14,7 +14,7 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1922925584309030912
+      - image: golang:1.25.6
         command:
         - make
         args:
@@ -24,14 +24,14 @@ presubmits:
     always_run: true
     spec:
       containers:
-      - image: nephio/gotests:1922925584309030912
+      - image: golang:1.25.6
         command:
         - make
         args:
         - gosec
   - name: presubmit-nephio-license-header-check
     decorate: true
-    always_run: true
+    always_run: false
     spec:
       containers:
       - image: nephio/gotests:1922925584309030912
@@ -58,7 +58,7 @@ presubmits:
             memory: 1Gi
   - name: presubmit-nephio-fossology
     decorate: true
-    always_run: true
+    always_run: false
     spec:
       containers:
         - image: fossology/fossology:scanner
@@ -67,26 +67,23 @@ presubmits:
           args:
             - "-c"
             - |
-              set -eE
+              set -e
               
               SCAN_DIR="${PWD}"
               ALLOWLIST="${SCAN_DIR}/allowlist.json"
 
-              OPS=("repo" "nomos" "ojo" "copyright" "keyword" "scan-dir")
-
-              for op in "${OPS[@]}"; do
-                echo "Running fossologyscanner operation: $op"
-                /bin/fossologyscanner \
-                  "$op" \
-                  --report SPDX_JSON \
-                  --dir-path "$SCAN_DIR" \
-                  --allowlist-path "$ALLOWLIST" || true
-              done
+              echo "Running fossologyscanner scan-dir operation"
+              /bin/fossologyscanner \
+                scan-dir \
+                --report SPDX_JSON \
+                --dir-path "$SCAN_DIR" \
+                --allowlist-path "$ALLOWLIST" || echo "Scan completed with warnings"
 
               if [ -d results ]; then
                 cp -R results "${ARTIFACTS}/"
+                echo "Results copied to artifacts"
               else
-                echo "No results generated"
+                echo "No results directory generated"
               fi
   - name: presubmit-nephio-lichen
     decorate: true

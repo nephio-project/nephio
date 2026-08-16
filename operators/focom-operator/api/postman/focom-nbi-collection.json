@@ -1,0 +1,654 @@
+{
+  "info": {
+    "name": "FOCOM NBI API - Complete Demo",
+    "description": "Complete demonstration of FOCOM North Bound Interface API including OCloud, TemplateInfo, and FocomProvisioningRequest workflows",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "oCloudId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "templateInfoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fprId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "Health - Live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
+            }
+          }
+        }
+,
+        {
+          "name": "Health - Ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            }
+          }
+        },
+        {
+          "name": "API Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "info"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. OCloud Workflow",
+      "item": [
+        {
+          "name": "1.1 Create OCloud Draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('oCloudId', jsonData.oCloudId);",
+                  "    console.log('OCloud ID saved: ' + jsonData.oCloudId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"demo-ocloud-01\",\n  \"description\": \"Demo OCloud for testing\",\n  \"o2imsSecret\": {\n    \"secretRef\": {\n      \"name\": \"o2ims-credentials\",\n      \"namespace\": \"focom-system\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "draft"]
+            }
+          }
+        }
+,
+        {
+          "name": "1.2 Get OCloud Draft",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Update OCloud Draft",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated demo OCloud for testing - modified\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Validate OCloud Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/draft/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "draft", "validate"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Approve OCloud Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/draft/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "draft", "approve"]
+            }
+          }
+        },
+        {
+          "name": "1.6 Get OCloud (Approved)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}"]
+            }
+          }
+        },
+        {
+          "name": "1.7 List All OClouds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds"]
+            }
+          }
+        }
+      ]
+    }
+,
+    {
+      "name": "2. TemplateInfo Workflow",
+      "item": [
+        {
+          "name": "2.1 Create TemplateInfo Draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('templateInfoId', jsonData.templateInfoId);",
+                  "    console.log('TemplateInfo ID saved: ' + jsonData.templateInfoId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"edge-cluster-template-v1\",\n  \"description\": \"Edge cluster deployment template\",\n  \"templateName\": \"edge-cluster-template\",\n  \"templateVersion\": \"v1.0.0\",\n  \"templateParameterSchema\": \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"cpu\\\":{\\\"type\\\":\\\"string\\\"},\\\"memory\\\":{\\\"type\\\":\\\"string\\\"},\\\"replicas\\\":{\\\"type\\\":\\\"integer\\\"},\\\"storage\\\":{\\\"type\\\":\\\"string\\\"}},\\\"required\\\":[\\\"cpu\\\",\\\"memory\\\",\\\"replicas\\\"]}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "draft"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get TemplateInfo Draft",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Update TemplateInfo Draft",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated edge cluster deployment template - modified\",\n  \"templateParameterSchema\": \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{\\\"cpu\\\":{\\\"type\\\":\\\"string\\\"},\\\"memory\\\":{\\\"type\\\":\\\"string\\\"},\\\"replicas\\\":{\\\"type\\\":\\\"integer\\\"},\\\"storage\\\":{\\\"type\\\":\\\"string\\\"},\\\"region\\\":{\\\"type\\\":\\\"string\\\"}},\\\"required\\\":[\\\"cpu\\\",\\\"memory\\\",\\\"replicas\\\"]}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Validate TemplateInfo Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/draft/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "draft", "validate"]
+            }
+          }
+        },
+        {
+          "name": "2.5 Approve TemplateInfo Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/draft/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "draft", "approve"]
+            }
+          }
+        },
+        {
+          "name": "2.6 List All TemplateInfos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos"]
+            }
+          }
+        }
+      ]
+    }
+,
+    {
+      "name": "3. FocomProvisioningRequest Workflow",
+      "item": [
+        {
+          "name": "3.1 Create FPR Draft",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('fprId', jsonData.provisioningRequestId);",
+                  "    console.log('FPR ID saved: ' + jsonData.provisioningRequestId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"edge-cluster-deployment-01\",\n  \"description\": \"Edge cluster deployment for site A\",\n  \"oCloudId\": \"{{oCloudId}}\",\n  \"templateName\": \"edge-cluster-template\",\n  \"templateVersion\": \"v1.0.0\",\n  \"templateParameters\": {\n    \"cpu\": \"4\",\n    \"memory\": \"8Gi\",\n    \"replicas\": 3,\n    \"storage\": \"100Gi\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "draft"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Get FPR Draft",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Update FPR Draft",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated edge cluster deployment for site A\",\n  \"templateParameters\": {\n    \"cpu\": \"8\",\n    \"memory\": \"16Gi\",\n    \"replicas\": 5,\n    \"storage\": \"200Gi\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Validate FPR Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft", "validate"]
+            },
+            "description": "Validates the FPR draft including schema validation of templateParameters against the referenced TemplateInfo's templateParameterSchema. Returns structured schema validation errors if parameters do not conform."
+          },
+          "response": [
+            {
+              "name": "Validation Passed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft/validate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft", "validate"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"validationResult\": {\n    \"success\": true,\n    \"validationTime\": \"2026-03-26T10:00:00Z\"\n  },\n  \"draft\": {\n    \"name\": \"edge-cluster-deployment-01\",\n    \"description\": \"Edge cluster deployment for site A\",\n    \"templateName\": \"edge-cluster-template\",\n    \"templateVersion\": \"v1.0.0\",\n    \"templateParameters\": {\n      \"cpu\": \"4\",\n      \"memory\": \"8Gi\",\n      \"replicas\": 3,\n      \"storage\": \"100Gi\"\n    }\n  }\n}"
+            },
+            {
+              "name": "Validation Failed - Schema Errors",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft/validate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft", "validate"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"validationResult\": {\n    \"success\": false,\n    \"validationTime\": \"2026-03-26T10:00:00Z\",\n    \"errors\": [\n      \"Template parameter 'replicas' violates constraint 'type': Invalid type. Expected: integer, given: string\",\n      \"Template parameter '(root)' violates constraint 'required': cpu is required\"\n    ],\n    \"schemaErrors\": [\n      {\n        \"field\": \"replicas\",\n        \"description\": \"Invalid type. Expected: integer, given: string\",\n        \"constraint\": \"type\"\n      },\n      {\n        \"field\": \"(root)\",\n        \"description\": \"cpu is required\",\n        \"constraint\": \"required\"\n      }\n    ]\n  },\n  \"draft\": {\n    \"name\": \"edge-cluster-deployment-01\",\n    \"description\": \"Edge cluster deployment for site A\",\n    \"templateName\": \"edge-cluster-template\",\n    \"templateVersion\": \"v1.0.0\",\n    \"templateParameters\": {\n      \"replicas\": \"not-a-number\",\n      \"memory\": \"8Gi\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "3.4b Create FPR Draft - Invalid Parameters",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"invalid-params-fpr\",\n  \"description\": \"FPR with invalid templateParameters for schema validation demo\",\n  \"oCloudId\": \"{{oCloudId}}\",\n  \"templateName\": \"edge-cluster-template\",\n  \"templateVersion\": \"v1.0.0\",\n  \"templateParameters\": {\n    \"replicas\": \"not-a-number\",\n    \"memory\": \"8Gi\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "draft"]
+            },
+            "description": "Step 1: Creates an FPR draft with intentionally invalid templateParameters. The 'replicas' field is a string instead of integer, and the required 'cpu' field is missing. This will succeed with 201 (drafts are not schema-validated on creation unless FOCOM_EARLY_SCHEMA_VALIDATION=true). Run step 3.4c next to see the schema validation errors."
+          }
+        },
+        {
+          "name": "3.4c Validate FPR Draft - Invalid Parameters (Shows Errors)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/invalid-params-fpr/draft/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "invalid-params-fpr", "draft", "validate"]
+            },
+            "description": "Step 2: Validates the invalid FPR draft created in step 3.4b. This will return structured schema validation errors showing that 'replicas' has wrong type (string instead of integer) and 'cpu' is missing (required field)."
+          },
+          "response": [
+            {
+              "name": "Validation Failed - Schema Errors",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/invalid-params-fpr/draft/validate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "focom-provisioning-requests", "invalid-params-fpr", "draft", "validate"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Template parameters validation failed\",\n    \"details\": \"Template parameter 'replicas' violates constraint 'invalid_type': Invalid type. Expected: integer, given: string\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "3.5 Approve FPR Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/draft/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "draft", "approve"]
+            }
+          }
+        },
+        {
+          "name": "3.6 Get FPR (Approved)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.7 List All FPRs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests"]
+            }
+          }
+        }
+      ]
+    }
+,
+    {
+      "name": "4. Revision Management",
+      "item": [
+        {
+          "name": "4.1 Get OCloud Revisions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/revisions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "revisions"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Create OCloud Draft from Revision",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}/revisions/v1/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}", "revisions", "v1", "draft"]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get TemplateInfo Revisions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/revisions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "revisions"]
+            }
+          }
+        },
+        {
+          "name": "4.4 Create TemplateInfo Draft from Revision",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}/revisions/v1/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}", "revisions", "v1", "draft"]
+            }
+          }
+        },
+        {
+          "name": "4.5 Get FPR Revisions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/revisions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "revisions"]
+            }
+          }
+        },
+        {
+          "name": "4.6 Create FPR Draft from Revision",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}/revisions/v1/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}", "revisions", "v1", "draft"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Draft Rejection Workflow",
+      "item": [
+        {
+          "name": "5.1 Create New FPR Draft",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test-rejection-fpr\",\n  \"description\": \"Test rejection workflow\",\n  \"oCloudId\": \"{{oCloudId}}\",\n  \"templateName\": \"edge-cluster-template\",\n  \"templateVersion\": \"v1.0.0\",\n  \"templateParameters\": {\n    \"cpu\": \"2\",\n    \"memory\": \"4Gi\",\n    \"replicas\": 1\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "draft"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Validate Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/test-rejection-fpr/draft/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "test-rejection-fpr", "draft", "validate"]
+            }
+          }
+        },
+        {
+          "name": "5.3 Reject Draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/test-rejection-fpr/draft/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "test-rejection-fpr", "draft", "reject"]
+            }
+          }
+        },
+        {
+          "name": "5.4 Delete Draft",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/test-rejection-fpr/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "test-rejection-fpr", "draft"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Cleanup (Optional)",
+      "item": [
+        {
+          "name": "6.1 Delete FPR",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/focom-provisioning-requests/{{fprId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "focom-provisioning-requests", "{{fprId}}"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Delete TemplateInfo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/template-infos/{{templateInfoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "template-infos", "{{templateInfoId}}"]
+            }
+          }
+        },
+        {
+          "name": "6.3 Delete OCloud",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/o-clouds/{{oCloudId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "o-clouds", "{{oCloudId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

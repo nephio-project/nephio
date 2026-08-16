@@ -1,0 +1,26 @@
+---
+# Receiver creates a webhook endpoint that Git can call to trigger instant sync
+# This eliminates the 15-second polling delay
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: focom-resources
+  namespace: flux-system
+spec:
+  # Type of webhook (generic works with most Git servers)
+  type: generic
+  
+  # Events that trigger reconciliation
+  events:
+    - "ping"        # Test webhook
+    - "push"        # Git push events
+  
+  # Secret containing the webhook token for authentication
+  secretRef:
+    name: webhook-token
+  
+  # Resources to reconcile when webhook is triggered
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: focom-resources

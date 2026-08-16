@@ -19,10 +19,10 @@ package condkptsdk
 import (
 	"fmt"
 
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
 	"github.com/nephio-project/nephio/krm-functions/lib/ref"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

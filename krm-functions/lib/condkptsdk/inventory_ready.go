@@ -17,9 +17,9 @@ limitations under the License.
 package condkptsdk
 
 import (
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	kptfilelibv1 "github.com/nephio-project/nephio/krm-functions/lib/kptfile/v1"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

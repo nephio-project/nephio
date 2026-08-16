@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ConfigSync resources for Git to CRD synchronization
+# This enables automatic syncing of FOCOM resources from Git to Kubernetes
+
+namespace: config-management-system
+
+resources:
+- focom-resources-rootsync.yaml

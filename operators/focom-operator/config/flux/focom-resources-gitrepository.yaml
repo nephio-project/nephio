@@ -1,0 +1,33 @@
+---
+# GitRepository defines the Git source for Flux
+# This is equivalent to the "git" section in ConfigSync's RootSync
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: focom-resources
+  namespace: flux-system
+spec:
+  # Sync interval (equivalent to ConfigSync's period: 15s)
+  interval: 15s
+  
+  # Git repository URL
+  url: http://172.18.0.200:3000/nephio/focom-resources.git
+  
+  # Branch to sync
+  ref:
+    branch: main
+  
+  # Authentication secret
+  secretRef:
+    name: gitea-secret
+  
+  # Ignore Kptfiles and Porch metadata files (they're not valid Kubernetes resources)
+  # This prevents warnings about invalid resources and conflicts
+  ignore: |
+    # Ignore Kptfiles - they're package metadata, not K8s resources
+    **/Kptfile
+    # Ignore Porch package context files - they contain duplicate ConfigMaps
+    **/package-context.yaml
+    # Optionally ignore other non-resource files
+    **/.git/
+    **/README.md

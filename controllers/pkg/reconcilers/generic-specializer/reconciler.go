@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	porchcondition "github.com/nephio-project/nephio/controllers/pkg/porch/condition"
@@ -37,7 +38,6 @@ import (
 	"github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	vlanfn "github.com/nephio-project/nephio/krm-functions/vlan-fn/fn"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	vlanv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/vlan/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/clientproxy"
@@ -167,7 +167,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("ipam function: %s", err.Error()))
 				log.Error(err, "ipam function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "ipam function run failed")
 			}
 			log.Info("ipam specializer fn run successful")
 		}
@@ -177,7 +177,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("vlan function: %s", err.Error()))
 				log.Error(err, "vlan function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "vlan function run failed")
 			}
 			log.Info("vlan specializer fn run successful")
 		}
@@ -187,7 +187,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			if err != nil {
 				r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", fmt.Sprintf("configInject function: %s", err.Error()))
 				log.Error(err, "configInject function run failed")
-				return ctrl.Result{}, nil
+				return ctrl.Result{}, errors.Wrap(err, "configInject function run failed")
 			}
 			log.Info("configInject specializer fn run successful")
 		}
@@ -289,7 +289,6 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 				if porchv1alpha1.PackageRevisionIsReady(pr.Spec.ReadinessGates, porchcondition.GetPorchConditions(kptfile.Status.Conditions)) {
 					r.recorder.Eventf(pr, corev1.EventTypeNormal, "PackageRevision is Ready", "readiness gates met for %s, in repo %s", pr.Spec.PackageName, pr.Spec.RepositoryName)
-					return ctrl.Result{}, nil
 				}
 			}
 		}
@@ -297,7 +296,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
-			log.Error(err, "mandatory Kptfile is missing from the package")
+			log.Error(fmt.Errorf("mandatory Kptfile is missing from the package"), "")
 			return ctrl.Result{}, nil
 		}
 

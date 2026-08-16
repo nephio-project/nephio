@@ -1,0 +1,3 @@
+nameReference:
+- kind: Namespace
+  skip: true

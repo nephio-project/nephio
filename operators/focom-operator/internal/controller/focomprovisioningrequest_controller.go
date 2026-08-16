@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Nephio Authors.
+Copyright 2025-2026 The Nephio Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,9 +41,13 @@ type FocomProvisioningRequestReconciler struct {
 // Finalizer used for deleting remote CR
 const focomFinalizer = "focom.nephio.org/finalizer"
 
-// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds,verbs=get;list;watch
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=focom.nephio.org,resources=oclouds/finalizers,verbs=update
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=provisioning.oran.org,resources=templateinfoes/finalizers,verbs=update
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=focom.nephio.org,resources=focomprovisioningrequests/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch

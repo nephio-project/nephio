@@ -1,22 +1,17 @@
-with-expecter: true
 packages:
-  github.com/nephio-project/nephio/controllers/pkg/giteaclient:
-    interfaces:
-      GiteaClient:
-        config:
-          dir: "{{.InterfaceDir}}"
   github.com/nephio-project/nephio/controllers/pkg/git:
     interfaces:
       Client:
         config:
-          dir: "{{.InterfaceDir}}"
+          dir: "mocks/external/gitclient"
+          filename: "gitclient.go"
   sigs.k8s.io/controller-runtime/pkg/client:
     interfaces:
       Client:
         config:
           dir: "mocks/external/{{ .InterfaceName | lower }}"
-          outpkg: "mocks"
+          filename: "{{ .InterfaceName | lower }}.go"
       Reader:
         config:
           dir: "mocks/external/{{ .InterfaceName | lower }}"
-          outpkg: "mocks"
+          filename: "{{ .InterfaceName | lower }}.go"

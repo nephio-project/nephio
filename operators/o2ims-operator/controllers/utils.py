@@ -15,8 +15,7 @@
 ##########################################################################
 
 import os
-from datetime import datetime
-from dateutil.tz import tzutc
+
 import requests
 
 requests.packages.urllib3.disable_warnings()
@@ -27,7 +26,7 @@ KUBERNETES_TYPE = str(os.getenv("KUBERNETES_TYPE", "vanilla")).lower()
 # Labels to put inside the owned resources
 LABEL = {"owner": "o2ims.provisioning.oran.org.provisioningrequests"}
 # Log level of the controller
-LOG_LEVEL = str(os.getenv("LOG_LEVEL", "INFO"))
+LOG_LEVEL = str(os.getenv("LOG_LEVEL", "DEBUG"))
 # To verify HTTPs certificates when communicating with cluster
 HTTPS_VERIFY = bool(os.getenv("HTTPS_VERIFY", False))
 # Token used to communicate with Kube cluster
@@ -117,7 +116,7 @@ def create_package_variant(
             response = {"status": False, "reason": "k8sApi server is not reachable"}
         else:
             response = {"status": False, "reason": r.json()}
-    elif r["status"] == True and "name" in r:
+    elif r["status"] and "name" in r:
         response = {"status": r["status"], "name": r["name"]}
     else:
         response = {"status": r["status"], "reason": r["reason"]}
@@ -159,7 +158,7 @@ def get_package_variant(name: str = None, namespace: str = None, logger=None):
     elif r.status_code in [401, 403]:
         response = {"status": False, "reason": "unauthorized"}
     elif r.status_code == 404:
-        response = {"status": False, "reason": f"notFound"}
+        response = {"status": False, "reason": "notFound"}
     elif r.status_code == 500:
         response = {"status": False, "reason": "k8sApi server is not reachable"}
     else:
@@ -272,3 +271,23 @@ def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
     if logger:
         logger.debug(f"get_capi_cluster response: {r.json()}")
     return response
+
+def validate_cluster_creation_request(params: dict = None):
+    """
+    :param params: parameters of cluster creation request
+    :type params: dict
+    :return: None
+    :rtype: None
+    """
+  
+    # Validate templateName
+    if not params.get('templateName'):
+        raise ValueError("Parameter 'templateName' is empty or missing.")
+
+    # Validate templateVersion
+    if not params.get('templateVersion'):
+        raise ValueError("Parameter 'templateVersion' is empty or missing.")
+
+    # Validate templateParameters
+    if not params.get('templateParameters'):
+        raise ValueError("Parameter 'templateParameters' is empty or missing.")

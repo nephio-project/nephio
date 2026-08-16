@@ -32,10 +32,10 @@ create_kpt_package() {
   rm -rf "${kpt_dir:?}/$2"
 }
 
-## Always delete the cluster 
-kind delete cluster -n o2ims-mgmt || true
-kind create cluster --config="$(dirname "$0")"/mgmt-cluster.yaml --wait 5m
-kubectl cluster-info --context kind-o2ims-mgmt
+## Always delete the cluster
+#kind delete cluster -n o2ims-mgmt || true
+#kind create cluster --config="$(dirname "$0")"/mgmt-cluster.yaml --wait 5m
+#kubectl cluster-info --context kind-o2ims-mgmt
 
 # Gitea
 create_kpt_package $CATALOG_REPO/distros/sandbox/gitea@origin gitea
@@ -62,7 +62,7 @@ create_kpt_package $CATALOG_REPO/nephio/optional/resource-backend@origin resourc
 # Nephio Core Opertaor
 create_kpt_package $CATALOG_REPO/nephio/core/nephio-operator@origin nephio-operator
 
-# Create Gitea secret 
+# Create Gitea secret
 kubectl apply -f  - <<EOF
 apiVersion: v1
 kind: Secret
@@ -91,16 +91,16 @@ rm -rf $kpt_dir/rootsync
 create_kpt_package $CATALOG_REPO/nephio/optional/stock-repos@origin stock-repos
 
 # Check Token for SA
-kubectl create -f "$(dirname "$0")"/sa-test-pod.yaml
-kubectl wait --for=condition=ready pod -l app=testo2ims -n porch-system --timeout=3m
-rm -rf /tmp/porch-token
-kubectl exec -it -n porch-system porch-sa-test -- cat /var/run/secrets/kubernetes.io/serviceaccount/token &> /tmp/porch-token
+#kubectl create -f "$(dirname "$0")"/sa-test-pod.yaml
+#kubectl wait --for=condition=ready pod -l app=testo2ims -n porch-system --timeout=3m
+#rm -rf /tmp/porch-token
+#kubectl exec -it -n porch-system porch-sa-test -- cat /var/run/secrets/kubernetes.io/serviceaccount/token &> /tmp/porch-token
 
 # Create CRD
-kubectl create -f https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
-export TOKEN=/tmp/porch-token ## important for development environment
+#kubectl create -f https://raw.githubusercontent.com/nephio-project/api/refs/heads/main/config/crd/bases/o2ims.provisioning.oran.org_provisioningrequests.yaml
+#export TOKEN=/tmp/porch-token ## important for development environment
 
 # Exposing the kube proxy for development, killing previous proxy sessions if they exist
-pkill kubectl
-nohup kubectl proxy --port 8080 &>/dev/null &
-echo "Cluster is properly configured and proxy is running at 8080"
+#pkill kubectl
+#nohup kubectl proxy --port 8080 &>/dev/null &
+#echo "Cluster is properly configured and proxy is running at 8080"

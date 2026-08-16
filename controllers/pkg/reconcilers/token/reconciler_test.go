@@ -24,6 +24,7 @@ import (
 	"github.com/nephio-project/nephio/controllers/pkg/git/types"
 
 	mocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/client"
+	gitclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/gitclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	"github.com/stretchr/testify/mock"
@@ -104,7 +105,7 @@ func TestCreateToken(t *testing.T) {
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
 				{MethodName: "ListAccessTokens",
-					ArgType:    []string{"git.ListAccessTokensOptions"},
+					ArgType:    []string{"types.ListAccessTokensOptions"},
 					RetArgList: []interface{}{nil, nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
 			},
 			wantErr: true,
@@ -122,7 +123,7 @@ func TestCreateToken(t *testing.T) {
 				}}},
 			mocks: []mockeryutils.MockHelper{
 				{MethodName: "ListAccessTokens",
-					ArgType: []string{"git.ListAccessTokensOptions"},
+					ArgType: []string{"types.ListAccessTokensOptions"},
 					RetArgList: []interface{}{[]*types.AccessToken{
 						{ID: 123,
 							Name: "test-token-test-ns"},
@@ -136,7 +137,7 @@ func TestCreateToken(t *testing.T) {
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
 				{MethodName: "ListAccessTokens",
-					ArgType: []string{"git.ListAccessTokensOptions"},
+					ArgType: []string{"types.ListAccessTokensOptions"},
 					RetArgList: []interface{}{[]*types.AccessToken{
 						{ID: 123,
 							Name: "test-token-test-ns"},
@@ -151,14 +152,14 @@ func TestCreateToken(t *testing.T) {
 			args:   args{nil, nil, &infrav1alpha1.Token{}},
 			mocks: []mockeryutils.MockHelper{
 				{MethodName: "ListAccessTokens",
-					ArgType: []string{"git.ListAccessTokensOptions"},
+					ArgType: []string{"types.ListAccessTokensOptions"},
 					RetArgList: []interface{}{[]*types.AccessToken{
 						{ID: 123,
 							Name: "test-token-test-ns"},
 					}, nil, nil}},
 				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
 				{MethodName: "CreateAccessToken",
-					ArgType:    []string{"git.CreateAccessTokenOption"},
+					ArgType:    []string{"types.CreateAccessTokenOption"},
 					RetArgList: []interface{}{&types.AccessToken{}, nil, fmt.Errorf("failed to create token")}},
 			},
 			wantErr: true,
@@ -175,10 +176,10 @@ func TestCreateToken(t *testing.T) {
 					Name:      "test-token",
 				}}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "ListAccessTokens", ArgType: []string{"git.ListAccessTokensOptions"}, RetArgList: []interface{}{[]*types.AccessToken{}, nil, nil}},
+				{MethodName: "ListAccessTokens", ArgType: []string{"types.ListAccessTokensOptions"}, RetArgList: []interface{}{[]*types.AccessToken{}, nil, nil}},
 				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
 				{MethodName: "CreateAccessToken",
-					ArgType: []string{"git.CreateAccessTokenOption"},
+					ArgType: []string{"types.CreateAccessTokenOption"},
 					RetArgList: []interface{}{&types.AccessToken{ID: 123,
 						Name: "test-token-test-ns"}, nil, nil}},
 			},
@@ -203,7 +204,7 @@ func TestCreateToken(t *testing.T) {
 }
 
 func initMockeryMocks(tt *tokenTests) {
-	mockGitClient := new(git.MockClient)
+	mockGitClient := new(gitclientmocks.MockClient)
 	tt.args.gitClient = mockGitClient
 	tt.fields.gitClients = make(map[git.ProviderType]git.Client)
 	tt.fields.gitClients[git.ProviderGitea] = mockGitClient

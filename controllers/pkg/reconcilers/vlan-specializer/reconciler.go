@@ -121,8 +121,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		_, err = r.krmfn.Process(rl)
 		if err != nil {
 			log.Error(err, "function run failed")
-			// TBD if we need to return here + check if kptfile is set
-			//return ctrl.Result{}, errors.Wrap(err, "function run failed")
+			return ctrl.Result{}, errors.Wrap(err, "function run failed")
 		}
 		for _, o := range rl.Items {
 			log.Info("resourceList", "data", o.String())

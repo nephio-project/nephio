@@ -1,0 +1,58 @@
+---
+# Kustomization defines what to apply from the Git source
+# This is equivalent to ConfigSync's RootSync spec (sourceFormat, override, etc.)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: focom-resources
+  namespace: flux-system
+spec:
+  # Sync interval (how often to reconcile)
+  interval: 15s
+  
+  # Source reference (points to the GitRepository above)
+  sourceRef:
+    kind: GitRepository
+    name: focom-resources
+  
+  # Path within the repository (root = entire repo)
+  # Porch creates packages in subdirectories like "ocloud-123-v1/"
+  path: ./
+  
+  # Prune resources that are removed from Git
+  # Equivalent to ConfigSync's automatic cleanup
+  prune: true
+  
+  # Wait for resources to be ready before proceeding
+  wait: true
+  
+  # Timeout for operations
+  timeout: 5m
+  
+  # Health checks for FOCOM custom resources
+  # Flux will monitor these resources and report their health
+  # Note: Health checks are optional - comment out if not needed
+  # healthChecks:
+  #   - apiVersion: focom.nephio.org/v1alpha1
+  #     kind: OCloud
+  #     name: '*'
+  #     namespace: '*'
+  #   - apiVersion: provisioning.oran.org/v1alpha1
+  #     kind: TemplateInfo
+  #     name: '*'
+  #     namespace: '*'
+  #   - apiVersion: focom.nephio.org/v1alpha1
+  #     kind: FocomProvisioningRequest
+  #     name: '*'
+  #     namespace: '*'
+  
+  # Retry configuration
+  retryInterval: 1m
+  
+  # Force recreation of resources if they drift
+  # Similar to ConfigSync's self-healing
+  force: false
+  
+  # Service account to use for applying resources
+  # Uses the default Flux service account which has cluster-admin
+  # serviceAccountName: kustomize-controller

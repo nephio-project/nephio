@@ -44,7 +44,7 @@ items:
     annotations:
       specializer.nephio.org/owner: req.nephio.org/v1alpha1.Interface.n1
   spec:
-    config: '{"cniVersion":"0.3.1","plugins":[{"type":"macvlan","capabilities":{"ips":true},"master":"eth1","mode":"bridge","ipam":{"type":"static","addresses":[{"address":"10.0.0.10/24","gateway":"10.0.0.1"}]}},{"type":"tuning","capabilities":{"mac":true},"ipam":{}}]}'
+    config: "{\"cniVersion\":\"0.3.1\",\"plugins\":[{\"type\":\"macvlan\",\"capabilities\":{\"ips\":true},\"master\":\"eth1\",\"mode\":\"bridge\",\"ipam\":{\"type\":\"static\",\"addresses\":[{\"address\":\"10.0.0.10/24\",\"gateway\":\"10.0.0.1\"}]}},{\"type\":\"tuning\",\"capabilities\":{\"mac\":true},\"ipam\":{}}]}"
 - apiVersion: kpt.dev/v1
   kind: Kptfile
   metadata:

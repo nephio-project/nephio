@@ -14,7 +14,7 @@
 
 .SHELLFLAGS = -ec
 
-GO_VERSION ?= 1.22.2
+GO_VERSION ?= 1.25.6
 IMG_REGISTRY ?= docker.io/nephio
 
 # find all subdirectories with a go.mod file in them
@@ -35,8 +35,8 @@ tidy:
 
 ##@ Go tests & formatting
 
-.PHONY: unit lint gosec test unit-clean 
-unit lint gosec test: ## These targets are delegated to the Makefiles of individual Go modules
+.PHONY: unit lint gosec test unit-clean fmt
+unit lint gosec test fmt: ## These targets are delegated to the Makefiles of individual Go modules
 	for dir in $(GO_MOD_DIRS); do \
 		$(MAKE) -C "$$dir" $@ ; \
 	done

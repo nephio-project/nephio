@@ -13,9 +13,7 @@ items:
     name: upsert-kustomize-res
     annotations:
       internal.config.kubernetes.io/path: kustomization.yaml
-  resources:
-  - nf-deployment.yaml
-  - resources.yaml
+  resources: [nf-deployment.yaml, resources.yaml]
 - apiVersion: v1
   kind: ConfigMap
   metadata:

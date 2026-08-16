@@ -16,6 +16,7 @@ rules:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests
+  - oclouds
   verbs:
   - create
   - delete
@@ -28,24 +29,38 @@ rules:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests/finalizers
+  - oclouds/finalizers
   verbs:
   - update
 - apiGroups:
   - focom.nephio.org
   resources:
   - focomprovisioningrequests/status
+  - oclouds/status
   verbs:
   - get
   - patch
   - update
 - apiGroups:
-  - focom.nephio.org
+  - porch.kpt.dev
   resources:
-  - oclouds
+  - packagerevisionresources
+  - packagerevisions
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - porch.kpt.dev
+  resources:
+  - packagerevisions/approval
+  verbs:
+  - get
+  - update
 - apiGroups:
   - provisioning.oran.org
   resources:
@@ -58,3 +73,17 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - provisioning.oran.org
+  resources:
+  - templateinfoes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - provisioning.oran.org
+  resources:
+  - templateinfoes/status
+  verbs:
+  - get
+  - patch
+  - update

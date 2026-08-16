@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	git "github.com/nephio-project/nephio/controllers/pkg/git"
 	"github.com/nephio-project/nephio/controllers/pkg/git/types"
+	gitclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/gitclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -257,7 +258,7 @@ func TestDeleteRepo(t *testing.T) {
 }
 
 func initMockeryMocks(tt *repoTest) {
-	mockGClient := new(git.MockClient)
+	mockGClient := new(gitclientmocks.MockClient)
 	tt.args.gitClient = mockGClient
 	tt.fields.gitClients = make(map[git.ProviderType]git.Client)
 	tt.fields.gitClients[git.ProviderGitea] = mockGClient

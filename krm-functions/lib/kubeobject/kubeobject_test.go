@@ -352,7 +352,7 @@ func compareKubeObjectWithExpectedYaml(t *testing.T, obj *fn.KubeObject, expecte
 		os.WriteFile(actualFile, []byte(actualYAML), 0666)
 		t.Errorf(`mismatch in expected and actual KubeObject YAML:
   - find expected YAML in %v
-  - find actual YAML in   %v`, expectedFile, actualFile)
+  - find actual YAML in  %v`, expectedFile, actualFile)
 	}
 
 }

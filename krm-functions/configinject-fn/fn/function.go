@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 
+	kptv1 "github.com/kptdev/kpt/pkg/api/kptfile/v1"
 	"github.com/kptdev/krm-functions-sdk/go/fn"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 	nephioreqv1alpha1 "github.com/nephio-project/api/nf_requirements/v1alpha1"
@@ -33,7 +34,6 @@ import (
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	porchv1alpha1 "github.com/nephio-project/porch/api/porch/v1alpha1"
 	porchconfigv1alpha1 "github.com/nephio-project/porch/api/porchconfig/v1alpha1"
-	kptv1 "github.com/nephio-project/porch/pkg/kpt/api/kptfile/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

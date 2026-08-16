@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-FROM golang:1.24.3-alpine@sha256:b4f875e650466fa0fe62c6fd3f02517a392123eea85f1d7e69d85f780e4db1c1
+FROM golang:1.25.6-alpine@sha256:d9b2e14101f27ec8d09674cd01186798d227bb0daec90e032aeb1cd22ac0f029
 ENV CGO_ENABLED=0
 WORKDIR /go/src/
 COPY krm-functions/ krm-functions/
@@ -20,6 +20,6 @@ WORKDIR /go/src/krm-functions/nfdeploy-fn
 RUN go install 
 RUN go build -o /usr/local/bin/function ./
 
-FROM gcr.io/distroless/static@sha256:3f2b64ef97bd285e36132c684e6b2ae8f2723293d09aae046196cca64251acac
+FROM gcr.io/distroless/static:nonroot@sha256:cba10d7abd3e203428e86f5b2d7fd5eb7d8987c387864ae4996cf97191b33764
 COPY --from=0 /usr/local/bin/function /usr/local/bin/function
 ENTRYPOINT ["function"]
