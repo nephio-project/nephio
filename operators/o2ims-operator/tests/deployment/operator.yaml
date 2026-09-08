@@ -101,8 +101,6 @@ spec:
         env:
           - name: 'UPSTREAM_PKG_REPO'
             value: 'catalog-infra-capi'
-          - name: 'KUBERNETES_BASE_URL'
-            value: 'https://kubernetes.default.svc'
         resources:
           requests:
             memory: "256Mi"

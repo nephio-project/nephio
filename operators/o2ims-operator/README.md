@@ -105,6 +105,96 @@ kpt live init /tmp/o2ims
 kpt live apply /tmp/o2ims --reconcile-timeout=15m --output=table
 ```
 
+### Connecting to the Kubernetes API
+
+The operator verifies the API server's certificate on every request. Inside a
+pod there is nothing to configure: the CA bundle mounted at
+`/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` is used, and the address
+comes from `KUBERNETES_SERVICE_HOST`, which is the one Kubernetes expects that
+certificate to be valid for.
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `KUBERNETES_BASE_URL` | in-cluster address | API server to talk to |
+| `KUBERNETES_CA_FILE` | in-cluster CA bundle | PEM bundle used to verify the API server |
+| `UNSAFE_SKIP_TLS_VERIFY` | `false` | Development only: skip certificate verification |
+
+Running the operator outside a cluster, point it at the API server and at the
+CA that signs its certificate:
+
+```bash
+# A function, so that a failure stops the setup without closing an
+# interactive shell, and so the token refresh can be re-run on its own.
+refresh_o2ims_token() {
+  tmp=$(mktemp /tmp/o2ims-token.XXXXXX) || return 1
+  chmod 0600 "$tmp" || { rm -f "$tmp"; return 1; }
+
+  if ! kubectl -n o2ims create token o2ims-operator --duration=1h > "$tmp" ||
+     ! test -s "$tmp"; then
+    rm -f "$tmp"
+    echo "token refresh failed; the previous token is unchanged" >&2
+    return 1
+  fi
+
+  mv -f "$tmp" /tmp/o2ims-token
+}
+
+o2ims_dev_env() {
+  # Assigned before exporting: export always succeeds, so it would hide a
+  # kubectl that failed, and an empty value falls back to the in-cluster name.
+  KUBERNETES_BASE_URL=$(kubectl config view --minify \
+    -o jsonpath='{.clusters[0].cluster.server}') || return 1
+  test -n "$KUBERNETES_BASE_URL" || {
+    echo "kubeconfig names no API server" >&2
+    return 1
+  }
+
+  # --flatten embeds the CA whether the kubeconfig holds it inline or as a
+  # path, and a path is relative to the kubeconfig rather than to this shell.
+  # The pipeline's status is base64's, and base64 succeeds on the empty input
+  # a failed kubectl leaves, so the size check is what catches that.
+  ca=$(mktemp /tmp/o2ims-ca.XXXXXX) || return 1
+  if ! kubectl config view --raw --minify --flatten \
+        -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' \
+        | base64 -d > "$ca" || ! test -s "$ca"; then
+    rm -f "$ca"
+    echo "could not extract a non-empty cluster CA from the kubeconfig" >&2
+    return 1
+  fi
+  mv -f "$ca" /tmp/cluster-ca.crt
+
+  # TOKEN is a path, not a token. Outside a pod there is no mounted one, so
+  # request a short-lived credential and point at the file. A refresh that
+  # fails is only fatal when there is no usable token from a previous one.
+  refresh_o2ims_token || test -s /tmp/o2ims-token || return 1
+
+  export KUBERNETES_BASE_URL
+  export KUBERNETES_CA_FILE=/tmp/cluster-ca.crt
+  export TOKEN=/tmp/o2ims-token
+}
+
+o2ims_dev_env
+```
+
+The rename matters. The operator opens this file on every request, and `>`
+truncates before `kubectl` finishes writing, so a request landing in that window
+would read an empty token. A rename on the same filesystem is atomic: a reader
+sees either the whole old file or the whole new one.
+
+So does keeping the failure off that path. The redirection creates the
+temporary file before `kubectl` runs, so an expired kubeconfig or an
+unreachable API server leaves it empty; renaming that over a token that is
+still valid causes the outage the rename exists to prevent, and the operator
+reports `Kubernetes token file ... is empty`. The function above discards the
+temporary file instead and leaves the old one in place.
+
+Re-run `refresh_o2ims_token` when the token expires. Inside a pod none of this
+applies, because the kubelet rotates the mounted one.
+
+`UNSAFE_SKIP_TLS_VERIFY=true` turns verification off altogether. It hands the
+service account token to an endpoint whose identity has not been checked, warns
+about it at startup, and must never be used outside development.
+
 ### Redeploying
 
 To redeploy the cluster, or to recreate the development environment, one must delete the created cluster. The Nephio mgmt cluster will be deleted automatically when running `create-cluster.sh`, but the cluster deployed by this operator has a name in the `clusterName` field. For example, it may be `edge`, thus:
@@ -189,23 +279,8 @@ To run all tests in `test_utils.py` targeting a specific python version:
 tox -e py312
 ```
 
-Output:
-```bash
-py312: commands[0]> pytest --maxfail=1 --disable-warnings -q -v
-=========================================================================================== test session starts ===========================================================================================
-platform linux -- Python 3.12.3, pytest-8.3.4, pluggy-1.5.0
-cachedir: .tox/py312/.pytest_cache
-rootdir: /home/fiachra/git/nordix_github/nephio/operators/o2ims-operator
-plugins: cov-6.0.0
-collected 39 items                                                                                                                                                                                        
-
-tests/test_utils.py .......................................                                                                                                                                         [100%]
-
-=========================================================================================== 39 passed in 0.12s ============================================================================================
-  py312: OK (0.27=setup[0.02]+cmd[0.25] seconds)
-  congratulations :) (0.30 seconds)
-
-```
+`tox` exits non-zero if any test fails, which is what makes this a gate rather
+than a report. #1175 runs the same command in CI.
 
 ## Known issues
 
