@@ -95,7 +95,7 @@ func (r *gc) Start(ctx context.Context) {
 			time.Sleep(5 * time.Second)
 
 			namespace := "default"
-			secretName := "github-user-secret"
+			secretName := "github-user-secret" // #nosec G101 -- Kubernetes Secret name, not a hardcoded credential
 			if gitSecretName, ok := os.LookupEnv("GIT_SECRET_NAME"); ok {
 				secretName = gitSecretName
 			}
@@ -200,21 +200,22 @@ func getInstallationToken(jwtToken, installID string) (string, error) {
 	return result.Token, nil
 }
 
-// refreshInstallationToken generates a new installation token - future use
-func (r *gc) refreshInstallationToken() error {
+// refreshInstallationToken generates a new installation access token, updates the
+// internal GitHub client with it, and returns the raw token string.
+func (r *gc) refreshInstallationToken() (string, error) {
 	jwtToken, err := generateJWT(r.appID, r.privateKey)
 	if err != nil {
-		return fmt.Errorf("failed to generate JWT: %w", err)
+		return "", fmt.Errorf("failed to generate JWT: %w", err)
 	}
 
 	installToken, err := getInstallationToken(jwtToken, r.installID)
 	if err != nil {
-		return fmt.Errorf("failed to get installation token: %w", err)
+		return "", fmt.Errorf("failed to get installation token: %w", err)
 	}
 
 	// Update the client with new token
 	r.githubClient = github.NewClient(nil).WithAuthToken(installToken)
-	return nil
+	return installToken, nil
 }
 
 func (r *gc) IsInitialized() bool {
@@ -314,21 +315,15 @@ func (r *gc) ListAccessTokens(opts gittypes.ListAccessTokensOptions) ([]*gittype
 }
 
 func (r *gc) CreateAccessToken(opt gittypes.CreateAccessTokenOption) (*gittypes.AccessToken, *gittypes.Response, error) {
-	// Generate a new JWT for the GitHub App
-	jwtToken, err := generateJWT(r.appID, r.privateKey)
+	// Obtain a fresh installation access token and update the internal client.
+	installToken, err := r.refreshInstallationToken()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate JWT: %w", err)
+		return nil, nil, err
 	}
 
-	// Get a new installation access token
-	installToken, err := getInstallationToken(jwtToken, r.installID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get installation token: %w", err)
-	}
-
-	// Return the installation token in AccessToken format
-	// GitHub installation tokens don't have IDs, so we use 0
-	// The token name is provided by the caller
+	// Return the installation token in AccessToken format.
+	// GitHub installation tokens don't have IDs, so we use 0.
+	// The token name is provided by the caller.
 	return &gittypes.AccessToken{
 		ID:    0, // Installation tokens don't have IDs
 		Name:  opt.Name,

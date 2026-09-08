@@ -172,11 +172,11 @@ const (
 	AccessTokenScopeWritePublicKey AccessTokenScope = "write:public_key"
 	AccessTokenScopeReadPublicKey  AccessTokenScope = "read:public_key"
 
-	AccessTokenScopeAdminRepoHook AccessTokenScope = "admin:repo_hook"
-	AccessTokenScopeWriteRepoHook AccessTokenScope = "write:repo_hook"
-	AccessTokenScopeReadRepoHook  AccessTokenScope = "read:repo_hook"
+	AccessTokenScopeAdminRepoHook AccessTokenScope = "admin:repo_hook" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeWriteRepoHook AccessTokenScope = "write:repo_hook" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeReadRepoHook  AccessTokenScope = "read:repo_hook"  // #nosec G101 -- OAuth scope name, not a credential
 
-	AccessTokenScopeAdminOrgHook AccessTokenScope = "admin:org_hook"
+	AccessTokenScopeAdminOrgHook AccessTokenScope = "admin:org_hook" // #nosec G101 -- OAuth scope name, not a credential
 
 	AccessTokenScopeAdminUserHook AccessTokenScope = "admin:user_hook"
 
@@ -194,13 +194,13 @@ const (
 	AccessTokenScopeReadPackage   AccessTokenScope = "read:package"
 	AccessTokenScopeDeletePackage AccessTokenScope = "delete:package"
 
-	AccessTokenScopeAdminGPGKey AccessTokenScope = "admin:gpg_key"
-	AccessTokenScopeWriteGPGKey AccessTokenScope = "write:gpg_key"
-	AccessTokenScopeReadGPGKey  AccessTokenScope = "read:gpg_key"
+	AccessTokenScopeAdminGPGKey AccessTokenScope = "admin:gpg_key" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeWriteGPGKey AccessTokenScope = "write:gpg_key" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeReadGPGKey  AccessTokenScope = "read:gpg_key"  // #nosec G101 -- OAuth scope name, not a credential
 
-	AccessTokenScopeAdminApplication AccessTokenScope = "admin:application"
-	AccessTokenScopeWriteApplication AccessTokenScope = "write:application"
-	AccessTokenScopeReadApplication  AccessTokenScope = "read:application"
+	AccessTokenScopeAdminApplication AccessTokenScope = "admin:application" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeWriteApplication AccessTokenScope = "write:application" // #nosec G101 -- OAuth scope name, not a credential
+	AccessTokenScopeReadApplication  AccessTokenScope = "read:application"  // #nosec G101 -- OAuth scope name, not a credential
 
 	AccessTokenScopeSudo AccessTokenScope = "sudo"
 )
