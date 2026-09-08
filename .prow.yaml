@@ -29,6 +29,38 @@ presubmits:
         - make
         args:
         - gosec
+  # The path filter includes this file so the job runs on changes to its own
+  # definition; otherwise a change here can only prove that the YAML parses.
+  - name: presubmit-nephio-o2ims-python-test
+    decorate: true
+    always_run: false
+    run_if_changed: '(^operators/o2ims-operator/|^\.prow\.yaml$)'
+    spec:
+      # This runs test code from the pull request and never talks to the build
+      # cluster API, so it should not be handed that cluster's credential. It
+      # also keeps the run hermetic: the operator reads the standard token path
+      # at import time.
+      automountServiceAccountToken: false
+      containers:
+      # The image the operator is built from, so the tests exercise the same
+      # interpreter, musl and OpenSSL that ship. tox is pinned because an
+      # unpinned install makes the gate depend on whenever it last ran.
+      - image: python:3.12.10-alpine3.21
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          set -eu
+          # The kubelet injects these even with automountServiceAccountToken
+          # false, and the operator reads them at import to decide it is in a
+          # cluster. Unit tests are not, and this pod deliberately has no CA.
+          unset KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT \
+                KUBERNETES_BASE_URL KUBERNETES_CA_FILE \
+                UNSAFE_SKIP_TLS_VERIFY HTTPS_VERIFY \
+                REQUESTS_CA_BUNDLE CURL_CA_BUNDLE TOKEN
+          cd operators/o2ims-operator
+          python -m pip install --no-cache-dir tox==4.60.0
+          python -m tox -e py312
   - name: presubmit-nephio-license-header-check
     decorate: true
     always_run: false
