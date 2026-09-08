@@ -229,7 +229,15 @@ func shouldProcess(pr *porchv1alpha1.PackageRevision) (string, bool) {
 	return policy, result
 }
 
+// manageDelay reports pr's remaining approval delay against the current time.
 func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
+	return manageDelayAt(pr, time.Now())
+}
+
+// manageDelayAt is manageDelay with an injectable clock: it returns the time
+// remaining before pr's delay annotation elapses (0 if the annotation is absent
+// or already elapsed), or an error for a malformed or negative value.
+func manageDelayAt(pr *porchv1alpha1.PackageRevision, now time.Time) (time.Duration, error) {
 	delay, ok := pr.GetAnnotations()[DelayAnnotationName]
 	if !ok {
 		// only delay if there is a delay annotation
@@ -245,11 +253,31 @@ func manageDelay(pr *porchv1alpha1.PackageRevision) (time.Duration, error) {
 		return 0, fmt.Errorf("invalid delay %q; delay must be 0 or more", delay)
 	}
 
-	if time.Since(pr.CreationTimestamp.Time) > d {
+	// Before the timestamp is needed. A zero delay is the annotation saying
+	// there is no delay, which is what its absence says, and neither has a
+	// deadline to measure from.
+	if d == 0 {
 		return 0, nil
 	}
 
-	return d, nil
+	if pr.CreationTimestamp.IsZero() {
+		return 0, fmt.Errorf("cannot apply delay %q: no creation timestamp", delay)
+	}
+
+	// Wait only for the time still remaining, not the full delay, so a revision
+	// that has already waited part of the delay is not delayed a second time.
+	//
+	// Subtracting the elapsed time from the delay would overflow: with the
+	// largest valid duration and a timestamp in the future, d minus a negative
+	// elapsed wraps to MinInt64 and reads as "already elapsed", approving
+	// immediately. Time.Sub saturates instead of wrapping, so take the
+	// difference from a deadline.
+	remaining := pr.CreationTimestamp.Time.Add(d).Sub(now)
+	if remaining <= 0 {
+		return 0, nil
+	}
+
+	return remaining, nil
 }
 
 func (r *reconciler) policyInitial(ctx context.Context, pr *porchv1alpha1.PackageRevision) (bool, error) {

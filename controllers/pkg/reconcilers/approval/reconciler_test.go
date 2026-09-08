@@ -17,6 +17,7 @@ package approval
 import (
 	context "context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -98,70 +99,113 @@ func TestShouldProcess(t *testing.T) {
 
 func TestManageDelay(t *testing.T) {
 	now := time.Now()
+
+	// withDelay builds a PackageRevision created at the given time with the
+	// delay annotation set.
+	withDelay := func(created time.Time, delay string) porchapi.PackageRevision {
+		return porchapi.PackageRevision{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{Time: created},
+				Annotations:       map[string]string{"approval.nephio.org/delay": delay},
+			},
+		}
+	}
+
 	testCases := map[string]struct {
-		pr              porchapi.PackageRevision
-		expectedRequeue bool
-		expectedError   bool
+		pr            porchapi.PackageRevision
+		expectedDelay time.Duration
+		expectedError bool
 	}{
 		"no annotation": {
-			pr:              porchapi.PackageRevision{},
-			expectedRequeue: false,
-			expectedError:   false,
+			pr:            porchapi.PackageRevision{},
+			expectedDelay: 0,
 		},
 		"unparseable annotation": {
-			pr: porchapi.PackageRevision{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"approval.nephio.org/delay": "foo",
-					},
-				},
-			},
-			expectedRequeue: false,
-			expectedError:   true,
+			pr:            withDelay(now, "foo"),
+			expectedError: true,
 		},
 		"negative annotation": {
-			pr: porchapi.PackageRevision{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"approval.nephio.org/delay": "-5s",
-					},
-				},
-			},
-			expectedRequeue: false,
-			expectedError:   true,
+			pr:            withDelay(now, "-5s"),
+			expectedError: true,
 		},
-		"not old enough": {
-			pr: porchapi.PackageRevision{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: now},
-					Annotations: map[string]string{
-						"approval.nephio.org/delay": "1h",
-					},
-				},
-			},
-			expectedRequeue: true,
-			expectedError:   false,
+		"zero delay is valid and returns zero": {
+			pr:            withDelay(now, "0s"),
+			expectedDelay: 0,
 		},
-		"old enough": {
+		"partway through the delay returns the remaining time": {
+			pr:            withDelay(now.Add(-50*time.Minute), "1h"),
+			expectedDelay: 10 * time.Minute,
+		},
+		"exactly at the delay boundary returns zero": {
+			pr:            withDelay(now.Add(-time.Hour), "1h"),
+			expectedDelay: 0,
+		},
+		"past the delay returns zero": {
+			pr:            withDelay(now.Add(-2*time.Hour), "1h"),
+			expectedDelay: 0,
+		},
+		"future creation timestamp is well defined": {
+			// A creation timestamp ahead of now (e.g. clock skew) must not
+			// panic; elapsed time is negative, so the full delay plus the skew
+			// remains.
+			pr:            withDelay(now.Add(10*time.Minute), "1h"),
+			expectedDelay: 70 * time.Minute,
+		},
+		"the largest delay does not overflow into an immediate approval": {
+			// Subtracting a negative elapsed time from the largest duration
+			// wraps to MinInt64, which reads as "already elapsed" and approves
+			// at once. Time.Sub saturates, so the answer is the maximum.
+			pr:            withDelay(now.Add(time.Nanosecond), time.Duration(math.MaxInt64).String()),
+			expectedDelay: time.Duration(math.MaxInt64),
+		},
+		"missing creation timestamp is refused rather than approved": {
 			pr: porchapi.PackageRevision{
 				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: now.AddDate(-1, 0, 0)},
-					Annotations: map[string]string{
-						"approval.nephio.org/delay": "1h",
-					},
+					Annotations: map[string]string{"approval.nephio.org/delay": "1h"},
 				},
 			},
-			expectedRequeue: false,
-			expectedError:   false,
+			expectedError: true,
 		},
 	}
+
 	for tn, tc := range testCases {
 		t.Run(tn, func(t *testing.T) {
-			actualRequeue, actualError := manageDelay(&tc.pr)
-			require.Equal(t, tc.expectedRequeue, actualRequeue > 0)
-			require.Equal(t, tc.expectedError, actualError != nil)
+			actualDelay, err := manageDelayAt(&tc.pr, now)
+			if tc.expectedError {
+				require.Error(t, err)
+				require.Zero(t, actualDelay)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedDelay, actualDelay)
 		})
 	}
+
+	// A zero delay says the same thing its absence says, so it answers the
+	// same way even on an object that has never been persisted and has no
+	// creation timestamp to measure from. The README calls the two equivalent.
+	for name, pr := range map[string]porchapi.PackageRevision{
+		"annotation absent": {},
+		"annotation 0s": {ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{
+			DelayAnnotationName: "0s"}}},
+	} {
+		d, err := manageDelayAt(&pr, now)
+		require.NoError(t, err, name)
+		require.Zero(t, d, name)
+	}
+
+	// manageDelay must read the wall clock. Bracketing the call pins it to a
+	// time between before and after rather than to a tolerance, so a suspended
+	// runner cannot make this flake and a frozen clock cannot slip through.
+	created := time.Now()
+	nowPR := withDelay(created, "1h")
+	before := time.Now()
+	d, err := manageDelay(&nowPR)
+	after := time.Now()
+	require.NoError(t, err)
+	deadline := created.Add(time.Hour)
+	require.LessOrEqual(t, d, deadline.Sub(before))
+	require.GreaterOrEqual(t, d, deadline.Sub(after))
 }
 
 func TestPolicyInitial(t *testing.T) {
