@@ -19,14 +19,19 @@ package storage
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +51,24 @@ const (
 	PorchLifecyclePublished = "Published"
 )
 
+// Kubernetes API connection defaults
+const (
+	// defaultKubernetesURL is used only outside a cluster; see buildRESTConfig.
+	defaultKubernetesURL = "https://kubernetes.default.svc"
+	// defaultInClusterCAFile is where Kubernetes publishes the API server CA
+	// in a pod.
+	defaultInClusterCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	// defaultRequestTimeout bounds every call to the Kubernetes API.
+	defaultRequestTimeout = 30 * time.Second
+)
+
+// inClusterCAFile is a variable so that tests can point it somewhere that
+// definitely does not exist. Kubernetes mounts a CA bundle at the default path
+// in any pod with the service account credential attached, including the one a
+// test runs in, so a test asserting that the bundle is absent would otherwise
+// pass on a laptop and fail in CI.
+var inClusterCAFile = defaultInClusterCAFile
+
 // PorchStorage implements StorageInterface using Nephio Porch via REST API
 type PorchStorage struct {
 	httpClient             *http.Client
@@ -62,8 +85,9 @@ type PorchStorageConfig struct {
 	Token                  string        // Service account token (optional, will auto-detect)
 	Namespace              string        // Namespace for PackageRevisions (usually "default")
 	Repository             string        // Porch repository name (e.g., "focom-resources")
-	HTTPSVerify            bool          // Whether to verify HTTPS certificates (default: false for dev)
-	UseKubeconfig          bool          // Use kubeconfig for authentication (handles exec, certs, etc.)
+	CAFile                 string        // CA bundle verifying the API server (optional, defaults to KUBERNETES_CA_FILE env or the in-cluster CA)
+	InsecureSkipTLSVerify  bool          // Development only: skip API server certificate verification, exposing the token (default: false)
+	UseKubeconfig          bool          // Use kubeconfig for authentication (client certs; exec plugins are not yet honoured, see #1171)
 	Kubeconfig             string        // Path to kubeconfig file (optional, defaults to KUBECONFIG env or ~/.kube/config)
 	PackageRevisionTimeout time.Duration // Timeout for waiting for PackageRevision operations (optional, default: 30s)
 }
@@ -108,19 +132,27 @@ func newPorchStorageFromKubeconfig(config *PorchStorageConfig) (*PorchStorage, e
 		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
 
+	if err := validateAPIServerURL(restConfig.Host); err != nil {
+		return nil, err
+	}
+
+	// Set on the config: HTTPClientFor may return the shared http.DefaultClient.
+	restConfig.Timeout = defaultRequestTimeout
+
 	// Create HTTP client with kubeconfig's transport (handles auth automatically)
+	if err := pinConfiguredCA(restConfig); err != nil {
+		return nil, err
+	}
+
 	httpClient, err := rest.HTTPClientFor(restConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client from kubeconfig: %w", err)
 	}
 
-	// Set timeout
-	httpClient.Timeout = 30 * time.Second
-
 	// Set default PackageRevision timeout if not specified
 	prTimeout := config.PackageRevisionTimeout
 	if prTimeout == 0 {
-		prTimeout = 30 * time.Second
+		prTimeout = defaultRequestTimeout
 	}
 
 	return &PorchStorage{
@@ -135,16 +167,7 @@ func newPorchStorageFromKubeconfig(config *PorchStorageConfig) (*PorchStorage, e
 
 // newPorchStorageWithToken creates PorchStorage using token-based authentication (original method)
 func newPorchStorageWithToken(config *PorchStorageConfig) (*PorchStorage, error) {
-	// 1. Get Kubernetes API URL (env var or default)
-	kubernetesURL := config.KubernetesURL
-	if kubernetesURL == "" {
-		kubernetesURL = os.Getenv("KUBERNETES_BASE_URL")
-		if kubernetesURL == "" {
-			kubernetesURL = "https://kubernetes.default.svc"
-		}
-	}
-
-	// 2. Get service account token (env var, file, or kubeconfig)
+	// 1. Get service account token (env var, file, or kubeconfig)
 	token := config.Token
 	if token == "" {
 		var err error
@@ -154,30 +177,243 @@ func newPorchStorageWithToken(config *PorchStorageConfig) (*PorchStorage, error)
 		}
 	}
 
-	// 3. Create HTTP client with timeout and TLS config
-	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: !config.HTTPSVerify, // #nosec G402 -- configurable TLS verification for dev environments
-			},
-		},
+	// 2. Get the address and TLS settings (verifies the API server by default)
+	restConfig, err := buildRESTConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pinConfiguredCA(restConfig); err != nil {
+		return nil, err
+	}
+
+	httpClient, err := rest.HTTPClientFor(restConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
 	}
 
 	// Set default PackageRevision timeout if not specified
 	prTimeout := config.PackageRevisionTimeout
 	if prTimeout == 0 {
-		prTimeout = 30 * time.Second
+		prTimeout = defaultRequestTimeout
 	}
 
 	return &PorchStorage{
 		httpClient:             httpClient,
-		kubernetesURL:          kubernetesURL,
+		kubernetesURL:          restConfig.Host,
 		token:                  token,
 		namespace:              config.Namespace,
 		repository:             config.Repository,
 		packageRevisionTimeout: prTimeout,
 	}, nil
+}
+
+// explicitKubernetesURL returns the configured API server URL, or "" if unset.
+func explicitKubernetesURL(config *PorchStorageConfig) string {
+	if config.KubernetesURL != "" {
+		return config.KubernetesURL
+	}
+	return os.Getenv("KUBERNETES_BASE_URL")
+}
+
+// validateAPIServerURL rejects endpoints that cannot carry a bearer token
+// safely. Plaintext is refused outright: skipping certificate verification is
+// an explicit opt-in, sending the token in the clear is never one.
+func validateAPIServerURL(host string) error {
+	parsed, err := url.Parse(host)
+	if err != nil {
+		return fmt.Errorf("invalid Kubernetes API URL %q: %w", host, err)
+	}
+	switch {
+	case parsed.Scheme != "https":
+		return fmt.Errorf("the Kubernetes API URL %q must use https, the service account token is sent with every request", host)
+	case parsed.Host == "":
+		return fmt.Errorf("the Kubernetes API URL %q has no host", host)
+	case !isUnambiguousHost(parsed.Hostname()):
+		return fmt.Errorf("the Kubernetes API URL %q has an unusable host %q", host, parsed.Hostname())
+	case parsed.User != nil:
+		return fmt.Errorf("the Kubernetes API URL %q must not embed credentials", host)
+	case parsed.RawQuery != "" || parsed.ForceQuery || strings.Contains(host, "#"):
+		// A bare "?" survives as ForceQuery and a bare "#" as an empty
+		// Fragment, and both then swallow the API path this is joined to.
+		return fmt.Errorf("the Kubernetes API URL %q must not carry a query or fragment", host)
+	}
+	if _, err := effectiveAPIServerPort(parsed); err != nil {
+		return fmt.Errorf("the Kubernetes API URL %q has an %w", host, err)
+	}
+	return nil
+}
+
+// hostLabel matches one letter-digit-hyphen label, which is all a hostname may
+// be. Anything a second parser could read differently is outside it.
+var hostLabel = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$`)
+
+// isUnambiguousHost reports whether every parser reads host as the same host.
+// net/http keeps a name like "ⓔxample.com" as written while the transport maps
+// it to "example.com" before dialling, so the address checked would not be the
+// one used. Allowing a shape is steadier than refusing characters by name.
+func isUnambiguousHost(host string) bool {
+	if net.ParseIP(host) != nil {
+		return true
+	}
+	if host == "" || len(host) > 253 {
+		return false
+	}
+	for _, label := range strings.Split(strings.TrimSuffix(host, "."), ".") {
+		if !hostLabel.MatchString(label) {
+			return false
+		}
+	}
+	return true
+}
+
+// pinConfiguredCA replaces a named bundle with the bytes that were checked.
+//
+// client-go loads a CA file by appending it to an empty pool and keeping the
+// pool only if something was added, so a file of zero bytes leaves RootCAs nil
+// and the connection falls back to whatever the container image trusts. That
+// is not what naming a bundle asks for: it is a wider trust boundary than the
+// cluster CA, arrived at silently. A file that cannot be parsed is refused
+// already; an empty one has to be refused too.
+//
+// The bytes that were parsed are the bytes installed, and the path is cleared,
+// so the transport cannot read a different file than the one checked.
+func pinConfiguredCA(restConfig *rest.Config) error {
+	if restConfig.Insecure || (len(restConfig.CAData) == 0 && restConfig.CAFile == "") {
+		return nil
+	}
+
+	data, source := restConfig.CAData, "the configured certificate-authority-data"
+	if len(data) == 0 {
+		source = restConfig.CAFile
+		var err error
+		// The call is its own statement: gosec attaches #nosec to a statement,
+		// and inside an if initialiser the annotation lands on the if rather
+		// than on the read, so v2.22.0 reports G304 anyway.
+		data, err = os.ReadFile(source) // #nosec G304 G703 -- operator configuration
+		if err != nil {
+			return fmt.Errorf("cannot read the Kubernetes API CA %q: %w", source, err)
+		}
+	}
+
+	if !x509.NewCertPool().AppendCertsFromPEM(data) {
+		return fmt.Errorf("the Kubernetes API CA %q holds no certificate", source)
+	}
+
+	restConfig.CAData = data
+	restConfig.CAFile = ""
+	return nil
+}
+
+// effectiveAPIServerPort returns the port as a number, or an error if it is
+// not one an endpoint can have. url.Parse only checks the port is digits, so
+// ":0443" and ":443" both parse and compare unequal as strings while naming
+// the same endpoint, and ":65536" parses while nothing can listen on it.
+func effectiveAPIServerPort(parsed *url.URL) (string, error) {
+	port := parsed.Port()
+	if port == "" {
+		return "443", nil
+	}
+	number, err := strconv.ParseUint(port, 10, 16)
+	if err != nil || number == 0 {
+		return "", fmt.Errorf("invalid port %q", port)
+	}
+	return strconv.FormatUint(number, 10), nil
+}
+
+// apiServerOrigin reduces a URL to the endpoint its certificate is issued for.
+// https://host and https://host:443 name one endpoint, as do the short and long
+// spellings of an IPv6 address, so comparing URLs as written would send
+// equivalent addresses down different trust paths.
+func apiServerOrigin(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if ip := net.ParseIP(host); ip != nil {
+		host = ip.String()
+	}
+	port, err := effectiveAPIServerPort(parsed)
+	if err != nil {
+		return rawURL
+	}
+	return strings.ToLower(parsed.Scheme) + "://" + net.JoinHostPort(host, port)
+}
+
+// buildRESTConfig returns the address and TLS settings for the Kubernetes API.
+// In a pod the cluster CA has to load: InClusterConfig only logs a bundle it
+// cannot read, so the alternative is not a failed handshake but silent
+// promotion to whatever the container image happens to trust.
+// The client this builds honours HTTPS_PROXY and NO_PROXY, because client-go
+// installs http.ProxyFromEnvironment. The transport this replaces set no proxy
+// at all, so on a cluster that exports HTTPS_PROXY without a NO_PROXY entry for
+// the API server, this connection starts going through it. That matches the
+// manager's own client in the same binary, which has always used client-go, and
+// a proxy that terminates TLS now fails the handshake against the pinned
+// cluster CA rather than quietly reading the token.
+func buildRESTConfig(config *PorchStorageConfig) (*rest.Config, error) {
+	restConfig := &rest.Config{Timeout: defaultRequestTimeout}
+
+	// Read from the environment rather than through rest.InClusterConfig,
+	// which reads the fixed service account token before it will hand back the
+	// host and CA. A pod that turns off the default mount and projects its
+	// token elsewhere supplies everything needed here and would still be
+	// refused. Kubernetes only promises a certificate valid for the address it
+	// advertises, so that is the one to use.
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	inClusterHost := ""
+	if host != "" || port != "" {
+		if host == "" || port == "" {
+			return nil, errors.New("KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be set together")
+		}
+		inClusterHost = "https://" + net.JoinHostPort(host, port)
+	}
+
+	restConfig.Host = inClusterHost
+	if kubernetesURL := explicitKubernetesURL(config); kubernetesURL != "" {
+		restConfig.Host = kubernetesURL
+	}
+	if restConfig.Host == "" {
+		restConfig.Host = defaultKubernetesURL
+	}
+	// Before the bundle is chosen rather than after the config is returned:
+	// which CA an address gets is a decision about an endpoint, and an
+	// endpoint that cannot carry a token is not one.
+	if err := validateAPIServerURL(restConfig.Host); err != nil {
+		return nil, err
+	}
+
+	caFile := config.CAFile
+	if caFile == "" {
+		caFile = os.Getenv("KUBERNETES_CA_FILE")
+	}
+	if config.InsecureSkipTLSVerify && caFile != "" {
+		return nil, errors.New("a CA bundle and InsecureSkipTLSVerify are mutually exclusive")
+	}
+	// The cluster bundle is issued for the cluster's own API server, reachable
+	// both at the advertised address and at the in-cluster name. Any other
+	// endpoint is a different server and keeps the system roots. Required
+	// rather than best effort: falling back would widen the trust boundary
+	// instead of failing.
+	origin := apiServerOrigin(restConfig.Host)
+	if caFile == "" && inClusterHost != "" &&
+		(origin == apiServerOrigin(inClusterHost) ||
+			origin == apiServerOrigin(defaultKubernetesURL)) {
+		caFile = inClusterCAFile
+	}
+
+	if config.InsecureSkipTLSVerify {
+		// Drop the bundle rather than the whole TLS config: client-go rejects
+		// the two together, but ServerName and client certs must survive.
+		restConfig.Insecure = true
+		restConfig.CAFile = ""
+		restConfig.CAData = nil
+	} else {
+		restConfig.CAFile = caFile
+	}
+
+	return restConfig, nil
 }
 
 // resolveToken attempts to resolve the authentication token from multiple sources
@@ -300,7 +536,9 @@ func (s *PorchStorage) makeRequest(ctx context.Context, method, path string, bod
 		}
 	}
 
-	url := fmt.Sprintf("%s%s", s.kubernetesURL, path)
+	// Trimmed on both sides: a base URL that ends in "/" produced "//apis",
+	// which the API server answers with a redirect this client refuses.
+	url := strings.TrimRight(s.kubernetesURL, "/") + "/" + strings.TrimLeft(path, "/")
 	var req *http.Request
 
 	if len(reqBody) > 0 {

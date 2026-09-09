@@ -39,13 +39,16 @@ type StorageConfig struct {
 
 // PorchConfig holds Porch-specific configuration
 type PorchConfig struct {
-	UseKubeconfig bool   `yaml:"useKubeconfig,omitempty"` // Use kubeconfig for auth (handles exec, certs, etc.)
+	UseKubeconfig bool   `yaml:"useKubeconfig,omitempty"` // Use kubeconfig for auth (client certs; exec plugins are not yet honoured)
 	Kubeconfig    string `yaml:"kubeconfig,omitempty"`    // Path to kubeconfig (optional, auto-detected)
 	KubernetesURL string `yaml:"kubernetesURL,omitempty"` // Optional, auto-detected from KUBECONFIG
 	Token         string `yaml:"token,omitempty"`         // Optional, auto-detected
 	Namespace     string `yaml:"namespace"`
 	Repository    string `yaml:"repository"`
-	HTTPSVerify   bool   `yaml:"httpsVerify"`
+	CAFile        string `yaml:"caFile,omitempty"` // PEM bundle verifying the API server (optional)
+	// InsecureSkipTLSVerify skips verification of the API server certificate.
+	// Development only; the zero value verifies.
+	InsecureSkipTLSVerify bool `yaml:"insecureSkipTLSVerify,omitempty"`
 }
 
 // TestOptions holds test execution options
@@ -63,9 +66,8 @@ func DefaultTestConfig() *TestConfig {
 			Backend: "memory",
 		},
 		Porch: PorchConfig{
-			Namespace:   "default",
-			Repository:  "focom-resources",
-			HTTPSVerify: false,
+			Namespace:  "default",
+			Repository: "focom-resources",
 		},
 		Test: TestOptions{
 			Cleanup:        true,

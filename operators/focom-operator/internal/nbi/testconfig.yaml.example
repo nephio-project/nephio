@@ -42,9 +42,14 @@ porch:
   
   # Porch repository name
   repository: focom-resources
-  
-  # Verify HTTPS certificates (set to true for production)
-  httpsVerify: false
+
+  # PEM bundle used to verify the API server certificate. Optional: in-cluster
+  # the service account CA is used, and a kubeconfig carries its own CA.
+  # caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+  # Skip verification of the API server certificate. Development only: the
+  # bearer token is then exposed to anyone able to intercept the connection.
+  # insecureSkipTLSVerify: false
 
 # Test execution options
 test:
@@ -74,8 +79,8 @@ test:
 # porch:
 #   namespace: default
 #   repository: focom-resources-test
-#   httpsVerify: false
-# # Token and kubernetesURL will be auto-detected from KUBECONFIG
+# # Only the token is taken from KUBECONFIG unless useKubeconfig: true is set;
+# # kubernetesURL and the CA are not. See the note on useKubeconfig above.
 
 # Example 3: CI/CD with Porch storage (use environment variables)
 # export NBI_STORAGE_BACKEND=porch

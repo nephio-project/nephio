@@ -87,7 +87,8 @@ func NewTestServerWithConfig(config *TestConfig) *TestServer {
 			Token:                  config.Porch.Token,
 			Namespace:              config.Porch.Namespace,
 			Repository:             config.Porch.Repository,
-			HTTPSVerify:            config.Porch.HTTPSVerify,
+			CAFile:                 config.Porch.CAFile,
+			InsecureSkipTLSVerify:  config.Porch.InsecureSkipTLSVerify,
 			PackageRevisionTimeout: 120 * time.Second, // Use 2 minutes for tests (default is 30s)
 		}
 		storageImpl, err = storage.NewPorchStorage(porchConfig)

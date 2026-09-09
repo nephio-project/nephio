@@ -667,10 +667,6 @@ spec:
           value: default
         - name: PORCH_REPOSITORY
           value: focom-resources
-        - name: KUBERNETES_BASE_URL
-          value: https://kubernetes.default.svc
-        - name: PORCH_HTTPS_VERIFY
-          value: "false"
         image: docker.io/nephio/focom-operator:latest
         imagePullPolicy: Always
         livenessProbe:

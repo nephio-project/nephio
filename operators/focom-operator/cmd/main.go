@@ -33,6 +33,7 @@ import (
 	"fmt"
 	focomv1alpha1 "github.com/nephio-project/nephio/operators/focom-operator/api/focom/v1alpha1"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -73,6 +74,13 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+// envBool reports whether the named environment variable holds a true value.
+// Unset, empty and unparseable all read as false.
+func envBool(name string) bool {
+	value, err := strconv.ParseBool(os.Getenv(name))
+	return err == nil && value
+}
+
 // initializeNBISystem initializes the complete NBI system with all components
 func initializeNBISystem(mgr ctrl.Manager, nbiConfig *config.NBIConfig) (*nbi.Server, error) {
 	setupLog.Info("Initializing NBI system", "stage", nbiConfig.Stage, "storageBackend", nbiConfig.StorageBackend)
@@ -96,15 +104,23 @@ func initializeNBISystem(mgr ctrl.Manager, nbiConfig *config.NBIConfig) (*nbi.Se
 			repository = "focom-resources"
 		}
 
-		httpsVerify := os.Getenv("PORCH_HTTPS_VERIFY") == "true"
+		// Certificates are verified unless development explicitly opts out.
+		insecureSkipTLSVerify := envBool("UNSAFE_SKIP_TLS_VERIFY")
+		if insecureSkipTLSVerify {
+			setupLog.Info("UNSAFE_SKIP_TLS_VERIFY is set: the Kubernetes API server certificate will NOT be verified " +
+				"and the service account token can be intercepted. Never enable this outside development.")
+		}
+		if _, ok := os.LookupEnv("PORCH_HTTPS_VERIFY"); ok {
+			setupLog.Info("PORCH_HTTPS_VERIFY is no longer supported and is ignored; certificates are always verified " +
+				"unless UNSAFE_SKIP_TLS_VERIFY=true")
+		}
 
 		porchConfig := &storage.PorchStorageConfig{
-			Namespace:   namespace,
-			Repository:  repository,
-			HTTPSVerify: httpsVerify,
-			// KubernetesURL and Token will be auto-detected from environment
-			// KUBERNETES_BASE_URL env var or default to "https://kubernetes.default.svc"
-			// TOKEN env var or service account token file
+			Namespace:             namespace,
+			Repository:            repository,
+			InsecureSkipTLSVerify: insecureSkipTLSVerify,
+			// KubernetesURL, Token and the API server CA are auto-detected from
+			// the environment: KUBERNETES_BASE_URL, TOKEN, KUBERNETES_CA_FILE
 		}
 
 		var err error

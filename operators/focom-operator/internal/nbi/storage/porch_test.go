@@ -19,7 +19,9 @@ package storage
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -63,7 +65,6 @@ func TestNewPorchStorage_WithConfig(t *testing.T) {
 		Token:         "test-token-12345",
 		Namespace:     "test-namespace",
 		Repository:    "test-repo",
-		HTTPSVerify:   false,
 	}
 
 	storage, err := NewPorchStorage(config)
@@ -124,6 +125,8 @@ func TestNewPorchStorage_WithTokenFile(t *testing.T) {
 func TestNewPorchStorage_DefaultKubernetesURL(t *testing.T) {
 	// Ensure no env var is set
 	os.Unsetenv("KUBERNETES_BASE_URL")
+	// The default only applies outside a cluster.
+	isolateClusterEnv(t)
 
 	config := &PorchStorageConfig{
 		Token:      "test-token",
@@ -162,6 +165,596 @@ func TestNewPorchStorage_MissingRepository(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, storage)
 	assert.Contains(t, err.Error(), "repository is required")
+}
+
+// TLS verification regression tests. Unlike the TEMPORARY set above, these pin
+// a security default and should outlive the seed implementation.
+
+// isolateClusterEnv hides ambient cluster config so the tests see the defaults.
+// TestMain clears the variables the kubelet injects, so that a run inside a
+// pod tests the same thing a run on a laptop does. Without this the suite
+// picks up whichever cluster it happens to be running in, and tests about
+// token resolution start failing on a missing CA bundle. Individual tests
+// still set these with t.Setenv when the environment is what they are about.
+func TestMain(m *testing.M) {
+	for _, key := range []string{
+		"KUBERNETES_SERVICE_HOST",
+		"KUBERNETES_SERVICE_PORT",
+		"KUBERNETES_BASE_URL",
+		"KUBERNETES_CA_FILE",
+		"UNSAFE_SKIP_TLS_VERIFY",
+		"PORCH_HTTPS_VERIFY",
+	} {
+		if err := os.Unsetenv(key); err != nil {
+			panic(err)
+		}
+	}
+	os.Exit(m.Run())
+}
+
+func isolateClusterEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "")
+	t.Setenv("KUBERNETES_BASE_URL", "")
+	t.Setenv("KUBERNETES_CA_FILE", "")
+
+	// The default path is a real file in any pod that mounts the service
+	// account credential, so a test that assumes its absence would behave one
+	// way on a laptop and the other way in CI. Point it somewhere empty.
+	original := inClusterCAFile
+	inClusterCAFile = filepath.Join(t.TempDir(), "absent-ca.crt")
+	t.Cleanup(func() { inClusterCAFile = original })
+}
+
+// withInClusterCA points the fixed in-cluster CA path at the given file for the
+// duration of one test.
+func withInClusterCA(t *testing.T, path string) {
+	t.Helper()
+	original := inClusterCAFile
+	inClusterCAFile = path
+	t.Cleanup(func() { inClusterCAFile = original })
+}
+
+// newPorchTLSServer starts an HTTPS stand-in for the Kubernetes API. Its
+// certificate is signed by an authority no trust store knows, like a cluster CA.
+func newPorchTLSServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"apiVersion": "porch.kpt.dev/v1alpha1",
+			"kind":       "PackageRevisionList",
+			"items":      []interface{}{},
+		})
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// writeCAFile writes cert to a PEM bundle usable as a trusted CA.
+func writeCAFile(t *testing.T, cert *x509.Certificate) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "ca.crt")
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})
+	require.NoError(t, os.WriteFile(path, pemBytes, 0600))
+	return path
+}
+
+// TestPorchStorageTLS_VerifiedByDefault checks that the token is not sent to
+// an API server whose certificate cannot be verified.
+func TestPorchStorageTLS_VerifiedByDefault(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.NoError(t, err)
+
+	err = storage.HealthCheck(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "x509: certificate signed by unknown authority")
+}
+
+// TestPorchStorageTLS_TrustsConfiguredCA checks that CAFile is used.
+func TestPorchStorageTLS_TrustsConfiguredCA(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        writeCAFile(t, server.Certificate()),
+	})
+	require.NoError(t, err)
+
+	assert.NoError(t, storage.HealthCheck(context.Background()))
+}
+
+// TestPorchStorageTLS_CAFileFromEnv checks that KUBERNETES_CA_FILE is used.
+func TestPorchStorageTLS_CAFileFromEnv(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+	t.Setenv("KUBERNETES_CA_FILE", writeCAFile(t, server.Certificate()))
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.NoError(t, err)
+
+	assert.NoError(t, storage.HealthCheck(context.Background()))
+}
+
+// TestPorchStorageTLS_UnreadableCAFile checks that a broken bundle fails early.
+func TestPorchStorageTLS_UnreadableCAFile(t *testing.T) {
+	isolateClusterEnv(t)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: "https://test-k8s-api:6443",
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        filepath.Join(t.TempDir(), "missing.crt"),
+	})
+	assert.Error(t, err)
+	assert.Nil(t, storage)
+}
+
+// TestPorchStorageTLS_RejectsPlainHTTP checks that a plaintext endpoint is
+// refused outright, so the bearer token never reaches it.
+func TestPorchStorageTLS_RejectsPlainHTTP(t *testing.T) {
+	isolateClusterEnv(t)
+	var reached int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reached++
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+
+	for _, insecure := range []bool{false, true} {
+		storage, err := NewPorchStorage(&PorchStorageConfig{
+			KubernetesURL:         server.URL,
+			Token:                 "test-token",
+			Namespace:             "default",
+			Repository:            "focom-resources",
+			InsecureSkipTLSVerify: insecure,
+		})
+		require.Error(t, err, "insecure=%v", insecure)
+		assert.Nil(t, storage)
+		assert.Contains(t, err.Error(), "must use https")
+	}
+	assert.Zero(t, reached, "the plaintext server must never be contacted")
+}
+
+// TestPorchStorageTLS_RejectsUnusableURL checks the remaining endpoint shapes
+// that cannot carry a credential safely.
+func TestPorchStorageTLS_RejectsUnusableURL(t *testing.T) {
+	isolateClusterEnv(t)
+	for name, kubernetesURL := range map[string]string{
+		"hostless":    "https://",
+		"relative":    "kubernetes.default.svc",
+		"malformed":   "https://%zz",
+		"credentials": "https://user:pass@api.example.com:6443",
+		"query":       "https://api.example.com:6443?token=x",
+	} {
+		t.Run(name, func(t *testing.T) {
+			storage, err := NewPorchStorage(&PorchStorageConfig{
+				KubernetesURL: kubernetesURL,
+				Token:         "test-token",
+				Namespace:     "default",
+				Repository:    "focom-resources",
+			})
+			assert.Error(t, err)
+			assert.Nil(t, storage)
+		})
+	}
+}
+
+// TestPorchStorageTLS_RejectsCAWithSkipVerify checks that a configured bundle
+// is not silently discarded by the escape hatch.
+func TestPorchStorageTLS_RejectsCAWithSkipVerify(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL:         server.URL,
+		Token:                 "test-token",
+		Namespace:             "default",
+		Repository:            "focom-resources",
+		CAFile:                writeCAFile(t, server.Certificate()),
+		InsecureSkipTLSVerify: true,
+	})
+	assert.Error(t, err)
+	assert.Nil(t, storage)
+	assert.Contains(t, err.Error(), "mutually exclusive")
+}
+
+// TestPorchStorageTLS_CustomTokenInPod checks that a pod which turns off the
+// default token mount and projects its credential elsewhere still starts. The
+// standard token path is deliberately not consulted: everything needed is
+// supplied, so requiring that file as well would refuse a valid deployment.
+func TestPorchStorageTLS_CustomTokenInPod(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        writeCAFile(t, server.Certificate()),
+	})
+	require.NoError(t, err)
+	assert.NoError(t, storage.HealthCheck(context.Background()))
+}
+
+// TestPorchStorageTLS_InPodWithoutCAFailsClosed checks that a pod with no CA
+// available refuses to start rather than falling back to the system roots.
+func TestPorchStorageTLS_InPodWithoutCAFailsClosed(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		Token:      "test-token",
+		Namespace:  "default",
+		Repository: "focom-resources",
+	})
+	require.Error(t, err)
+	assert.Nil(t, storage)
+	assert.Contains(t, err.Error(), inClusterCAFile)
+}
+
+// TestPorchStorageTLS_InPodWithMalformedCAFailsClosed checks the bundle at the
+// fixed in-cluster path is loaded rather than merely found. This case only
+// became testable once that path stopped being a constant.
+func TestPorchStorageTLS_InPodWithMalformedCAFailsClosed(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	malformed := filepath.Join(t.TempDir(), "ca.crt")
+	require.NoError(t, os.WriteFile(malformed, []byte("not a certificate\n"), 0600))
+	withInClusterCA(t, malformed)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		Token:      "test-token",
+		Namespace:  "default",
+		Repository: "focom-resources",
+	})
+	require.Error(t, err)
+	assert.Nil(t, storage)
+}
+
+// TestPorchStorageTLS_PartialServiceEnvIsRefused checks that half an in-cluster
+// environment is a configuration error rather than a silent fallback.
+// TestPorchStorageTLS_OtherEndpointKeepsSystemRoots checks that the cluster
+// bundle follows the cluster's own address. A pod pointed at some other server
+// gets the system roots, so the certificate is still checked, just against the
+// right authorities.
+func TestPorchStorageTLS_OtherEndpointKeepsSystemRoots(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.NoError(t, err, "should not have looked for the cluster CA")
+
+	err = storage.HealthCheck(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "certificate")
+}
+
+// TestPorchStorageTLS_ClusterNameUsesClusterCA covers the other spelling of
+// the same server: the in-cluster DNS name is served by the cluster, so it
+// takes the cluster bundle and fails closed without it.
+func TestPorchStorageTLS_ClusterNameUsesClusterCA(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: defaultKubernetesURL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.Error(t, err)
+	assert.Nil(t, storage)
+	assert.Contains(t, err.Error(), inClusterCAFile)
+}
+
+// TestPorchStorageTLS_EquivalentClusterAddresses covers the spellings of the
+// cluster's own endpoint. The certificate does not change with the notation, so
+// neither should the bundle chosen to check it.
+// TestPorchStorageTLS_UnusableHostsAreRefused covers the shapes a second parser reads
+// differently. net/http keeps these as written and the transport maps them
+// before dialling, so the address checked would not be the one used.
+func TestPorchStorageTLS_UnusableHostsAreRefused(t *testing.T) {
+	for _, host := range []string{
+		"https://10.96.0.1%2eevil.example",
+		"https://\u24d4xample.com",
+		"https://ex\uff41mple.com",
+		"https://10.0.0.1\u3002evil",
+		"https://10.96.0.1\\proxy",
+		"https://10.96.0.1 /proxy",
+		"https://10.96.0.1_x",
+		"https://10.96.0.1:0",
+		"https://10.96.0.1:00",
+		"https://10.96.0.1:65536",
+		"https://10.96.0.1:999999999",
+		"https://10.96.0.1?",
+		"https://10.96.0.1#",
+	} {
+		assert.Error(t, validateAPIServerURL(host), "%s should be refused", host)
+	}
+
+	for _, host := range []string{
+		"https://10.96.0.1:443",
+		"https://[fd00::1]:443",
+		"https://kubernetes.default.svc",
+		"https://KUBERNETES.DEFAULT.SVC",
+		"https://example.com.",
+		"https://a-b.example-1.com:6443",
+	} {
+		assert.NoError(t, validateAPIServerURL(host), "%s should be accepted", host)
+	}
+}
+
+// TestPorchStorageTLS_APIServerOrigin pins the helper on its own terms. Its callers happen to
+// have rejected plaintext by the time they reach it, so a caller-level test
+// cannot tell whether the scheme is part of the endpoint. It is.
+func TestPorchStorageTLS_APIServerOrigin(t *testing.T) {
+	same := [][2]string{
+		{"https://10.96.0.1", "https://10.96.0.1:443"},
+		{"https://kubernetes.default.svc", "https://KUBERNETES.DEFAULT.SVC:443"},
+		{"https://[::ffff:a60:1]:443", "https://[0:0:0:0:0:ffff:a60:1]:443"},
+		{"https://host:6443/api", "https://host:6443/healthz"},
+	}
+	for _, pair := range same {
+		assert.Equal(t, apiServerOrigin(pair[0]), apiServerOrigin(pair[1]),
+			"%s and %s are one endpoint", pair[0], pair[1])
+	}
+
+	same = append(same,
+		[2]string{"https://10.96.0.1:443", "https://10.96.0.1:0443"},
+		[2]string{"https://10.96.0.1:443", "https://10.96.0.1:00443"},
+	)
+	for _, pair := range same[len(same)-2:] {
+		assert.Equal(t, apiServerOrigin(pair[0]), apiServerOrigin(pair[1]),
+			"%s and %s are one endpoint", pair[0], pair[1])
+	}
+
+	differ := [][2]string{
+		{"https://10.96.0.1:443", "http://10.96.0.1:443"},
+		{"https://10.96.0.1:443", "https://10.96.0.1:6443"},
+		{"https://10.96.0.1:443", "https://10.96.0.2:443"},
+		{"https://kubernetes.default.svc", "https://kubernetes.default.svc.other"},
+	}
+	for _, pair := range differ {
+		assert.NotEqual(t, apiServerOrigin(pair[0]), apiServerOrigin(pair[1]),
+			"%s and %s are different endpoints", pair[0], pair[1])
+	}
+}
+
+// TestPorchStorageTLS_EmptyCAIsRefused covers a bundle that reads but holds
+// nothing. client-go appends a CA file to an empty pool and keeps the pool
+// only if something was added, so zero bytes leave RootCAs nil and the
+// connection falls back to whatever the image trusts, which is wider than the
+// cluster CA and arrived at without saying so. A file that cannot be parsed
+// was already refused; this is the case between the two.
+func TestPorchStorageTLS_EmptyCAIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	empty := filepath.Join(dir, "empty-ca.crt")
+	require.NoError(t, os.WriteFile(empty, nil, 0o600))
+	usable := writeCAFile(t, newPorchTLSServer(t).Certificate())
+
+	// Not only zero bytes: whatever is installed has to parse, and the file
+	// has to be named, which client-go's own message does not do.
+	for name, content := range map[string]string{
+		"zero bytes":      "",
+		"whitespace only": "   \n\t ",
+		"not a PEM block": "not a certificate\n",
+		"a truncated PEM": "-----BEGIN CERTIFICATE-----\nnope\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			isolateClusterEnv(t)
+			bad := filepath.Join(t.TempDir(), "ca.crt")
+			require.NoError(t, os.WriteFile(bad, []byte(content), 0o600))
+			_, err := NewPorchStorage(&PorchStorageConfig{
+				KubernetesURL: "https://api.example:6443", Token: "t",
+				Namespace: "default", Repository: "focom-resources", CAFile: bad})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), bad)
+			assert.Contains(t, err.Error(), "holds no certificate")
+		})
+	}
+
+	t.Run("from the config", func(t *testing.T) {
+		isolateClusterEnv(t)
+		_, err := NewPorchStorage(&PorchStorageConfig{
+			KubernetesURL: "https://api.example:6443", Token: "t",
+			Namespace: "default", Repository: "focom-resources", CAFile: empty})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), empty)
+	})
+
+	t.Run("from the environment", func(t *testing.T) {
+		isolateClusterEnv(t)
+		t.Setenv("KUBERNETES_CA_FILE", empty)
+		_, err := NewPorchStorage(&PorchStorageConfig{
+			KubernetesURL: "https://api.example:6443", Token: "t",
+			Namespace: "default", Repository: "focom-resources"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), empty)
+	})
+
+	t.Run("mounted in the pod", func(t *testing.T) {
+		isolateClusterEnv(t)
+		withInClusterCA(t, empty)
+		t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+		t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+		_, err := NewPorchStorage(&PorchStorageConfig{
+			Token: "t", Namespace: "default", Repository: "focom-resources"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), empty)
+	})
+
+	t.Run("a usable bundle is untouched", func(t *testing.T) {
+		isolateClusterEnv(t)
+		_, err := NewPorchStorage(&PorchStorageConfig{
+			KubernetesURL: "https://api.example:6443", Token: "t",
+			Namespace: "default", Repository: "focom-resources", CAFile: usable})
+		require.NoError(t, err)
+	})
+
+	t.Run("no bundle keeps the system roots", func(t *testing.T) {
+		isolateClusterEnv(t)
+		_, err := NewPorchStorage(&PorchStorageConfig{
+			KubernetesURL: "https://other.example:6443", Token: "t",
+			Namespace: "default", Repository: "focom-resources"})
+		require.NoError(t, err)
+	})
+}
+
+// TestPorchStorageTLS_LeadingZeroPortStillNeedsTheClusterCA is the constructor
+// half of the origin comparison: ":0443" is the advertised endpoint however it
+// is spelled, so it has to ask for the same bundle.
+func TestPorchStorageTLS_LeadingZeroPortStillNeedsTheClusterCA(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: "https://10.96.0.1:0443",
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.Error(t, err)
+	assert.Nil(t, storage)
+	assert.Contains(t, err.Error(), inClusterCAFile)
+}
+
+// TestPorchStorageTLS_RequestPathSurvivesTheBaseURL covers the join. A base
+// URL ending in "/" produced "//apis", which the API server answers with a
+// redirect, and a proxy prefix has to survive.
+func TestPorchStorageTLS_RequestPathSurvivesTheBaseURL(t *testing.T) {
+	for _, suffix := range []string{"", "/", "/proxy", "/proxy/"} {
+		t.Run("base"+suffix, func(t *testing.T) {
+			var got string
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got = r.URL.Path
+				w.WriteHeader(http.StatusOK)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"items": []interface{}{}})
+			}))
+			defer server.Close()
+
+			storage := &PorchStorage{
+				httpClient: server.Client(), kubernetesURL: server.URL + suffix,
+				namespace: "default", repository: "focom-resources"}
+			require.NoError(t, storage.HealthCheck(context.Background()))
+
+			want := strings.TrimSuffix(suffix, "/") +
+				"/apis/porch.kpt.dev/v1alpha1/namespaces/default/packagerevisions"
+			assert.Equal(t, want, got)
+		})
+	}
+}
+
+// TestPorchStorageTLS_UnusableEndpointIsRefusedBeforeTheCA checks the order.
+// Which bundle an address gets is a decision about an endpoint, so an endpoint
+// that cannot carry a token has to be refused first: the origin comparison
+// ignores everything but scheme, host and port, and would otherwise hand the
+// cluster CA to a plaintext address on its way to being rejected anyway.
+func TestPorchStorageTLS_UnusableEndpointIsRefusedBeforeTheCA(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	withInClusterCA(t, writeCAFile(t, newPorchTLSServer(t).Certificate()))
+
+	restConfig, err := buildRESTConfig(&PorchStorageConfig{
+		KubernetesURL: "http://10.96.0.1:443",
+	})
+	require.Error(t, err)
+	assert.Nil(t, restConfig)
+	assert.Contains(t, err.Error(), "must use https")
+}
+
+func TestPorchStorageTLS_EquivalentClusterAddresses(t *testing.T) {
+	for _, kubernetesURL := range []string{
+		"https://10.96.0.1:443",
+		"https://10.96.0.1",
+		"https://kubernetes.default.svc",
+		"https://kubernetes.default.svc:443",
+		"https://KUBERNETES.DEFAULT.SVC",
+		"https://[::ffff:10.96.0.1]:443",
+	} {
+		t.Run(kubernetesURL, func(t *testing.T) {
+			isolateClusterEnv(t)
+			t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+			t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+			storage, err := NewPorchStorage(&PorchStorageConfig{
+				KubernetesURL: kubernetesURL,
+				Token:         "test-token",
+				Namespace:     "default",
+				Repository:    "focom-resources",
+			})
+			require.Error(t, err)
+			assert.Nil(t, storage)
+			assert.Contains(t, err.Error(), inClusterCAFile,
+				"should have chosen the cluster bundle for %s", kubernetesURL)
+		})
+	}
+}
+
+func TestPorchStorageTLS_PartialServiceEnvIsRefused(t *testing.T) {
+	isolateClusterEnv(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		Token:      "test-token",
+		Namespace:  "default",
+		Repository: "focom-resources",
+	})
+	require.Error(t, err)
+	assert.Nil(t, storage)
+	assert.Contains(t, err.Error(), "must be set together")
+}
+
+// TestPorchStorageTLS_SkipVerifyOptIn checks the development escape hatch.
+func TestPorchStorageTLS_SkipVerifyOptIn(t *testing.T) {
+	isolateClusterEnv(t)
+	server := newPorchTLSServer(t)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL:         server.URL,
+		Token:                 "test-token",
+		Namespace:             "default",
+		Repository:            "focom-resources",
+		InsecureSkipTLSVerify: true,
+	})
+	require.NoError(t, err)
+
+	assert.NoError(t, storage.HealthCheck(context.Background()))
 }
 
 // TEMPORARY TEST - TestHealthCheck_Success tests successful health check

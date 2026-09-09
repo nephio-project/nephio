@@ -411,6 +411,19 @@ spec:
         #   value: "focom-resources"
 ```
 
+**TLS:** the Kubernetes API server certificate is verified against the CA bundle
+mounted at `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`, so no TLS
+configuration is needed for an in-cluster deployment.
+
+**Proxies:** the client now honours `HTTPS_PROXY` and `NO_PROXY`, like every
+other Kubernetes client. If your cluster exports `HTTPS_PROXY` to workloads,
+make sure `NO_PROXY` covers the API server address; otherwise this connection
+starts going through the proxy. A proxy that terminates TLS will fail the
+handshake, because the cluster CA does not sign its certificate. Leave `KUBERNETES_BASE_URL`
+unset unless you must reach a different endpoint: the operator then uses the
+address from `$KUBERNETES_SERVICE_HOST`, which is the one Kubernetes expects the
+API server certificate to be valid for.
+
 Apply the changes:
 
 ```bash
@@ -459,9 +472,20 @@ export TOKEN=/tmp/kube-token
 # Optional: Override repository name (default: "focom-resources")
 # export PORCH_REPOSITORY=focom-resources
 
+# Optional: CA bundle used to verify the API server certificate. Needed only
+# when running outside the cluster with KUBERNETES_BASE_URL, since a kubeconfig
+# already carries its cluster CA.
+# export KUBERNETES_CA_FILE=/path/to/ca.crt
+
 # Run the operator
 go run ./cmd/main.go
 ```
+
+**TLS:** the API server certificate is always verified. If your development
+cluster presents a certificate you cannot verify, export the cluster CA through
+`KUBERNETES_CA_FILE`. As a last resort `UNSAFE_SKIP_TLS_VERIFY=true` disables
+verification entirely — it sends your bearer token to an unauthenticated
+endpoint and must never be used outside development.
 
 ### Step 6: Verify Operator Startup
 
@@ -811,11 +835,13 @@ git log --oneline
 | `NBI_STORAGE_BACKEND` | Yes | `memory` | Storage backend type (`memory` or `porch`) |
 | `NBI_STAGE` | Yes | `1` | Implementation stage (`1`, `2`, or `3`) |
 | `FOCOM_NAMESPACE` | No | `focom-system` | Default namespace for FOCOM resources (OCloud, TemplateInfo, FocomProvisioningRequest) |
-| `KUBERNETES_BASE_URL` | No | `https://kubernetes.default.svc` | Kubernetes API server URL |
+| `KUBERNETES_BASE_URL` | No | In-cluster API server address | Kubernetes API server URL |
 | `TOKEN` | No | Auto-detected | Authentication token (string or file path) |
 | `KUBECONFIG` | No | `~/.kube/config` | Path to kubeconfig file (local development) |
 | `PORCH_NAMESPACE` | No | `default` | Namespace for PackageRevisions |
 | `PORCH_REPOSITORY` | No | `focom-resources` | Porch repository name |
+| `KUBERNETES_CA_FILE` | No | In-cluster CA | PEM bundle used to verify the API server certificate |
+| `UNSAFE_SKIP_TLS_VERIFY` | No | `false` | Development only: skip verification of the API server certificate |
 
 ### PorchStorageConfig Fields
 
@@ -825,16 +851,17 @@ git log --oneline
 | `Token` | string | No | Auto-detected | Authentication token |
 | `Namespace` | string | Yes | - | Namespace for PackageRevisions |
 | `Repository` | string | Yes | - | Porch repository name |
-| `HTTPSVerify` | bool | No | `false` | Verify HTTPS certificates |
+| `CAFile` | string | No | In-cluster CA | PEM bundle used to verify the API server certificate |
+| `InsecureSkipTLSVerify` | bool | No | `false` | Development only: skip verification of the API server certificate |
 
 ## Best Practices
 
 ### Production Deployments
 
-1. **Use HTTPS with Certificate Verification:**
-   ```go
-   HTTPSVerify: true
-   ```
+1. **Keep Certificate Verification Enabled:**
+   The API server certificate is verified by default. Never set
+   `UNSAFE_SKIP_TLS_VERIFY` in production: it sends the service account token
+   to an endpoint whose identity has not been checked.
 
 2. **Use Private Git Repositories:**
    - Store sensitive configuration in private repositories
@@ -863,10 +890,12 @@ git log --oneline
    - Gitea or GitLab in Docker
    - Faster access, no external dependencies
 
-3. **Disable HTTPS Verification:**
-   ```go
-   HTTPSVerify: false
+3. **Point at the Cluster CA:**
+   ```bash
+   export KUBERNETES_CA_FILE=/path/to/cluster-ca.crt
    ```
+   Certificates stay verified. `UNSAFE_SKIP_TLS_VERIFY=true` turns verification
+   off if you have no CA to hand, and logs a warning at startup.
 
 4. **Use Automatic Token Resolution:**
    - Let the operator extract token from kubeconfig
