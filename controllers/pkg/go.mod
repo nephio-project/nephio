@@ -13,7 +13,6 @@ require (
 	code.gitea.io/sdk/gitea v0.22.1
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-cmp v0.7.0
-	github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6
 	github.com/kptdev/kpt v1.0.0-beta.60
 	github.com/kptdev/krm-functions-sdk/go/fn v1.0.1
 	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
@@ -26,7 +25,6 @@ require (
 	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 	github.com/openconfig/ygot v0.28.3
 	github.com/pkg/errors v0.9.1
-	github.com/srl-labs/ygotsrl/v22 v22.11.1
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.34.1
@@ -38,6 +36,8 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.21.0
 	sigs.k8s.io/yaml v1.6.0
 )
+
+require github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6
 
 require (
 	github.com/42wim/httpsig v1.2.3 // indirect
@@ -88,6 +88,7 @@ require (
 	github.com/prometheus/common v0.67.2 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/srl-labs/ygotsrl/v22 v22.11.1 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect

@@ -11,7 +11,7 @@ replace (
 )
 
 require (
-	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20250915052103-2af16ab1c9e2
+	github.com/nephio-project/nephio/controllers/pkg v0.0.0-20230531154408-a4237c40cb76
 	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
@@ -75,6 +75,7 @@ require (
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20251208095831-a29054b9701f // indirect
 	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000 // indirect
 	github.com/nephio-project/porch v1.5.6-0.20260126092749-2f95846f69f9 // indirect
+	github.com/onsi/ginkgo/v2 v2.23.3 // indirect
 	github.com/openconfig/gnmi v0.9.1 // indirect
 	github.com/openconfig/goyang v1.4.0 // indirect
 	github.com/openconfig/ygot v0.28.3 // indirect

@@ -44,7 +44,6 @@ import (
 	"github.com/openconfig/ygot/ygot"
 
 	"github.com/pkg/errors"
-	"github.com/srl-labs/ygotsrl/v22"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -104,7 +103,6 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 
 	r.APIPatchingApplicator = resource.NewAPIPatchingApplicator(mgr.GetClient())
 	r.finalizer = resource.NewAPIFinalizer(mgr.GetClient(), finalizer)
-	r.devices = map[string]*ygotsrl.Device{}
 	r.VlanClientProxy = cfg.VlanClientProxy
 	r.IpamClientProxy = cfg.IpamClientProxy
 	//r.targets = cfg.Targets
@@ -127,9 +125,7 @@ type reconciler struct {
 	IpamClientProxy clientproxy.Proxy[*ipamv1alpha1.NetworkInstance, *ipamv1alpha1.IPClaim]
 	VlanClientProxy clientproxy.Proxy[*vlanv1alpha1.VLANIndex, *vlanv1alpha1.VLANClaim]
 
-	devices map[string]*ygotsrl.Device
 	//targets   targets.Target
-	resources resources.Resources // get initialized for every cr/reconcile loop
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -182,7 +178,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
-	r.resources = resources.New(
+	res := resources.New(
 		r.APIPatchingApplicator,
 		resources.Config{
 			CR:             cr,
@@ -194,21 +190,21 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	)
 
 	log.Info("apply initial resources")
-	if err := r.applyInitialresources(ctx, cr, eps, nodes); err != nil {
+	if err := r.applyInitialresources(ctx, cr, eps, nodes, res); err != nil {
 		log.Error(err, "cannot apply initial resources")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	log.Info("get new resources")
-	if err := r.getNewResources(ctx, cr, eps, nodes); err != nil {
+	if err := r.getNewResources(ctx, cr, eps, nodes, res); err != nil {
 		log.Error(err, "cannot get new resources")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
 	}
 
 	log.Info("apply all resources")
-	if err := r.resources.APIApply(ctx); err != nil {
+	if err := res.APIApply(ctx); err != nil {
 		log.Error(err, "cannot apply resources to the API")
 		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
 		return ctrl.Result{Requeue: true}, errors.Wrap(r.Status().Update(ctx, cr), errUpdateStatus)
@@ -254,11 +250,11 @@ func (r *reconciler) getProviderNodes(ctx context.Context, topology string) (*no
 	return &nodes.Nodes{NodeList: nos}, nil
 }
 
-func (r *reconciler) applyInitialresources(ctx context.Context, cr *infrav1alpha1.Network, eps *endpoints.Endpoints, nodes *nodes.Nodes) error {
+func (r *reconciler) applyInitialresources(ctx context.Context, cr *infrav1alpha1.Network, eps *endpoints.Endpoints, nodes *nodes.Nodes, res resources.Resources) error {
 	n := network.New(&network.Config{
 		Config:    &infra2v1alpha1.NetworkConfig{},
 		Apply:     true,
-		Resources: r.resources,
+		Resources: res,
 		Endpoints: eps,
 		Nodes:     nodes,
 		Ipam:      ipam.NewIPAM(r.IpamClientProxy),
@@ -269,18 +265,18 @@ func (r *reconciler) applyInitialresources(ctx context.Context, cr *infrav1alpha
 		log.FromContext(ctx).Error(err, "cannot execute network run")
 		return err
 	}
-	if err := r.resources.APIApply(ctx); err != nil {
+	if err := res.APIApply(ctx); err != nil {
 		log.FromContext(ctx).Error(err, "cannot apply resources to the API")
 		return err
 	}
 	return nil
 }
 
-func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Network, eps *endpoints.Endpoints, nodes *nodes.Nodes) error {
+func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Network, eps *endpoints.Endpoints, nodes *nodes.Nodes, res resources.Resources) error {
 	n := network.New(&network.Config{
 		Config:    &infra2v1alpha1.NetworkConfig{},
 		Apply:     false,
-		Resources: r.resources,
+		Resources: res,
 		Endpoints: eps,
 		Nodes:     nodes,
 		Ipam:      ipam.NewIPAM(r.IpamClientProxy),
@@ -337,7 +333,7 @@ func (r *reconciler) getNewResources(ctx context.Context, cr *infrav1alpha1.Netw
 			o.Status.LastAppliedConfig = existingNetwNodeConfig.Status.LastAppliedConfig
 		}
 
-		r.resources.AddNewResource(o)
+		res.AddNewResource(o)
 	}
 	return nil
 }
