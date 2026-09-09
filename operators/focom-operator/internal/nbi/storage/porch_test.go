@@ -35,6 +35,7 @@ import (
 	"github.com/nephio-project/nephio/operators/focom-operator/internal/nbi/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/rest"
 )
 
 // ============================================================================
@@ -60,6 +61,7 @@ import (
 
 // TEMPORARY TEST - TestNewPorchStorage_WithConfig tests initialization with explicit config
 func TestNewPorchStorage_WithConfig(t *testing.T) {
+	isolateClusterEnv(t)
 	config := &PorchStorageConfig{
 		KubernetesURL: "https://test-k8s-api:6443",
 		Token:         "test-token-12345",
@@ -71,7 +73,6 @@ func TestNewPorchStorage_WithConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, storage)
 	assert.Equal(t, "https://test-k8s-api:6443", storage.kubernetesURL)
-	assert.Equal(t, "test-token-12345", storage.token)
 	assert.Equal(t, "test-namespace", storage.namespace)
 	assert.Equal(t, "test-repo", storage.repository)
 	assert.NotNil(t, storage.httpClient)
@@ -80,6 +81,7 @@ func TestNewPorchStorage_WithConfig(t *testing.T) {
 
 // TEMPORARY TEST - TestNewPorchStorage_WithEnvVars tests initialization with environment variables
 func TestNewPorchStorage_WithEnvVars(t *testing.T) {
+	isolateClusterEnv(t)
 	// Set environment variables
 	os.Setenv("KUBERNETES_BASE_URL", "https://env-k8s-api:6443")
 	os.Setenv("TOKEN", "env-token-67890")
@@ -94,11 +96,11 @@ func TestNewPorchStorage_WithEnvVars(t *testing.T) {
 	storage, err := NewPorchStorage(config)
 	require.NoError(t, err)
 	assert.Equal(t, "https://env-k8s-api:6443", storage.kubernetesURL)
-	assert.Equal(t, "env-token-67890", storage.token)
 }
 
 // TEMPORARY TEST - TestNewPorchStorage_WithTokenFile tests token resolution from file
 func TestNewPorchStorage_WithTokenFile(t *testing.T) {
+	isolateClusterEnv(t)
 	// Create temporary token file
 	tmpDir := t.TempDir()
 	tokenFile := filepath.Join(tmpDir, "token")
@@ -118,7 +120,8 @@ func TestNewPorchStorage_WithTokenFile(t *testing.T) {
 
 	storage, err := NewPorchStorage(config)
 	require.NoError(t, err)
-	assert.Equal(t, tokenContent, storage.token)
+	assert.Equal(t, "https://test-k8s-api:6443", storage.kubernetesURL)
+	assert.NotNil(t, storage.httpClient)
 }
 
 // TEMPORARY TEST - TestNewPorchStorage_DefaultKubernetesURL tests default Kubernetes URL
@@ -141,6 +144,7 @@ func TestNewPorchStorage_DefaultKubernetesURL(t *testing.T) {
 
 // TEMPORARY TEST - TestNewPorchStorage_MissingNamespace tests validation of required fields
 func TestNewPorchStorage_MissingNamespace(t *testing.T) {
+	isolateClusterEnv(t)
 	config := &PorchStorageConfig{
 		Token:      "test-token",
 		Repository: "focom-resources",
@@ -155,6 +159,7 @@ func TestNewPorchStorage_MissingNamespace(t *testing.T) {
 
 // TEMPORARY TEST - TestNewPorchStorage_MissingRepository tests validation of required fields
 func TestNewPorchStorage_MissingRepository(t *testing.T) {
+	isolateClusterEnv(t)
 	config := &PorchStorageConfig{
 		Token:     "test-token",
 		Namespace: "default",
@@ -184,6 +189,7 @@ func TestMain(m *testing.M) {
 		"KUBERNETES_CA_FILE",
 		"UNSAFE_SKIP_TLS_VERIFY",
 		"PORCH_HTTPS_VERIFY",
+		"TOKEN",
 	} {
 		if err := os.Unsetenv(key); err != nil {
 			panic(err)
@@ -202,9 +208,18 @@ func isolateClusterEnv(t *testing.T) {
 	// The default path is a real file in any pod that mounts the service
 	// account credential, so a test that assumes its absence would behave one
 	// way on a laptop and the other way in CI. Point it somewhere empty.
-	original := inClusterCAFile
-	inClusterCAFile = filepath.Join(t.TempDir(), "absent-ca.crt")
-	t.Cleanup(func() { inClusterCAFile = original })
+	dir := t.TempDir()
+	originalCA, originalToken := inClusterCAFile, inClusterTokenFile
+	inClusterCAFile = filepath.Join(dir, "absent-ca.crt")
+	// The token beside it is the same problem, and now that the path is a
+	// variable it can be moved too. Without this, two pre-existing kubeconfig
+	// tests find the real mounted token and stop returning the error they
+	// assert; they fail on main inside any pod carrying the credential.
+	inClusterTokenFile = filepath.Join(dir, "absent-token")
+	t.Cleanup(func() {
+		inClusterCAFile = originalCA
+		inClusterTokenFile = originalToken
+	})
 }
 
 // withInClusterCA points the fixed in-cluster CA path at the given file for the
@@ -552,6 +567,13 @@ func TestPorchStorageTLS_APIServerOrigin(t *testing.T) {
 		assert.NotEqual(t, apiServerOrigin(pair[0]), apiServerOrigin(pair[1]),
 			"%s and %s are different endpoints", pair[0], pair[1])
 	}
+
+	// Nothing reaches this in the operator, since the endpoint is validated
+	// before the bundle is chosen, but a helper that cannot answer should say
+	// so by returning the input rather than a plausible wrong origin.
+	for _, unusable := range []string{"https://h:65536", "https://h:abc", "https://[bad"} {
+		assert.Equal(t, unusable, apiServerOrigin(unusable))
+	}
 }
 
 // TestPorchStorageTLS_EmptyCAIsRefused covers a bundle that reads but holds
@@ -757,6 +779,213 @@ func TestPorchStorageTLS_SkipVerifyOptIn(t *testing.T) {
 	assert.NoError(t, storage.HealthCheck(context.Background()))
 }
 
+// TestPorchStorageAuth_TransportSigns is the whole point of this change: the token
+// reaches the API server without makeRequest writing the header, which is what
+// let client-go's credential wrappers run.
+//
+// Rotation itself is not asserted here. client-go caches a token file for a
+// minute, so a test of that costs a minute of CI to watch one boolean. What is
+// asserted is the half that decides it: resolveCredentials hands over the path
+// rather than the contents, in TestPorchStorageAuth_ResolvesCredentials.
+func TestPorchStorageAuth_TransportSigns(t *testing.T) {
+	isolateClusterEnv(t)
+
+	var seen string
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"items": []interface{}{}})
+	}))
+	defer server.Close()
+
+	tokenFile := filepath.Join(t.TempDir(), "token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("token-from-the-file\n"), 0o600))
+	t.Setenv("TOKEN", tokenFile)
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        writeCAFile(t, server.Certificate()),
+	})
+	require.NoError(t, err)
+	require.NoError(t, storage.HealthCheck(context.Background()))
+
+	// trailing newline trimmed by client-go, not by us
+	assert.Equal(t, "Bearer token-from-the-file", seen)
+}
+
+// TestPorchStorageAuth_ExecPluginIsRun covers the other half of what the manual header
+// suppressed. Under a kubeconfig the token was empty, so the header read
+// "Bearer " with nothing after it, which is still a header, and client-go's
+// exec wrapper returns early on one. Putting the header back makes the server
+// see "Bearer" here instead of the plugin's token.
+func TestPorchStorageAuth_ExecPluginIsRun(t *testing.T) {
+	isolateClusterEnv(t)
+
+	var seen string
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"items": []interface{}{}})
+	}))
+	defer server.Close()
+
+	dir := t.TempDir()
+	plugin := filepath.Join(dir, "credential-plugin.sh")
+	require.NoError(t, os.WriteFile(plugin, []byte("#!/bin/sh\n"+
+		`echo '{"apiVersion":"client.authentication.k8s.io/v1","kind":"ExecCredential",`+
+		`"status":{"token":"token-from-exec-plugin"}}'`+"\n"), 0o700))
+
+	kubeconfig := filepath.Join(dir, "config")
+	require.NoError(t, os.WriteFile(kubeconfig, fmt.Appendf(nil,
+		"apiVersion: v1\nkind: Config\nclusters:\n- name: c\n  cluster:\n"+
+			"    server: %s\n    certificate-authority: %s\n"+
+			"contexts:\n- name: c\n  context:\n    cluster: c\n    user: u\n"+
+			"current-context: c\nusers:\n- name: u\n  user:\n    exec:\n"+
+			"      apiVersion: client.authentication.k8s.io/v1\n"+
+			"      command: %s\n      interactiveMode: Never\n",
+		server.URL, writeCAFile(t, server.Certificate()), plugin), 0o600))
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		UseKubeconfig: true,
+		Kubeconfig:    kubeconfig,
+		Namespace:     "default",
+		Repository:    "focom-resources",
+	})
+	require.NoError(t, err)
+	require.NoError(t, storage.HealthCheck(context.Background()))
+	assert.Equal(t, "Bearer token-from-exec-plugin", seen)
+}
+
+// TestPorchStorageAuth_EmptyTokenFileFailsClosed covers a behaviour change.
+// Reading the file here used to produce an empty string and an Authorization
+// of "Bearer " with nothing after it, which the API server answers with an
+// opaque 401. client-go refuses the file instead, so it is a startup failure
+// naming the path.
+func TestPorchStorageAuth_EmptyTokenFileFailsClosed(t *testing.T) {
+	for name, content := range map[string]string{
+		"empty": "", "blank": "  \n\t ",
+	} {
+		t.Run(name, func(t *testing.T) {
+			isolateClusterEnv(t)
+			tokenFile := filepath.Join(t.TempDir(), "token")
+			require.NoError(t, os.WriteFile(tokenFile, []byte(content), 0o600))
+			t.Setenv("TOKEN", tokenFile)
+
+			storage, err := NewPorchStorage(&PorchStorageConfig{
+				KubernetesURL: "https://api.example:6443",
+				Namespace:     "default",
+				Repository:    "focom-resources",
+				CAFile:        writeCAFile(t, newPorchTLSServer(t).Certificate()),
+			})
+			require.Error(t, err)
+			assert.Nil(t, storage)
+			assert.Contains(t, err.Error(), tokenFile)
+		})
+	}
+}
+
+// TestPorchStorageAuth_SharedClientIsRefused covers a guard I first wrote as
+// unreachable and then found is not. rest.HTTPClientFor hands back
+// http.DefaultClient for a config with no TLS, credentials or timeout, and
+// setting CheckRedirect on that would reach every other user of the process.
+func TestPorchStorageAuth_SharedClientIsRefused(t *testing.T) {
+	bare := &rest.Config{Host: "https://api.example:6443"}
+
+	shared, err := rest.HTTPClientFor(bare)
+	require.NoError(t, err)
+	require.Same(t, http.DefaultClient, shared, "the premise of the guard")
+
+	client, err := newHTTPClient(bare)
+	require.Error(t, err)
+	assert.Nil(t, client)
+	assert.Nil(t, http.DefaultClient.CheckRedirect, "left alone")
+}
+
+// TestPorchStorageAuth_TokenSymlinkIsFollowed matters because that is the
+// shape a projected volume has: the mounted token is a symlink into ..data,
+// and the kubelet rotates by swapping where the link points.
+func TestPorchStorageAuth_TokenSymlinkIsFollowed(t *testing.T) {
+	isolateClusterEnv(t)
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "..2026_09_08_token")
+	require.NoError(t, os.WriteFile(target, []byte("token-behind-the-link"), 0o600))
+	link := filepath.Join(dir, "token")
+	require.NoError(t, os.Symlink(target, link))
+
+	var seen string
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"items": []interface{}{}})
+	}))
+	defer server.Close()
+
+	t.Setenv("TOKEN", link)
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        writeCAFile(t, server.Certificate()),
+	})
+	require.NoError(t, err)
+	require.NoError(t, storage.HealthCheck(context.Background()))
+	assert.Equal(t, "Bearer token-behind-the-link", seen)
+}
+
+// TestPorchStorageAuth_RedirectIsRefused pins the cost of moving the header
+// onto the transport. net/http drops an Authorization header the caller set
+// when a redirect crosses hosts, and cannot drop one a RoundTripper adds on
+// the next hop, so the token would otherwise reach wherever the API server
+// pointed. Porch is an aggregated API server, which is the position
+// CVE-2022-3172 describes.
+func TestPorchStorageAuth_RedirectIsRefused(t *testing.T) {
+	isolateClusterEnv(t)
+
+	elsewhereSaw := "<no request>"
+	elsewhere := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		elsewhereSaw = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer elsewhere.Close()
+	// a different host as far as net/http is concerned, not just a different port
+	elsewhereURL := strings.Replace(elsewhere.URL, "127.0.0.1", "localhost", 1)
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, elsewhereURL+"/somewhere-else", http.StatusFound)
+	}))
+	defer server.Close()
+
+	storage, err := NewPorchStorage(&PorchStorageConfig{
+		KubernetesURL: server.URL,
+		Token:         "test-token",
+		Namespace:     "default",
+		Repository:    "focom-resources",
+		CAFile:        writeCAFile(t, server.Certificate()),
+	})
+	require.NoError(t, err)
+
+	err = storage.HealthCheck(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "refusing to follow a redirect")
+	assert.Equal(t, "<no request>", elsewhereSaw, "nothing should have been sent")
+}
+
+// signingClient builds the client the way the constructors do, so a test that
+// asserts on Authorization is asserting on what the transport produced.
+func signingClient(t *testing.T, server *httptest.Server, token string) *http.Client {
+	t.Helper()
+	client, err := rest.HTTPClientFor(&rest.Config{
+		Host:            server.URL,
+		BearerToken:     token,
+		TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+	})
+	require.NoError(t, err)
+	return client
+}
+
 // TEMPORARY TEST - TestHealthCheck_Success tests successful health check
 func TestHealthCheck_Success(t *testing.T) {
 	// Create mock HTTP server
@@ -779,9 +1008,8 @@ func TestHealthCheck_Success(t *testing.T) {
 	defer server.Close()
 
 	storage := &PorchStorage{
-		httpClient:    server.Client(),
+		httpClient:    signingClient(t, server, "test-token"),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -801,7 +1029,6 @@ func TestHealthCheck_Unauthorized(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "invalid-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -826,7 +1053,6 @@ func TestHealthCheck_ServerError(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -852,7 +1078,6 @@ func TestHealthCheck_Timeout(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -887,9 +1112,8 @@ func TestMakeRequest_WithBody(t *testing.T) {
 	defer server.Close()
 
 	storage := &PorchStorage{
-		httpClient:    server.Client(),
+		httpClient:    signingClient(t, server, "test-token"),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -920,7 +1144,6 @@ func TestMakeRequest_WithoutBody(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "focom-resources",
 	}
@@ -934,6 +1157,7 @@ func TestMakeRequest_WithoutBody(t *testing.T) {
 
 // TEMPORARY TEST - TestNewPorchStorage_WithKubeconfig tests token resolution from kubeconfig file
 func TestNewPorchStorage_WithKubeconfig(t *testing.T) {
+	isolateClusterEnv(t)
 	// Create temporary kubeconfig file
 	tmpDir := t.TempDir()
 	kubeconfigFile := filepath.Join(tmpDir, "config")
@@ -974,7 +1198,6 @@ users:
 
 	storage, err := NewPorchStorage(config)
 	require.NoError(t, err)
-	assert.Equal(t, "kubeconfig-token-xyz123", storage.token)
 	// Note: We don't extract the server URL from kubeconfig, only the token
 	// The URL still comes from KUBERNETES_BASE_URL env var or defaults to in-cluster
 	assert.Equal(t, "https://kubernetes.default.svc", storage.kubernetesURL)
@@ -982,12 +1205,16 @@ users:
 
 // TEMPORARY TEST - TestNewPorchStorage_KubeconfigNotFound tests error when kubeconfig doesn't exist
 func TestNewPorchStorage_KubeconfigNotFound(t *testing.T) {
+	// Without this the mounted token is found before the kubeconfig is
+	// reached, and no error comes back. That is why this fails on main
+	// inside any pod carrying the service account credential.
+	isolateClusterEnv(t)
+
 	// Set KUBECONFIG to non-existent file
-	os.Setenv("KUBECONFIG", "/tmp/nonexistent-kubeconfig-12345")
-	defer os.Unsetenv("KUBECONFIG")
+	t.Setenv("KUBECONFIG", "/tmp/nonexistent-kubeconfig-12345")
 
 	// Ensure TOKEN env var is not set
-	os.Unsetenv("TOKEN")
+	require.NoError(t, os.Unsetenv("TOKEN"))
 
 	config := &PorchStorageConfig{
 		Namespace:  "default",
@@ -1002,6 +1229,7 @@ func TestNewPorchStorage_KubeconfigNotFound(t *testing.T) {
 
 // TEMPORARY TEST - TestNewPorchStorage_KubeconfigNoToken tests error when kubeconfig has no token
 func TestNewPorchStorage_KubeconfigNoToken(t *testing.T) {
+	isolateClusterEnv(t)
 	// Create temporary kubeconfig file without token
 	tmpDir := t.TempDir()
 	kubeconfigFile := filepath.Join(tmpDir, "config")
@@ -1049,77 +1277,118 @@ users:
 }
 
 // TEMPORARY TEST - TestResolveToken_Priority tests the token resolution priority order
-func TestResolveToken_Priority(t *testing.T) {
-	// Test 1: TOKEN env var takes priority over everything
-	t.Run("TOKEN_EnvVar_Priority", func(t *testing.T) {
-		os.Setenv("TOKEN", "env-token-priority")
-		defer os.Unsetenv("TOKEN")
-
-		// Create a kubeconfig that would also work
-		tmpDir := t.TempDir()
-		kubeconfigFile := filepath.Join(tmpDir, "config")
-		kubeconfigContent := `
+// TestPorchStorageAuth_ResolvesCredentials covers where the token comes from, and in which form.
+// The old version of this asserted on a string field that no longer exists, and
+// faked the in-cluster path by pointing TOKEN at a file, so it never reached
+// the branch it was named after.
+func TestPorchStorageAuth_ResolvesCredentials(t *testing.T) {
+	kubeconfig := `
 apiVersion: v1
 kind: Config
 users:
 - name: test-user
   user:
-    token: kubeconfig-token-should-not-be-used
+    token: kubeconfig-token
 `
-		os.WriteFile(kubeconfigFile, []byte(kubeconfigContent), 0600)
-		os.Setenv("KUBECONFIG", kubeconfigFile)
-		defer os.Unsetenv("KUBECONFIG")
+	cases := map[string]struct {
+		config       *PorchStorageConfig
+		tokenEnv     string // "" leaves TOKEN unset; "@file" means a path
+		inClusterSet bool
+		wantToken    string
+		wantFile     string // "@file" for the temporary path, "@incluster" for the mounted one
+		wantErr      string // when set, resolveCredentials has to refuse
+	}{
+		"an explicit token is used as it is": {
+			config:    &PorchStorageConfig{Token: "explicit"},
+			wantToken: "explicit",
+		},
+		"TOKEN naming a file is followed rather than read": {
+			config:   &PorchStorageConfig{},
+			tokenEnv: "@file",
+			wantFile: "@file",
+		},
+		// "@missing" and not the real mount path: that file exists inside a
+		// pod, and this case would then resolve instead of being refused.
+		"TOKEN naming an absolute path that is not there is refused": {
+			config:   &PorchStorageConfig{},
+			tokenEnv: "@missing",
+			wantErr:  "cannot be used",
+		},
+		// a token in standard base64 carries a separator and used to work
+		"TOKEN holding a token with a slash is still a token": {
+			config:    &PorchStorageConfig{},
+			tokenEnv:  "a/b+c==",
+			wantToken: "a/b+c==",
+		},
+		"TOKEN holding a token is used as it is": {
+			config:    &PorchStorageConfig{},
+			tokenEnv:  "literal-token",
+			wantToken: "literal-token",
+		},
+		"the mounted token is followed rather than read": {
+			config:       &PorchStorageConfig{},
+			inClusterSet: true,
+			wantFile:     "@incluster",
+		},
+		"the kubeconfig is the last resort": {
+			config:    &PorchStorageConfig{},
+			wantToken: "kubeconfig-token",
+		},
+	}
 
-		config := &PorchStorageConfig{
-			Namespace:  "default",
-			Repository: "focom-resources",
-		}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			tokenPath := filepath.Join(dir, "projected-token")
+			require.NoError(t, os.WriteFile(tokenPath, []byte("from-a-file"), 0o600))
 
-		storage, err := NewPorchStorage(config)
-		require.NoError(t, err)
-		assert.Equal(t, "env-token-priority", storage.token, "TOKEN env var should take priority")
-	})
+			kubeconfigPath := filepath.Join(dir, "config")
+			require.NoError(t, os.WriteFile(kubeconfigPath, []byte(kubeconfig), 0o600))
+			t.Setenv("KUBECONFIG", kubeconfigPath)
 
-	// Test 2: In-cluster token file takes priority over kubeconfig
-	t.Run("InCluster_Priority_Over_Kubeconfig", func(t *testing.T) {
-		// Ensure TOKEN env var is not set
-		os.Unsetenv("TOKEN")
+			// somewhere that does not exist unless the case asks for it
+			inCluster := filepath.Join(dir, "mounted-token")
+			if tc.inClusterSet {
+				require.NoError(t, os.WriteFile(inCluster, []byte("from-the-mount"), 0o600))
+			}
+			original := inClusterTokenFile
+			inClusterTokenFile = inCluster
+			t.Cleanup(func() { inClusterTokenFile = original })
 
-		// Create a temporary in-cluster token file
-		tmpDir := t.TempDir()
-		inClusterTokenFile := filepath.Join(tmpDir, "token")
-		os.WriteFile(inClusterTokenFile, []byte("in-cluster-token"), 0600)
+			switch tc.tokenEnv {
+			case "":
+				t.Setenv("TOKEN", "")
+				require.NoError(t, os.Unsetenv("TOKEN"))
+			case "@file":
+				t.Setenv("TOKEN", tokenPath)
+			case "@missing":
+				t.Setenv("TOKEN", filepath.Join(dir, "not-created"))
+			default:
+				t.Setenv("TOKEN", tc.tokenEnv)
+			}
 
-		// Create a kubeconfig
-		kubeconfigFile := filepath.Join(tmpDir, "config")
-		kubeconfigContent := `
-apiVersion: v1
-kind: Config
-users:
-- name: test-user
-  user:
-    token: kubeconfig-token-should-not-be-used
-`
-		os.WriteFile(kubeconfigFile, []byte(kubeconfigContent), 0600)
-		os.Setenv("KUBECONFIG", kubeconfigFile)
-		defer os.Unsetenv("KUBECONFIG")
+			restConfig := &rest.Config{}
+			err := resolveCredentials(tc.config, restConfig)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
 
-		// Mock the in-cluster token path by setting TOKEN to the file path
-		os.Setenv("TOKEN", inClusterTokenFile)
-		defer os.Unsetenv("TOKEN")
-
-		config := &PorchStorageConfig{
-			Namespace:  "default",
-			Repository: "focom-resources",
-		}
-
-		storage, err := NewPorchStorage(config)
-		require.NoError(t, err)
-		assert.Equal(t, "in-cluster-token", storage.token, "In-cluster token should take priority over kubeconfig")
-	})
+			wantFile := tc.wantFile
+			switch wantFile {
+			case "@file":
+				wantFile = tokenPath
+			case "@incluster":
+				wantFile = inCluster
+			}
+			assert.Equal(t, tc.wantToken, restConfig.BearerToken)
+			assert.Equal(t, wantFile, restConfig.BearerTokenFile)
+		})
+	}
 }
 
-// TEMPORARY TEST - TestParseResponse_Success tests successful response parsing
 func TestParseResponse_Success(t *testing.T) {
 	storage := &PorchStorage{}
 
@@ -1701,7 +1970,6 @@ func TestCreateDraft_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -1745,7 +2013,6 @@ func TestCreateDraft_AlreadyExists(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -1830,7 +2097,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -1868,7 +2134,6 @@ func TestGetDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -1944,7 +2209,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2011,7 +2275,6 @@ func TestGetDraft_MissingResourceFile(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2105,7 +2368,6 @@ func TestUpdateDraft_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2141,7 +2403,6 @@ func TestUpdateDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2186,7 +2447,6 @@ func TestUpdateDraft_InvalidState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2277,7 +2537,6 @@ func TestUpdateDraft_TemplateInfo(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2343,7 +2602,6 @@ func TestDeleteDraft_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2369,7 +2627,6 @@ func TestDeleteDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2411,7 +2668,6 @@ func TestDeleteDraft_InvalidState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2463,7 +2719,6 @@ func TestDeleteDraft_ProposedState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2511,7 +2766,6 @@ func TestDeleteDraft_NoContent(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2615,7 +2869,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2641,7 +2894,6 @@ func TestValidateDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2682,7 +2934,6 @@ func TestValidateDraft_InvalidState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2743,7 +2994,6 @@ func TestValidateDraft_TemplateInfo(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2818,7 +3068,6 @@ func TestApproveDraft_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2899,7 +3148,6 @@ func TestApproveDraft_WithExistingRevisions(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2924,7 +3172,6 @@ func TestApproveDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -2965,7 +3212,6 @@ func TestApproveDraft_InvalidState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3030,7 +3276,6 @@ func TestRejectDraft_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3056,7 +3301,6 @@ func TestRejectDraft_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3097,7 +3341,6 @@ func TestRejectDraft_InvalidState(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3157,7 +3400,6 @@ func TestRejectDraft_TemplateInfo(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3226,7 +3468,6 @@ func TestCreate_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3271,7 +3512,6 @@ func TestCreate_AlreadyExists(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3331,7 +3571,6 @@ func TestCreate_TemplateInfo(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3425,7 +3664,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3458,7 +3696,6 @@ func TestGet_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3556,7 +3793,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3698,7 +3934,6 @@ func TestUpdate_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3735,7 +3970,6 @@ func TestUpdate_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3825,7 +4059,6 @@ func TestDelete_Success(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3855,7 +4088,6 @@ func TestDelete_NoRevisions(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -3911,7 +4143,6 @@ func TestDelete_OnlyPublished(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4004,7 +4235,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4037,7 +4267,6 @@ func TestList_Empty(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4124,7 +4353,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4221,7 +4449,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4256,7 +4483,6 @@ func TestGetRevisions_Empty(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4318,7 +4544,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4397,7 +4622,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4438,7 +4662,6 @@ func TestGetRevision_NotFound(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4480,7 +4703,6 @@ func TestGetRevision_InvalidRevisionID(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4569,7 +4791,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4601,7 +4822,6 @@ func TestCreateDraftFromRevision_AlreadyExists(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4648,7 +4868,6 @@ func TestCreateDraftFromRevision_InvalidRevision(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4730,7 +4949,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4761,7 +4979,6 @@ func TestValidateDependencies_FPRCreate_MissingOCloud(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4841,7 +5058,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4878,7 +5094,6 @@ func TestValidateDependencies_OCloudDelete_NoReferences(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -4955,7 +5170,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -5036,7 +5250,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -5074,7 +5287,6 @@ func TestValidateDependencies_TemplateInfoDelete_NoReferences(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -5161,7 +5373,6 @@ spec:
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
@@ -5240,7 +5451,6 @@ func TestValidateDependencies_InvalidResourceType(t *testing.T) {
 	storage := &PorchStorage{
 		httpClient:    server.Client(),
 		kubernetesURL: server.URL,
-		token:         "test-token",
 		namespace:     "default",
 		repository:    "test-repo",
 	}
