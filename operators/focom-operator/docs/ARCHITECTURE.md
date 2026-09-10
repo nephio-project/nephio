@@ -719,7 +719,8 @@ Each revision is immutable and stored permanently in Git.
 
 **In-Cluster:**
 - Service account token mounted at `/var/run/secrets/kubernetes.io/serviceaccount/token`
-- Automatic token rotation by Kubernetes
+- The client is given that path rather than its contents, so a token the kubelet
+  rotates is picked up without a restart
 
 **Local Development:**
 - Token from `KUBECONFIG` file

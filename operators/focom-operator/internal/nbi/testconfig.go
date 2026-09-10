@@ -39,7 +39,7 @@ type StorageConfig struct {
 
 // PorchConfig holds Porch-specific configuration
 type PorchConfig struct {
-	UseKubeconfig bool   `yaml:"useKubeconfig,omitempty"` // Use kubeconfig for auth (client certs; exec plugins are not yet honoured)
+	UseKubeconfig bool   `yaml:"useKubeconfig,omitempty"` // Use kubeconfig for auth (client certs, tokens and exec plugins)
 	Kubeconfig    string `yaml:"kubeconfig,omitempty"`    // Path to kubeconfig (optional, auto-detected)
 	KubernetesURL string `yaml:"kubernetesURL,omitempty"` // Optional, auto-detected from KUBECONFIG
 	Token         string `yaml:"token,omitempty"`         // Optional, auto-detected

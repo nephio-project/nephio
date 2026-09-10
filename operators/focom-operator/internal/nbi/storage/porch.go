@@ -58,6 +58,8 @@ const (
 	// defaultInClusterCAFile is where Kubernetes publishes the API server CA
 	// in a pod.
 	defaultInClusterCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	// #nosec G101 -- standard service account token path, not a credential
+	defaultInClusterTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	// defaultRequestTimeout bounds every call to the Kubernetes API.
 	defaultRequestTimeout = 30 * time.Second
 )
@@ -67,13 +69,15 @@ const (
 // in any pod with the service account credential attached, including the one a
 // test runs in, so a test asserting that the bundle is absent would otherwise
 // pass on a laptop and fail in CI.
-var inClusterCAFile = defaultInClusterCAFile
+var (
+	inClusterCAFile    = defaultInClusterCAFile
+	inClusterTokenFile = defaultInClusterTokenFile
+)
 
 // PorchStorage implements StorageInterface using Nephio Porch via REST API
 type PorchStorage struct {
 	httpClient             *http.Client
 	kubernetesURL          string        // e.g., "https://kubernetes.default.svc"
-	token                  string        // Service account token
 	namespace              string        // Namespace for PackageRevisions (usually "default")
 	repository             string        // Porch repository name (e.g., "focom-resources")
 	packageRevisionTimeout time.Duration // Timeout for waiting for PackageRevision operations (default: 30s)
@@ -87,7 +91,7 @@ type PorchStorageConfig struct {
 	Repository             string        // Porch repository name (e.g., "focom-resources")
 	CAFile                 string        // CA bundle verifying the API server (optional, defaults to KUBERNETES_CA_FILE env or the in-cluster CA)
 	InsecureSkipTLSVerify  bool          // Development only: skip API server certificate verification, exposing the token (default: false)
-	UseKubeconfig          bool          // Use kubeconfig for authentication (client certs; exec plugins are not yet honoured, see #1171)
+	UseKubeconfig          bool          // Use kubeconfig for authentication (client certs, tokens and exec plugins)
 	Kubeconfig             string        // Path to kubeconfig file (optional, defaults to KUBECONFIG env or ~/.kube/config)
 	PackageRevisionTimeout time.Duration // Timeout for waiting for PackageRevision operations (optional, default: 30s)
 }
@@ -144,7 +148,7 @@ func newPorchStorageFromKubeconfig(config *PorchStorageConfig) (*PorchStorage, e
 		return nil, err
 	}
 
-	httpClient, err := rest.HTTPClientFor(restConfig)
+	httpClient, err := newHTTPClient(restConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client from kubeconfig: %w", err)
 	}
@@ -158,7 +162,6 @@ func newPorchStorageFromKubeconfig(config *PorchStorageConfig) (*PorchStorage, e
 	return &PorchStorage{
 		httpClient:             httpClient,
 		kubernetesURL:          restConfig.Host,
-		token:                  restConfig.BearerToken, // May be empty if using exec/cert auth
 		namespace:              config.Namespace,
 		repository:             config.Repository,
 		packageRevisionTimeout: prTimeout,
@@ -167,27 +170,22 @@ func newPorchStorageFromKubeconfig(config *PorchStorageConfig) (*PorchStorage, e
 
 // newPorchStorageWithToken creates PorchStorage using token-based authentication (original method)
 func newPorchStorageWithToken(config *PorchStorageConfig) (*PorchStorage, error) {
-	// 1. Get service account token (env var, file, or kubeconfig)
-	token := config.Token
-	if token == "" {
-		var err error
-		token, err = resolveToken()
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve authentication token: %w", err)
-		}
-	}
-
-	// 2. Get the address and TLS settings (verifies the API server by default)
+	// 1. Get the address and TLS settings (verifies the API server by default)
 	restConfig, err := buildRESTConfig(config)
 	if err != nil {
 		return nil, err
+	}
+
+	// 2. Point it at the token, so that the transport signs each request
+	if err := resolveCredentials(config, restConfig); err != nil {
+		return nil, fmt.Errorf("failed to resolve authentication token: %w", err)
 	}
 
 	if err := pinConfiguredCA(restConfig); err != nil {
 		return nil, err
 	}
 
-	httpClient, err := rest.HTTPClientFor(restConfig)
+	httpClient, err := newHTTPClient(restConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
 	}
@@ -201,7 +199,6 @@ func newPorchStorageWithToken(config *PorchStorageConfig) (*PorchStorage, error)
 	return &PorchStorage{
 		httpClient:             httpClient,
 		kubernetesURL:          restConfig.Host,
-		token:                  token,
 		namespace:              config.Namespace,
 		repository:             config.Repository,
 		packageRevisionTimeout: prTimeout,
@@ -416,41 +413,54 @@ func buildRESTConfig(config *PorchStorageConfig) (*rest.Config, error) {
 	return restConfig, nil
 }
 
-// resolveToken attempts to resolve the authentication token from multiple sources
-func resolveToken() (string, error) {
-	// Try TOKEN environment variable (can be token string or file path)
-	tokenEnv := os.Getenv("TOKEN")
-	if tokenEnv != "" {
-		// Check if it's a file path or token string
-		cleanTokenPath := filepath.Clean(tokenEnv)
-		if _, err := os.Stat(cleanTokenPath); err == nil {
-			// It's a file path, read it
-			tokenBytes, err := os.ReadFile(cleanTokenPath) // #nosec G304 -- token path from trusted env var
-			if err != nil {
-				return "", fmt.Errorf("failed to read token from file %s: %w", tokenEnv, err)
-			}
-			return strings.TrimSpace(string(tokenBytes)), nil
+// resolveCredentials points restConfig at the operator's token.
+//
+// The path is preferred over its contents wherever there is one. client-go
+// re-reads a BearerTokenFile as it goes, which is what a projected service
+// account token needs: the kubelet replaces it long before it expires, and a
+// value read once at startup stops being accepted while the process keeps
+// running.
+func resolveCredentials(config *PorchStorageConfig, restConfig *rest.Config) error {
+	if config.Token != "" {
+		restConfig.BearerToken = config.Token
+		return nil
+	}
+
+	// TOKEN carries either a path or the token itself.
+	//
+	// An absolute one is a path and nothing else, so a missing file there is a
+	// mistake rather than a credential: an unmounted volume or a typo used to
+	// be sent to the API server as the token, which reads back as an opaque
+	// 401 and writes the filesystem layout into someone's request log. Only
+	// the leading separator is tested, and not any separator, because a token
+	// in standard base64 can contain one and used to work.
+	if tokenEnv := os.Getenv("TOKEN"); tokenEnv != "" {
+		cleaned := filepath.Clean(tokenEnv)
+		_, err := os.Stat(cleaned)
+		switch {
+		case err == nil:
+			restConfig.BearerTokenFile = cleaned
+		case filepath.IsAbs(tokenEnv):
+			return fmt.Errorf("TOKEN names a file that cannot be used: %w", err)
+		default:
+			restConfig.BearerToken = tokenEnv
 		}
-		// It's a token string
-		return tokenEnv, nil
+		return nil
 	}
 
-	// Try default in-cluster token path
-	tokenPath := "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec G101 -- standard k8s service account token path
-	if tokenBytes, err := os.ReadFile(tokenPath); err == nil {
-		return strings.TrimSpace(string(tokenBytes)), nil
+	if _, err := os.Stat(inClusterTokenFile); err == nil {
+		restConfig.BearerTokenFile = inClusterTokenFile
+		return nil
 	}
 
-	// Try to read from kubeconfig as fallback
 	token, err := readTokenFromKubeconfig()
 	if err != nil {
-		return "", fmt.Errorf("failed to read token from environment, file, or kubeconfig: %w", err)
+		return fmt.Errorf("failed to read token from environment, file, or kubeconfig: %w", err)
 	}
-
-	return token, nil
+	restConfig.BearerToken = token
+	return nil
 }
 
-// readTokenFromKubeconfig reads token from kubeconfig file
 func readTokenFromKubeconfig() (string, error) {
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath == "" {
@@ -524,6 +534,36 @@ func (s *PorchStorage) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
+// newHTTPClient builds the client for a rest.Config and refuses to follow
+// redirects.
+//
+// Porch is an aggregated API server, and CVE-2022-3172 is that exact shape: an
+// aggregated API server answers 3XX and the client follows it with its
+// credentials attached. Kubernetes fixed it by blocking 3XX from aggregated
+// API servers by default, and the same has to hold on this side, because the
+// token is attached by a RoundTripper now. net/http drops an Authorization
+// header the caller set when a redirect crosses hosts, but it cannot drop one
+// the transport adds on the next hop:
+//
+//	header set by the caller,  redirected to another host -> ""
+//	header added by transport, redirected to another host -> "Bearer <token>"
+func newHTTPClient(restConfig *rest.Config) (*http.Client, error) {
+	httpClient, err := rest.HTTPClientFor(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	if httpClient == http.DefaultClient {
+		// Only returned for a config with no TLS, no credentials and no
+		// timeout, none of which this operator builds. Setting CheckRedirect
+		// on it would reach every other user of the process.
+		return nil, errors.New("refusing to configure the shared HTTP client")
+	}
+	httpClient.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		return fmt.Errorf("refusing to follow a redirect to %s", req.URL.Redacted())
+	}
+	return httpClient, nil
+}
+
 // makeRequest creates and executes an HTTP request to Kubernetes API
 func (s *PorchStorage) makeRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
 	var reqBody []byte
@@ -553,7 +593,9 @@ func (s *PorchStorage) makeRequest(ctx context.Context, method, path string, bod
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.token))
+	// Authorization is left to the transport. Both of client-go's credential
+	// wrappers return early when the header is already set, so writing it here
+	// is what suppressed them.
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
