@@ -161,6 +161,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, errors.Wrap(err, "cannot get resourceList")
 		}
 
+		originalPaths := map[string]struct{}{}
+		for _, o := range rl.Items {
+			if path := o.GetAnnotation(kioutil.PathAnnotation); path != "" {
+				originalPaths[path] = struct{}{}
+			}
+		}
+
 		if porchcondition.HasSpecificTypeConditions(pr.Status.Conditions, kptfilelibv1.GetConditionType(&ipamFor)) {
 			// run the function SDK
 			_, err = ipamkrmfn.Process(rl)
@@ -208,7 +215,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return ctrl.Result{}, nil
 		}
 
+		survivingPaths := map[string]struct{}{}
+
 		for _, o := range rl.Items {
+			if path := o.GetAnnotation(kioutil.PathAnnotation); path != "" {
+				survivingPaths[path] = struct{}{}
+			}
+
 			// TBD what if we create new resources
 			// update only the resource we act upon
 			if o.GetAPIVersion() == ipamFor.APIVersion && o.GetKind() == ipamFor.Kind {
@@ -293,6 +306,8 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			}
 		}
 
+		syncDeletedResources(prr, originalPaths, survivingPaths)
+
 		kptfile := rl.Items.GetRootKptfile()
 		if kptfile == nil {
 			r.recorder.Event(pr, corev1.EventTypeWarning, "ReconcileError", "mandatory Kptfile is missing")
@@ -327,4 +342,12 @@ func (r *reconciler) getClusterName(ctx context.Context, workloadClusterObjs fn.
 		clusterName = workloadCluster.Spec.ClusterName
 	}
 	return clusterName
+}
+
+func syncDeletedResources(prr *porchv1alpha1.PackageRevisionResources, originalPaths, survivingPaths map[string]struct{}) {
+	for path := range originalPaths {
+		if _, exists := survivingPaths[path]; !exists {
+			delete(prr.Spec.Resources, path)
+		}
+	}
 }
