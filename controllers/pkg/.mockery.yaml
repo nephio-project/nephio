@@ -1,10 +1,10 @@
 packages:
-  github.com/nephio-project/nephio/controllers/pkg/giteaclient:
+  github.com/nephio-project/nephio/controllers/pkg/git:
     interfaces:
-      GiteaClient:
+      Client:
         config:
-          dir: "mocks/external/{{ .InterfaceName | lower }}"
-          filename: "{{ .InterfaceName | lower }}.go"
+          dir: "mocks/external/gitclient"
+          filename: "gitclient.go"
   sigs.k8s.io/controller-runtime/pkg/client:
     interfaces:
       Client:

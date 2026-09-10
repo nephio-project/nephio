@@ -7,23 +7,28 @@ replace (
 	github.com/nephio-project/nephio/krm-functions/ipam-fn => ../../krm-functions/ipam-fn
 	github.com/nephio-project/nephio/krm-functions/lib => ../../krm-functions/lib
 	github.com/nephio-project/nephio/krm-functions/vlan-fn => ../../krm-functions/vlan-fn
+	// Pin k8s-ipam to the older version: nephio-project/api v1.6.1 requires the newer k8s-ipam
+	// but the newer version removed constants (NephioNodeNameKey, NephioInterfaceNameKey) used
+	// by henderiw-nephio/network and local code. The resource/ipam/v1alpha1 and vlan/v1alpha1
+	// packages (the only ones used by nephio-project/api) are identical between versions.
+	github.com/nokia/k8s-ipam v0.0.4-0.20241009045647-de66a47ea16c => github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
 )
 
 require (
 	code.gitea.io/sdk/gitea v0.22.1
 	github.com/go-logr/logr v1.4.3
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/go-cmp v0.7.0
+	github.com/google/go-github/v66 v66.0.0
 	github.com/henderiw-nephio/network v0.0.0-20231206051529-4287dc43f8a6
 	github.com/kptdev/kpt v1.0.0-beta.60
 	github.com/kptdev/krm-functions-sdk/go/fn v1.0.1
-	github.com/nephio-project/api v1.0.1-0.20250218114915-854faaf69fd0 //v4.0.0
+	github.com/nephio-project/api v1.6.1-0.20260908111441-3730c901c727
 	github.com/nephio-project/nephio/krm-functions/configinject-fn v0.0.0-00010101000000-000000000000
-	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/krm-functions/lib v0.0.0-20251208095831-a29054b9701f
-	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
 	github.com/nephio-project/nephio/testing/mockeryutils v0.0.0-20240112001535-96b08ff4acb3
 	github.com/nephio-project/porch v1.5.6-0.20260126092749-2f95846f69f9
-	github.com/nokia/k8s-ipam v0.0.4-0.20230628092530-8a292aec80a4
+	github.com/nokia/k8s-ipam v0.0.4-0.20241009045647-de66a47ea16c
 	github.com/openconfig/ygot v0.28.3
 	github.com/pkg/errors v0.9.1
 	github.com/srl-labs/ygotsrl/v22 v22.11.1
@@ -32,11 +37,16 @@ require (
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/cluster-api v1.8.3
 	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/kustomize/kyaml v0.21.0
 	sigs.k8s.io/yaml v1.6.0
+)
+
+require (
+	github.com/nephio-project/nephio/krm-functions/ipam-fn v0.0.0-00010101000000-000000000000
+	github.com/nephio-project/nephio/krm-functions/vlan-fn v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -70,6 +80,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hansthienpondt/nipam v0.0.5 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect

@@ -14,14 +14,16 @@
  limitations under the License.
 */
 
-package giteaclient
+package github
 
 import (
 	"context"
-	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"reflect"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"testing"
+
+	git "github.com/nephio-project/nephio/controllers/pkg/git"
+	"github.com/nephio-project/nephio/controllers/pkg/resource"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func TestClient(t *testing.T) {
@@ -34,7 +36,7 @@ func TestClient(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    GiteaClient
+		want    git.Client
 		wantErr bool
 	}{
 
@@ -59,7 +61,7 @@ func TestClient(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetClient() got = %v, want %v", got, tt.want)
+				t.Errorf("GetClient() = %v, want %v", got, tt.want)
 			}
 		})
 	}

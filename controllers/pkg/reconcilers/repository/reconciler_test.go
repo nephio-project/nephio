@@ -20,27 +20,28 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/nephio-project/nephio/controllers/pkg/giteaclient"
-	giteaclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/giteaclient"
+	git "github.com/nephio-project/nephio/controllers/pkg/git"
+	"github.com/nephio-project/nephio/controllers/pkg/git/types"
+	gitclientmocks "github.com/nephio-project/nephio/controllers/pkg/mocks/external/gitclient"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"code.gitea.io/sdk/gitea"
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
 )
 
 type fields struct {
 	APIPatchingApplicator resource.APIPatchingApplicator
-	giteaClient           giteaclient.GiteaClient
+	gitClients            map[git.ProviderType]git.Client
 	finalizer             *resource.APIFinalizer
 	l                     logr.Logger
 }
+
 type args struct {
-	ctx         context.Context
-	giteaClient giteaclient.GiteaClient
-	cr          *infrav1alpha1.Repository
+	ctx       context.Context
+	gitClient git.Client
+	cr        *infrav1alpha1.Repository
 }
 type repoTest struct {
 	name    string
@@ -70,9 +71,9 @@ func TestUpsertRepo(t *testing.T) {
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil, log.FromContext(context.Background())},
 			args:   args{nil, nil, &infrav1alpha1.Repository{Status: infrav1alpha1.RepositoryStatus{}}},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
-				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "types.EditRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -91,9 +92,9 @@ func TestUpsertRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
-				{MethodName: "EditRepo", ArgType: []string{"string", "string", "gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
+				{MethodName: "EditRepo", ArgType: []string{"string", "string", "types.EditRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -106,10 +107,10 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
 				{MethodName: "EditRepo", ArgType: []string{"string", "string",
-					"gitea.EditRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("error updating repo")}},
+					"types.EditRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, fmt.Errorf("error updating repo")}},
 			},
 			wantErr: true,
 		},
@@ -133,9 +134,9 @@ func TestUpsertRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"types.CreateRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -148,9 +149,9 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"types.CreateRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, nil}},
 			},
 			wantErr: false,
 		},
@@ -163,9 +164,9 @@ func TestUpsertRepo(t *testing.T) {
 				&infrav1alpha1.Repository{},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo does not exist")}},
-				{MethodName: "CreateRepo", ArgType: []string{"gitea.CreateRepoOption"}, RetArgList: []interface{}{&gitea.Repository{}, nil, fmt.Errorf("repo creation fails")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "GetRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Repository{}, nil, fmt.Errorf("repo does not exist")}},
+				{MethodName: "CreateRepo", ArgType: []string{"types.CreateRepoOption"}, RetArgList: []interface{}{&types.Repository{}, nil, fmt.Errorf("repo creation fails")}},
 			},
 			wantErr: true,
 		}}
@@ -173,13 +174,13 @@ func TestUpsertRepo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &reconciler{
 				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
-				giteaClient:           tt.fields.giteaClient,
+				gitClients:            tt.fields.gitClients,
 				finalizer:             tt.fields.finalizer,
 			}
 
 			initMockeryMocks(&tt)
 
-			if err := r.upsertRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
+			if err := r.upsertRepo(tt.args.ctx, tt.args.gitClient, tt.args.cr); (err != nil) != tt.wantErr {
 				t.Errorf("upsertRepo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -201,8 +202,8 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, nil, nil}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Response{}, nil, nil}},
 			},
 			wantErr: false,
 		}, {
@@ -218,7 +219,7 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, fmt.Errorf("Error getting User Information")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, fmt.Errorf("Error getting User Information")}},
 			},
 			wantErr: true,
 		}, {
@@ -234,8 +235,8 @@ func TestDeleteRepo(t *testing.T) {
 				},
 			},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&gitea.User{UserName: "gitea"}, nil, nil}},
-				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&gitea.Response{}, fmt.Errorf("Error deleting repo")}},
+				{MethodName: "GetMyUserInfo", ArgType: []string{}, RetArgList: []interface{}{&types.User{UserName: "gitea"}, nil, nil}},
+				{MethodName: "DeleteRepo", ArgType: []string{"string", "string"}, RetArgList: []interface{}{&types.Response{}, fmt.Errorf("Error deleting repo")}},
 			},
 			wantErr: true,
 		}}
@@ -243,13 +244,13 @@ func TestDeleteRepo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &reconciler{
 				APIPatchingApplicator: tt.fields.APIPatchingApplicator,
-				giteaClient:           tt.fields.giteaClient,
+				gitClients:            tt.fields.gitClients,
 				finalizer:             tt.fields.finalizer,
 			}
 
 			initMockeryMocks(&tt)
 
-			if err := r.deleteRepo(tt.args.ctx, tt.args.giteaClient, tt.args.cr); (err != nil) != tt.wantErr {
+			if err := r.deleteRepo(tt.args.ctx, tt.args.gitClient, tt.args.cr); (err != nil) != tt.wantErr {
 				t.Errorf("deleteRepo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -257,8 +258,9 @@ func TestDeleteRepo(t *testing.T) {
 }
 
 func initMockeryMocks(tt *repoTest) {
-	mockGClient := new(giteaclientmocks.MockGiteaClient)
-	tt.args.giteaClient = mockGClient
-	tt.fields.giteaClient = mockGClient
+	mockGClient := new(gitclientmocks.MockClient)
+	tt.args.gitClient = mockGClient
+	tt.fields.gitClients = make(map[git.ProviderType]git.Client)
+	tt.fields.gitClients[git.ProviderGitea] = mockGClient
 	mockeryutils.InitMocks(&mockGClient.Mock, tt.mocks)
 }
