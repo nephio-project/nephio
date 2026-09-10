@@ -13,7 +13,7 @@ jobs:
       krm-functions: ${{ steps.filter.outputs.krm-functions }}
       gitops-tools: ${{ steps.filter.outputs.gitops-tools }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: dorny/paths-filter@v4
       id: filter
       with:
@@ -34,7 +34,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build or skip
       run: |
         if [[ "${{ needs.changes.outputs.nephio-operator }}" == "true" ]]; then
@@ -48,7 +48,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build or skip
       run: |
         if [[ "${{ needs.changes.outputs.o2ims-operator }}" == "true" ]]; then
@@ -62,7 +62,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build or skip
       run: |
         if [[ "${{ needs.changes.outputs.focom-operator }}" == "true" ]]; then
@@ -76,7 +76,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build or skip
       run: |
         if [[ "${{ needs.changes.outputs.krm-functions }}" == "true" ]]; then
@@ -92,7 +92,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Build or skip
       run: |
         if [[ "${{ needs.changes.outputs.gitops-tools }}" == "true" ]]; then
