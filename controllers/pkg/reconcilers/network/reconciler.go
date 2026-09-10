@@ -52,7 +52,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 func init() {
@@ -77,6 +80,7 @@ const (
 //+kubebuilder:rbac:groups=config.resource.nephio.org,resources=networks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=inv.nephio.org,resources=endpoints,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=inv.nephio.org,resources=endpoints/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=inv.nephio.org,resources=nodes,verbs=get;list;watch
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c interface{}) (map[schema.GroupVersionKind]chan event.GenericEvent, error) {
@@ -116,7 +120,12 @@ func (r *reconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, c i
 		Owns(&vlanv1alpha1.VLANIndex{}).
 		Owns(&configv1alpha1.Network{}).
 		Watches(&invv1alpha1.Endpoint{}, &endpointEventHandler{client: mgr.GetClient()}).
-		Watches(&invv1alpha1.Endpoint{}, &nodeEventHandler{client: mgr.GetClient()}).
+		// WatchesRawSource with a typed source rather than Watches: source.Kind
+		// binds the watched object and the handler to one type parameter, so
+		// pairing this handler with another Kind stops compiling. Pairing them
+		// by hand is how every Node event ended up being discarded.
+		WatchesRawSource(source.Kind(mgr.GetCache(), &invv1alpha1.Node{},
+			handler.TypedEventHandler[*invv1alpha1.Node, reconcile.Request](&nodeEventHandler{client: mgr.GetClient()}))).
 		Complete(r)
 
 }
