@@ -141,7 +141,7 @@ unit-tests: fmt vet ## Run unit tests only (no external dependencies required).
 		./internal/nbi/models/ \
 		./internal/nbi/validation/
 	@go test -v -coverprofile=coverage-storage.out ./internal/nbi/storage/ \
-		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile"
+		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile|TestPorchStorageTLS"
 	@go test -v -coverprofile=coverage-controller.out \
 		./internal/controller/ -run TestValidateTemplateAlignment || echo "Controller tests skipped"
 	@echo ""
@@ -163,7 +163,7 @@ ci-tests: fmt vet ## Run the same tests as CI pipeline (unit tests only, fast ex
 		./internal/nbi/models/ \
 		./internal/nbi/validation/
 	@go test -v -coverprofile=coverage-storage.out ./internal/nbi/storage/ \
-		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile"
+		-run "TestInMemory|TestCreateResourceYAML|TestParseResourceYAML|TestRoundTrip|TestExtractResourceID|TestGenerateWorkspaceName|TestSetResource|TestConvertTo|TestCreateKptfile|TestPorchStorageTLS"
 	@go test -v -coverprofile=coverage-controller.out \
 		./internal/controller/ -run TestValidateTemplateAlignment || echo "Controller tests skipped"
 	@echo ""

@@ -284,11 +284,16 @@ NBI_STAGE=2                        # Stage 2 (Porch)
 **Optional (with defaults):**
 ```bash
 FOCOM_NAMESPACE=focom-system       # Default namespace for FOCOM resources (default: focom-system)
-KUBERNETES_BASE_URL=https://kubernetes.default.svc  # K8s API URL (auto-detected)
-TOKEN=/var/run/secrets/kubernetes.io/serviceaccount/token  # Auth token (auto-detected)
 PORCH_NAMESPACE=default            # Namespace for PackageRevisions (default: default)
 PORCH_REPOSITORY=focom-resources   # Porch repository name (default: focom-resources)
 ```
+
+In a pod, leave the API server address, token and CA unset: they are taken from
+the service account volume and the address Kubernetes advertises. Setting
+`KUBERNETES_BASE_URL` turns an auto-detected value into a fixed one, and the
+address it must then match is the only one the API server certificate is
+guaranteed to cover. `KUBERNETES_BASE_URL` must be an `https://` URL; a
+plaintext endpoint is refused, because the token is sent with every request.
 
 **Note:** The `FOCOM_NAMESPACE` environment variable sets the default namespace for all FOCOM resources (OCloud, TemplateInfo, FocomProvisioningRequest). This eliminates the need to specify namespace in API request bodies.
 
@@ -1079,8 +1084,8 @@ kubectl scale deployment focom-operator-controller-manager --replicas=3 -n focom
 ### Security
 
 ```bash
-# Enable TLS verification
-# Set in PorchStorageConfig: HTTPSVerify: true
+# TLS verification of the Kubernetes API server is on by default.
+# Never set UNSAFE_SKIP_TLS_VERIFY=true outside development.
 
 # Use network policies
 kubectl apply -f config/network-policies/
