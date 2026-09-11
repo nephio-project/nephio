@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -203,16 +204,65 @@ func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gittype
 	}, &gittypes.Response{Response: resp.Response}, nil
 }
 
+// wrapResponse survives a nil response, which the SDK returns when it rejects
+// the argument before making a request, and on a transport error.
+func wrapResponse(resp *gitea.Response) *gittypes.Response {
+	if resp == nil {
+		return nil
+	}
+	return &gittypes.Response{Response: resp.Response}
+}
+
+// giteaReadsNameAsID reports whether Gitea's token endpoints resolve name as a
+// token ID rather than as a name. They parse the path segment with
+// ParseInt(s, 0, 64) and look it up as a name only when that yields zero, so
+// base 0 pulls in "007" and "0x22" alongside the decimal names.
+func giteaReadsNameAsID(name string) bool {
+	id, err := strconv.ParseInt(name, 0, 64)
+	return err == nil && id != 0
+}
+
+// DeleteAccessToken deletes a token by name or by ID. The SDK has accepted
+// either since Gitea 1.13, so narrowing this to an ID left the reconciler,
+// which holds the name, with nothing it could pass.
 func (r *gc) DeleteAccessToken(value interface{}) (*gittypes.Response, error) {
-	tokenID, ok := value.(int64)
-	if !ok {
-		return nil, fmt.Errorf("DeleteAccessToken: value must be int64 (token ID)")
+	switch v := value.(type) {
+	case int64:
+	case string:
+		// Sending a name Gitea reads as an ID deletes whichever token holds
+		// that ID and answers 204, so resolve it to the right one first.
+		if giteaReadsNameAsID(v) {
+			return r.deleteAccessTokenNamed(v)
+		}
+	default:
+		return nil, fmt.Errorf("DeleteAccessToken: value must be a token name or an int64 id, got %T", value)
 	}
-	resp, err := r.giteaClient.DeleteAccessToken(tokenID)
+	resp, err := r.giteaClient.DeleteAccessToken(value)
+	return wrapResponse(resp), err
+}
+
+// deleteAccessTokenNamed deletes the token carrying name, for the names a path
+// segment cannot express.
+func (r *gc) deleteAccessTokenNamed(name string) (*gittypes.Response, error) {
+	// Page -1 disables pagination. A page holds 30 tokens by default and the
+	// one being deleted may be past it.
+	tokens, resp, err := r.giteaClient.ListAccessTokens(gitea.ListAccessTokensOptions{
+		ListOptions: gitea.ListOptions{Page: -1},
+	})
 	if err != nil {
-		return &gittypes.Response{Response: resp.Response}, err
+		return wrapResponse(resp), fmt.Errorf("finding the id of token %q: %w", name, err)
 	}
-	return &gittypes.Response{Response: resp.Response}, nil
+
+	for _, token := range tokens {
+		if token.Name == name {
+			resp, err := r.giteaClient.DeleteAccessToken(token.ID)
+			return wrapResponse(resp), err
+		}
+	}
+
+	// Nothing carries the name, which is the state deletion asks for. Gitea
+	// refuses a second token of an existing name, so one pass settles it.
+	return nil, nil
 }
 
 func (r *gc) ListAccessTokens(opts gittypes.ListAccessTokensOptions) ([]*gittypes.AccessToken, *gittypes.Response, error) {
