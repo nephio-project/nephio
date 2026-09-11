@@ -17,6 +17,7 @@ package token
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	infrav1alpha1 "github.com/nephio-project/api/infra/v1alpha1"
@@ -28,6 +29,7 @@ import (
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/nephio-project/nephio/testing/mockeryutils"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -51,30 +53,62 @@ type tokenTests struct {
 }
 
 func TestDeleteToken(t *testing.T) {
+	named := func(name string) *infrav1alpha1.Token {
+		return &infrav1alpha1.Token{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	}
+	status := func(code int) *types.Response {
+		return &types.Response{Response: &http.Response{StatusCode: code}}
+	}
+
 	tests := []tokenTests{
 		{
-			name:   "Delete Access token reports error",
+			// The name, not an id: Gitea resolves either from the same path
+			// segment, and the name is what the reconciler has.
+			name:   "the token is deleted by name",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
-			args:   args{nil, nil, &infrav1alpha1.Token{}},
+			args:   args{nil, nil, named("a-token")},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "DeleteAccessToken",
-					ArgType:    []string{"string"},
-					RetArgList: []interface{}{nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")}},
+				{MethodName: "DeleteAccessToken", ArgType: []string{"string"},
+					RetArgList: []interface{}{status(http.StatusNoContent), nil}},
+			},
+			wantErr: false,
+		},
+		{
+			// Deleting the same Token twice, or one removed on the server,
+			// has already reached the state deletion is asking for.
+			name:   "a 404 is the state deletion wanted",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
+			args:   args{nil, nil, named("a-token")},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "DeleteAccessToken", ArgType: []string{"string"},
+					RetArgList: []interface{}{status(http.StatusNotFound), fmt.Errorf("The target couldn't be found.")}},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "any other failure is reported",
+			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
+			args:   args{nil, nil, named("a-token")},
+			mocks: []mockeryutils.MockHelper{
+				{MethodName: "DeleteAccessToken", ArgType: []string{"string"},
+					RetArgList: []interface{}{status(http.StatusForbidden), fmt.Errorf("forbidden")}},
 			},
 			wantErr: true,
 		},
 		{
-			name:   "Delete Access token success",
+			// The SDK returns no response when it refuses the argument, and
+			// none on a transport error either.
+			name:   "a failure with no response is reported rather than dereferenced",
 			fields: fields{resource.NewAPIPatchingApplicator(nil), nil, nil},
-			args:   args{nil, nil, &infrav1alpha1.Token{}},
+			args:   args{nil, nil, named("a-token")},
 			mocks: []mockeryutils.MockHelper{
-				{MethodName: "DeleteAccessToken",
-					ArgType:    []string{"string"},
-					RetArgList: []interface{}{nil, nil}},
+				{MethodName: "DeleteAccessToken", ArgType: []string{"string"},
+					RetArgList: []interface{}{nil, fmt.Errorf("dial tcp: connection refused")}},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &reconciler{
@@ -85,9 +119,12 @@ func TestDeleteToken(t *testing.T) {
 
 			initMockeryMocks(&tt)
 
-			if err := r.deleteToken(tt.args.ctx, tt.args.gitClient, tt.args.cr); (err != nil) != tt.wantErr {
-				t.Errorf("deleteToken() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			require.NotPanics(t, func() {
+				if err := r.deleteToken(tt.args.ctx, tt.args.gitClient, tt.args.cr); (err != nil) != tt.wantErr {
+					t.Errorf("deleteToken() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			})
+			tt.args.gitClient.(*gitclientmocks.MockClient).AssertCalled(t, "DeleteAccessToken", "a-token")
 		})
 	}
 }
