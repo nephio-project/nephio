@@ -50,7 +50,7 @@ jobs:
         make docker-build
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@23acc5c183826b7a8a97bce3cecc52db901f8251 # v3.25.10
+      uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
       with:
         category: "/language:${{matrix.language}}"
 
