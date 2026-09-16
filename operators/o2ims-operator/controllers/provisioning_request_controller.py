@@ -269,9 +269,11 @@ def cluster_creation_status(
 def provisioned_resource_set(cluster: dict) -> dict:
     """Return the resources this cluster actually stands for.
 
-    The identifiers are read off the provisioned objects. An O-Cloud inventory
-    identifier this operator has not been given is left out rather than
-    invented: a random one changes on every observation and traces to nothing.
+    The node cluster id is the Cluster's own uid, which is always there. The
+    infrastructure ids are read off spec.infrastructureRef, which Cluster API
+    does not fill in, so in practice that list is empty until this operator is
+    given a real inventory mapping. Empty is the honest answer: a fresh uuid4
+    changed on every observation and traced to nothing.
     """
     metadata = cluster.get("metadata") or {}
     infrastructure = (cluster.get("spec") or {}).get("infrastructureRef") or {}
