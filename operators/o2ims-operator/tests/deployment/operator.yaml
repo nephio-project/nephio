@@ -124,6 +124,15 @@ spec:
             port: health
           initialDelaySeconds: 15
           periodSeconds: 20
+        # kopf answers this only once it is running, and the handler behind it
+        # reports whether the northbound API is still being served, so ready
+        # means more than a socket having been bound at some point.
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 10
         env:
           - name: 'UPSTREAM_PKG_REPO'
             value: 'catalog-infra-capi'

@@ -202,3 +202,16 @@ def create_fn(spec, logger, patch: kopf.Patch, memo: kopf.Memo, body, **_):
 def get_current_timestamp(**_):
     """Answer the liveness probe."""
     return datetime.now(timezone.utc).isoformat()
+
+
+@kopf.on.probe(id="northbound")
+def northbound_state(**_):
+    """Say whether the northbound API is being served.
+
+    kopf answers this endpoint only once it is running, so reaching it at all
+    says the operator started. This says the other half: that the thread
+    serving the API is still alive, rather than that its port was bound once.
+    """
+    if _server_thread and _server_thread.is_alive():
+        return "serving"
+    return "stopped"

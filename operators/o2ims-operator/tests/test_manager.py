@@ -133,6 +133,21 @@ def test_a_fulfilled_request_is_not_driven_again(steps):
     assert "provisioningStatus" not in patch.status
 
 
+def test_the_probe_says_whether_the_northbound_api_is_serving(monkeypatch):
+    """Reaching the endpoint says kopf started; this says the API is up."""
+    assert manager.northbound_state() == "stopped"
+
+    monkeypatch.setattr(manager, "NBI_PORT", 0)
+    logger = Mock()
+    manager.start_northbound(logger=logger)
+    try:
+        assert manager.northbound_state() == "serving"
+    finally:
+        manager.stop_northbound(logger=logger)
+
+    assert manager.northbound_state() == "stopped"
+
+
 def test_the_probe_answers_with_a_timestamp():
     """datetime.datetime.now on a "from datetime import datetime" import
     raised AttributeError, so the probe never answered."""
