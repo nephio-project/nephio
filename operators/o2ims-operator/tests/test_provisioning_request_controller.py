@@ -135,6 +135,27 @@ def test_a_retryable_failure_stays_progressing(monkeypatch):
     outcome = rendering()
     assert outcome["provisioningState"] == "progressing"
     assert outcome["retryable"] is True
+    # The message is read alongside the state, so it cannot say the opposite.
+    assert "failed" not in outcome["provisioningMessage"]
+
+
+@pytest.mark.parametrize("started", [
+    "2026-09-16T00:00:00.123456Z",   # sub-second precision
+    "2026-09-16T00:00:00+00:00",     # an offset instead of Z
+])
+def test_a_start_time_in_another_shape_still_bounds_the_budget(monkeypatch, started):
+    """strptime with one format string read none of these, and falling back to
+    now hands out the fresh budget this is here to prevent."""
+    old = (datetime.now(timezone.utc) - timedelta(hours=2))
+    started = old.isoformat().replace("+00:00", started[19:])
+    outcome = observation(started=started, timeout=1800)
+    assert outcome["provisioningStatus"]["provisioningState"] == "failed"
+
+
+def test_a_start_time_that_cannot_be_read_says_so(monkeypatch):
+    logger = Mock()
+    controller.deadline_from("not a timestamp", 1800, logger=logger)
+    logger.warning.assert_called_once()
 
 
 def test_a_logger_that_was_not_given_does_not_break_the_error_path(monkeypatch):

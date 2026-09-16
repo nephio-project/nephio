@@ -476,28 +476,28 @@ def api_call(method: str, url: str, *, operation: str, body: dict = None,
             operation=operation, reason="config",
         ) from error
 
-    session = requests.Session()
-    session.trust_env = TRUST_ENVIRONMENT
-    try:
-        response = session.request(
-            method, url,
-            headers=headers,
-            json=body,
-            verify=TLS_VERIFY,
-            timeout=API_TIMEOUT,
-            allow_redirects=False,
-        )
-    except requests.exceptions.RequestException as error:
-        raise ApiError(
-            f"{operation}: cannot reach the API server "
-            f"({type(error).__name__})",
-            operation=operation, reason="transport", retryable=True,
-            write_outcome_unknown=writing,
-        ) from error
-    finally:
-        session.close()
-    return read_api_response(response, operation=operation, writing=writing,
-                             logger=logger)
+    # The answer is read inside the session: closing it first happens to work
+    # while the body is preloaded, and stops working the moment it is not.
+    with requests.Session() as session:
+        session.trust_env = TRUST_ENVIRONMENT
+        try:
+            response = session.request(
+                method, url,
+                headers=headers,
+                json=body,
+                verify=TLS_VERIFY,
+                timeout=API_TIMEOUT,
+                allow_redirects=False,
+            )
+        except requests.exceptions.RequestException as error:
+            raise ApiError(
+                f"{operation}: cannot reach the API server "
+                f"({type(error).__name__})",
+                operation=operation, reason="transport", retryable=True,
+                write_outcome_unknown=writing,
+            ) from error
+        return read_api_response(response, operation=operation,
+                                 writing=writing, logger=logger)
 
 
 # Annotations that say which ProvisioningRequest a PackageVariant belongs to.

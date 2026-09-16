@@ -52,7 +52,9 @@ PHASES = {
 
 # metadata.name carries the SMO's provisioning request id, so the id has to be
 # one. Rewriting it to fit would hand back an id the caller cannot use again.
-KUBERNETES_NAME = re.compile(r"\A[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?\Z")
+LABEL = r"[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+KUBERNETES_NAME = re.compile(rf"\A{LABEL}(\.{LABEL})*\Z")
+KUBERNETES_NAME_LIMIT = 253
 
 _api = None
 
@@ -76,6 +78,26 @@ def failure(message: str, code: int, phase: str = "FAILED"):
     return jsonify({"status": {
         "updateTime": now(), "message": message, "provisioningPhase": phase,
     }}), code
+
+
+def answer_for(error, doing: str):
+    """Map what the API server said onto what the caller should be told.
+
+    A rejected object is the caller's to fix and a missing permission is not,
+    so they cannot share one status.
+    """
+    status = getattr(error, "status", None)
+    reason = getattr(error, "reason", "") or ""
+    if status in (400, 422):
+        return failure(f"the provisioning request was rejected: {reason}", 400)
+    if status == 409:
+        return failure(f"{doing}: it already exists", 409)
+    if status == 404:
+        return failure(f"{doing}: it was not found", 404)
+    if status == 429:
+        return failure(f"{doing}: the API server is rate limiting", 503)
+    LOGGER.error("%s failed: %s %s", doing, status, reason)
+    return failure(f"{doing} failed: {reason}", 502)
 
 
 def provisioning_request_info(resource: dict) -> dict:
@@ -119,6 +141,7 @@ def trigger_action():
 
     request_id = data.get("provisioningRequestId")
     if (not isinstance(request_id, str)
+            or len(request_id) > KUBERNETES_NAME_LIMIT
             or not KUBERNETES_NAME.match(request_id)):
         return failure(
             "provisioningRequestId must be a lowercase RFC 1123 subdomain "
@@ -146,13 +169,7 @@ def trigger_action():
             _request_timeout=API_TIMEOUT,
         )
     except client.exceptions.ApiException as error:
-        if error.status == 409:
-            return failure(
-                f"provisioning request {request_id} already exists", 409)
-        LOGGER.error("creating provisioning request %s failed: %s",
-                     request_id, error.reason)
-        return failure(
-            f"creating the provisioning request failed: {error.reason}", 502)
+        return answer_for(error, f"creating provisioning request {request_id}")
 
     return jsonify(provisioning_request_info(created)), 201
 
@@ -166,9 +183,7 @@ def fetch_status():
             _request_timeout=API_TIMEOUT,
         )
     except client.exceptions.ApiException as error:
-        LOGGER.error("listing provisioning requests failed: %s", error.reason)
-        return failure(
-            f"listing provisioning requests failed: {error.reason}", 502)
+        return answer_for(error, "listing provisioning requests")
 
     items = answer.get("items") if isinstance(answer, dict) else None
     if not isinstance(items, list):
@@ -188,12 +203,6 @@ def fetch_one_status(request_id: str):
             _request_timeout=API_TIMEOUT,
         )
     except client.exceptions.ApiException as error:
-        if error.status == 404:
-            return failure(
-                f"provisioning request {request_id} was not found", 404)
-        LOGGER.error("reading provisioning request %s failed: %s",
-                     request_id, error.reason)
-        return failure(
-            f"reading the provisioning request failed: {error.reason}", 502)
+        return answer_for(error, f"reading provisioning request {request_id}")
 
     return jsonify(provisioning_request_info(resource)), 200

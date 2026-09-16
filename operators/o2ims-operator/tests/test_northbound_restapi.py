@@ -191,3 +191,39 @@ def test_one_request_can_be_read_by_its_id(api, http):
 def test_an_unknown_id_is_not_found(api, http):
     api.get_cluster_custom_object.side_effect = api_exception(404, "NotFound")
     assert http.get(f"{COLLECTION}/edge-99").status_code == 404
+
+
+# What the API server said decides. Answering every one of these the same way
+# tells a caller the server broke when the request was the thing at fault.
+@pytest.mark.parametrize("from_api, to_caller", [
+    (422, 400),
+    (400, 400),
+    (409, 409),
+    (429, 503),
+    (403, 502),
+    (500, 502),
+])
+def test_the_api_server_s_answer_decides_the_status(api, http, from_api, to_caller):
+    api.create_cluster_custom_object.side_effect = api_exception(from_api, "no")
+    assert http.post(COLLECTION, json=REQUEST).status_code == to_caller
+
+
+@pytest.mark.parametrize("request_id", [
+    "a.-b",                  # a label starting with a hyphen
+    "a..b",                  # an empty label
+    "A-1",                   # upper case
+    "a_b",                   # underscore
+    "a" * 254,               # past the length a name may be
+])
+def test_an_id_the_api_server_would_reject_is_refused_here(api, http, request_id):
+    """Sending it on would come back 422 and read as the server's fault."""
+    answer = http.post(COLLECTION, json={**REQUEST, "provisioningRequestId": request_id})
+    assert answer.status_code == 400
+    api.create_cluster_custom_object.assert_not_called()
+
+
+@pytest.mark.parametrize("request_id", ["edge-01", "a", "a.b.c", "a" * 253])
+def test_an_id_the_api_server_would_take_is_accepted(api, http, request_id):
+    api.create_cluster_custom_object.return_value = provisioning_request(request_id)
+    assert http.post(COLLECTION, json={**REQUEST,
+                                       "provisioningRequestId": request_id}).status_code == 201

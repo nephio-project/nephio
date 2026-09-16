@@ -59,22 +59,30 @@ def outcome(state: str, message: str, retryable: bool = False,
     }
 
 
-def deadline_from(started: str = None, budget: int = None) -> datetime:
+def deadline_from(started: str = None, budget: int = None,
+                  logger=None) -> datetime:
     """Return the moment this request runs out of time.
 
     The deadline is derived from when the request started, not from how many
     times it has been looked at, so a restart continues the same budget
-    instead of being granted a fresh one.
+    instead of being granted a fresh one. A timestamp that cannot be read
+    falls back to now, which does grant a fresh one, so it says so rather
+    than quietly undoing that.
     """
     budget = CREATION_TIMEOUT if budget is None else budget
+    begin = utc_now()
     if started:
         try:
-            begin = datetime.strptime(started, TIME_FORMAT).replace(
-                tzinfo=timezone.utc)
+            # fromisoformat, not strptime: it takes the trailing Z and the
+            # fractional seconds a timestamp may carry, which the operator's
+            # own format string does not.
+            begin = datetime.fromisoformat(started)
+            if begin.tzinfo is None:
+                begin = begin.replace(tzinfo=timezone.utc)
         except (TypeError, ValueError):
-            begin = utc_now()
-    else:
-        begin = utc_now()
+            (logger or LOGGER).warning(
+                "cannot read %r as a start time, so this request is being "
+                "given a fresh budget", started)
     return begin + timedelta(seconds=budget)
 
 
@@ -168,9 +176,11 @@ def cluster_creation_request(
     except ApiError as error:
         log.error("ensuring the package variant for %s failed: %s",
                   request_name, error)
-        return outcome("failed" if not error.retryable else "progressing",
-                       f"Cluster instance rendering failed: {error}",
-                       retryable=error.retryable)
+        if error.retryable:
+            return outcome("progressing",
+                           f"Cluster instance rendering ongoing: {error}",
+                           retryable=True)
+        return outcome("failed", f"Cluster instance rendering failed: {error}")
 
     condition = ready_condition(resource)
     state = condition.get("status")
@@ -224,7 +234,7 @@ def cluster_creation_status(
                       f"Cluster provisioner {cluster_provisioner!r} is not "
                       "supported")
 
-    deadline = deadline_from(started, timeout)
+    deadline = deadline_from(started, timeout, logger=log)
 
     try:
         cluster = get_capi_cluster(name=cluster_name, namespace=namespace,

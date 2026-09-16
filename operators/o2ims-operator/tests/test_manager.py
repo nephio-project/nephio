@@ -163,13 +163,24 @@ def test_the_listener_is_bound_and_can_be_stopped(monkeypatch):
     calling it, so nothing listened and nothing said so."""
     monkeypatch.setattr(manager, "NBI_PORT", 0)
     logger = Mock()
+    manager.start_northbound(logger=logger)
+    thread = manager._server_thread
+    port = manager._server.socket.getsockname()[1]
     try:
-        manager.start_northbound(logger=logger)
-        assert manager._server_thread.is_alive()
-        assert manager._server.socket.getsockname()[1] != 0
+        assert thread.is_alive()
+        assert port != 0
     finally:
         manager.stop_northbound(logger=logger)
+
     assert manager._server is None
+    # The module variable is cleared either way, so the thread and the port are
+    # what say the server actually stopped.
+    assert not thread.is_alive()
+    released = socket.socket()
+    try:
+        released.bind(("0.0.0.0", port))
+    finally:
+        released.close()
 
 
 def test_a_port_that_is_taken_stops_startup(monkeypatch):
