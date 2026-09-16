@@ -100,6 +100,8 @@ def package_variant_params(
     if not validation["status"]:
         raise ValueError(validation["reason"])
 
+    # dict(): the caller may hand a mapping that is not one, and a copy is
+    # what keeps clusterName from being popped out of the caller's own.
     template_parameters = dict(params)
     cluster_name = template_parameters.pop("clusterName")
 

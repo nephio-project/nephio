@@ -19,6 +19,7 @@ import logging
 import re
 import os
 import ssl
+from collections.abc import Mapping
 from urllib.parse import urlsplit
 
 import requests
@@ -708,7 +709,10 @@ def validate_cluster_creation_request(params: dict = None) -> dict:
 
     :return: ``{"status": True}``, or ``{"status": False, "reason": ...}``
     """
-    if not isinstance(params, dict):
+    # Mapping, not dict: kopf hands the reconciler a Spec, which is a mapping
+    # over the body and not a dict, and requiring one rejected every real
+    # request while every test that passed a literal went through.
+    if not isinstance(params, Mapping):
         return {"status": False,
                 "reason": "provisioning request must be an object, got "
                           f"{type(params).__name__}"}
@@ -718,7 +722,7 @@ def validate_cluster_creation_request(params: dict = None) -> dict:
             return {"status": False, "reason": f"{field} is empty or missing"}
 
     template_parameters = params["templateParameters"]
-    if not isinstance(template_parameters, dict):
+    if not isinstance(template_parameters, Mapping):
         return {"status": False,
                 "reason": "templateParameters must be an object, got "
                           f"{type(template_parameters).__name__}"}
@@ -731,7 +735,7 @@ def validate_template_parameters(params: dict = None) -> dict:
 
     :return: ``{"status": True}``, or ``{"status": False, "reason": ...}``
     """
-    if not isinstance(params, dict):
+    if not isinstance(params, Mapping):
         return {"status": False,
                 "reason": "templateParameters must be an object, got "
                           f"{type(params).__name__}"}
@@ -740,7 +744,7 @@ def validate_template_parameters(params: dict = None) -> dict:
         return {"status": False,
                 "reason": "clusterName is missing in template parameters"}
     labels = params.get("labels")
-    if labels is not None and not isinstance(labels, dict):
+    if labels is not None and not isinstance(labels, Mapping):
         return {"status": False,
                 "reason": "labels must be an object, got "
                           f"{type(labels).__name__}"}

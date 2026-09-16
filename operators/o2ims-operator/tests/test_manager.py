@@ -64,8 +64,53 @@ def steps(monkeypatch):
 
 
 def reconcile(patch, memo, spec=None):
-    return manager.create_fn(spec=spec or SPEC, logger=Mock(), patch=patch,
-                             memo=memo, body=BODY)
+    """Call the handler with what kopf passes, not with literals.
+
+    kopf hands over a Body and a Spec, which are mappings over the resource
+    and not dicts. Passing dictionaries here once hid a validation check that
+    rejected every real request.
+    """
+    body = kopf.Body({**BODY, "spec": spec or SPEC})
+    return manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
+                             memo=memo, body=body)
+
+
+def test_the_handler_takes_what_kopf_hands_it():
+    """Neither Body nor Spec is a dict, and a check for one turns every real
+    request into a permanent validation failure."""
+    body = kopf.Body(BODY)
+    assert not isinstance(body, dict)
+    assert not isinstance(kopf.Spec(body), dict)
+
+    patch = kopf.Patch()
+    memo = types.SimpleNamespace(cluster_provisioner="capi", creation_timeout=1800)
+    manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
+                      memo=memo, body=body)
+
+    # It got past validation and ran to the end. Rejecting a Spec would have
+    # left this "failed" with a validation message instead.
+    assert patch.status["provisioningStatus"]["provisioningState"] == "fulfilled"
+
+
+def test_configure_and_reconcile_with_nothing_but_real_kopf_objects(steps):
+    """Settings, Memo, Body, Spec and Patch as kopf builds them.
+
+    The reconciler reads its budget and provisioner off the memo configure
+    filled in, so the two are worth running together rather than with a stand-in
+    in between.
+    """
+    memo = kopf.Memo()
+    manager.configure(settings=kopf.OperatorSettings(), memo=memo)
+    assert memo.cluster_provisioner == "capi"
+    assert memo.creation_timeout > 0
+
+    body = kopf.Body(BODY)
+    patch = kopf.Patch()
+    manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
+                      memo=memo, body=body)
+
+    assert patch.status["provisioningStatus"]["provisioningState"] == "fulfilled"
+    assert steps.observing.call_args.kwargs["cluster_provisioner"] == "capi"
 
 
 def test_the_probe_answers_with_a_timestamp():
