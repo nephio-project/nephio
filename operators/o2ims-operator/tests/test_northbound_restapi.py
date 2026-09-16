@@ -95,6 +95,22 @@ def test_a_created_request_answers_201_and_its_own_id(api, http):
     assert sent["_request_timeout"] == northbound_restapi.API_TIMEOUT
 
 
+@pytest.mark.parametrize("omitted", ["name", "description", None])
+def test_nothing_optional_is_sent_as_null(api, http, omitted):
+    """The CRD types name and description as strings, so a null for either is
+    a body the API server rejects - for a field nothing required."""
+    body = {k: v for k, v in REQUEST.items() if k != omitted}
+    api.create_cluster_custom_object.return_value = provisioning_request("edge-01")
+
+    assert http.post(COLLECTION, json=body).status_code == 201
+
+    sent = api.create_cluster_custom_object.call_args.kwargs["body"]
+    nulls = [k for k, v in sent["spec"].items() if v is None]
+    assert nulls == []
+    if omitted:
+        assert omitted not in sent["spec"]
+
+
 def test_a_duplicate_request_id_is_a_conflict(api, http):
     api.create_cluster_custom_object.side_effect = api_exception(409, "AlreadyExists")
     assert http.post(COLLECTION, json=REQUEST).status_code == 409

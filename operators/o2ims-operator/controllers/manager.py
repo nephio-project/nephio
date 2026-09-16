@@ -28,6 +28,7 @@ from utils import (
     CREATION_TIMEOUT,
     LOG_LEVEL,
     TIME_FORMAT,
+    provisioning_status,
     validate_cluster_creation_request,
 )
 from provisioning_request_controller import (
@@ -137,6 +138,15 @@ def create_fn(spec, logger, patch: kopf.Patch, memo: kopf.Memo, body, **_):
     """
     metadata = body["metadata"]
     request_name = metadata["name"]
+
+    # Fulfilled is where a provisioning request stops. Resume runs for every
+    # existing request when the operator starts, and driving a finished one
+    # from the rendering step again re-creates its PackageVariant and reports
+    # it as progressing after it had been reported done.
+    if provisioning_status(body).get("provisioningState") == "fulfilled":
+        logger.info("provisioning request %s is already fulfilled",
+                    request_name)
+        return
 
     validation = validate_cluster_creation_request(spec)
     if not validation["status"]:

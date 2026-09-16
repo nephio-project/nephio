@@ -113,6 +113,26 @@ def test_configure_and_reconcile_with_nothing_but_real_kopf_objects(steps):
     assert steps.observing.call_args.kwargs["cluster_provisioner"] == "capi"
 
 
+def test_a_fulfilled_request_is_not_driven_again(steps):
+    """Resume runs for every existing request when the operator starts. One
+    that had been fulfilled used to be re-rendered, which re-creates its
+    PackageVariant and reports it as progressing after it was reported done."""
+    fulfilled = {**BODY, "status": {"provisioningStatus": {
+        "provisioningState": "fulfilled", "provisioningMessage": "done",
+        "provisioningUpdateTime": "2026-09-16T00:00:01Z"}}}
+    body = kopf.Body(fulfilled)
+    patch = kopf.Patch()
+    memo = types.SimpleNamespace(cluster_provisioner="capi",
+                                 creation_timeout=1800)
+
+    manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
+                      memo=memo, body=body)
+
+    steps.rendering.assert_not_called()
+    steps.observing.assert_not_called()
+    assert "provisioningStatus" not in patch.status
+
+
 def test_the_probe_answers_with_a_timestamp():
     """datetime.datetime.now on a "from datetime import datetime" import
     raised AttributeError, so the probe never answered."""

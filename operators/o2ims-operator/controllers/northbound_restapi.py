@@ -150,17 +150,23 @@ def trigger_action():
         )
 
     LOGGER.info("creating provisioning request %s", request_id)
+    spec = {
+        "templateName": data["templateName"],
+        "templateParameters": data["templateParameters"],
+        "templateVersion": data["templateVersion"],
+    }
+    # Left out rather than sent as null. The CRD types description and name as
+    # strings, so a request that omits either - and nothing requires them -
+    # produced a body the API server rejects.
+    for optional in ("name", "description"):
+        if data.get(optional) is not None:
+            spec[optional] = data[optional]
+
     o2ims_cr = {
         "apiVersion": f"{GROUP}/{VERSION}",
         "kind": "ProvisioningRequest",
         "metadata": {"name": request_id},
-        "spec": {
-            "description": data.get("description"),
-            "name": data.get("name"),
-            "templateName": data["templateName"],
-            "templateParameters": data["templateParameters"],
-            "templateVersion": data["templateVersion"],
-        },
+        "spec": spec,
     }
 
     try:
