@@ -136,10 +136,19 @@ def provisioning_request_info(resource: dict) -> dict:
         # Nothing this operator has produced a phase for yet.
         phase = "PENDING"
 
-    data = dict(resource.get("spec") or {})
-    # The id belongs inside the request data, which is where the API declares
-    # it; metadata.name is where the CR keeps the SMO's identifier.
-    data["provisioningRequestId"] = metadata.get("name")
+    spec = resource.get("spec") or {}
+    data = {
+        # The id belongs inside the request data, which is where the API
+        # declares it; metadata.name is where the CR keeps the SMO's.
+        "provisioningRequestId": metadata.get("name"),
+        # Required of every answer, and a request written straight to the API
+        # server rather than through here may carry neither.
+        "name": spec.get("name") or "",
+        "description": spec.get("description") or "",
+        "templateName": spec.get("templateName") or "",
+        "templateVersion": spec.get("templateVersion") or "",
+        "templateParameters": spec.get("templateParameters") or {},
+    }
 
     return {
         "provisioningRequestData": data,
@@ -180,17 +189,17 @@ def trigger_action():
         )
 
     LOGGER.info("creating provisioning request %s", request_id)
+    # The two specifications disagree about these. The CRD types them as
+    # strings and rejects a null; the API reference requires them of every
+    # answer. An empty string is what both take, and it says the SMO gave
+    # none rather than inventing one.
     spec = {
+        "name": data.get("name") or "",
+        "description": data.get("description") or "",
         "templateName": data["templateName"],
         "templateParameters": data["templateParameters"],
         "templateVersion": data["templateVersion"],
     }
-    # Left out rather than sent as null. The CRD types description and name as
-    # strings, so a request that omits either - and nothing requires them -
-    # produced a body the API server rejects.
-    for optional in ("name", "description"):
-        if data.get(optional) is not None:
-            spec[optional] = data[optional]
 
     o2ims_cr = {
         "apiVersion": f"{GROUP}/{VERSION}",

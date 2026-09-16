@@ -98,19 +98,35 @@ def test_a_created_request_answers_201_and_its_own_id(api, http):
 
 
 @pytest.mark.parametrize("omitted", ["name", "description", None])
-def test_nothing_optional_is_sent_as_null(api, http, omitted):
-    """The CRD types name and description as strings, so a null for either is
-    a body the API server rejects - for a field nothing required."""
+def test_the_two_specifications_are_both_satisfied(api, http, omitted):
+    """They disagree about name and description. The CRD types them as strings
+    and rejects a null; the reference requires them of every answer. An empty
+    string is what both take."""
     body = {k: v for k, v in REQUEST.items() if k != omitted}
     api.create_cluster_custom_object.return_value = provisioning_request("edge-01")
 
     assert http.post(COLLECTION, json=body).status_code == 201
 
-    sent = api.create_cluster_custom_object.call_args.kwargs["body"]
-    nulls = [k for k, v in sent["spec"].items() if v is None]
-    assert nulls == []
+    sent = api.create_cluster_custom_object.call_args.kwargs["body"]["spec"]
+    assert [k for k, v in sent.items() if v is None] == []
+    for required in ("name", "description"):
+        assert isinstance(sent[required], str)
     if omitted:
-        assert omitted not in sent["spec"]
+        assert sent[omitted] == ""
+
+
+def test_a_request_written_straight_to_the_api_server_still_answers(api, http):
+    """Nothing makes anyone create these through this API, and the reference
+    requires the fields of the answer either way."""
+    bare = {"metadata": {"name": "edge-01", "uid": "uid-edge-01"},
+            "spec": {"templateName": "t"}}
+    api.get_cluster_custom_object.return_value = bare
+
+    data = http.get(f"{COLLECTION}/edge-01").get_json()["provisioningRequestData"]
+
+    assert set(data) == {"provisioningRequestId", "name", "description",
+                         "templateName", "templateVersion", "templateParameters"}
+    assert data["name"] == "" and data["description"] == ""
 
 
 def test_a_duplicate_request_id_is_a_conflict(api, http):
