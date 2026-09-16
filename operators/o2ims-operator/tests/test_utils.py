@@ -19,8 +19,10 @@ import json
 import logging
 import os
 import random
+import socket
 import string
 import threading
+import time
 
 import certifi
 import pytest
@@ -210,10 +212,54 @@ def test_a_logger_does_not_change_the_outcome():
 
 
 @responses.activate
-def test_every_call_is_bounded():
+def test_every_call_carries_the_bound():
     responses.get(CAPI_URI, json=TEST_JSON, status=200)
     get_capi_cluster(NAME, NAMESPACE)
     assert responses.calls[0].request.req_kwargs["timeout"] == API_TIMEOUT
+
+
+def test_a_server_that_accepts_and_never_answers_is_given_up_on(monkeypatch):
+    """A real socket, not the kwarg. The kwarg says what was asked for; this
+    says what happens, which is the thing a stalled API server tests."""
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    host, port = listener.getsockname()
+
+    accepted = []
+
+    def accept_and_say_nothing():
+        try:
+            connection, _ = listener.accept()
+            accepted.append(connection)          # held open, never written to
+        except OSError:
+            pass
+
+    waiter = threading.Thread(target=accept_and_say_nothing, daemon=True)
+    waiter.start()
+
+    monkeypatch.setattr(utils, "API_TIMEOUT", (1.0, 1.0))
+    monkeypatch.setattr(utils, "TLS_VERIFY", False)
+    monkeypatch.setattr(utils, "KUBERNETES_BASE_URL", f"http://{host}:{port}")
+
+    began = time.monotonic()
+    try:
+        with pytest.raises(utils.ApiError) as raised:
+            utils.api_call("GET", f"http://{host}:{port}/anything",
+                           operation="stalled server")
+        waited = time.monotonic() - began
+    finally:
+        for connection in accepted:
+            connection.close()
+        listener.close()
+        waiter.join(timeout=5)
+
+    assert raised.value.reason == "transport"
+    assert raised.value.retryable is True
+    # It waited for the read bound and then gave up. The lower bound is what
+    # separates this from a connection that was refused outright, which would
+    # pass a "did not hang" assertion without exercising a timeout at all.
+    assert 1.0 <= waited < 5
 
 
 @responses.activate
