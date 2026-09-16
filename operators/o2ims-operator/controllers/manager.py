@@ -43,8 +43,10 @@ NBI_PORT = int(os.getenv("NBI_PORT", "5000"))
 # How long a request waits before it is looked at again. One observation per
 # pass, so the handler never holds a worker for the whole provisioning budget.
 OBSERVE_DELAY = 10
-# How long shutdown waits for the northbound API to stop serving.
-SHUTDOWN_TIMEOUT = 10
+# How long shutdown waits for the northbound API to stop serving. Under the
+# five seconds the deployment gives the pod, so the wait finishes rather than
+# being cut off by SIGKILL with nothing said about it.
+SHUTDOWN_TIMEOUT = float(os.getenv("NBI_SHUTDOWN_TIMEOUT", "3"))
 
 _server = None
 _server_thread = None
