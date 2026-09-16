@@ -100,6 +100,24 @@ def answer_for(error, doing: str):
     return failure(f"{doing} failed: {reason}", 502)
 
 
+def provisioned_resource_set(resource: dict) -> dict:
+    """Return the resource set under the names the northbound API uses.
+
+    The CR records these as oCloudNodeClusterId and
+    oCloudInfrastructureResourceIds; the API asks for nodeClusterId and
+    infrastructureResourceIds, and both are required of it.
+    """
+    status = resource.get("status")
+    recorded = (status.get("provisionedResourceSet")
+                if isinstance(status, dict) else None)
+    recorded = recorded if isinstance(recorded, dict) else {}
+    ids = recorded.get("oCloudInfrastructureResourceIds")
+    return {
+        "nodeClusterId": recorded.get("oCloudNodeClusterId", ""),
+        "infrastructureResourceIds": ids if isinstance(ids, list) else [],
+    }
+
+
 def provisioning_request_info(resource: dict) -> dict:
     """Return one ProvisioningRequest as the northbound API describes it.
 
@@ -109,11 +127,25 @@ def provisioning_request_info(resource: dict) -> dict:
     metadata = resource.get("metadata") or {}
     recorded = provisioning_status(resource)
     state = recorded.get("provisioningState")
-    phase = PHASES.get(state, "PENDING" if state is None else "UNKNOWN")
+    phase = PHASES.get(state)
+    if phase is None:
+        if state is not None:
+            LOGGER.warning(
+                "provisioning request %s records a state this API has no "
+                "phase for: %r", metadata.get("name"), state)
+        # Nothing this operator has produced a phase for yet.
+        phase = "PENDING"
+
+    data = dict(resource.get("spec") or {})
+    # The id belongs inside the request data, which is where the API declares
+    # it; metadata.name is where the CR keeps the SMO's identifier.
+    data["provisioningRequestId"] = metadata.get("name")
 
     return {
-        "provisioningRequestId": metadata.get("name"),
-        "provisioningRequestData": resource.get("spec") or {},
+        "provisioningRequestData": data,
+        # "assigned by the service producer at the time of request creation":
+        # the uid the API server assigned, not something made up here.
+        "provisioningRequestReference": metadata.get("uid", ""),
         "status": {
             # The time the reconciler recorded, not the time this was read.
             "updateTime": recorded.get("provisioningUpdateTime", ""),
@@ -122,9 +154,7 @@ def provisioning_request_info(resource: dict) -> dict:
         },
         # Only what provisioning actually produced. An empty set says nothing
         # has been provisioned yet, which placeholder ids used to hide.
-        "provisionedResourceSet": resource.get("status", {}).get(
-            "provisionedResourceSet", {}
-        ) if isinstance(resource.get("status"), dict) else {},
+        "provisionedResourceSet": provisioned_resource_set(resource),
     }
 
 

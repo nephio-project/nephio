@@ -40,7 +40,7 @@ def provisioning_request(name, state=None, message="", resources=None):
     resource = {
         "apiVersion": "o2ims.provisioning.oran.org/v1alpha1",
         "kind": "ProvisioningRequest",
-        "metadata": {"name": name},
+        "metadata": {"name": name, "uid": f"uid-{name}"},
         "spec": {"name": f"display {name}", "templateName": "t"},
     }
     if state is not None:
@@ -86,7 +86,9 @@ def test_a_created_request_answers_201_and_its_own_id(api, http):
     answer = http.post(COLLECTION, json=REQUEST)
 
     assert answer.status_code == 201
-    assert answer.get_json()["provisioningRequestId"] == "edge-01"
+    body = answer.get_json()
+    # Where the API declares it, not at the top level.
+    assert body["provisioningRequestData"]["provisioningRequestId"] == "edge-01"
     sent = api.create_cluster_custom_object.call_args.kwargs
     assert sent["plural"] == "provisioningrequests"
     # The identity is the SMO's id, not the display name.
@@ -158,8 +160,8 @@ def test_every_request_is_returned_not_only_the_first(api, http):
 
     items = http.get(COLLECTION).get_json()["items"]
 
-    assert [item["provisioningRequestId"] for item in items] == [
-        "edge-01", "edge-02", "edge-03"]
+    assert [item["provisioningRequestData"]["provisioningRequestId"]
+            for item in items] == ["edge-01", "edge-02", "edge-03"]
     assert [item["status"]["provisioningPhase"] for item in items] == [
         "FULFILLED", "FAILED", "PENDING"]
 
@@ -177,15 +179,18 @@ def test_the_resource_set_is_what_was_provisioned(api, http):
                              resources={"oCloudNodeClusterId": "uid-1",
                                         "oCloudInfrastructureResourceIds": ["uid-2"]})]}
     item = http.get(COLLECTION).get_json()["items"][0]
+    # Translated: the CR records oCloud* names, the API asks for these.
     assert item["provisionedResourceSet"] == {
-        "oCloudNodeClusterId": "uid-1", "oCloudInfrastructureResourceIds": ["uid-2"]}
+        "nodeClusterId": "uid-1", "infrastructureResourceIds": ["uid-2"]}
 
 
 def test_nothing_provisioned_is_an_empty_set_not_a_placeholder(api, http):
     api.list_cluster_custom_object.return_value = {"items": [
         provisioning_request("edge-01", "progressing", "on it")]}
     item = http.get(COLLECTION).get_json()["items"][0]
-    assert item["provisionedResourceSet"] == {}
+    # Both keys are required of the resource set, so empty is empty values.
+    assert item["provisionedResourceSet"] == {
+        "nodeClusterId": "", "infrastructureResourceIds": []}
 
 
 def test_a_listing_that_is_not_a_listing_is_an_upstream_error(api, http):
@@ -200,8 +205,32 @@ def test_one_request_can_be_read_by_its_id(api, http):
     answer = http.get(f"{COLLECTION}/edge-01")
 
     assert answer.status_code == 200
-    assert answer.get_json()["provisioningRequestId"] == "edge-01"
+    body = answer.get_json()
+    assert body["provisioningRequestData"]["provisioningRequestId"] == "edge-01"
     assert api.get_cluster_custom_object.call_args.kwargs["name"] == "edge-01"
+
+
+PHASES = {"PENDING", "PROGRESSING", "FULFILLED", "FAILED", "DELETING"}
+INFO_KEYS = {"provisioningRequestData", "provisioningRequestReference",
+             "status", "provisionedResourceSet"}
+
+
+@pytest.mark.parametrize("state", [None, "progressing", "fulfilled", "failed",
+                                   "deleting", "something-this-api-has-no-phase-for"])
+def test_the_answer_carries_what_the_api_requires_of_it(api, http, state):
+    """The reference requires these four, a phase from its enum, and both
+    resource-set keys under the names it uses rather than the CR's."""
+    api.get_cluster_custom_object.return_value = provisioning_request("edge-01", state)
+
+    body = http.get(f"{COLLECTION}/edge-01").get_json()
+
+    assert INFO_KEYS <= set(body)
+    assert body["status"]["provisioningPhase"] in PHASES
+    assert set(body["provisionedResourceSet"]) == {"nodeClusterId",
+                                                   "infrastructureResourceIds"}
+    assert isinstance(body["provisionedResourceSet"]["infrastructureResourceIds"], list)
+    # Assigned by the producer at creation, which is the uid the API server gave.
+    assert body["provisioningRequestReference"] == "uid-edge-01"
 
 
 def test_an_unknown_id_is_not_found(api, http):
