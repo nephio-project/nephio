@@ -68,7 +68,8 @@ def is_unambiguous_host(host: str) -> bool:
         pass
     if not host or len(host) > 253:
         return False
-    return all(HOST_LABEL.match(label) for label in host.rstrip(".").split("."))
+    return all(HOST_LABEL.match(label)
+               for label in host.rstrip(".").split("."))
 
 
 def validate_api_server_url(base_url: str) -> str:
@@ -276,8 +277,39 @@ if os.getenv("HTTPS_VERIFY") is not None:
         "are always verified unless UNSAFE_SKIP_TLS_VERIFY=true"
     )
 UPSTREAM_PKG_REPO = os.getenv("UPSTREAM_PKG_REPO", "catalog-infra-capi")
-CLUSTER_PROVISIONER = str(os.getenv("CLUSTER_PROVISIONER", "capi"))
-CREATION_TIMEOUT = int(os.getenv("CREATION_TIMEOUT", 1800))
+# Provisioners this operator knows how to observe. An unknown one used to be
+# accepted and then silently skipped, leaving the request reported as
+# progressing while nothing was ever done about it.
+SUPPORTED_CLUSTER_PROVISIONERS = ("capi",)
+
+
+def cluster_provisioner() -> str:
+    """Return the provisioner, refusing one that cannot be observed."""
+    provisioner = str(os.getenv("CLUSTER_PROVISIONER", "capi"))
+    if provisioner not in SUPPORTED_CLUSTER_PROVISIONERS:
+        raise RuntimeError(
+            f"CLUSTER_PROVISIONER {provisioner!r} is not one of "
+            f"{', '.join(SUPPORTED_CLUSTER_PROVISIONERS)}"
+        )
+    return provisioner
+
+
+def creation_timeout() -> int:
+    """Return the provisioning budget in seconds, which has to be positive."""
+    raw = os.getenv("CREATION_TIMEOUT", "1800")
+    try:
+        timeout = int(raw)
+    except ValueError as error:
+        raise RuntimeError(
+            f"CREATION_TIMEOUT {raw!r} is not a number") from error
+    if timeout <= 0:
+        raise RuntimeError(
+            f"CREATION_TIMEOUT {raw!r} is not a positive number")
+    return timeout
+
+
+CLUSTER_PROVISIONER = cluster_provisioner()
+CREATION_TIMEOUT = creation_timeout()
 
 BASE_HEADERS = {
     "Content-type": "application/json",
@@ -310,249 +342,406 @@ def request_headers() -> dict:
     return {**BASE_HEADERS, "Authorization": f"Bearer {read_token()}"}
 
 
-def create_package_variant(
+# Connect and read timeouts, applied per socket operation. Neither bounds the
+# request as a whole, so a reconcile keeps its own budget as well.
+CONNECT_TIMEOUT = 3.05
+READ_TIMEOUT = 10.0
+API_TIMEOUT = (CONNECT_TIMEOUT, READ_TIMEOUT)
+
+# Proxies and netrc in the environment are ignored: the API server is reached
+# directly with the trust settings resolved above, and a proxy would otherwise
+# be handed the service account token. Set O2IMS_TRUST_ENVIRONMENT=true to
+# restore the Requests default for a deployment that needs an egress proxy.
+TRUST_ENVIRONMENT = env_flag("O2IMS_TRUST_ENVIRONMENT")
+
+
+class ApiError(Exception):
+    """An API call that did not produce a resource.
+
+    Carries what the caller has to decide on: whether another attempt can help,
+    and whether a write may have landed even though the answer never arrived.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        operation: str,
+        status_code: int = None,
+        reason: str = None,
+        retryable: bool = False,
+        write_outcome_unknown: bool = False,
+    ):
+        super().__init__(message)
+        self.operation = operation
+        self.status_code = status_code
+        self.reason = reason
+        self.retryable = retryable
+        self.write_outcome_unknown = write_outcome_unknown
+
+
+def decode_body(response):
+    """Decode a response body once, returning None when it is not an object."""
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    return body if isinstance(body, dict) else None
+
+
+def status_message(body, default: str) -> str:
+    """Read the message out of a Kubernetes Status, or fall back."""
+    if isinstance(body, dict) and body.get("kind") == "Status":
+        return str(body.get("message") or body.get("reason") or default)[:200]
+    return default
+
+
+def read_api_response(response, *, operation: str, writing: bool = False,
+                      logger=None) -> dict:
+    """Turn one API answer into a resource, or into a classified failure.
+
+    The body is decoded at most once and only after the status is known, so
+    enabling debug logging cannot change what this returns.
+    """
+    body = decode_body(response)
+    code = response.status_code
+    if logger:
+        logger.debug("%s answered %s", operation, code)
+
+    if 300 <= code < 400:
+        raise ApiError(
+            f"{operation}: the API server redirected to "
+            f"{response.headers.get('Location')!r}",
+            operation=operation, status_code=code, reason="protocol",
+        )
+    if code in (200, 201):
+        if body is None:
+            raise ApiError(
+                f"{operation}: the API server answered {code} without a "
+                "JSON object",
+                operation=operation, status_code=code, reason="protocol",
+            )
+        return body
+    if code in (401, 403):
+        raise ApiError(
+            f"{operation}: {status_message(body, 'not authorised')}",
+            operation=operation, status_code=code, reason="unauthorized",
+        )
+    if code == 404:
+        raise ApiError(
+            f"{operation}: {status_message(body, 'not found')}",
+            operation=operation, status_code=code, reason="notFound",
+        )
+    if code == 409:
+        raise ApiError(
+            f"{operation}: {status_message(body, 'already exists')}",
+            operation=operation, status_code=code, reason="conflict",
+        )
+    if code in (400, 422):
+        raise ApiError(
+            f"{operation}: "
+            f"{status_message(body, 'rejected by the API server')}",
+            operation=operation, status_code=code, reason="invalid",
+        )
+    if code == 429 or code >= 500:
+        raise ApiError(
+            f"{operation}: "
+            f"{status_message(body, 'the API server is unavailable')}",
+            operation=operation, status_code=code, reason="unavailable",
+            retryable=True, write_outcome_unknown=writing,
+        )
+    raise ApiError(
+        f"{operation}: unexpected status {code}",
+        operation=operation, status_code=code, reason="protocol",
+    )
+
+
+def api_call(method: str, url: str, *, operation: str, body: dict = None,
+             logger=None) -> dict:
+    """Send one request to the API server and return the resource it answered.
+
+    Every call carries a freshly read token, the verified trust settings and a
+    bounded timeout, and refuses redirects: the API server has no reason to
+    send one, and following it would hand the token to another host.
+    """
+    writing = method not in ("GET", "HEAD")
+    try:
+        headers = request_headers()
+    except (OSError, RuntimeError) as error:
+        # A token that cannot be read is a configuration failure, and saying so
+        # is the difference between fixing it and waiting out a timeout. No
+        # request is sent.
+        raise ApiError(
+            f"{operation}: the service account token is not usable ({error})",
+            operation=operation, reason="config",
+        ) from error
+
+    session = requests.Session()
+    session.trust_env = TRUST_ENVIRONMENT
+    try:
+        response = session.request(
+            method, url,
+            headers=headers,
+            json=body,
+            verify=TLS_VERIFY,
+            timeout=API_TIMEOUT,
+            allow_redirects=False,
+        )
+    except requests.exceptions.RequestException as error:
+        raise ApiError(
+            f"{operation}: cannot reach the API server "
+            f"({type(error).__name__})",
+            operation=operation, reason="transport", retryable=True,
+            write_outcome_unknown=writing,
+        ) from error
+    finally:
+        session.close()
+    return read_api_response(response, operation=operation, writing=writing,
+                             logger=logger)
+
+
+# Annotations that say which ProvisioningRequest a PackageVariant belongs to.
+# A PackageVariant is addressed by a name the request chooses, so the name on
+# its own does not establish that this request created it.
+OWNER_UID_ANNOTATION = "o2ims.provisioning.oran.org/request-uid"
+OWNER_TARGET_ANNOTATION = "o2ims.provisioning.oran.org/downstream-package"
+
+
+def package_variant_url(namespace: str, name: str = None) -> str:
+    """Return the collection URL, or the URL of one named PackageVariant."""
+    url = (
+        f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1"
+        f"/namespaces/{namespace}/packagevariants"
+    )
+    return f"{url}/{name}" if name else url
+
+
+def package_variant_body(pv_param: dict, request_uid: str,
+                         label: dict) -> dict:
+    """Return the PackageVariant this request asks for."""
+    return {
+        "apiVersion": "config.porch.kpt.dev/v1alpha1",
+        "kind": "PackageVariant",
+        "metadata": {
+            "name": pv_param["name"],
+            "labels": dict(label),
+            "annotations": {
+                OWNER_UID_ANNOTATION: str(request_uid),
+                OWNER_TARGET_ANNOTATION: str(pv_param["cluster_name"]),
+            },
+        },
+        "spec": {
+            "upstream": {
+                "repo": pv_param["repo_location"],
+                "package": pv_param["template_name"],
+                "workspaceName": pv_param["template_version"],
+            },
+            "downstream": {
+                # TODO: should the repo be configurable instead of
+                # being hardcoded?
+                "repo": "mgmt",
+                "package": pv_param["cluster_name"],
+            },
+            "annotations": {"approval.nephio.org/policy": "initial"},
+            "pipeline": {"mutators": pv_param["mutators"]},
+        },
+    }
+
+
+def owns_package_variant(resource: dict, request_uid: str,
+                         pv_param: dict) -> bool:
+    """Report whether this PackageVariant was created for this request."""
+    annotations = (resource.get("metadata") or {}).get("annotations") or {}
+    if annotations.get(OWNER_UID_ANNOTATION) != str(request_uid):
+        return False
+    downstream = (resource.get("spec") or {}).get("downstream") or {}
+    return downstream.get("package") == pv_param["cluster_name"]
+
+
+def get_package_variant(name: str = None, namespace: str = None,
+                        logger=None) -> dict:
+    """Return one PackageVariant.
+
+    :raises ApiError: the resource was not returned; ``reason`` says why
+    """
+    if logger:
+        logger.debug("get_package_variant %s", name)
+    return api_call(
+        "GET", package_variant_url(namespace, name),
+        operation=f"get packagevariant {name}", logger=logger,
+    )
+
+
+def ensure_package_variant(
     name: str = None,
     namespace: str = None,
     pv_param: dict = None,
+    request_uid: str = None,
     label: dict = LABEL,
     logger=None,
-):
+) -> dict:
+    """Return the PackageVariant belonging to this request, creating it once.
+
+    An existing PackageVariant of the same name is only accepted when it
+    carries this request's ownership annotation and targets the same cluster;
+    otherwise it belongs to something else and this request has not been
+    fulfilled. A create that answers 409, or whose answer is lost, is settled
+    by reading the resource back rather than by assuming either outcome.
+
+    :raises ApiError: the PackageVariant could not be established
     """
-    :param name: name of the package variant
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param pv_param: parameters of package variant
-    :type pv_param: dict
-    :param label: label for pv resource
-    :type label: dict
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
-    """
-    if logger:
-        logger.debug("create_package_variant")
-    r = get_package_variant(name, namespace, logger)
-    if "reason" in r and r["reason"] == "notFound" and pv_param["create"]:
-        pv_body = {
-            "apiVersion": "config.porch.kpt.dev/v1alpha1",
-            "kind": "PackageVariant",
-            "metadata": {"name": f"{pv_param['name']}", "label": f"{label}"},
-            "spec": {
-                "upstream": {
-                    "repo": f"{pv_param['repo_location']}",
-                    "package": f"{pv_param['template_name']}",
-                    "workspaceName": f"{pv_param['template_version']}",
-                },
-                "downstream": {
-                    # TODO: should the repo be configurable instead of being hardcoded?
-                    "repo": "mgmt",
-                    "package": f"{pv_param['cluster_name']}",
-                },
-                "annotations": {"approval.nephio.org/policy": "initial"},
-                "pipeline": {"mutators": pv_param["mutators"]},
-            },
-        }
-        if logger:
-            logger.debug(
-                f"package-variant {name} does not exist in namespace {namespace}, o2ims operator is creating it now"
-            )
-        r = requests.post(
-            f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants",
-            headers=request_headers(),
-            json=pv_body,
-            verify=TLS_VERIFY,
+    operation = f"ensure packagevariant {name}"
+    body = package_variant_body(pv_param, request_uid, label)
+
+    def accept(resource: dict) -> dict:
+        if owns_package_variant(resource, request_uid, pv_param):
+            return resource
+        raise ApiError(
+            f"{operation}: a PackageVariant named {name!r} already exists and "
+            "was not created for this request",
+            operation=operation, reason="conflict",
         )
-        if logger:
-            logger.debug(
-                "response of the request to create package variant %s is %s"
-                % (r.request.url, r.json())
-            )
-        if r.status_code in [200, 201]:
-            response = {"status": True, "name": name}
-        elif r.status_code in [401, 403]:
-            response = {"status": False, "reason": "unauthorized"}
-        elif r.status_code == 404:
-            response = {"status": False, "reason": "notFound"}
-        elif r.status_code == 400:
-            response = {"status": False, "reason": r.json()["message"]}
-        elif r.status_code == 500:
-            response = {"status": False, "reason": "k8sApi server is not reachable"}
-        else:
-            response = {"status": False, "reason": r.json()}
-    elif r["status"] and "name" in r:
-        response = {"status": r["status"], "name": r["name"]}
-    else:
-        response = {"status": r["status"], "reason": r["reason"]}
-    if logger:
-        logger.debug(response)
-    return response
 
-
-def get_package_variant(name: str = None, namespace: str = None, logger=None):
-    """
-    :param name: name of the package variant
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
-    """
-    if logger:
-        logger.debug("get package variant")
     try:
-        r = requests.get(
-            f"{KUBERNETES_BASE_URL}/apis/config.porch.kpt.dev/v1alpha1/namespaces/{namespace}/packagevariants/{name}",
-            headers=request_headers(),
-            verify=TLS_VERIFY,
+        return accept(get_package_variant(name, namespace, logger))
+    except ApiError as error:
+        if error.reason != "notFound":
+            raise
+    if not pv_param.get("create"):
+        raise ApiError(
+            f"{operation}: no PackageVariant named {name!r} and creating "
+            "one was not asked for",
+            operation=operation, reason="notFound",
         )
-    except Exception as e:
-        if logger:
-            logger.debug("get_package_variant error: %s" % (e))
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if logger:
-        logger.debug(
-            "response of the request to get package variant %s is %s"
-            % (r.request.url, r.json())
-        )
-    if r.status_code in [200]:
-        response = {"status": True, "name": name, "body": r.json()}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": "notFound"}
-    elif r.status_code == 500:
-        response = {"status": False, "reason": "k8sApi server is not reachable"}
-    else:
-        response = {"status": False, "reason": r.json()}
-    if logger:
-        logger.debug("Status %s" % (response))
-    return response
+
+    try:
+        return accept(api_call(
+            "POST", package_variant_url(namespace),
+            operation=operation, body=body, logger=logger,
+        ))
+    except ApiError as error:
+        # Either another reconcile won the race, or the write landed and the
+        # answer did not. Reading it back is what tells the two apart.
+        if error.reason != "conflict" and not error.write_outcome_unknown:
+            raise
+        try:
+            return accept(get_package_variant(name, namespace, logger))
+        except ApiError as reread:
+            if reread.reason != "notFound":
+                raise
+            # The read-back settles it: nothing was written, so this is worth
+            # another attempt. Reporting the read-back's own "not found" would
+            # lose that.
+            raise ApiError(
+                f"{operation}: the create did not land ({error})",
+                operation=operation, reason=error.reason, retryable=True,
+            ) from error
 
 
 def check_o2ims_provisioning_request(
     name: str = None, namespace: str = None, logger=None
-):
-    """
-    :param name: cluster name
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
-    """
-    if logger:
-        logger.debug("get_capi_cluster")
+) -> dict:
+    """Return one ProvisioningRequest, addressed by name.
 
-    try:
-        r = requests.get(
-            f"{KUBERNETES_BASE_URL}/apis/o2ims.provisioning.oran.org/v1alpha1/provisioningrequests",
-            headers=request_headers(),
-            verify=TLS_VERIFY,
+    ProvisioningRequest is cluster-scoped, so ``namespace`` is accepted for
+    call compatibility and not put in the path. A collection answered here
+    means the request was not addressed, which is a protocol error rather
+    than a request that is still progressing.
+
+    :raises ApiError: the resource was not returned; ``reason`` says why
+    """
+    operation = f"get provisioningrequest {name}"
+    if logger:
+        logger.debug("check_o2ims_provisioning_request %s", name)
+    resource = api_call(
+        "GET",
+        f"{KUBERNETES_BASE_URL}/apis/o2ims.provisioning.oran.org/v1alpha1"
+        f"/provisioningrequests/{name}",
+        operation=operation, logger=logger,
+    )
+    kind = resource.get("kind")
+    if kind != "ProvisioningRequest":
+        raise ApiError(
+            f"{operation}: the API server answered {kind!r} instead of a "
+            "ProvisioningRequest",
+            operation=operation, reason="protocol",
         )
-    except Exception as e:
-        if logger:
-            logger.debug("check_o2ims_provisioning_request error: %s" % (e))
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if r.status_code in [200] and "status" in r.json().keys():
-        response = {
-            "status": True,
-            "provisioningStatus": r.json()["status"]["provisioningStatus"],
-        }
-        if "provisionedResourceSet" in r.json()["status"]:
-            response.update(
-                {"provisionedResourceSet": r.json()["status"]["provisionedResourceSet"]}
-            )
-    elif r.status_code in [200] and "status" not in r.json().keys():
-        response = {
-            "status": True,
-            "provisioningStatus": {
-                "provisioningMessage": "Cluster provisioning request received",
-                "provisioningState": "progressing",
-            },
-        }
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": "notFound"}
-        creation_status = get_package_variant(
-            name=name, namespace=namespace, logger=logger
+    if (resource.get("metadata") or {}).get("name") != name:
+        raise ApiError(
+            f"{operation}: the API server answered a different object",
+            operation=operation, reason="protocol",
         )
-        response.update({"pv": creation_status["status"]})
-    elif r.status_code == 500:
-        response = {"status": False, "reason": "k8sApi server is not reachable"}
-    else:
-        response = {
-            "status": False,
-            "reason": r.json(),
-        }
-    if logger:
-        logger.debug(f"check_o2ims_provisioning_request response: {r.json()}")
-    return response
+    return resource
 
 
-def get_capi_cluster(name: str = None, namespace: str = None, logger=None):
-    """
-    :param name: cluster name
-    :type name: str
-    :param namespace: Namespace name
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: response
-    :rtype: dict
+def provisioning_status(resource: dict) -> dict:
+    """Return the recorded provisioning status, or an empty one."""
+    status = resource.get("status")
+    if not isinstance(status, dict):
+        return {}
+    recorded = status.get("provisioningStatus")
+    return recorded if isinstance(recorded, dict) else {}
+
+
+def get_capi_cluster(name: str = None, namespace: str = None,
+                     logger=None) -> dict:
+    """Return one CAPI Cluster.
+
+    :raises ApiError: the resource was not returned; ``reason`` says why
     """
     if logger:
-        logger.debug("get_capi_cluster")
+        logger.debug("get_capi_cluster %s", name)
+    return api_call(
+        "GET",
+        f"{KUBERNETES_BASE_URL}/apis/cluster.x-k8s.io/v1beta1"
+        f"/namespaces/{namespace}/clusters/{name}",
+        operation=f"get cluster {name}", logger=logger,
+    )
 
-    try:
-        r = requests.get(
-            f"{KUBERNETES_BASE_URL}/apis/cluster.x-k8s.io/v1beta1/namespaces/{namespace}/clusters/{name}",
-            headers=request_headers(),
-            verify=TLS_VERIFY,
-        )
-    except Exception as e:
-        if logger:
-            logger.debug("get_capi_cluster error: %s" % (e))
-        return {"status": False, "reason": f"NotAbleToCommunicateWithTheCluster {e}"}
-    if r.status_code in [200]:
-        response = {"status": True, "body": r.json()}
-    elif r.status_code in [401, 403]:
-        response = {"status": False, "reason": "unauthorized"}
-    elif r.status_code == 404:
-        response = {"status": False, "reason": "notFound"}
-    elif r.status_code == 500:
-        response = {"status": False, "reason": "k8sApi server is not reachable"}
-    else:
-        response = {
-            "status": False,
-            "reason": r.json()["status"]["conditions"][0]["message"],
-        }
-    if logger:
-        logger.debug(f"get_capi_cluster response: {r.json()}")
-    return response
 
-def validate_cluster_creation_request(params: dict = None):
+def validate_cluster_creation_request(params: dict = None) -> dict:
+    """Validate the provisioning request envelope and its template parameters.
+
+    One validator for both entry points: the northbound API and the reconciler
+    used to disagree about what a valid request is, and about whether an
+    invalid one raises or is reported.
+
+    :return: ``{"status": True}``, or ``{"status": False, "reason": ...}``
     """
-    :param params: parameters of cluster creation request
-    :type params: dict
-    :return: None
-    :rtype: None
+    if not isinstance(params, dict):
+        return {"status": False,
+                "reason": "provisioning request must be an object, got "
+                          f"{type(params).__name__}"}
+
+    for field in ("templateName", "templateVersion", "templateParameters"):
+        if not params.get(field):
+            return {"status": False, "reason": f"{field} is empty or missing"}
+
+    template_parameters = params["templateParameters"]
+    if not isinstance(template_parameters, dict):
+        return {"status": False,
+                "reason": "templateParameters must be an object, got "
+                          f"{type(template_parameters).__name__}"}
+
+    return validate_template_parameters(template_parameters)
+
+
+def validate_template_parameters(params: dict = None) -> dict:
+    """Validate the template parameters the reconciler renders from.
+
+    :return: ``{"status": True}``, or ``{"status": False, "reason": ...}``
     """
-  
-    # Validate templateName
-    if not params.get('templateName'):
-        raise ValueError("Parameter 'templateName' is empty or missing.")
-
-    # Validate templateVersion
-    if not params.get('templateVersion'):
-        raise ValueError("Parameter 'templateVersion' is empty or missing.")
-
-    # Validate templateParameters
-    if not params.get('templateParameters'):
-        raise ValueError("Parameter 'templateParameters' is empty or missing.")
+    if not isinstance(params, dict):
+        return {"status": False,
+                "reason": "templateParameters must be an object, got "
+                          f"{type(params).__name__}"}
+    cluster_name = params.get("clusterName")
+    if not isinstance(cluster_name, str) or not cluster_name.strip():
+        return {"status": False,
+                "reason": "clusterName is missing in template parameters"}
+    labels = params.get("labels")
+    if labels is not None and not isinstance(labels, dict):
+        return {"status": False,
+                "reason": "labels must be an object, got "
+                          f"{type(labels).__name__}"}
+    return {"status": True}

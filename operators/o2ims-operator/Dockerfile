@@ -39,4 +39,7 @@ COPY --chown=o2ims:o2ims controllers/ ./src/
 USER o2ims
 
 # Entrypoint
-CMD ["kopf", "run", "/usr/o2ims/src/manager.py", "--all-namespaces"]
+# --liveness serves the probe handler; without it the health endpoint the
+# operator registers is never reachable.
+CMD ["kopf", "run", "/usr/o2ims/src/manager.py", "--all-namespaces", \
+     "--liveness=http://0.0.0.0:8080/healthz"]

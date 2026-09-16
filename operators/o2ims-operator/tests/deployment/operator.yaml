@@ -35,15 +35,24 @@ rules:
   - apiGroups: [apiextensions.k8s.io]
     resources: [customresourcedefinitions]
     verbs: [get, list, watch, create, update, patch]
+  # The northbound API creates provisioning requests, which this role did not
+  # allow: the service answered every POST with a permission error.
   - apiGroups: ["o2ims.provisioning.oran.org"]
-    resources: [provisioningrequests,provisioningrequests/status,provisioningrequests/finalizers]
-    verbs: [get, list, watch, update, patch]
+    resources: [provisioningrequests]
+    verbs: [get, list, watch, create, update, patch]
+  - apiGroups: ["o2ims.provisioning.oran.org"]
+    resources: [provisioningrequests/status]
+    verbs: [get, update, patch]
+  - apiGroups: ["o2ims.provisioning.oran.org"]
+    resources: [provisioningrequests/finalizers]
+    verbs: [update]
   - apiGroups: ["cluster.x-k8s.io"]
     resources: [clusters]
     verbs:  [get, list, watch, create, update, patch, delete]
-  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
-    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
-    verbs: [create, patch]
+  # The admission rule that was here named apiGroups as
+  # "admissionregistration.k8s.io/v1", which is not a group, so it granted
+  # nothing. No handler registers a webhook, so it is removed rather than
+  # corrected into a permission that would then be real and unused.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
