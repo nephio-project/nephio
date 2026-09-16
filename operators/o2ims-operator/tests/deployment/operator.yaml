@@ -99,14 +99,31 @@ spec:
       labels:
         app.kubernetes.io/name: nephio-o2ims
     spec:
+      # The same user the image builds for and the catalog deployment runs as.
+      # Overriding this to root meant the test never ran what production runs,
+      # so a permission the non-root user lacks would only show up there.
       securityContext:
-        runAsGroup: 0
-        runAsUser: 0
+        runAsNonRoot: true
+        runAsGroup: 65535
+        runAsUser: 65535
       containers:
       - name: nephio-o2ims
         image: docker.io/library/o2ims:latest
 #        command: ["sleep","10000"]
         imagePullPolicy: IfNotPresent
+        ports:
+          - name: northbound
+            containerPort: 5000
+          - name: health
+            containerPort: 8080
+        # The image passes --liveness, so kopf serves this. Without a probe
+        # pointing at it the endpoint is served and never called.
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 20
         env:
           - name: 'UPSTREAM_PKG_REPO'
             value: 'catalog-infra-capi'
