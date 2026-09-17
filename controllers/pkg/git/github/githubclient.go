@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,13 +43,23 @@ import (
 
 var lock = &sync.Mutex{}
 
+const defaultGitHubAPI = "https://api.github.com"
+
+// http.DefaultClient has no timeout, so a mint that is never answered would
+// hold the reconcile open for as long as the connection stays up.
+var defaultTokenClient = &http.Client{Timeout: 30 * time.Second}
+
 type gc struct {
 	client       resource.APIPatchingApplicator
 	githubClient *github.Client
-	appID        string
-	installID    string
-	privateKey   *rsa.PrivateKey
-	l            logr.Logger
+	// Where installation tokens are minted and what mints them, as fields so a
+	// test can redirect them without touching process-wide http.DefaultClient.
+	tokenEndpoint string
+	tokenClient   *http.Client
+	appID         string
+	installID     string
+	privateKey    *rsa.PrivateKey
+	l             logr.Logger
 }
 
 var singleInstance *gc
@@ -166,8 +177,17 @@ func generateJWT(appID string, privateKey *rsa.PrivateKey) (string, error) {
 }
 
 // getInstallationToken exchanges a JWT for an installation access token
-func getInstallationToken(jwtToken, installID string) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/app/installations/%s/access_tokens", installID)
+func (r *gc) getInstallationToken(jwtToken, installID string) (string, error) {
+	endpoint := r.tokenEndpoint
+	if endpoint == "" {
+		endpoint = defaultGitHubAPI
+	}
+	httpClient := r.tokenClient
+	if httpClient == nil {
+		httpClient = defaultTokenClient
+	}
+
+	url := fmt.Sprintf("%s/app/installations/%s/access_tokens", strings.TrimRight(endpoint, "/"), installID)
 
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
@@ -176,7 +196,7 @@ func getInstallationToken(jwtToken, installID string) (string, error) {
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -197,24 +217,29 @@ func getInstallationToken(jwtToken, installID string) (string, error) {
 	if err := json.Unmarshal(body, &result); err != nil {
 		return "", err
 	}
+	if strings.TrimSpace(result.Token) == "" {
+		// The token goes straight into a Secret, so an answer that carries no
+		// token has to stop here rather than become an empty credential.
+		return "", fmt.Errorf("GitHub answered %d without an installation token", resp.StatusCode)
+	}
 	return result.Token, nil
 }
 
-// refreshInstallationToken generates a new installation access token, updates the
-// internal GitHub client with it, and returns the raw token string.
-func (r *gc) refreshInstallationToken() (string, error) {
+// createInstallationToken mints a new installation access token and returns it.
+// It leaves r.githubClient alone: that client carries the personal access token
+// the user and repository calls need, and the authenticated-user endpoint does
+// not accept an installation token.
+func (r *gc) createInstallationToken() (string, error) {
 	jwtToken, err := generateJWT(r.appID, r.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT: %w", err)
 	}
 
-	installToken, err := getInstallationToken(jwtToken, r.installID)
+	installToken, err := r.getInstallationToken(jwtToken, r.installID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get installation token: %w", err)
 	}
 
-	// Update the client with new token
-	r.githubClient = github.NewClient(nil).WithAuthToken(installToken)
 	return installToken, nil
 }
 
@@ -315,8 +340,7 @@ func (r *gc) ListAccessTokens(opts gittypes.ListAccessTokensOptions) ([]*gittype
 }
 
 func (r *gc) CreateAccessToken(opt gittypes.CreateAccessTokenOption) (*gittypes.AccessToken, *gittypes.Response, error) {
-	// Obtain a fresh installation access token and update the internal client.
-	installToken, err := r.refreshInstallationToken()
+	installToken, err := r.createInstallationToken()
 	if err != nil {
 		return nil, nil, err
 	}
