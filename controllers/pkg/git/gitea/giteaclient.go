@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -203,16 +204,116 @@ func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gittype
 	}, &gittypes.Response{Response: resp.Response}, nil
 }
 
+// wrapResponse survives a nil response, which the SDK returns when it rejects
+// the argument before making a request, and on a transport error.
+func wrapResponse(resp *gitea.Response) *gittypes.Response {
+	if resp == nil {
+		return nil
+	}
+	return &gittypes.Response{Response: resp.Response}
+}
+
+// giteaReadsNameAsID reports whether Gitea's token endpoints read name as a
+// token ID instead of a name.
+//
+// Gitea discards the parse error and branches on the value alone, so this has
+// to as well: ParseInt answers a range error with a saturated, non-zero
+// integer, and a name of twenty digits is read as an id rather than a name.
+func giteaReadsNameAsID(name string) bool {
+	id, _ := strconv.ParseInt(name, 0, 64)
+	return id != 0
+}
+
+// DeleteAccessToken deletes a token by name or by ID. The SDK has accepted
+// either since Gitea 1.13, so narrowing this to an ID left the reconciler,
+// which holds the name, with nothing it could pass.
 func (r *gc) DeleteAccessToken(value interface{}) (*gittypes.Response, error) {
-	tokenID, ok := value.(int64)
-	if !ok {
-		return nil, fmt.Errorf("DeleteAccessToken: value must be int64 (token ID)")
+	switch v := value.(type) {
+	case int64:
+	case string:
+		// A name Gitea reads as an ID targets whatever holds that ID, so it
+		// has to be resolved to the token that carries the name.
+		if giteaReadsNameAsID(v) {
+			return r.deleteAccessTokenNamed(v)
+		}
+	default:
+		return nil, fmt.Errorf("DeleteAccessToken: value must be a token name or an int64 ID, got %T", value)
 	}
-	resp, err := r.giteaClient.DeleteAccessToken(tokenID)
+	resp, err := r.giteaClient.DeleteAccessToken(value)
+	return wrapResponse(resp), err
+}
+
+// deleteAccessTokenNamed deletes the token carrying name, for the names Gitea
+// would otherwise read as an ID.
+func (r *gc) deleteAccessTokenNamed(name string) (*gittypes.Response, error) {
+	r.l.Info("resolving a token name the git server would read as an id", "name", name)
+
+	// Page -1 disables pagination. A page holds 30 tokens by default and the
+	// one being deleted may be past it.
+	tokens, listed, err := r.giteaClient.ListAccessTokens(gitea.ListAccessTokensOptions{
+		ListOptions: gitea.ListOptions{Page: -1},
+	})
 	if err != nil {
-		return &gittypes.Response{Response: resp.Response}, err
+		// No response: the caller reads a 404 as the token being gone, and a
+		// lookup that failed has not established that.
+		return nil, fmt.Errorf("finding the ID of token %q: %w", name, err)
 	}
-	return &gittypes.Response{Response: resp.Response}, nil
+
+	// The whole list is read before anything is deleted: what to do depends on
+	// how many tokens carry the name, which the first match does not say.
+	var matches []*gitea.AccessToken
+	for _, token := range tokens {
+		if token == nil {
+			return nil, fmt.Errorf("finding the ID of token %q: the server listed a null token", name)
+		}
+		if token.Name == name {
+			matches = append(matches, token)
+		}
+	}
+
+	if len(matches) > 1 {
+		// Gitea's own name path answers 422 here rather than picking one, and
+		// deleting one of them would report success while the others remain.
+		return nil, fmt.Errorf("finding the ID of token %q: the server listed %d tokens with that name",
+			name, len(matches))
+	}
+
+	if len(matches) == 1 {
+		id := matches[0].ID
+		if id <= 0 {
+			// Zero goes back out as a name lookup, and a negative id is not one.
+			return nil, fmt.Errorf("finding the ID of token %q: the server gave it id %d", name, id)
+		}
+		resp, err := r.giteaClient.DeleteAccessToken(id)
+		return wrapResponse(resp), err
+	}
+
+	// Nothing carried the name, which only means the token is gone if the whole
+	// list arrived. Gitea reports the row count, and not knowing how many there
+	// are is not the same as knowing there is no such name.
+	total, counted := totalListed(listed)
+	if !counted {
+		return nil, fmt.Errorf("finding the ID of token %q: the server did not say how many tokens there are", name)
+	}
+	if total != len(tokens) {
+		return nil, fmt.Errorf("finding the ID of token %q: the server listed %d of %d tokens",
+			name, len(tokens), total)
+	}
+
+	r.l.Info("no token carries the name, so there is nothing to delete", "name", name)
+	return nil, nil
+}
+
+// totalListed reports how many rows the server says the list has.
+func totalListed(resp *gitea.Response) (int, bool) {
+	if resp == nil || resp.Response == nil {
+		return 0, false
+	}
+	total, err := strconv.Atoi(resp.Header.Get("X-Total-Count"))
+	if err != nil {
+		return 0, false
+	}
+	return total, true
 }
 
 func (r *gc) ListAccessTokens(opts gittypes.ListAccessTokensOptions) ([]*gittypes.AccessToken, *gittypes.Response, error) {

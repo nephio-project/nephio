@@ -19,6 +19,7 @@ package token
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -283,13 +284,24 @@ func (r *reconciler) createToken(ctx context.Context, gitClient git.Client, cr *
 	return nil
 }
 
+// deleteToken removes the token from the git server. A 404 means the token is
+// not there, which is the state deletion asks for, so the finalizer comes off
+// rather than holding the Token open on one somebody already removed.
 func (r *reconciler) deleteToken(ctx context.Context, gitClient git.Client, cr *infrav1alpha1.Token) error {
-	_, err := gitClient.DeleteAccessToken(cr.GetTokenName())
-	if err != nil {
-		log.FromContext(ctx).Error(err, "cannot delete token")
-		cr.SetConditions(infrav1alpha1.Failed(err.Error()))
-		return err
+	log := log.FromContext(ctx)
+
+	resp, err := gitClient.DeleteAccessToken(cr.GetTokenName())
+	if err == nil {
+		log.Info("token deleted", "name", cr.GetTokenName())
+		return nil
 	}
-	log.FromContext(ctx).Info("token deleted", "name", cr.GetTokenName())
-	return nil
+
+	if resp != nil && resp.Response != nil && resp.StatusCode == http.StatusNotFound {
+		log.Info("token already absent on the git server", "name", cr.GetTokenName())
+		return nil
+	}
+
+	log.Error(err, "cannot delete token")
+	cr.SetConditions(infrav1alpha1.Failed(err.Error()))
+	return err
 }
