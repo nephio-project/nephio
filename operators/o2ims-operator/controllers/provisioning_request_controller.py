@@ -14,223 +14,271 @@
 # limitations under the License.
 ##########################################################################
 
-import time
-import uuid
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta, timezone
 
-from utils import check_o2ims_provisioning_request, UPSTREAM_PKG_REPO, create_package_variant, \
-    get_package_variant, get_capi_cluster, TIME_FORMAT
+from utils import (
+    ApiError,
+    CREATION_TIMEOUT,
+    TIME_FORMAT,
+    UPSTREAM_PKG_REPO,
+    ensure_package_variant,
+    get_capi_cluster,
+    validate_template_parameters,
+)
+
+LOGGER = logging.getLogger(__name__)
+
+# How long rendering is given before it is called failed. Rendering either
+# reports a condition quickly or something is wrong with the package.
+RENDERING_TIMEOUT = 30
 
 
-def check_creation_request_status(
-    request_name: str = None,
-    namespace: str = "default",
-    logger=None,
-):
+def utc_now() -> datetime:
+    """Return the current time, aware, so arithmetic and formatting agree."""
+    return datetime.now(timezone.utc)
+
+
+def timestamp(moment: datetime = None) -> str:
+    """Return an RFC3339 UTC timestamp."""
+    return (moment or utc_now()).strftime(TIME_FORMAT)
+
+
+def outcome(state: str, message: str, retryable: bool = False,
+            rendered: bool = False) -> dict:
+    """Return one observation of a provisioning step.
+
+    ``rendered`` says the package has been rendered, which ``progressing`` on
+    its own does not: the caller has to know whether to move on to the cluster.
     """
-    :param request_name: Name of the provisioning request
-    :type request_name: str
-    :param namespace: Namespace in which PV will be created
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: output
-    :rtype: dict
+    return {
+        "provisioningState": state,
+        "provisioningMessage": message,
+        "retryable": retryable,
+        "rendered": rendered,
+    }
+
+
+def deadline_from(started: str = None, budget: int = None,
+                  logger=None) -> datetime:
+    """Return the moment this request runs out of time.
+
+    The deadline is derived from when the request started, not from how many
+    times it has been looked at, so a restart continues the same budget
+    instead of being granted a fresh one. A timestamp that cannot be read
+    falls back to now, which does grant a fresh one, so it says so rather
+    than quietly undoing that.
     """
-    output = check_o2ims_provisioning_request(
-        name=request_name,
-        namespace=namespace,
-        logger=logger,
-    )
+    budget = CREATION_TIMEOUT if budget is None else budget
+    begin = utc_now()
+    if started:
+        try:
+            # fromisoformat, not strptime: it takes the trailing Z and the
+            # fractional seconds a timestamp may carry, which the operator's
+            # own format string does not.
+            begin = datetime.fromisoformat(started)
+            if begin.tzinfo is None:
+                begin = begin.replace(tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            (logger or LOGGER).warning(
+                "cannot read %r as a start time, so this request is being "
+                "given a fresh budget", started)
+    return begin + timedelta(seconds=budget)
 
-    return output
+
+def package_variant_params(
+    request_name: str, template_name: str, template_version: str, params: dict
+) -> dict:
+    """Return the PackageVariant parameters for this request.
+
+    The caller's parameters are copied: this used to pop ``clusterName`` out of
+    the dict it was handed.
+
+    :raises ValueError: the template parameters are not usable
+    """
+    validation = validate_template_parameters(params)
+    if not validation["status"]:
+        raise ValueError(validation["reason"])
+
+    # dict(): the caller may hand a mapping that is not one, and a copy is
+    # what keeps clusterName from being popped out of the caller's own.
+    template_parameters = dict(params)
+    cluster_name = template_parameters.pop("clusterName")
+
+    mutators = []
+    # An exact key: "labels" in param used to be a substring test, so a
+    # parameter named node-labels matched and then read params["labels"].
+    if isinstance(template_parameters.get("labels"), dict):
+        mutators.append({
+            "image": "gcr.io/kpt-fn/set-labels:v0.2.0",
+            "configMap": template_parameters["labels"],
+        })
+
+    return {
+        "name": request_name,
+        "repo_location": UPSTREAM_PKG_REPO,
+        "template_name": template_name,
+        "template_version": template_version,
+        "cluster_name": cluster_name,
+        "mutators": mutators,
+        "namespace": None,
+        "create": True,
+    }
 
 
-# Creating a package variant
+def ready_condition(resource: dict) -> dict:
+    """Return the Ready condition, by type rather than by position."""
+    status = resource.get("status")
+    if not isinstance(status, dict):
+        return {}
+    conditions = status.get("conditions")
+    if not isinstance(conditions, list):
+        return {}
+    for condition in conditions:
+        if isinstance(condition, dict) and condition.get("type") == "Ready":
+            return condition
+    return {}
+
+
 def cluster_creation_request(
     request_name: str = None,
     template_name: str = None,
     template_version: str = None,
     params: dict = None,
+    request_uid: str = None,
     namespace: str = "default",
     logger=None,
 ):
-    """
-    :param request_name: Name of the provisioning request
-    :type request_name: str
-    :param template_name: Git repository name which contains the template
-    :type template_name: str
-    :param template_version: Branch of the repository to use for the template
-    :type template_version: str
-    :param params: Parameters to provide to the template
-    :type params: dict
-    :param namespace: Namespace in which PV will be created
-    :type namespace: str
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: output
+    """Ensure the PackageVariant for this request and report what it says now.
+
+    One observation. Whether to look again is the caller's decision, so a
+    rendering that has not finished is reported as progressing and retryable
+    rather than being waited out inside a handler.
+
+    :return: ``provisioningState``, ``provisioningMessage`` and ``retryable``
     :rtype: dict
     """
+    log = logger or LOGGER
 
-    # Git repository location
-    repo_location = UPSTREAM_PKG_REPO
-    # Add validation for clusterName
-    cluster_name = params["clusterName"]
-    params.pop("clusterName")
-    # Generate mutators from template parameters (params)
-    mutators = []
-    for param in params:
-        if "labels" in param:
-            mutators.append(
-                {
-                    "image": "gcr.io/kpt-fn/set-labels:v0.2.0",
-                    "configMap": params["labels"],
-                }
-            )
-
-    # Generate package variant body
-    package_variant_body = {
-        "name": request_name,
-        "repo_location": repo_location,
-        "template_name": template_name,
-        "template_version": template_version,
-        "cluster_name": cluster_name,
-        "mutators": mutators,
-        "namespace": namespace,
-        "create": True,
-    }
-    reason = "Started"
-    _status = "False"
-    provisioning_message = "Cluster instance rendering ongoing"
-    provisioning_state = "progressing"
-    timer = 0
-    # Short timeouts are fine to see if package variant has problems
-    timeout = 30
     try:
-        status = create_package_variant(
-            name=package_variant_body["name"],
+        pv_param = package_variant_params(
+            request_name, template_name, template_version, params
+        )
+    except ValueError as error:
+        return outcome("failed", f"Cluster instance rendering failed: {error}")
+
+    try:
+        resource = ensure_package_variant(
+            name=request_name,
             namespace=namespace,
-            pv_param=package_variant_body,
+            pv_param=pv_param,
+            request_uid=request_uid,
             logger=logger,
         )
-        while status["status"]:
-            creation_status = get_package_variant(
-                name=request_name, namespace=namespace, logger=logger
-            )
-            if creation_status["status"] and "status" in creation_status["body"].keys():
-                if (
-                    creation_status["body"]["status"]["conditions"] is not None
-                    and len(creation_status["body"]["status"]["conditions"]) > 0
-                ):
-                    # Checking the status of the latest entry of the list
-                    _status = creation_status["body"]["status"]["conditions"][-1][
-                        "status"
-                    ]
-                    reason = creation_status["body"]["status"]["conditions"][-1][
-                        "reason"
-                    ]
-                    if _status == "True":
-                        provisioning_message = "Cluster instance rendering completed"
-                        provisioning_state = "progressing"
-                        break
-                    elif _status == "False":
-                        provisioning_message = (
-                            f"Cluster instance rendering failed {reason}"
-                        )
-                        provisioning_state = "failed"
-                        break
-            elif not creation_status["status"]:
-                _status = "False"
-                provisioning_message = "Cluster instance rendering failed"
-                provisioning_state = "failed"
-                break
-            if timer >= timeout:
-                provisioning_message = (
-                    "Cluster resource creation failed reached timeout"
-                )
-                provisioning_state = "failed"
-                break
-            time.sleep(1)
-            timer += 1
-    except Exception as e:
-        logger.error(
-            f"Exception {e} in creating package variant {package_variant_body['name']} in namespace {namespace}"
-        )
-        provisioning_message = "Cluster instance rendering failed"
-        provisioning_state = "failed"
+    except ApiError as error:
+        log.error("ensuring the package variant for %s failed: %s",
+                  request_name, error)
+        if error.retryable:
+            return outcome("progressing",
+                           f"Cluster instance rendering ongoing: {error}",
+                           retryable=True)
+        return outcome("failed", f"Cluster instance rendering failed: {error}")
 
-    output = {
-        "provisioningMessage": provisioning_message,
-        "provisioningState": provisioning_state,
-    }
-    return output
+    condition = ready_condition(resource)
+    state = condition.get("status")
+    reason = condition.get("reason", "")
+    message = condition.get("message", "")
+
+    if state == "True":
+        return outcome("progressing", "Cluster instance rendering completed",
+                       rendered=True)
+    if state == "False":
+        # Porch reports a transient rendering error the same way it reports a
+        # package that cannot be rendered at all, so this is not terminal on
+        # its own; the caller's budget decides.
+        return outcome("progressing",
+                       f"Cluster instance rendering ongoing: {reason} "
+                       f"{message}".strip(),
+                       retryable=True)
+    return outcome("progressing", "Cluster instance rendering ongoing",
+                   retryable=True)
 
 
-# Checking the status of cluster creation
-# TODO check the status of package revision
 def cluster_creation_status(
     cluster_name: str,
     namespace: str = "default",
-    timeout=1800,
-    cluster_provisioner="capi",
+    started: str = None,
+    timeout: int = None,
+    cluster_provisioner: str = "capi",
     logger=None,
 ):
-    """
-    :param cluster_name: Name of the provisioning request
-    :type cluster_name: str
-    :param namespace: Namespace in which PV will be created
-    :type namespace: str
-    :param timeout: Timeout after which cluster creation will be declared failed
-    :type timeout: int
-    :param cluster_provisioner: name of the cluster provisioner
-    :type cluster_provisioner: int
-    :param logger: logger
-    :type logger: <class 'kopf._core.actions.loggers.ObjectLogger'>
-    :return: output
+    """Observe the cluster once and report where provisioning has got to.
+
+    :param started: when the request began, so a restart keeps its budget
+    :return: ``provisioningStatus``, ``retryable`` and, once provisioned,
+             ``provisionedResourceSet``
     :rtype: dict
     """
+    log = logger or LOGGER
 
-    provisioning_message = "Cluster resource creation ongoing"
-    provisioning_state = "progressing"
-    # Timer to check for timeout
-    timer = 0
-
-    if cluster_provisioner == "capi" and timer <= timeout:
-        while True:
-            cluster_status = get_capi_cluster(
-                name=cluster_name, namespace=namespace, logger=logger
-            )
-            logger.debug(cluster_status)
-            if cluster_status["status"]:
-                if "status" in cluster_status["body"].keys():
-                    if cluster_status["body"]["status"]["phase"] == "Provisioned":
-                        provisioning_message = "Cluster resource created"
-                        provisioning_state = "fulfilled"
-                        break
-            if timer >= timeout:
-                provisioning_message = (
-                    "Cluster resource creation failed reached timeout"
-                )
-                provisioning_state = "failed"
-                break
-            timer += 1
-            time.sleep(1)
-
-    output = {
-        "provisioningStatus": {
-            "provisioningUpdateTime": datetime.now().strftime(TIME_FORMAT),
-            "provisioningMessage": provisioning_message,
-            "provisioningState": provisioning_state,
+    def report(state: str, message: str, retryable: bool = False) -> dict:
+        return {
+            "provisioningStatus": {
+                "provisioningUpdateTime": timestamp(),
+                "provisioningMessage": message,
+                "provisioningState": state,
+            },
+            "retryable": retryable,
         }
-    }
 
-    if provisioning_state == "fulfilled":
-        output.update(
-            {
-                "provisionedResourceSet": {
-                    "oCloudNodeClusterId": str(uuid.uuid4()),
-                    "oCloudInfrastructureResourceIds": [str(uuid.uuid4())],
-                }
-            }
-        )
-    return output
+    if cluster_provisioner != "capi":
+        return report("failed",
+                      f"Cluster provisioner {cluster_provisioner!r} is not "
+                      "supported")
+
+    deadline = deadline_from(started, timeout, logger=log)
+
+    try:
+        cluster = get_capi_cluster(name=cluster_name, namespace=namespace,
+                                   logger=logger)
+    except ApiError as error:
+        log.error("observing cluster %s failed: %s", cluster_name, error)
+        if not error.retryable and error.reason not in ("notFound",):
+            return report("failed",
+                          f"Cluster resource creation failed: {error}")
+        if utc_now() >= deadline:
+            return report("failed",
+                          f"Cluster resource creation timed out: {error}")
+        return report("progressing", "Cluster resource creation ongoing",
+                      retryable=True)
+
+    phase = (cluster.get("status") or {}).get("phase")
+    if phase == "Provisioned":
+        result = report("fulfilled", "Cluster resource created")
+        result["provisionedResourceSet"] = provisioned_resource_set(cluster)
+        return result
+    if utc_now() >= deadline:
+        return report("failed",
+                      "Cluster resource creation failed reached timeout")
+    return report("progressing",
+                  "Cluster resource creation ongoing"
+                  f"{f' ({phase})' if phase else ''}",
+                  retryable=True)
+
+
+def provisioned_resource_set(cluster: dict) -> dict:
+    """Return the resources this cluster actually stands for.
+
+    The node cluster id is the Cluster's own uid, which is always there. The
+    infrastructure ids are read off spec.infrastructureRef, which Cluster API
+    does not fill in, so in practice that list is empty until this operator is
+    given a real inventory mapping. Empty is the honest answer: a fresh uuid4
+    changed on every observation and traced to nothing.
+    """
+    metadata = cluster.get("metadata") or {}
+    infrastructure = (cluster.get("spec") or {}).get("infrastructureRef") or {}
+    resource_ids = [infrastructure["uid"]] if infrastructure.get("uid") else []
+    return {
+        "oCloudNodeClusterId": metadata.get("uid", ""),
+        "oCloudInfrastructureResourceIds": resource_ids,
+    }

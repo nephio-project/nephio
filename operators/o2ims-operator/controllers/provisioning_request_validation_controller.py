@@ -14,21 +14,19 @@
 # limitations under the License.
 ##########################################################################
 
+from utils import validate_template_parameters
 
-def validate_cluster_creation_request(params: dict = None):
-    """
+
+def validate_cluster_creation_request(params: dict = None) -> dict:
+    """Validate the template parameters of a provisioning request.
+
+    Kept as the name the reconciler has always imported. The rule itself lives
+    in utils with the northbound one, because the two disagreed about what a
+    valid request is and about whether an invalid one raises or is reported.
+
     :param params: Parameters to provide to the template
     :type params: dict
-    :return: request_validation
+    :return: ``{"status": True}``, or ``{"status": False, "reason": ...}``
     :rtype: dict
     """
-    # Checking if clusterName and clusterProvisioner are in parameters
-    if "clusterName" in params:
-        request_validation = {"status": True}
-    else:
-        request_validation = {
-            "reason": "clusterName is missing in template parameters",
-            "status": False,
-        }
-
-    return request_validation
+    return validate_template_parameters(params)

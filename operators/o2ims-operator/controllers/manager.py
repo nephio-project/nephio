@@ -15,46 +15,75 @@
 ##########################################################################
 
 import logging
+import os
 import threading
-from datetime import datetime
-import kopf
+from datetime import datetime, timezone
 
-from northbound_restapi import app  # Import the Flask app
+import kopf
+from waitress.server import create_server
+
+from northbound_restapi import app
 from utils import (
-    LOG_LEVEL,
-    CLUSTER_PROVISIONER, 
+    CLUSTER_PROVISIONER,
     CREATION_TIMEOUT,
+    LOG_LEVEL,
     TIME_FORMAT,
-    )
+    provisioning_status,
+    validate_cluster_creation_request,
+)
 from provisioning_request_controller import (
-    check_creation_request_status,
     cluster_creation_request,
     cluster_creation_status,
-    )
+)
 
-from provisioning_request_validation_controller import (
-    validate_cluster_creation_request,
-    )
+LOGGER = logging.getLogger(__name__)
+
+NBI_HOST = os.getenv("NBI_HOST", "0.0.0.0")
+NBI_PORT = int(os.getenv("NBI_PORT", "5000"))
+# How long a request waits before it is looked at again. One observation per
+# pass, so the handler never holds a worker for the whole provisioning budget.
+OBSERVE_DELAY = 10
+# How long shutdown waits for the northbound API to stop serving. Under the
+# five seconds the deployment gives the pod, so the wait finishes rather than
+# being cut off by SIGKILL with nothing said about it.
+SHUTDOWN_TIMEOUT = float(os.getenv("NBI_SHUTDOWN_TIMEOUT", "3"))
+
+_server = None
+_server_thread = None
 
 
-# Start northbound rest endpoint for FOCOM
-def run_flask():
-    app.run(host='0.0.0.0', port=5000)
+def now() -> str:
+    """Return an RFC3339 UTC timestamp."""
+    return datetime.now(timezone.utc).strftime(TIME_FORMAT)
 
-threading.Thread(target=run_flask, daemon=True).start
+
+def publish(patch: kopf.Patch, state: str, message: str) -> None:
+    """Record where this request has got to.
+
+    One writer, so a later step cannot be overwritten by an earlier one that
+    happened to run in another subhandler.
+    """
+    patch.status["provisioningStatus"] = {
+        "provisioningState": state,
+        "provisioningMessage": message,
+        "provisioningUpdateTime": now(),
+    }
+
 
 @kopf.on.startup()
 def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
-    # OwnerReference
-    if LOG_LEVEL == "INFO":
-        settings.posting.level = logging.INFO
-    if LOG_LEVEL == "ERROR":
-        settings.posting.level = logging.ERROR
-    if LOG_LEVEL == "WARNING":
-        settings.posting.level = logging.WARNING
-    if LOG_LEVEL == "DEBUG":
-        settings.posting.level = logging.DEBUG
-    settings.persistence.finalizer = "provisioningrequests.o2ims.provisioning.oran.org"
+    """Configure the operator from settings it can honour."""
+    level = {
+        "INFO": logging.INFO,
+        "ERROR": logging.ERROR,
+        "WARNING": logging.WARNING,
+        "DEBUG": logging.DEBUG,
+    }.get(LOG_LEVEL)
+    if level is not None:
+        settings.posting.level = level
+
+    settings.persistence.finalizer = (
+        "provisioningrequests.o2ims.provisioning.oran.org")
     settings.persistence.progress_storage = kopf.AnnotationsProgressStorage(
         prefix="provisioningrequests.o2ims.provisioning.oran.org"
     )
@@ -66,113 +95,123 @@ def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
     memo.creation_timeout = CREATION_TIMEOUT
 
 
-## kopf.event is designed to show events in kubectl get events. For clusterscope resources currently it is not possible to show events
+@kopf.on.startup()
+def start_northbound(logger, **_):
+    """Serve the northbound API, and fail startup if the port cannot be bound.
+
+    create_server binds before it returns, so a port already in use stops the
+    operator here instead of leaving it running with no API. This used to be a
+    thread expression evaluated at import, which neither started the server nor
+    reported that it had not.
+    """
+    global _server, _server_thread
+    _server = create_server(app, host=NBI_HOST, port=NBI_PORT)
+    _server_thread = threading.Thread(
+        target=_server.run, name="northbound", daemon=True)
+    _server_thread.start()
+    logger.info("northbound API listening on %s:%s", NBI_HOST, NBI_PORT)
+
+
+@kopf.on.cleanup()
+def stop_northbound(logger, **_):
+    """Stop serving, and say so if the server outlives the budget."""
+    global _server, _server_thread
+    if _server is not None:
+        _server.close()
+    if _server_thread is not None:
+        _server_thread.join(timeout=SHUTDOWN_TIMEOUT)
+        if _server_thread.is_alive():
+            logger.warning("the northbound API did not stop within %ss",
+                           SHUTDOWN_TIMEOUT)
+        else:
+            logger.info("the northbound API stopped")
+    _server, _server_thread = None, None
+
+
 @kopf.on.resume("o2ims.provisioning.oran.org", "provisioningrequests")
 @kopf.on.create("o2ims.provisioning.oran.org", "provisioningrequests")
-async def create_fn(spec, logger, status, patch: kopf.Patch, memo: kopf.Memo, **kwargs):
-    metadata_name = kwargs["body"]["metadata"]["name"]
-    # Template name will be treated as package name
-    template_name = spec.get("templateName")
-    # Template version will be treated as repository branch/tag/commit
-    template_version = spec.get("templateVersion")
-    template_parameters = spec.get("templateParameters")
-    kopf.event(
-        kwargs["body"],
-        type="Info",
-        reason="Logging",
-        message="Provisioning request validation ongoing",
-    )
-    # Check in-case the package variant was manually created
-    _status = check_creation_request_status(request_name=metadata_name, logger=logger)
-    if (
-        not _status["status"]
-        and _status["reason"] == "notFound"
-        and _status["pv"]["status"]
-    ):
-        patch.status["provisioningStatus"] = {
-            "provisioningMessage": "Provisioning request creation failed, package variant already exist",
-            "provisioningState": "failed",
-            "provisioningUpdateTime": datetime.now().strftime(TIME_FORMAT),
-        }
-        kopf.event(
-            kwargs["body"],
-            type="Error",
-            reason="Logging",
-            message="Provisioning request creation failed, package variant already exist",
-        )
+def create_fn(spec, logger, patch: kopf.Patch, memo: kopf.Memo, body, **_):
+    """Move this request one step and record where it got to.
+
+    Synchronous, because the work underneath is synchronous HTTP: an async
+    handler running it blocks the event loop Kopf watches every resource with.
+    Each pass makes one observation and hands the retry back to Kopf rather
+    than sleeping through the provisioning budget inside the handler.
+    """
+    metadata = body["metadata"]
+    request_name = metadata["name"]
+
+    # Fulfilled is where a provisioning request stops. Resume runs for every
+    # existing request when the operator starts, and driving a finished one
+    # from the rendering step again re-creates its PackageVariant and reports
+    # it as progressing after it had been reported done.
+    if provisioning_status(body).get("provisioningState") == "fulfilled":
+        logger.info("provisioning request %s is already fulfilled",
+                    request_name)
         return
 
-    # TODO: This should be done via on.validate handler (admissionwebhooks)
-    request_validation = validate_cluster_creation_request(params=template_parameters)
+    validation = validate_cluster_creation_request(spec)
+    if not validation["status"]:
+        message = ("Provisioning request validation failed; reason: "
+                   f"{validation['reason']}")
+        # The business status is written before the handler stops: a Kopf
+        # failure is recorded in an annotation, not in the resource's status.
+        publish(patch, "failed", message)
+        raise kopf.PermanentError(message)
 
-    if not request_validation["status"]:
-        patch.status["provisioningStatus"] = {
-            "provisioningMessage": "Provisioning request validation failed; reason: "
-            + request_validation["reason"],
-            "provisioningState": "failed",
-            "provisioningUpdateTime": datetime.now().strftime(TIME_FORMAT),
-        }
-        kopf.PermanentError(
-            kwargs["body"],
-            type="Error",
-            reason="Logging",
-            message="Provisioning request validation failed; reason: {request_validation['reason']}",
-        )
-        return
-
-    @kopf.subhandler()
-    def sub_validations(*, patch, **kwargs):
-        if request_validation["status"]:
-            patch.status["provisioningStatus"] = {
-                "provisioningMessage": "Provisioning request validation done",
-                "provisioningState": "progressing",
-                "provisioningUpdateTime": datetime.now().strftime(TIME_FORMAT),
-            }
-            kopf.event(
-                kwargs["body"],
-                type="Info",
-                reason="Logging",
-                message="Provisioning request validation done",
-            )
-
-    creation_request_output = cluster_creation_request(
-        request_name=metadata_name,
-        template_name=template_name,
-        template_version=template_version,
-        params=template_parameters.copy(),
+    rendering = cluster_creation_request(
+        request_name=request_name,
+        template_name=spec["templateName"],
+        template_version=spec["templateVersion"],
+        params=spec["templateParameters"],
+        request_uid=metadata.get("uid"),
         logger=logger,
     )
+    if rendering["provisioningState"] == "failed":
+        publish(patch, "failed", rendering["provisioningMessage"])
+        raise kopf.PermanentError(rendering["provisioningMessage"])
+    if not rendering["rendered"]:
+        publish(patch, "progressing", rendering["provisioningMessage"])
+        raise kopf.TemporaryError(rendering["provisioningMessage"],
+                                  delay=OBSERVE_DELAY)
 
-    if creation_request_output["provisioningState"] == "failed":
-        raise kopf.PermanentError("Cluster creation permanently failed")
+    observation = cluster_creation_status(
+        cluster_name=spec["templateParameters"]["clusterName"],
+        # The budget runs from when the request was made, so a restart carries
+        # on with what is left of it rather than being given a fresh one.
+        started=metadata.get("creationTimestamp"),
+        timeout=memo.creation_timeout,
+        cluster_provisioner=memo.cluster_provisioner,
+        logger=logger,
+    )
+    patch.status["provisioningStatus"] = observation["provisioningStatus"]
+    if "provisionedResourceSet" in observation:
+        patch.status["provisionedResourceSet"] = observation[
+            "provisionedResourceSet"]
 
-    @kopf.subhandler()
-    def sub_creation(*, patch, **kwargs):
-        patch.status["provisioningStatus"] = {
-            "provisioningMessage": "Cluster instance rendering completed",
-            "provisioningState": "progressing",
-            "provisioningUpdateTime": datetime.now().strftime(TIME_FORMAT),
-        }
-
-    @kopf.subhandler(timeout=memo.creation_timeout)
-    def check_c_status(*, spec, patch, logger, memo: kopf.Memo, **kwargs):
-        creation_state_output = cluster_creation_status(
-            cluster_name=template_parameters["clusterName"],
-            timeout=memo.creation_timeout,
-            cluster_provisioner=memo.cluster_provisioner,
-            logger=logger,
-        )
-        patch.status["provisioningStatus"] = creation_state_output["provisioningStatus"]
-        if "provisionedResourceSet" in creation_state_output.keys():
-            patch.status["provisionedResourceSet"] = creation_state_output[
-                "provisionedResourceSet"
-            ]
-        if creation_request_output["provisioningState"] == "failed":
-            raise kopf.PermanentError("Cluster creation permanently failed")
+    state = observation["provisioningStatus"]["provisioningState"]
+    message = observation["provisioningStatus"]["provisioningMessage"]
+    if state == "failed":
+        raise kopf.PermanentError(message)
+    if state != "fulfilled":
+        raise kopf.TemporaryError(message, delay=OBSERVE_DELAY)
+    logger.info("provisioning request %s fulfilled", request_name)
 
 
-##health check
 @kopf.on.probe(id="now")
-def get_current_timestamp(**kwargs):
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def get_current_timestamp(**_):
+    """Answer the liveness probe."""
+    return datetime.now(timezone.utc).isoformat()
 
+
+@kopf.on.probe(id="northbound")
+def northbound_state(**_):
+    """Say whether the northbound API is being served.
+
+    kopf answers this endpoint only once it is running, so reaching it at all
+    says the operator started. This says the other half: that the thread
+    serving the API is still alive, rather than that its port was bound once.
+    """
+    if _server_thread and _server_thread.is_alive():
+        return "serving"
+    return "stopped"

@@ -35,15 +35,24 @@ rules:
   - apiGroups: [apiextensions.k8s.io]
     resources: [customresourcedefinitions]
     verbs: [get, list, watch, create, update, patch]
+  # The northbound API creates provisioning requests, which this role did not
+  # allow: the service answered every POST with a permission error.
   - apiGroups: ["o2ims.provisioning.oran.org"]
-    resources: [provisioningrequests,provisioningrequests/status,provisioningrequests/finalizers]
-    verbs: [get, list, watch, update, patch]
+    resources: [provisioningrequests]
+    verbs: [get, list, watch, create, update, patch]
+  - apiGroups: ["o2ims.provisioning.oran.org"]
+    resources: [provisioningrequests/status]
+    verbs: [get, update, patch]
+  - apiGroups: ["o2ims.provisioning.oran.org"]
+    resources: [provisioningrequests/finalizers]
+    verbs: [update]
   - apiGroups: ["cluster.x-k8s.io"]
     resources: [clusters]
     verbs:  [get, list, watch, create, update, patch, delete]
-  - apiGroups: [admissionregistration.k8s.io/v1, admissionregistration.k8s.io/v1beta1]
-    resources: [validatingwebhookconfigurations, mutatingwebhookconfigurations]
-    verbs: [create, patch]
+  # The admission rule that was here named apiGroups as
+  # "admissionregistration.k8s.io/v1", which is not a group, so it granted
+  # nothing. No handler registers a webhook, so it is removed rather than
+  # corrected into a permission that would then be real and unused.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -90,14 +99,40 @@ spec:
       labels:
         app.kubernetes.io/name: nephio-o2ims
     spec:
+      # The same user the image builds for and the catalog deployment runs as.
+      # Overriding this to root meant the test never ran what production runs,
+      # so a permission the non-root user lacks would only show up there.
       securityContext:
-        runAsGroup: 0
-        runAsUser: 0
+        runAsNonRoot: true
+        runAsGroup: 65535
+        runAsUser: 65535
       containers:
       - name: nephio-o2ims
         image: docker.io/library/o2ims:latest
 #        command: ["sleep","10000"]
         imagePullPolicy: IfNotPresent
+        ports:
+          - name: northbound
+            containerPort: 5000
+          - name: health
+            containerPort: 8080
+        # The image passes --liveness, so kopf serves this. Without a probe
+        # pointing at it the endpoint is served and never called.
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        # kopf answers this only once it is running, and the handler behind it
+        # reports whether the northbound API is still being served, so ready
+        # means more than a socket having been bound at some point.
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 10
         env:
           - name: 'UPSTREAM_PKG_REPO'
             value: 'catalog-infra-capi'
