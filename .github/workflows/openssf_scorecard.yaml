@@ -33,7 +33,7 @@ jobs:
           results_format: sarif
           publish_results: true
       - name: Upload artifact
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: SARIF file
           path: results.sarif
