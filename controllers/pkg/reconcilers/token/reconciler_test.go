@@ -240,6 +240,42 @@ func TestCreateToken(t *testing.T) {
 	}
 }
 
+// A page holds 30 tokens by default, so a token listed past that row must still
+// be found. Creating it again is refused because the name is in use, and that
+// refusal would keep the Token from going Ready for as long as the token is
+// there.
+func TestCreateTokenListsEveryPage(t *testing.T) {
+	cr := &infrav1alpha1.Token{ObjectMeta: metav1.ObjectMeta{Name: "edge-cluster"}}
+
+	var all []*types.AccessToken
+	for id := int64(1); id <= 34; id++ {
+		all = append(all, &types.AccessToken{ID: id, Name: fmt.Sprintf("cluster-%02d", id)})
+	}
+	all = append(all, &types.AccessToken{ID: 99, Name: cr.GetTokenName()})
+
+	gitClient := gitclientmocks.NewMockClient(t)
+	gitClient.EXPECT().ListAccessTokens(mock.Anything).RunAndReturn(
+		func(opts types.ListAccessTokensOptions) ([]*types.AccessToken, *types.Response, error) {
+			if opts.Page == -1 {
+				return all, nil, nil
+			}
+			return all[:30], nil, nil
+		})
+	// What Gitea answers when the name is already taken, for the run that
+	// missed the token on the first page.
+	gitClient.EXPECT().GetMyUserInfo().Return(&types.User{UserName: "gitea"}, nil, nil).Maybe()
+	gitClient.EXPECT().CreateAccessToken(mock.Anything).
+		Return(nil, nil, fmt.Errorf("access token name has been used already")).Maybe()
+
+	r := &reconciler{APIPatchingApplicator: resource.NewAPIPatchingApplicator(nil)}
+
+	require.NoError(t, r.createToken(context.Background(), gitClient, cr))
+	gitClient.AssertCalled(t, "ListAccessTokens", types.ListAccessTokensOptions{
+		ListOptions: types.ListOptions{Page: -1},
+	})
+	gitClient.AssertNotCalled(t, "CreateAccessToken", mock.Anything)
+}
+
 func initMockeryMocks(tt *tokenTests) {
 	mockGitClient := new(gitclientmocks.MockClient)
 	tt.args.gitClient = mockGitClient
