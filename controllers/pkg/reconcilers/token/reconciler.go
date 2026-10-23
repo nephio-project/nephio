@@ -208,7 +208,12 @@ func (r *reconciler) createToken(ctx context.Context, gitClient git.Client, cr *
 	// For other providers, check if token already exists
 	tokenFound := false
 	if provider != git.ProviderGitHub {
-		tokens, _, err := gitClient.ListAccessTokens(types.ListAccessTokensOptions{})
+		// Page -1 disables pagination. A page holds 30 tokens by default, and a
+		// token past it would read as absent; creating it again is then refused
+		// because the name is already in use, and the Token never goes Ready.
+		tokens, _, err := gitClient.ListAccessTokens(types.ListAccessTokensOptions{
+			ListOptions: types.ListOptions{Page: -1},
+		})
 		if err != nil {
 			log.Error(err, "cannot list tokens")
 			cr.SetConditions(infrav1alpha1.Failed(err.Error()))
