@@ -454,7 +454,7 @@ export KUBECONFIG=/home/user/.kube/config
 # No additional configuration needed - token will be extracted automatically
 
 # Option 2: Manually extract and set token from kubeconfig
-export TOKEN=$(kubectl config view --raw -o jsonpath='{.users[0].user.token}')
+export TOKEN=$(kubectl config view --minify --raw -o jsonpath='{.users[0].user.token}')
 
 # Option 3: Create a service account token
 export TOKEN=$(kubectl create token focom-operator-dev --duration=24h)
@@ -539,7 +539,7 @@ The FOCOM operator automatically resolves authentication tokens in the following
 1. **Explicit Configuration:** Token provided in `PorchStorageConfig.Token`
 2. **TOKEN Environment Variable:** Token string or file path in `TOKEN` env var
 3. **In-Cluster Token:** `/var/run/secrets/kubernetes.io/serviceaccount/token` (automatic in-cluster)
-4. **Kubeconfig Token:** Extracted from `KUBECONFIG` file (automatic for local development)
+4. **Kubeconfig Token:** Extracted for the user of the current context in the `KUBECONFIG` file (automatic for local development)
 
 ### Token Resolution Examples
 
@@ -559,7 +559,7 @@ export KUBECONFIG=/home/user/.kube/config
 #### Local Development (Manual Token)
 ```bash
 # Extract token from kubeconfig
-export TOKEN=$(kubectl config view --raw -o jsonpath='{.users[0].user.token}')
+export TOKEN=$(kubectl config view --minify --raw -o jsonpath='{.users[0].user.token}')
 ```
 
 #### Local Development (Service Account Token)
@@ -722,7 +722,7 @@ echo $KUBECONFIG
 kubectl config view
 
 # Check if kubeconfig contains token
-kubectl config view --raw -o jsonpath='{.users[0].user.token}'
+kubectl config view --minify --raw -o jsonpath='{.users[0].user.token}'
 
 # If no token in kubeconfig, create one manually
 export TOKEN=$(kubectl create token default --duration=24h)
