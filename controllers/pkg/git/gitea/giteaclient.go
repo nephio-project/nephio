@@ -22,6 +22,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"code.gitea.io/sdk/gitea"
@@ -36,12 +37,20 @@ import (
 
 var lock = &sync.Mutex{}
 
+// startRetryInterval is how long Start waits before each attempt to build the
+// client, so that a secret created after the controllers start is picked up.
+var startRetryInterval = 5 * time.Second
+
 type gc struct {
-	client      resource.APIPatchingApplicator
-	giteaClient *gitea.Client
+	client resource.APIPatchingApplicator
+	// giteaClient is written once by Start, on its own goroutine, while the
+	// reconcilers holding this instance read it, so it is published atomically
+	// rather than assigned to a plain field.
+	giteaClient atomic.Pointer[gitea.Client]
 	l           logr.Logger
 }
 
+// singleInstance is read and written only with lock held.
 var singleInstance *gc
 
 func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (git.Client, error) {
@@ -52,22 +61,20 @@ func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (git.
 	if client.Client == nil {
 		return nil, fmt.Errorf("failed creating gitea client, value of client.Client cannot be nil")
 	}
-	// check if an instance is created using check-lock-check pattern implementation
-	if singleInstance == nil {
-		// Create a lock
-		lock.Lock()
-		defer lock.Unlock()
-		// Check instance is still null as another thread of execution may have initialized it before the lock was acquired.
-		if singleInstance == nil {
-			singleInstance = &gc{client: client}
-			log.FromContext(ctx).Info("Gitea Client Instance created now.")
-			go singleInstance.Start(ctx)
-		} else {
-			log.FromContext(ctx).Info("Gitea Client Instance already created.")
-		}
-	} else {
+	// The lock is taken on every call: checking singleInstance before taking
+	// it is a read racing the write below. This runs once per reconciler at
+	// setup, so there is nothing to gain from avoiding it.
+	lock.Lock()
+	defer lock.Unlock()
+	if singleInstance != nil {
 		log.FromContext(ctx).Info("Gitea Client Instance already created.")
+		return singleInstance, nil
 	}
+	// The logger is set before Start runs rather than by it, so that nothing
+	// Start writes is read by the reconcilers except giteaClient.
+	singleInstance = &gc{client: client, l: log.FromContext(ctx)}
+	log.FromContext(ctx).Info("Gitea Client Instance created now.")
+	go singleInstance.Start(ctx)
 	return singleInstance, nil
 }
 
@@ -82,9 +89,7 @@ func (r *gc) Start(ctx context.Context) {
 			fmt.Printf("controller manager context cancelled: Exit\n")
 			return
 		default:
-			r.l = log.FromContext(ctx)
-			//var err error
-			time.Sleep(5 * time.Second)
+			time.Sleep(startRetryInterval)
 
 			gitURL, ok := os.LookupEnv("GIT_URL")
 			if !ok {
@@ -121,7 +126,7 @@ func (r *gc) Start(ctx context.Context) {
 				break
 			}
 
-			r.giteaClient = giteaClient
+			r.giteaClient.Store(giteaClient)
 			r.l.Info("gitea init done")
 			return
 		}
@@ -133,15 +138,15 @@ func getClientAuth(secret *corev1.Secret) gitea.ClientOption {
 }
 
 func (r *gc) IsInitialized() bool {
-	return r.giteaClient != nil
+	return r.giteaClient.Load() != nil
 }
 
 func (r *gc) Get() any {
-	return r.giteaClient
+	return r.giteaClient.Load()
 }
 
 func (r *gc) GetMyUserInfo() (*gittypes.User, *gittypes.Response, error) {
-	userInfo, resp, err := r.giteaClient.GetMyUserInfo()
+	userInfo, resp, err := r.giteaClient.Load().GetMyUserInfo()
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -151,7 +156,7 @@ func (r *gc) GetMyUserInfo() (*gittypes.User, *gittypes.Response, error) {
 }
 
 func (r *gc) DeleteRepo(owner string, repo string) (*gittypes.Response, error) {
-	resp, err := r.giteaClient.DeleteRepo(owner, repo)
+	resp, err := r.giteaClient.Load().DeleteRepo(owner, repo)
 	if err != nil {
 		return &gittypes.Response{Response: resp.Response}, err
 	}
@@ -159,7 +164,7 @@ func (r *gc) DeleteRepo(owner string, repo string) (*gittypes.Response, error) {
 }
 
 func (r *gc) GetRepo(userName string, repoCRName string) (*gittypes.Repository, *gittypes.Response, error) {
-	repo, resp, err := r.giteaClient.GetRepo(userName, repoCRName)
+	repo, resp, err := r.giteaClient.Load().GetRepo(userName, repoCRName)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -169,7 +174,7 @@ func (r *gc) GetRepo(userName string, repoCRName string) (*gittypes.Repository, 
 }
 
 func (r *gc) CreateRepo(createRepoOption gittypes.CreateRepoOption) (*gittypes.Repository, *gittypes.Response, error) {
-	repo, resp, err := r.giteaClient.CreateRepo(gitea.CreateRepoOption{
+	repo, resp, err := r.giteaClient.Load().CreateRepo(gitea.CreateRepoOption{
 		Name:          createRepoOption.Name,
 		Description:   createRepoOption.Description,
 		Private:       createRepoOption.Private,
@@ -191,7 +196,7 @@ func (r *gc) CreateRepo(createRepoOption gittypes.CreateRepoOption) (*gittypes.R
 }
 
 func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gittypes.EditRepoOption) (*gittypes.Repository, *gittypes.Response, error) {
-	repo, resp, err := r.giteaClient.EditRepo(userName, repoCRName, gitea.EditRepoOption{
+	repo, resp, err := r.giteaClient.Load().EditRepo(userName, repoCRName, gitea.EditRepoOption{
 		Name:        editRepoOption.Name,
 		Description: editRepoOption.Description,
 		Private:     editRepoOption.Private,
@@ -239,7 +244,7 @@ func (r *gc) DeleteAccessToken(value interface{}) (*gittypes.Response, error) {
 	default:
 		return nil, fmt.Errorf("DeleteAccessToken: value must be a token name or an int64 ID, got %T", value)
 	}
-	resp, err := r.giteaClient.DeleteAccessToken(value)
+	resp, err := r.giteaClient.Load().DeleteAccessToken(value)
 	return wrapResponse(resp), err
 }
 
@@ -250,7 +255,7 @@ func (r *gc) deleteAccessTokenNamed(name string) (*gittypes.Response, error) {
 
 	// Page -1 disables pagination. A page holds 30 tokens by default and the
 	// one being deleted may be past it.
-	tokens, listed, err := r.giteaClient.ListAccessTokens(gitea.ListAccessTokensOptions{
+	tokens, listed, err := r.giteaClient.Load().ListAccessTokens(gitea.ListAccessTokensOptions{
 		ListOptions: gitea.ListOptions{Page: -1},
 	})
 	if err != nil {
@@ -284,7 +289,7 @@ func (r *gc) deleteAccessTokenNamed(name string) (*gittypes.Response, error) {
 			// Zero goes back out as a name lookup, and a negative id is not one.
 			return nil, fmt.Errorf("finding the ID of token %q: the server gave it id %d", name, id)
 		}
-		resp, err := r.giteaClient.DeleteAccessToken(id)
+		resp, err := r.giteaClient.Load().DeleteAccessToken(id)
 		return wrapResponse(resp), err
 	}
 
@@ -323,7 +328,7 @@ func (r *gc) ListAccessTokens(opts gittypes.ListAccessTokensOptions) ([]*gittype
 			PageSize: opts.PageSize,
 		},
 	}
-	tokens, resp, err := r.giteaClient.ListAccessTokens(giteaOpts)
+	tokens, resp, err := r.giteaClient.Load().ListAccessTokens(giteaOpts)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -342,7 +347,7 @@ func (r *gc) CreateAccessToken(opt gittypes.CreateAccessTokenOption) (*gittypes.
 	giteaOpt := gitea.CreateAccessTokenOption{
 		Name: opt.Name,
 	}
-	token, resp, err := r.giteaClient.CreateAccessToken(giteaOpt)
+	token, resp, err := r.giteaClient.Load().CreateAccessToken(giteaOpt)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}

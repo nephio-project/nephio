@@ -29,12 +29,16 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/go-logr/logr"
 	git "github.com/nephio-project/nephio/controllers/pkg/git"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestClient(t *testing.T) {
@@ -79,6 +83,74 @@ func TestClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+// GetClient hands the instance out before Start has built the client on its
+// own goroutine, and the Token and Repository reconcilers both hold it. This
+// goes through that path with several callers at once, each reading the
+// instance while Start writes it, so under -race it catches anything Start
+// publishes without synchronisation.
+func TestGetClientPublishesTheClientOnce(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/version") {
+			_, _ = w.Write([]byte(`{"version":"1.19.3"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"login":"someone"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("GIT_URL", server.URL)
+	t.Setenv("GIT_NAMESPACE", "git-ns")
+	t.Setenv("GIT_SECRET_NAME", "git-user-secret")
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "git-user-secret", Namespace: "git-ns"},
+		Data:       map[string][]byte{"username": []byte("someone"), "password": []byte("pw")},
+	}
+	applicator := resource.NewAPIPatchingApplicator(fake.NewClientBuilder().WithObjects(secret).Build())
+
+	originalInterval := startRetryInterval
+	startRetryInterval = time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		startRetryInterval = originalInterval
+		lock.Lock()
+		singleInstance = nil
+		lock.Unlock()
+	})
+
+	clients := make([]git.Client, 8)
+	var wg sync.WaitGroup
+	gate := make(chan struct{})
+	for i := range clients {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-gate
+			c, err := GetClient(ctx, applicator)
+			if err != nil {
+				return
+			}
+			clients[i] = c
+			for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); {
+				if c.IsInitialized() {
+					return
+				}
+			}
+		}()
+	}
+	close(gate)
+	wg.Wait()
+
+	for _, c := range clients {
+		require.NotNil(t, c)
+		require.Same(t, clients[0], c, "every caller holds the one instance")
+		require.True(t, c.IsInitialized())
+	}
+	user, _, err := clients[0].GetMyUserInfo()
+	require.NoError(t, err)
+	require.Equal(t, "someone", user.UserName)
 }
 
 // giteaServer answers what the SDK sends, so the adapter is driven over HTTP
@@ -230,7 +302,9 @@ func giteaAdapter(t *testing.T, server *httptest.Server) *gc {
 	c, err := gitea.NewClient(server.URL,
 		gitea.SetHTTPClient(server.Client()), gitea.SetBasicAuth("someone", "pw"))
 	require.NoError(t, err)
-	return &gc{giteaClient: c, l: logr.Discard()}
+	r := &gc{l: logr.Discard()}
+	r.giteaClient.Store(c)
+	return r
 }
 
 func TestDeleteAccessToken(t *testing.T) {
