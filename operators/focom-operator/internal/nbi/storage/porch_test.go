@@ -1285,6 +1285,12 @@ func TestPorchStorageAuth_ResolvesCredentials(t *testing.T) {
 	kubeconfig := `
 apiVersion: v1
 kind: Config
+current-context: test-context
+contexts:
+- name: test-context
+  context:
+    cluster: test-cluster
+    user: test-user
 users:
 - name: test-user
   user:
@@ -1385,6 +1391,141 @@ users:
 			}
 			assert.Equal(t, tc.wantToken, restConfig.BearerToken)
 			assert.Equal(t, wantFile, restConfig.BearerTokenFile)
+		})
+	}
+}
+
+// TestReadTokenFromKubeconfig covers which user's token the kubeconfig fallback
+// resolves: the one the current context names, as kubectl does, and not the
+// first user in the file.
+func TestReadTokenFromKubeconfig(t *testing.T) {
+	cases := map[string]struct {
+		kubeconfig string
+		wantToken  string
+		wantErr    string // when set, readTokenFromKubeconfig has to refuse
+	}{
+		"the current context picks the user, not the order of the file": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+current-context: production
+contexts:
+- name: development
+  context: {cluster: c, user: development-user}
+- name: production
+  context: {cluster: c, user: production-user}
+users:
+- name: development-user
+  user:
+    token: DEVELOPMENT-TOKEN
+- name: production-user
+  user:
+    token: PRODUCTION-TOKEN
+`,
+			wantToken: "PRODUCTION-TOKEN",
+		},
+		// Only the user is resolved, so a cluster that is not described, or
+		// client certificates that are not on disk, do not stand in the way.
+		"only the user of the current context is resolved": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+current-context: test-context
+contexts:
+- name: test-context
+  context: {cluster: not-described, user: test-user}
+users:
+- name: other-user
+  user:
+    client-certificate: /path/to/cert
+    client-key: /path/to/key
+- name: test-user
+  user:
+    token: kubeconfig-token
+`,
+			wantToken: "kubeconfig-token",
+		},
+		"a kubeconfig without a current context is refused": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+users:
+- name: test-user
+  user:
+    token: kubeconfig-token
+`,
+			wantErr: "no current context set in kubeconfig",
+		},
+		"a current context that is not defined is refused": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+current-context: missing
+contexts:
+- name: test-context
+  context: {cluster: c, user: test-user}
+users:
+- name: test-user
+  user:
+    token: kubeconfig-token
+`,
+			wantErr: `current context "missing" not found in kubeconfig`,
+		},
+		"a user that is not defined is refused rather than replaced": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+current-context: test-context
+contexts:
+- name: test-context
+  context: {cluster: c, user: missing-user}
+users:
+- name: test-user
+  user:
+    token: kubeconfig-token
+`,
+			wantErr: `user "missing-user" of current context "test-context" not found in kubeconfig`,
+		},
+		"a current user without a token is refused rather than replaced": {
+			kubeconfig: `
+apiVersion: v1
+kind: Config
+current-context: test-context
+contexts:
+- name: test-context
+  context: {cluster: c, user: cert-user}
+users:
+- name: token-user
+  user:
+    token: kubeconfig-token
+- name: cert-user
+  user:
+    client-certificate: /path/to/cert
+    client-key: /path/to/key
+`,
+			wantErr: `no token found in kubeconfig for user "cert-user"`,
+		},
+		"a kubeconfig that does not parse is refused": {
+			kubeconfig: "users: [",
+			wantErr:    "failed to load kubeconfig",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			kubeconfigPath := filepath.Join(t.TempDir(), "config")
+			require.NoError(t, os.WriteFile(kubeconfigPath, []byte(tc.kubeconfig), 0o600))
+			t.Setenv("KUBECONFIG", kubeconfigPath)
+
+			token, err := readTokenFromKubeconfig()
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				assert.Empty(t, token)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantToken, token)
 		})
 	}
 }

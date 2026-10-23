@@ -461,6 +461,11 @@ func resolveCredentials(config *PorchStorageConfig, restConfig *rest.Config) err
 	return nil
 }
 
+// readTokenFromKubeconfig returns the token of the user the kubeconfig's
+// current context names, as kubectl would select it. Taking the first user in
+// the file sent whichever credential happened to be listed first. Only the user
+// is resolved: the token goes to the API server buildRESTConfig chose, so the
+// rest of the context is not validated here.
 func readTokenFromKubeconfig() (string, error) {
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath == "" {
@@ -471,39 +476,28 @@ func readTokenFromKubeconfig() (string, error) {
 		kubeconfigPath = filepath.Join(homeDir, ".kube", "config")
 	}
 
-	// Read and parse kubeconfig
-	data, err := os.ReadFile(kubeconfigPath) // #nosec G304 G703 -- kubeconfig path from trusted source
+	kubeconfig, err := clientcmd.LoadFromFile(kubeconfigPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to read kubeconfig: %w", err)
+		return "", fmt.Errorf("failed to load kubeconfig: %w", err)
 	}
 
-	// Parse YAML to extract token
-	var config map[string]interface{}
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return "", fmt.Errorf("failed to parse kubeconfig: %w", err)
+	if kubeconfig.CurrentContext == "" {
+		return "", errors.New("no current context set in kubeconfig")
 	}
-
-	// Extract token from current user
-	users, ok := config["users"].([]interface{})
-	if !ok || len(users) == 0 {
-		return "", fmt.Errorf("no users found in kubeconfig")
-	}
-
-	user, ok := users[0].(map[string]interface{})
+	kubeContext, ok := kubeconfig.Contexts[kubeconfig.CurrentContext]
 	if !ok {
-		return "", fmt.Errorf("invalid user format in kubeconfig")
+		return "", fmt.Errorf("current context %q not found in kubeconfig", kubeconfig.CurrentContext)
 	}
-
-	userInfo, ok := user["user"].(map[string]interface{})
+	user, ok := kubeconfig.AuthInfos[kubeContext.AuthInfo]
 	if !ok {
-		return "", fmt.Errorf("invalid user info in kubeconfig")
+		return "", fmt.Errorf("user %q of current context %q not found in kubeconfig",
+			kubeContext.AuthInfo, kubeconfig.CurrentContext)
 	}
 
-	if token, ok := userInfo["token"].(string); ok && token != "" {
-		return token, nil
+	if user.Token == "" {
+		return "", fmt.Errorf("no token found in kubeconfig for user %q", kubeContext.AuthInfo)
 	}
-
-	return "", fmt.Errorf("no token found in kubeconfig")
+	return user.Token, nil
 }
 
 // HealthCheck verifies connectivity to Porch

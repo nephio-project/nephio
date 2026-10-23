@@ -723,7 +723,7 @@ Each revision is immutable and stored permanently in Git.
   rotates is picked up without a restart
 
 **Local Development:**
-- Token from `KUBECONFIG` file
+- Token of the current context's user in the `KUBECONFIG` file
 - Token from `TOKEN` environment variable
 - Token from file path in `TOKEN` environment variable
 
