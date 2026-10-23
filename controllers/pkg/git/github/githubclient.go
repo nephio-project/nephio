@@ -28,6 +28,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -49,19 +50,35 @@ const defaultGitHubAPI = "https://api.github.com"
 // hold the reconcile open for as long as the connection stays up.
 var defaultTokenClient = &http.Client{Timeout: 30 * time.Second}
 
-type gc struct {
-	client       resource.APIPatchingApplicator
+// startRetryInterval is how long Start waits before each attempt to read the
+// credentials, so that a secret created after the controllers start is picked
+// up.
+var startRetryInterval = 5 * time.Second
+
+// githubState is what Start builds from the secret. It is published whole, so
+// a reader sees either none of it or all of it, never a client without the app
+// credentials that go with it.
+type githubState struct {
 	githubClient *github.Client
+	appID        string
+	installID    string
+	privateKey   *rsa.PrivateKey
+}
+
+type gc struct {
+	client resource.APIPatchingApplicator
+	// state is written once by Start, on its own goroutine, while the
+	// reconcilers holding this instance read it, so it is published atomically
+	// rather than assigned field by field.
+	state atomic.Pointer[githubState]
 	// Where installation tokens are minted and what mints them, as fields so a
 	// test can redirect them without touching process-wide http.DefaultClient.
 	tokenEndpoint string
 	tokenClient   *http.Client
-	appID         string
-	installID     string
-	privateKey    *rsa.PrivateKey
 	l             logr.Logger
 }
 
+// singleInstance is read and written only with lock held.
 var singleInstance *gc
 
 func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (git.Client, error) {
@@ -72,22 +89,20 @@ func GetClient(ctx context.Context, client resource.APIPatchingApplicator) (git.
 	if client.Client == nil {
 		return nil, fmt.Errorf("failed creating github client, value of client.Client cannot be nil")
 	}
-	// check if an instance is created using check-lock-check pattern implementation
-	if singleInstance == nil {
-		// Create a lock
-		lock.Lock()
-		defer lock.Unlock()
-		// Check instance is still null as another thread of execution may have initialized it before the lock was acquired.
-		if singleInstance == nil {
-			singleInstance = &gc{client: client}
-			log.FromContext(ctx).Info("GitHub Client Instance created now.")
-			go singleInstance.Start(ctx)
-		} else {
-			log.FromContext(ctx).Info("GitHub Client Instance already created.")
-		}
-	} else {
+	// The lock is taken on every call: checking singleInstance before taking
+	// it is a read racing the write below. This runs once per reconciler at
+	// setup, so there is nothing to gain from avoiding it.
+	lock.Lock()
+	defer lock.Unlock()
+	if singleInstance != nil {
 		log.FromContext(ctx).Info("GitHub Client Instance already created.")
+		return singleInstance, nil
 	}
+	// The logger is set before Start runs rather than by it, so that nothing
+	// Start writes is read by the reconcilers except state.
+	singleInstance = &gc{client: client, l: log.FromContext(ctx)}
+	log.FromContext(ctx).Info("GitHub Client Instance created now.")
+	go singleInstance.Start(ctx)
 	return singleInstance, nil
 }
 
@@ -102,8 +117,7 @@ func (r *gc) Start(ctx context.Context) {
 			fmt.Printf("controller manager context cancelled: Exit\n")
 			return
 		default:
-			r.l = log.FromContext(ctx)
-			time.Sleep(5 * time.Second)
+			time.Sleep(startRetryInterval)
 
 			namespace := "default"
 			secretName := "github-user-secret" // #nosec G101 -- Kubernetes Secret name, not a hardcoded credential
@@ -141,14 +155,14 @@ func (r *gc) Start(ctx context.Context) {
 				r.l.Error(err, "Failed to parse private key")
 				break
 			}
-			// Store credentials for installation token refresh
-			r.appID = appID
-			r.installID = installID
-			r.privateKey = privateKey
-
-			// Create GitHub client with personal access token
-			githubClient := github.NewClient(nil).WithAuthToken(personalAccessToken)
-			r.githubClient = githubClient
+			// Create GitHub client with personal access token, and publish it
+			// with the credentials for installation token refresh
+			r.state.Store(&githubState{
+				githubClient: github.NewClient(nil).WithAuthToken(personalAccessToken),
+				appID:        appID,
+				installID:    installID,
+				privateKey:   privateKey,
+			})
 			r.l.Info("github init done")
 			return
 		}
@@ -226,16 +240,17 @@ func (r *gc) getInstallationToken(jwtToken, installID string) (string, error) {
 }
 
 // createInstallationToken mints a new installation access token and returns it.
-// It leaves r.githubClient alone: that client carries the personal access token
+// It leaves githubClient alone: that client carries the personal access token
 // the user and repository calls need, and the authenticated-user endpoint does
 // not accept an installation token.
 func (r *gc) createInstallationToken() (string, error) {
-	jwtToken, err := generateJWT(r.appID, r.privateKey)
+	state := r.state.Load()
+	jwtToken, err := generateJWT(state.appID, state.privateKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT: %w", err)
 	}
 
-	installToken, err := r.getInstallationToken(jwtToken, r.installID)
+	installToken, err := r.getInstallationToken(jwtToken, state.installID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get installation token: %w", err)
 	}
@@ -244,15 +259,18 @@ func (r *gc) createInstallationToken() (string, error) {
 }
 
 func (r *gc) IsInitialized() bool {
-	return r.githubClient != nil
+	return r.state.Load() != nil
 }
 
 func (r *gc) Get() any {
-	return r.githubClient
+	if state := r.state.Load(); state != nil {
+		return state.githubClient
+	}
+	return nil
 }
 
 func (r *gc) GetMyUserInfo() (*gittypes.User, *gittypes.Response, error) {
-	userInfo, resp, err := r.githubClient.Users.Get(context.Background(), "")
+	userInfo, resp, err := r.state.Load().githubClient.Users.Get(context.Background(), "")
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -262,7 +280,7 @@ func (r *gc) GetMyUserInfo() (*gittypes.User, *gittypes.Response, error) {
 }
 
 func (r *gc) DeleteRepo(owner string, repo string) (*gittypes.Response, error) {
-	resp, err := r.githubClient.Repositories.Delete(context.Background(), owner, repo)
+	resp, err := r.state.Load().githubClient.Repositories.Delete(context.Background(), owner, repo)
 	if err != nil {
 		return &gittypes.Response{Response: resp.Response}, err
 	}
@@ -270,7 +288,7 @@ func (r *gc) DeleteRepo(owner string, repo string) (*gittypes.Response, error) {
 }
 
 func (r *gc) GetRepo(userName string, repoCRName string) (*gittypes.Repository, *gittypes.Response, error) {
-	repo, resp, err := r.githubClient.Repositories.Get(context.Background(), userName, repoCRName)
+	repo, resp, err := r.state.Load().githubClient.Repositories.Get(context.Background(), userName, repoCRName)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -294,7 +312,7 @@ func (r *gc) CreateRepo(createRepoOption gittypes.CreateRepoOption) (*gittypes.R
 		repo.DefaultBranch = github.String(createRepoOption.DefaultBranch)
 	}
 
-	createdRepo, resp, err := r.githubClient.Repositories.Create(context.Background(), "", repo)
+	createdRepo, resp, err := r.state.Load().githubClient.Repositories.Create(context.Background(), "", repo)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}
@@ -316,7 +334,7 @@ func (r *gc) EditRepo(userName string, repoCRName string, editRepoOption gittype
 		repo.Private = editRepoOption.Private
 	}
 
-	editedRepo, resp, err := r.githubClient.Repositories.Edit(context.Background(), userName, repoCRName, repo)
+	editedRepo, resp, err := r.state.Load().githubClient.Repositories.Edit(context.Background(), userName, repoCRName, repo)
 	if err != nil {
 		return nil, &gittypes.Response{Response: resp.Response}, err
 	}

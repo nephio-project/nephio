@@ -20,7 +20,9 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -38,6 +40,9 @@ import (
 	gittypes "github.com/nephio-project/nephio/controllers/pkg/git/types"
 	"github.com/nephio-project/nephio/controllers/pkg/resource"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestClient(t *testing.T) {
@@ -82,6 +87,76 @@ func TestClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+// GetClient hands the instance out before Start has read the credentials on
+// its own goroutine, and the Token and Repository reconcilers both hold it.
+// This goes through that path with several callers at once, each reading the
+// instance while Start writes it, so under -race it catches anything Start
+// publishes without synchronisation.
+func TestGetClientPublishesTheClientOnce(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	privateKey := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+
+	t.Setenv("GIT_SECRET_NAME", "github-user-secret")
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "github-user-secret", Namespace: "default"},
+		Data: map[string][]byte{
+			"personal_access_token": []byte("personal-access-token"),
+			"app_id":                []byte("1"),
+			"installation_id":       []byte("2"),
+			"private_key":           privateKey,
+		},
+	}
+	applicator := resource.NewAPIPatchingApplicator(fake.NewClientBuilder().WithObjects(secret).Build())
+
+	originalInterval := startRetryInterval
+	startRetryInterval = time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(func() {
+		cancel()
+		startRetryInterval = originalInterval
+		lock.Lock()
+		singleInstance = nil
+		lock.Unlock()
+	})
+
+	clients := make([]git.Client, 8)
+	var wg sync.WaitGroup
+	gate := make(chan struct{})
+	for i := range clients {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-gate
+			c, err := GetClient(ctx, applicator)
+			if err != nil {
+				return
+			}
+			clients[i] = c
+			for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); {
+				if c.IsInitialized() {
+					return
+				}
+			}
+		}()
+	}
+	close(gate)
+	wg.Wait()
+
+	for _, c := range clients {
+		require.NotNil(t, c)
+		require.Same(t, clients[0], c, "every caller holds the one instance")
+		require.True(t, c.IsInitialized())
+	}
+	// Published together, so a client that reads as initialised carries the
+	// app credentials the installation token is minted with.
+	state := clients[0].(*gc).state.Load()
+	require.NotNil(t, state.githubClient)
+	require.Equal(t, "1", state.appID)
+	require.Equal(t, "2", state.installID)
+	require.True(t, key.Equal(state.privateKey))
 }
 
 // TestCreateAccessToken covers the credential the user and repository calls run
@@ -147,15 +222,18 @@ func githubClient(t *testing.T, server *httptest.Server) (*gc, *rsa.PrivateKey) 
 	patClient.BaseURL, err = url.Parse(server.URL + "/")
 	require.NoError(t, err)
 
-	return &gc{
-		githubClient:  patClient,
-		appID:         "1",
-		installID:     "2",
-		privateKey:    key,
+	client := &gc{
 		tokenEndpoint: server.URL,
 		tokenClient:   server.Client(),
 		l:             logr.Discard(),
-	}, key
+	}
+	client.state.Store(&githubState{
+		githubClient: patClient,
+		appID:        "1",
+		installID:    "2",
+		privateKey:   key,
+	})
+	return client, key
 }
 
 // requireAppJWT checks the mint ran as the app. Asserting only that the PAT is
@@ -212,12 +290,12 @@ func TestCreateAccessToken(t *testing.T) {
 		require.Equal(t, request{"GET", "/user", "Bearer personal-access-token"}, seen[0])
 		require.Equal(t, "POST", seen[1].method)
 		require.Equal(t, "/app/installations/2/access_tokens", seen[1].path)
-		requireAppJWT(t, seen[1].authorization, client.appID, key)
+		requireAppJWT(t, seen[1].authorization, client.state.Load().appID, key)
 		require.Equal(t, request{"GET", "/user", "Bearer personal-access-token"}, seen[2])
 		require.Equal(t, request{"GET", "/repos/someone/a-repo", "Bearer personal-access-token"}, seen[3])
 
 		// The base URL survives too: replacing the client discarded it.
-		require.Equal(t, server.URL+"/", client.githubClient.BaseURL.String())
+		require.Equal(t, server.URL+"/", client.state.Load().githubClient.BaseURL.String())
 	})
 
 	t.Run("a repository call after a failed mint still runs as the PAT", func(t *testing.T) {
