@@ -21,7 +21,7 @@
 
 `dnn-fn` keeps track of the resources it created by setting their `specializer.nephio.org/owner` annotation to point to the `DataNetwork` resource that it was created for. 
 
-Based on these owner annotations `dnn-fn` automatically deletes (actually marks for deletion) all of the resources that it created and whose owner doesn't exist anymore. This can happen by deleting the owner `DataNetwork` resource from the package, or by deleting the corresponding `pool` form the `spec` of the owner `DataNetwork`. All in all, the role of `specializer.nephio.org/owner` annotation for Nephio KRM functions is very similarly to the role of the `ownerReference` field in the Kubernetes API server.
+Based on these owner annotations `dnn-fn` automatically deletes (actually marks for deletion) all of the resources that it created and whose owner doesn't exist anymore. This can happen by deleting the owner `DataNetwork` resource from the package, or by deleting the corresponding `pool` from the `spec` of the owner `DataNetwork`. All in all, the role of `specializer.nephio.org/owner` annotation for Nephio KRM functions is very similarly to the role of the `ownerReference` field in the Kubernetes API server.
 
 `dnn-fn` never deletes `IPClaim` resources directly, but it marks them for deletion if needed, by setting the `specializer.nephio.org/delete` annotation to `"true"`. It expects the IPClaim specializer to actually delete the marked resources after properly releasing the IP ranges.
 
