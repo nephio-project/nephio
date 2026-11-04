@@ -22,6 +22,7 @@ from unittest.mock import Mock
 
 import pytest
 from kubernetes import client
+from kubernetes.config.config_exception import ConfigException
 
 import northbound_restapi
 from northbound_restapi import COLLECTION, app
@@ -143,7 +144,7 @@ def test_an_invalid_request_is_the_caller_s_error(api, http, body, missing):
     """These used to be answered with 500, which says the server broke."""
     answer = http.post(COLLECTION, json=body)
     assert answer.status_code == 400
-    assert missing in answer.get_json()["status"]["message"]
+    assert missing in answer.get_json()["status"]
     api.create_cluster_custom_object.assert_not_called()
 
 
@@ -247,6 +248,67 @@ def test_the_answer_carries_what_the_api_requires_of_it(api, http, state):
     assert isinstance(body["provisionedResourceSet"]["infrastructureResourceIds"], list)
     # Assigned by the producer at creation, which is the uid the API server gave.
     assert body["provisioningRequestReference"] == "uid-edge-01"
+
+
+# ProblemDetails types status as a string. Answering an object there was not
+# the shape this API says it answers with, on any failure.
+def problem_details(answer):
+    body = answer.get_json()
+    assert isinstance(body["status"], str), body
+    return body["status"]
+
+
+def test_a_client_that_cannot_be_configured_is_not_an_html_page(monkeypatch, http):
+    """load_incluster_config raises ConfigException, which is not an
+    ApiException, so no route caught it and Flask answered HTML."""
+    monkeypatch.setattr(northbound_restapi, "_api", None)
+    monkeypatch.setattr(northbound_restapi.config, "load_incluster_config",
+                        Mock(side_effect=ConfigException("Service host/port is not set.")))
+
+    for answer in (http.get(COLLECTION),
+                   http.get(f"{COLLECTION}/edge-01"),
+                   http.post(COLLECTION, json=REQUEST)):
+        assert answer.status_code == 503
+        assert "Kubernetes API server" in problem_details(answer)
+
+
+def test_an_unexpected_failure_answers_the_documented_shape(api, http, caplog):
+    """And says nothing else: the caller is unauthenticated, the traceback is
+    of use in the log."""
+    api.list_cluster_custom_object.side_effect = RuntimeError("a path /etc/secret")
+
+    answer = http.get(COLLECTION)
+
+    assert answer.status_code == 500
+    assert problem_details(answer) == "the request could not be served"
+    assert "a path /etc/secret" not in answer.get_data(as_text=True)
+    assert "a path /etc/secret" in caplog.text
+
+
+def test_a_route_that_does_not_exist_is_still_a_404(http):
+    """The catch-all must not turn werkzeug's own 404 into a 500."""
+    assert http.get("/not-a-route").status_code == 404
+
+
+@pytest.mark.parametrize("failing", [
+    ("create_cluster_custom_object", "post"),
+    ("list_cluster_custom_object", "get"),
+    ("get_cluster_custom_object", "get_one"),
+])
+@pytest.mark.parametrize("status", [400, 404, 409, 422, 429, 500, 503])
+def test_every_failure_answers_a_string_status(api, http, failing, status):
+    method, route = failing
+    getattr(api, method).side_effect = api_exception(status, "reason")
+
+    if route == "post":
+        answer = http.post(COLLECTION, json=REQUEST)
+    elif route == "get":
+        answer = http.get(COLLECTION)
+    else:
+        answer = http.get(f"{COLLECTION}/edge-01")
+
+    assert answer.status_code >= 400
+    problem_details(answer)
 
 
 def test_an_unknown_id_is_not_found(api, http):

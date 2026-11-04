@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
 from kubernetes import client, config
+from kubernetes.config.config_exception import ConfigException
+from werkzeug.exceptions import HTTPException
 
 from utils import (
     TIME_FORMAT,
@@ -60,7 +62,10 @@ _api = None
 
 
 def custom_objects_api():
-    """Return the shared API client, configured once."""
+    """Return the shared API client, configured once.
+
+    :raises ConfigException: the client cannot be configured
+    """
     global _api
     if _api is None:
         config.load_incluster_config()
@@ -73,11 +78,39 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime(TIME_FORMAT)
 
 
-def failure(message: str, code: int, phase: str = "FAILED"):
-    """Return one error answer in the shape the API describes."""
-    return jsonify({"status": {
-        "updateTime": now(), "message": message, "provisioningPhase": phase,
-    }}), code
+def failure(message: str, code: int):
+    """Return one error answer in the shape the API describes.
+
+    ProblemDetails types status as a string, so the message is the status
+    rather than an object around it. It declares no additionalProperties, so
+    the time it happened travels alongside.
+    """
+    return jsonify({"status": message, "updateTime": now()}), code
+
+
+@app.errorhandler(Exception)
+def unexpected(error):
+    """Answer the documented shape instead of Flask's HTML error page.
+
+    An unauthenticated caller is told that the request could not be served and
+    nothing else; the traceback goes to the log, where it is of use.
+    """
+    if isinstance(error, HTTPException):
+        return error
+    LOGGER.exception("unhandled error serving %s %s",
+                     request.method, request.path)
+    return failure("the request could not be served", 500)
+
+
+@app.errorhandler(ConfigException)
+def unconfigured(error):
+    """Say that the Kubernetes client could not be configured.
+
+    load_incluster_config raises this, and it is not an ApiException, so it
+    used to pass every route's handler and leave Flask to answer HTML.
+    """
+    LOGGER.error("the Kubernetes client is not configured: %s", error)
+    return failure("the operator cannot reach the Kubernetes API server", 503)
 
 
 def answer_for(error, doing: str):
