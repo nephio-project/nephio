@@ -167,7 +167,7 @@ kubectl get serviceaccount focom-operator-controller-manager -n focom-operator-s
 # For local development, check token
 echo $TOKEN
 # or
-kubectl config view --raw -o jsonpath='{.users[0].user.token}'
+kubectl config view --minify --raw -o jsonpath='{.users[0].user.token}'
 ```
 
 **If RBAC is missing:**
