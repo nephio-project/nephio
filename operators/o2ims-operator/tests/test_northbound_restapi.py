@@ -18,10 +18,13 @@ A route string, a status code and a nested Response object are all things a
 hand-rolled call of the view function cannot see.
 """
 
+from datetime import datetime, timedelta
 from unittest.mock import Mock
 
+import certifi
 import pytest
 from kubernetes import client
+from kubernetes.config import incluster_config
 from kubernetes.config.config_exception import ConfigException
 
 import northbound_restapi
@@ -256,6 +259,39 @@ def problem_details(answer):
     body = answer.get_json()
     assert isinstance(body["status"], str), body
     return body["status"]
+
+
+def test_the_shared_client_re_reads_a_rotated_token(monkeypatch, tmp_path):
+    """#1170 made every request carry a freshly read token. The routes reach
+    the API server through a client cached for the process, so the invariant
+    rests on load_incluster_config installing its refresh hook: the client
+    calls it from auth_settings on every request, and it re-reads the token
+    file once its own window has passed. Constructing the client any other way
+    would drop that silently.
+    """
+    token = tmp_path / "token"
+    token.write_text("first-token")
+    monkeypatch.setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+    monkeypatch.setenv("KUBERNETES_SERVICE_PORT", "6443")
+    monkeypatch.setattr(incluster_config, "SERVICE_TOKEN_FILENAME", str(token))
+    monkeypatch.setattr(incluster_config, "SERVICE_CERT_FILENAME", certifi.where())
+    monkeypatch.setattr(northbound_restapi, "_api", None)
+
+    configuration = northbound_restapi.custom_objects_api().api_client.configuration
+    assert configuration.refresh_api_key_hook is not None
+
+    # auth_settings is what the client consults for every request, and it
+    # reaches the hook before it reads the key.
+    def header():
+        return configuration.auth_settings()["BearerToken"]["value"]
+
+    assert header() == "bearer first-token"
+
+    token.write_text("second-token")
+    loader = configuration.refresh_api_key_hook.__closure__[0].cell_contents
+    loader.token_expires_at = datetime.now() - timedelta(seconds=1)
+
+    assert header() == "bearer second-token"
 
 
 def test_a_client_that_cannot_be_configured_is_not_an_html_page(monkeypatch, http):
