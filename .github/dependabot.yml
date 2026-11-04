@@ -1,10 +1,40 @@
 version: 2
 updates:
   - package-ecosystem: gomod
-    directory: /
+    # One entry per go.mod; there is none at the root.
+    directories:
+      - /controllers/pkg
+      - /gitops-tools/kpt-argocd-cmp/kpt-render
+      - /gitops-tools/kpt-argocd-cmp/kpt-repo
+      - /krm-functions/configinject-fn
+      - /krm-functions/dnn-fn
+      - /krm-functions/gen-configmap-fn
+      - /krm-functions/gen-kustomize-res
+      - /krm-functions/interface-fn
+      - /krm-functions/ipam-fn
+      - /krm-functions/lib
+      - /krm-functions/nad-fn
+      - /krm-functions/nfdeploy-fn
+      - /krm-functions/pipeline-tests
+      - /krm-functions/ueransim-deploy-fn
+      - /krm-functions/vlan-fn
+      - /operators/focom-operator
+      - /operators/nephio-controller-manager
+      - /testing/mockeryutils
     schedule:
       interval: daily
     rebase-strategy: disabled
+    # Modules replace krm-functions/lib with ../lib, so a dependency has to move
+    # in every go.mod that lists it, indirect or not, or the others stop building.
+    allow:
+      - dependency-type: all
+    groups:
+      go-modules:
+        group-by: dependency-name
+  - package-ecosystem: pip
+    directory: /operators/o2ims-operator
+    schedule:
+      interval: daily
   - package-ecosystem: github-actions
     directory: /
     schedule:
