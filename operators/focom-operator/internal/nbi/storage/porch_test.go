@@ -1395,10 +1395,10 @@ users:
 	}
 }
 
-// TestReadTokenFromKubeconfig covers which user's token the kubeconfig fallback
-// resolves: the one the current context names, as kubectl does, and not the
-// first user in the file.
-func TestReadTokenFromKubeconfig(t *testing.T) {
+// TestPorchStorageAuth_ReadTokenFromKubeconfig covers which user's token the
+// kubeconfig fallback resolves: the one the current context names, as kubectl
+// does, and not the first user in the file.
+func TestPorchStorageAuth_ReadTokenFromKubeconfig(t *testing.T) {
 	cases := map[string]struct {
 		kubeconfig string
 		wantToken  string
