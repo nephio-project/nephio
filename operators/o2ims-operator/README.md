@@ -105,6 +105,20 @@ kpt live init /tmp/o2ims
 kpt live apply /tmp/o2ims --reconcile-timeout=15m --output=table
 ```
 
+### The northbound API
+
+The operator serves its REST API on `127.0.0.1:5000`. The API has no
+authentication and acts with the operator's service account, so it is not
+reachable on the pod network. Use `kubectl port-forward`, which checks the
+caller's own RBAC:
+
+```bash
+kubectl -n o2ims port-forward deploy/o2ims-operator 5000:5000
+```
+
+`NBI_HOST` and `NBI_PORT` change the address. Set `NBI_HOST=0.0.0.0` only with
+an authenticating proxy or a NetworkPolicy in front of it.
+
 ### Connecting to the Kubernetes API
 
 The operator verifies the API server's certificate on every request. Inside a

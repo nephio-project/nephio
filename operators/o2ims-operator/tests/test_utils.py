@@ -16,23 +16,30 @@
 
 import http.server
 import json
+import logging
 import os
 import random
+import socket
 import string
 import threading
+import time
 
 import certifi
 import pytest
 import requests
 import responses
 
-from controllers import utils
-from controllers.utils import (
+import utils
+from utils import (
+    API_TIMEOUT,
+    ApiError,
     KUBERNETES_BASE_URL,
-    create_package_variant,
-    get_package_variant,
+    LABEL,
+    OWNER_UID_ANNOTATION,
     check_o2ims_provisioning_request,
+    ensure_package_variant,
     get_capi_cluster,
+    get_package_variant,
     )
 
 # Constants used for testing
@@ -68,6 +75,29 @@ PACKAGE_REVISIONS_URI = f"{KUBERNETES_BASE_URL}/apis/porch.kpt.dev/v1alpha1/name
 PROVISIONING_REQUEST_URI = f"{KUBERNETES_BASE_URL}/apis/o2ims.provisioning.oran.org/v1alpha1/provisioningrequests"
 CAPI_URI = f"{KUBERNETES_BASE_URL}/apis/cluster.x-k8s.io/v1beta1/namespaces/{NAMESPACE}/clusters/{NAME}"
 
+REQUEST_UID = "11111111-2222-3333-4444-555555555555"
+PV_CREATE = {**PV_PARAM, "create": True}
+# What the operator sends, and so what it has to accept back as its own.
+OWNED_PV = {
+    "apiVersion": "config.porch.kpt.dev/v1alpha1",
+    "kind": "PackageVariant",
+    "metadata": {
+        "name": NAME,
+        "labels": dict(LABEL),
+        "annotations": {
+            OWNER_UID_ANNOTATION: REQUEST_UID,
+            "o2ims.provisioning.oran.org/downstream-package": PV_CREATE["cluster_name"],
+        },
+    },
+    "spec": {"downstream": {"package": PV_CREATE["cluster_name"]}},
+}
+PR_OBJECT = {
+    "apiVersion": "o2ims.provisioning.oran.org/v1alpha1",
+    "kind": "ProvisioningRequest",
+    "metadata": {"name": NAME},
+    "status": {"provisioningStatus": {"provisioningState": "progressing"}},
+}
+
 
 TEST_TOKEN = "test-token"
 
@@ -88,198 +118,243 @@ def setup_and_teardown(monkeypatch, tmp_path):
 
 @responses.activate
 @pytest.mark.parametrize(
-    "get_code, post_code, status, create, response_2, response_2_value, exception",
+    "code, reason, retryable",
     [
-        (200, None, True, False, "name", NAME, False),
-        (401, None, False, False, "reason", "unauthorized", False),
-        (403, None, False, False, "reason", "unauthorized", False),
-        (404, 200, True, True, "name", NAME, False),
-        (404, 201, True, True, "name", NAME, False),
-        (404, 401, False, True, "reason", "unauthorized", False),
-        (404, 403, False, True, "reason", "unauthorized", False),
-        (404, 404, False, True, "reason", "notFound", False),
-        (404, 400, False, True, "reason", TEST_JSON["message"], False),
-        (404, 1234, False, True, "reason", TEST_JSON, False),
-        (404, None, False, True, "reason", "NotAbleToCommunicateWithTheCluster ", True),
-        (404, 200, False, False, "reason", "notFound", False),
-        (500, None, False, False, "reason", "k8sApi server is not reachable", False),
-        (1234, None, False, False, "reason", TEST_JSON, False),
-        (None, None, False, False, "reason", "NotAbleToCommunicateWithTheCluster ", True),
+        (401, "unauthorized", False),
+        (403, "unauthorized", False),
+        (404, "notFound", False),
+        (409, "conflict", False),
+        (400, "invalid", False),
+        (422, "invalid", False),
+        (429, "unavailable", True),
+        (500, "unavailable", True),
+        (503, "unavailable", True),
+        (302, "protocol", False),
+        (299, "protocol", False),
     ],
 )
-def test_create_package_variant(get_code, post_code, status, create, response_2, response_2_value, exception):
-    if not exception:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            json=TEST_JSON,
-            status=get_code,
-        )
-    else:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            body=Exception(""),
-        )
-
-    pv_params = PV_PARAM.copy()
-    if get_code == 404 and create:
-        responses.post(
-            PACKAGE_VARIANTS_URI,
-            json=TEST_JSON,
-            status=post_code,
-        )
-        pv_params.update({"create": True})
-
-    response = create_package_variant(NAME, NAMESPACE, pv_params)
-    assert response["status"] == status and response[response_2] == response_2_value
+def test_an_api_answer_is_classified(code, reason, retryable):
+    """One status, one classification. A caller that cannot tell a missing
+    resource from an expired credential reports both as progress."""
+    responses.get(
+        f"{PACKAGE_VARIANTS_URI}/{NAME}",
+        json={"kind": "Status", "status": "Failure", "message": "the server said no"},
+        status=code,
+    )
+    with pytest.raises(ApiError) as raised:
+        get_package_variant(NAME, NAMESPACE)
+    assert raised.value.reason == reason
+    assert raised.value.retryable is retryable
+    assert raised.value.status_code == code
 
 
 @responses.activate
-@pytest.mark.parametrize(
-    "http_code, status, response_2, response_2_value, response_3, response_3_value, exception",
-    [
-        (200, True, "name", NAME, "body", TEST_JSON, False),
-        (401, False, "reason", "unauthorized", None, None, False),
-        (403, False, "reason", "unauthorized", None, None, False),
-        (404, False, "reason", "notFound", None, None, False),
-        (1234, False, "reason", TEST_JSON, None, None, False),
-        (None, False, "reason", "NotAbleToCommunicateWithTheCluster ", None, None, True),
-    ],
-)
-def test_get_package_variant(
-    http_code,
-    status,
-    response_2,
-    response_2_value,
-    response_3,
-    response_3_value,
-    exception,
-):
-    if not exception:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            json=TEST_JSON,
-            status=http_code,
-        )
-    else:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            body=Exception(""),
-        )
-    response = get_package_variant(NAME, NAMESPACE)
-    assert response["status"] == status and response[response_2] == response_2_value
-    if response_3:
-        assert response[response_3] == response_3_value
+def test_a_resource_is_returned_as_it_stands():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json=TEST_JSON, status=200)
+    assert get_package_variant(NAME, NAMESPACE) == TEST_JSON
 
 
 @responses.activate
-@pytest.mark.parametrize(
-    "pr_code, status, status_response, pv_code, response_2, response_2_value, response_3, response_3_value, response_3_exception, exception",
-    [
-        (200, True, True, None, "provisioningStatus", PR_PARAMS["status"]["provisioningStatus"], None, None, None, False),
-        (
-            200,
-            True,
-            False,
-            None,
-            "provisioningStatus",
-            {
-                "provisioningMessage": "Cluster provisioning request received",
-                "provisioningState": "progressing",
-            },
-            None,
-            None,
-            None,
-            False,
-        ),
-        (401, False, False, None, "reason", "unauthorized", None, None, None, False),
-        (403, False, False, None, "reason", "unauthorized", None, None, None, False),
-        (404, False, False, 200, "reason", "notFound", "pv", True, None, False),
-        (404, False, False, 401, "reason", "notFound", "pv", False, None, False),
-        (404, False, False, 403, "reason", "notFound", "pv", False, None, False),
-        (404, False, False, 404, "reason", "notFound", "pv", False, None, False),
-        (404, False, False, 1234, "reason", "notFound", "pv", False, None, False),
-        (404, False, False, None, "reason", "notFound", "pv", False, True, False),
-        (1234, False, False, None, "reason", PR_PARAMS, None, None, None, False),
-        (None, False, False, None, "reason", "NotAbleToCommunicateWithTheCluster ", None, None, None, True),
-    ],
-)
-def test_check_o2ims_provisioning_request(
-    pr_code,
-    status,
-    status_response,
-    pv_code,
-    response_2,
-    response_2_value,
-    response_3,
-    response_3_value,
-    response_3_exception,
-    exception,
-):
-    if not exception:
-        pr_params = PR_PARAMS.copy()
-        if pr_code == 200 and not status_response:
-            pr_params.pop("status")
-
-        responses.get(
-            PROVISIONING_REQUEST_URI,
-            json=pr_params,
-            status=pr_code,
-        )
-
-    else:
-        responses.get(
-            PROVISIONING_REQUEST_URI,
-            body=Exception(""),
-        )
-
-    if pv_code and not response_3_exception:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            json=TEST_JSON,
-            status=pv_code,
-        )
-    elif pv_code and response_3_exception:
-        responses.get(
-            f"{PACKAGE_VARIANTS_URI}/{NAME}",
-            body=Exception(""),
-        )
-    response = check_o2ims_provisioning_request(NAME, NAMESPACE)
-    print(response)
-    assert response["status"] == status and response[response_2] == response_2_value
-
-    if pv_code:
-        assert response[response_3] == response_3_value
+def test_a_transport_failure_is_retryable_and_names_no_write():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}",
+                  body=requests.exceptions.ConnectionError("no route"))
+    with pytest.raises(ApiError) as raised:
+        get_package_variant(NAME, NAMESPACE)
+    assert raised.value.reason == "transport"
+    assert raised.value.retryable is True
+    assert raised.value.write_outcome_unknown is False
 
 
 @responses.activate
-@pytest.mark.parametrize(
-    "http_code, status, response_2, response_2_value, exception",
-    [
-        (200, True, "body", TEST_JSON, False),
-        (401, False, "reason", "unauthorized", False),
-        (403, False, "reason", "unauthorized", False),
-        (404, False, "reason", "notFound", False),
-        (1234, False, "reason", TEST_JSON["status"]["conditions"][0]["message"], False),
-        (None, False, "reason", "NotAbleToCommunicateWithTheCluster ", True),
-    ],
-)
-def test_get_capi_cluster(http_code, status, response_2, response_2_value, exception):
-    if not exception:
-        responses.get(
-            CAPI_URI,
-            json=TEST_JSON,
-            status=http_code,
-        )
+def test_a_write_whose_answer_was_lost_is_settled_by_reading_it_back():
+    """The answer never arrived, but the write did land."""
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json={"kind": "Status"}, status=404)
+    responses.post(PACKAGE_VARIANTS_URI,
+                   body=requests.exceptions.ConnectionError("connection reset"))
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json=OWNED_PV, status=200)
+
+    assert ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID) == OWNED_PV
+
+
+@responses.activate
+def test_a_write_that_did_not_land_is_worth_another_attempt():
+    """The read-back settles that nothing was written, which the read-back's
+    own 404 would otherwise report as the resource simply not existing."""
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json={"kind": "Status"}, status=404)
+    responses.post(PACKAGE_VARIANTS_URI,
+                   body=requests.exceptions.ConnectionError("connection reset"))
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json={"kind": "Status"}, status=404)
+
+    with pytest.raises(ApiError) as raised:
+        ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID)
+    assert raised.value.retryable is True
+    assert "did not land" in str(raised.value)
+
+
+@responses.activate
+def test_a_body_that_is_not_an_object_is_a_protocol_error():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", body="not json", status=200)
+    with pytest.raises(ApiError) as raised:
+        get_package_variant(NAME, NAMESPACE)
+    assert raised.value.reason == "protocol"
+
+
+@responses.activate
+def test_a_logger_does_not_change_the_outcome():
+    """Reading the body to log it used to raise before the status was read."""
+    for _ in range(2):
+        responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", body="<html>Forbidden</html>", status=403)
+    with pytest.raises(ApiError) as quiet:
+        get_package_variant(NAME, NAMESPACE)
+    with pytest.raises(ApiError) as noisy:
+        get_package_variant(NAME, NAMESPACE, logger=logging.getLogger("test"))
+    assert quiet.value.reason == noisy.value.reason == "unauthorized"
+
+
+@responses.activate
+def test_every_call_carries_the_bound():
+    responses.get(CAPI_URI, json=TEST_JSON, status=200)
+    get_capi_cluster(NAME, NAMESPACE)
+    assert responses.calls[0].request.req_kwargs["timeout"] == API_TIMEOUT
+
+
+def test_a_server_that_accepts_and_never_answers_is_given_up_on(monkeypatch):
+    """A real socket, not the kwarg. The kwarg says what was asked for; this
+    says what happens, which is the thing a stalled API server tests."""
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
+    host, port = listener.getsockname()
+
+    accepted = []
+
+    def accept_and_say_nothing():
+        try:
+            connection, _ = listener.accept()
+            accepted.append(connection)          # held open, never written to
+        except OSError:
+            pass
+
+    waiter = threading.Thread(target=accept_and_say_nothing, daemon=True)
+    waiter.start()
+
+    monkeypatch.setattr(utils, "API_TIMEOUT", (1.0, 1.0))
+    monkeypatch.setattr(utils, "TLS_VERIFY", False)
+    monkeypatch.setattr(utils, "KUBERNETES_BASE_URL", f"http://{host}:{port}")
+
+    began = time.monotonic()
+    try:
+        with pytest.raises(utils.ApiError) as raised:
+            utils.api_call("GET", f"http://{host}:{port}/anything",
+                           operation="stalled server")
+        waited = time.monotonic() - began
+    finally:
+        for connection in accepted:
+            connection.close()
+        listener.close()
+        waiter.join(timeout=5)
+
+    assert raised.value.reason == "transport"
+    assert raised.value.retryable is True
+    # It waited for the read bound and then gave up. The lower bound is what
+    # separates this from a connection that was refused outright, which would
+    # pass a "did not hang" assertion without exercising a timeout at all.
+    assert 1.0 <= waited < 5
+
+
+@responses.activate
+def test_a_redirect_is_reported_and_not_followed():
+    """The API server has no reason to redirect, and following one would hand
+    the token to wherever it points."""
+    responses.get(CAPI_URI, status=302, headers={"Location": "https://elsewhere.invalid/"})
+    with pytest.raises(ApiError) as raised:
+        get_capi_cluster(NAME, NAMESPACE)
+    assert raised.value.reason == "protocol"
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_an_existing_package_variant_of_this_request_is_accepted():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json=OWNED_PV, status=200)
+    assert ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID) == OWNED_PV
+
+
+@responses.activate
+@pytest.mark.parametrize("difference", ["uid", "target"])
+def test_a_package_variant_of_something_else_is_not_this_request_fulfilled(difference):
+    """The name is chosen by the request, so the name alone says nothing about
+    who created it."""
+    foreign = json.loads(json.dumps(OWNED_PV))
+    if difference == "uid":
+        foreign["metadata"]["annotations"][OWNER_UID_ANNOTATION] = "another-request"
     else:
-        responses.get(
-            CAPI_URI,
-            body=Exception(""),
-        )
-    response = get_capi_cluster(NAME, NAMESPACE)
-    assert response["status"] == status and response[response_2] == response_2_value
-    if not exception:
-        sent = responses.calls[0].request.headers["Authorization"]
-        assert sent == f"Bearer {TEST_TOKEN}"
+        foreign["spec"]["downstream"]["package"] = "another-cluster"
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json=foreign, status=200)
+    with pytest.raises(ApiError) as raised:
+        ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID)
+    assert raised.value.reason == "conflict"
+
+
+@responses.activate
+def test_a_created_package_variant_carries_labels_and_ownership():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json={"kind": "Status"}, status=404)
+    responses.post(PACKAGE_VARIANTS_URI, json=OWNED_PV, status=201)
+    ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID)
+    sent = json.loads(responses.calls[1].request.body)
+    assert sent["metadata"]["labels"] == LABEL
+    assert "label" not in sent["metadata"]
+    assert sent["metadata"]["annotations"][OWNER_UID_ANNOTATION] == REQUEST_UID
+    # #889 replaced a string revision with workspaceName; this keeps it.
+    assert sent["spec"]["upstream"]["workspaceName"] == PV_CREATE["template_version"]
+
+
+@responses.activate
+def test_a_conflicting_create_is_settled_by_reading_the_resource_back():
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json={"kind": "Status"}, status=404)
+    responses.post(PACKAGE_VARIANTS_URI, json={"kind": "Status"}, status=409)
+    responses.get(f"{PACKAGE_VARIANTS_URI}/{NAME}", json=OWNED_PV, status=200)
+    assert ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID) == OWNED_PV
+
+
+@responses.activate
+def test_a_provisioning_request_is_read_by_name():
+    responses.get(f"{PROVISIONING_REQUEST_URI}/{NAME}", json=PR_OBJECT, status=200)
+    assert check_o2ims_provisioning_request(NAME, NAMESPACE) == PR_OBJECT
+    assert responses.calls[0].request.url.endswith(f"/{NAME}")
+    assert "/namespaces/" not in responses.calls[0].request.url
+
+
+@responses.activate
+@pytest.mark.parametrize("answer", [
+    {"kind": "ProvisioningRequestList", "items": []},
+    {"kind": "ProvisioningRequest", "metadata": {"name": "somebody-else"}},
+])
+def test_an_answer_about_something_else_is_a_protocol_error(answer):
+    """An empty collection used to read as this request progressing."""
+    responses.get(f"{PROVISIONING_REQUEST_URI}/{NAME}", json=answer, status=200)
+    with pytest.raises(ApiError) as raised:
+        check_o2ims_provisioning_request(NAME, NAMESPACE)
+    assert raised.value.reason == "protocol"
+
+
+@responses.activate
+def test_a_cluster_is_returned_with_the_current_token():
+    responses.get(CAPI_URI, json=TEST_JSON, status=200)
+    assert get_capi_cluster(NAME, NAMESPACE) == TEST_JSON
+    assert responses.calls[0].request.headers["Authorization"] == f"Bearer {TEST_TOKEN}"
+
+
+@responses.activate
+def test_a_kubernetes_status_body_is_read_as_one():
+    """The error body is a Status, not a Cluster with nested conditions."""
+    responses.get(CAPI_URI, json={
+        "kind": "Status", "status": "Failure", "reason": "ServiceUnavailable",
+        "message": "try later", "code": 503,
+    }, status=503)
+    with pytest.raises(ApiError) as raised:
+        get_capi_cluster(NAME, NAMESPACE)
+    assert raised.value.retryable is True
+    assert "try later" in str(raised.value)
 
 
 @pytest.fixture
@@ -690,13 +765,11 @@ def test_requests_carry_the_verify_setting(monkeypatch, verify):
     assert responses.calls[0].request.req_kwargs["verify"] == verify
 
 
-def exercise_create_package_variant():
+def exercise_ensure_package_variant():
     """Two requests: the lookup that misses, then the creation."""
-    responses.get(PACKAGE_VARIANTS_URI + f"/{NAME}", json=TEST_JSON, status=404)
-    responses.post(PACKAGE_VARIANTS_URI, json=TEST_JSON, status=201)
-    params = PV_PARAM.copy()
-    params.update({"create": True})
-    create_package_variant(NAME, NAMESPACE, params)
+    responses.get(PACKAGE_VARIANTS_URI + f"/{NAME}", json={"kind": "Status"}, status=404)
+    responses.post(PACKAGE_VARIANTS_URI, json=OWNED_PV, status=201)
+    ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID)
 
 
 def exercise_get_package_variant():
@@ -705,11 +778,7 @@ def exercise_get_package_variant():
 
 
 def exercise_check_o2ims_provisioning_request():
-    responses.get(
-        PROVISIONING_REQUEST_URI,
-        json={"status": {"provisioningStatus": "fulfilled"}},
-        status=200,
-    )
+    responses.get(f"{PROVISIONING_REQUEST_URI}/{NAME}", json=PR_OBJECT, status=200)
     check_o2ims_provisioning_request(NAME, NAMESPACE)
 
 
@@ -720,7 +789,7 @@ def exercise_get_capi_cluster():
 
 @responses.activate
 @pytest.mark.parametrize("exercise", [
-    exercise_create_package_variant,
+    exercise_ensure_package_variant,
     exercise_get_package_variant,
     exercise_check_o2ims_provisioning_request,
     exercise_get_capi_cluster,
@@ -845,13 +914,16 @@ def test_an_invalid_token_stops_before_any_request_is_made(monkeypatch, tmp_path
     monkeypatch.setenv("TOKEN", str(token_file))
     responses.get(CAPI_URI, json=TEST_JSON, status=200)
 
-    get_capi_cluster(NAME, NAMESPACE)
+    with pytest.raises(ApiError) as raised:
+        get_capi_cluster(NAME, NAMESPACE)
 
+    # A configuration failure of its own, not something to wait out.
+    assert raised.value.reason == "config"
     assert len(responses.calls) == 0
 
 
 @responses.activate
-def test_create_package_variant_refreshes_the_token_between_get_and_post(
+def test_ensure_package_variant_refreshes_the_token_between_get_and_post(
     monkeypatch, tmp_path
 ):
     """The GET and the POST in one call must not share a stale token."""
@@ -861,16 +933,14 @@ def test_create_package_variant_refreshes_the_token_between_get_and_post(
 
     def rotate(request):
         token_file.write_text("second")
-        return (404, {}, json.dumps(TEST_JSON))
+        return (404, {}, json.dumps({"kind": "Status"}))
 
     responses.add_callback(
         responses.GET, f"{PACKAGE_VARIANTS_URI}/{NAME}", callback=rotate,
         content_type="application/json")
-    responses.post(PACKAGE_VARIANTS_URI, json=TEST_JSON, status=201)
+    responses.post(PACKAGE_VARIANTS_URI, json=OWNED_PV, status=201)
 
-    params = PV_PARAM.copy()
-    params.update({"create": True})
-    create_package_variant(NAME, NAMESPACE, params)
+    ensure_package_variant(NAME, NAMESPACE, PV_CREATE, REQUEST_UID)
 
     sent = [call.request.headers["Authorization"] for call in responses.calls]
     assert sent == ["Bearer first", "Bearer second"]

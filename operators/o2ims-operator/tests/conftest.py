@@ -26,6 +26,14 @@ with no CA and the import fails during collection.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# The image copies controllers/ to src/ and runs from there, so the modules
+# import each other flat: "from utils import ...". Tests import them the same
+# way, both so the layout is exercised and so there is one module object per
+# module rather than one per import spelling.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "controllers"))
 
 AMBIENT_KUBERNETES_ENV = (
     "KUBERNETES_SERVICE_HOST",
