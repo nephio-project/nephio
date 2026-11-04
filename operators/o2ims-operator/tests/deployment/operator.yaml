@@ -111,9 +111,9 @@ spec:
         image: docker.io/library/o2ims:latest
 #        command: ["sleep","10000"]
         imagePullPolicy: IfNotPresent
+        # The northbound API listens on loopback only, so it has no port here;
+        # kubectl port-forward reaches it.
         ports:
-          - name: northbound
-            containerPort: 5000
           - name: health
             containerPort: 8080
         # The image passes --liveness, so kopf serves this. Without a probe
@@ -124,9 +124,9 @@ spec:
             port: health
           initialDelaySeconds: 15
           periodSeconds: 20
-        # kopf answers this only once it is running, and the handler behind it
-        # reports whether the northbound API is still being served, so ready
-        # means more than a socket having been bound at some point.
+        # kopf answers this only once it is running, and answers 500 when the
+        # northbound API does not accept a connection. If its thread ends, the
+        # operator exits as well, so the pod is restarted either way.
         readinessProbe:
           httpGet:
             path: /healthz

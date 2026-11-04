@@ -16,6 +16,8 @@
 
 import logging
 import os
+import signal
+import socket
 import threading
 from datetime import datetime, timezone
 
@@ -34,11 +36,16 @@ from utils import (
 from provisioning_request_controller import (
     cluster_creation_request,
     cluster_creation_status,
+    deadline_from,
+    utc_now,
 )
 
 LOGGER = logging.getLogger(__name__)
 
-NBI_HOST = os.getenv("NBI_HOST", "0.0.0.0")
+# Loopback unless set otherwise. The API has no authentication and acts with
+# this operator's service account, so it stays off the pod network by default.
+# kubectl port-forward still reaches it, under the caller's own RBAC.
+NBI_HOST = os.getenv("NBI_HOST", "127.0.0.1")
 NBI_PORT = int(os.getenv("NBI_PORT", "5000"))
 # How long a request waits before it is looked at again. One observation per
 # pass, so the handler never holds a worker for the whole provisioning budget.
@@ -50,6 +57,8 @@ SHUTDOWN_TIMEOUT = float(os.getenv("NBI_SHUTDOWN_TIMEOUT", "3"))
 
 _server = None
 _server_thread = None
+# Set while the operator stops the API itself, so it is not taken for a crash.
+_stopping = threading.Event()
 
 
 def now() -> str:
@@ -95,6 +104,22 @@ def configure(settings: kopf.OperatorSettings, memo: kopf.Memo, **_):
     memo.creation_timeout = CREATION_TIMEOUT
 
 
+def _serve(server) -> None:
+    """Serve until stopped, and stop the operator if serving ends by itself.
+
+    Exiting lets Kubernetes restart the pod, with or without probes. Staying up
+    would leave the operator running with nothing listening.
+    """
+    try:
+        server.run()
+    except Exception:  # anything that ends serving is handled the same way
+        LOGGER.exception("the northbound API failed")
+    if not _stopping.is_set():
+        LOGGER.error("the northbound API stopped by itself; stopping the "
+                     "operator so that it is restarted")
+        os.kill(os.getpid(), signal.SIGTERM)
+
+
 @kopf.on.startup()
 def start_northbound(logger, **_):
     """Serve the northbound API, and fail startup if the port cannot be bound.
@@ -105,9 +130,10 @@ def start_northbound(logger, **_):
     reported that it had not.
     """
     global _server, _server_thread
+    _stopping.clear()
     _server = create_server(app, host=NBI_HOST, port=NBI_PORT)
     _server_thread = threading.Thread(
-        target=_server.run, name="northbound", daemon=True)
+        target=_serve, args=(_server,), name="northbound", daemon=True)
     _server_thread.start()
     logger.info("northbound API listening on %s:%s", NBI_HOST, NBI_PORT)
 
@@ -116,6 +142,7 @@ def start_northbound(logger, **_):
 def stop_northbound(logger, **_):
     """Stop serving, and say so if the server outlives the budget."""
     global _server, _server_thread
+    _stopping.set()
     if _server is not None:
         _server.close()
     if _server_thread is not None:
@@ -171,6 +198,16 @@ def create_fn(spec, logger, patch: kopf.Patch, memo: kopf.Memo, body, **_):
         publish(patch, "failed", rendering["provisioningMessage"])
         raise kopf.PermanentError(rendering["provisioningMessage"])
     if not rendering["rendered"]:
+        # Rendering spends the same budget as the cluster. Checking it only
+        # after rendering let a package that never rendered keep the request
+        # progressing for good.
+        deadline = deadline_from(metadata.get("creationTimestamp"),
+                                 memo.creation_timeout, logger=logger)
+        if utc_now() >= deadline:
+            message = ("Cluster instance rendering timed out: "
+                       f"{rendering['provisioningMessage']}")
+            publish(patch, "failed", message)
+            raise kopf.PermanentError(message)
         publish(patch, "progressing", rendering["provisioningMessage"])
         raise kopf.TemporaryError(rendering["provisioningMessage"],
                                   delay=OBSERVE_DELAY)
@@ -205,13 +242,21 @@ def get_current_timestamp(**_):
 
 
 @kopf.on.probe(id="northbound")
-def northbound_state(**_):
-    """Say whether the northbound API is being served.
+def northbound_accepts(**_):
+    """Connect to the northbound API, and fail the probe if that fails.
 
-    kopf answers this endpoint only once it is running, so reaching it at all
-    says the operator started. This says the other half: that the thread
-    serving the API is still alive, rather than that its port was bound once.
+    A live serving thread is not enough: once its listening socket is gone,
+    waitress keeps looping on accept errors and nothing can connect. A
+    PermanentError makes kopf answer the probe with 500 instead of retrying.
     """
-    if _server_thread and _server_thread.is_alive():
-        return "serving"
-    return "stopped"
+    if _server is None:
+        raise kopf.PermanentError("the northbound API is not started")
+    host, port = _server.socket.getsockname()[:2]
+    host = {"0.0.0.0": "127.0.0.1", "::": "::1"}.get(host, host)
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return "accepting"
+    except OSError as error:
+        raise kopf.PermanentError(
+            f"the northbound API does not accept connections: {error}"
+        ) from error

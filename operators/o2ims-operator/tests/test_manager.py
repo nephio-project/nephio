@@ -19,15 +19,17 @@ listener is bound on a real socket, because "the thread was constructed" is
 what the previous version was able to prove.
 """
 
+import signal
 import socket
 import types
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock
 
 import kopf
 import pytest
 
 import manager
+from provisioning_request_controller import outcome
 
 SPEC = {
     "templateName": "cluster-template",
@@ -63,14 +65,22 @@ def steps(monkeypatch):
     return types.SimpleNamespace(rendering=rendering, observing=observing)
 
 
-def reconcile(patch, memo, spec=None):
+def just_now():
+    """A creation time that leaves the whole budget."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def reconcile(patch, memo, spec=None, created=None):
     """Call the handler with what kopf passes, not with literals.
 
     kopf hands over a Body and a Spec, which are mappings over the resource
     and not dicts. Passing dictionaries here once hid a validation check that
     rejected every real request.
     """
-    body = kopf.Body({**BODY, "spec": spec or SPEC})
+    metadata = {**BODY["metadata"]}
+    if created is not None:
+        metadata["creationTimestamp"] = created
+    body = kopf.Body({**BODY, "metadata": metadata, "spec": spec or SPEC})
     return manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
                              memo=memo, body=body)
 
@@ -133,19 +143,100 @@ def test_a_fulfilled_request_is_not_driven_again(steps):
     assert "provisioningStatus" not in patch.status
 
 
-def test_the_probe_says_whether_the_northbound_api_is_serving(monkeypatch):
-    """Reaching the endpoint says kopf started; this says the API is up."""
-    assert manager.northbound_state() == "stopped"
+def test_the_api_listens_on_loopback_by_default(monkeypatch):
+    """It has no authentication, so it is not put on the pod network unless
+    NBI_HOST says so."""
+    assert manager.NBI_HOST == "127.0.0.1"
 
     monkeypatch.setattr(manager, "NBI_PORT", 0)
     logger = Mock()
     manager.start_northbound(logger=logger)
     try:
-        assert manager.northbound_state() == "serving"
+        assert manager._server.socket.getsockname()[0] == "127.0.0.1"
     finally:
         manager.stop_northbound(logger=logger)
 
-    assert manager.northbound_state() == "stopped"
+
+class Server:
+    """Stands in for the waitress server: run returns, or raises."""
+
+    def __init__(self, error=None):
+        self.error = error
+
+    def run(self):
+        if self.error:
+            raise self.error
+
+
+@pytest.mark.parametrize("server", [Server(), Server(OSError("boom"))],
+                         ids=["returned", "raised"])
+def test_an_api_that_stops_by_itself_stops_the_operator(monkeypatch, server):
+    """Exiting is what gets the pod restarted; staying up left the operator
+    running with nothing listening, and catalog sets no probe to notice."""
+    kill = Mock()
+    monkeypatch.setattr(manager.os, "kill", kill)
+    manager._stopping.clear()
+
+    manager._serve(server)
+
+    kill.assert_called_once_with(manager.os.getpid(), signal.SIGTERM)
+
+
+def test_a_real_server_that_stops_by_itself_stops_the_operator(monkeypatch):
+    """Closed without stop_northbound, the waitress loop returns."""
+    kill = Mock()
+    monkeypatch.setattr(manager.os, "kill", kill)
+    monkeypatch.setattr(manager, "NBI_PORT", 0)
+    logger = Mock()
+    manager.start_northbound(logger=logger)
+    thread = manager._server_thread
+    try:
+        manager._server.close()
+        thread.join(timeout=5)
+        assert not thread.is_alive()
+        kill.assert_called_once_with(manager.os.getpid(), signal.SIGTERM)
+    finally:
+        manager.stop_northbound(logger=logger)
+
+
+def test_the_probe_connects_to_the_api(monkeypatch):
+    monkeypatch.setattr(manager, "NBI_PORT", 0)
+    logger = Mock()
+    manager.start_northbound(logger=logger)
+    try:
+        assert manager.northbound_accepts() == "accepting"
+    finally:
+        manager.stop_northbound(logger=logger)
+
+    with pytest.raises(kopf.PermanentError):
+        manager.northbound_accepts()
+
+
+def test_the_probe_fails_when_nothing_accepts(monkeypatch):
+    """A serving thread whose listening socket is gone still looks alive."""
+    closed = socket.socket()
+    closed.bind(("127.0.0.1", 0))
+    address = closed.getsockname()
+    closed.close()
+    gone = types.SimpleNamespace(socket=types.SimpleNamespace(
+        getsockname=lambda: address))
+    monkeypatch.setattr(manager, "_server", gone)
+
+    with pytest.raises(kopf.PermanentError, match="does not accept"):
+        manager.northbound_accepts()
+
+
+def test_stopping_the_api_does_not_stop_the_operator(monkeypatch):
+    kill = Mock()
+    monkeypatch.setattr(manager.os, "kill", kill)
+    monkeypatch.setattr(manager, "NBI_PORT", 0)
+    logger = Mock()
+    manager.start_northbound(logger=logger)
+    thread = manager._server_thread
+    manager.stop_northbound(logger=logger)
+
+    assert not thread.is_alive()
+    kill.assert_not_called()
 
 
 def test_the_probe_answers_with_a_timestamp():
@@ -183,10 +274,38 @@ def test_rendering_that_has_not_finished_is_retried_not_slept_through(patch, mem
                                     "provisioningMessage": "still rendering",
                                     "retryable": True, "rendered": False}
     with pytest.raises(kopf.TemporaryError) as raised:
-        reconcile(patch, memo)
+        reconcile(patch, memo, created=just_now())
 
     assert raised.value.delay == manager.OBSERVE_DELAY
     assert patch.status["provisioningStatus"]["provisioningState"] == "progressing"
+    steps.observing.assert_not_called()
+
+
+# What cluster_creation_request reports for each way rendering can stall.
+STALLED = [
+    outcome("progressing", "Cluster instance rendering ongoing: "
+            "RenderFailed the pipeline failed", retryable=True),
+    outcome("progressing", "Cluster instance rendering ongoing",
+            retryable=True),
+    outcome("progressing", "Cluster instance rendering ongoing: "
+            "the API server is unavailable", retryable=True),
+]
+
+
+@pytest.mark.parametrize("rendering", STALLED,
+                         ids=["ready-false", "no-ready-condition", "api-error"])
+def test_rendering_past_the_budget_fails_the_request(patch, memo, steps, rendering):
+    """The budget used to be checked only once rendering had finished, so a
+    package that never rendered kept the request progressing for good."""
+    steps.rendering.return_value = rendering
+    for _ in range(3):
+        with pytest.raises(kopf.PermanentError):
+            reconcile(patch, memo, created="2020-01-01T00:00:00Z")
+
+        status = patch.status["provisioningStatus"]
+        assert status["provisioningState"] == "failed"
+        assert status["provisioningMessage"].startswith(
+            "Cluster instance rendering timed out")
     steps.observing.assert_not_called()
 
 
