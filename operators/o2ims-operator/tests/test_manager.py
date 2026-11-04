@@ -30,6 +30,7 @@ import pytest
 
 import manager
 from provisioning_request_controller import outcome
+from utils import provisioning_status
 
 SPEC = {
     "templateName": "cluster-template",
@@ -237,6 +238,31 @@ def test_stopping_the_api_does_not_stop_the_operator(monkeypatch):
 
     assert not thread.is_alive()
     kill.assert_not_called()
+
+
+def test_a_fulfilled_request_is_recognised_through_kopf_s_own_body(steps):
+    """The guard reads the recorded status off the Body kopf hands over, which
+    is a mapping and not a dict. It decides whether a request is finished, so
+    reading it as no status at all would drive a finished one again.
+    """
+    fulfilled = {**BODY, "status": {"provisioningStatus": {
+        "provisioningState": "fulfilled", "provisioningMessage": "done",
+        "provisioningUpdateTime": "2026-09-16T00:00:01Z"}}}
+
+    handed_over = kopf.Body(fulfilled)
+    assert not isinstance(handed_over, dict)
+    assert provisioning_status(handed_over).get(
+        "provisioningState") == "fulfilled"
+
+    body = kopf.Body(fulfilled)
+    patch = kopf.Patch()
+    memo = types.SimpleNamespace(cluster_provisioner="capi",
+                                 creation_timeout=1800)
+    manager.create_fn(spec=kopf.Spec(body), logger=Mock(), patch=patch,
+                      memo=memo, body=body)
+
+    steps.rendering.assert_not_called()
+    assert "provisioningStatus" not in patch.status
 
 
 def test_the_probe_answers_with_a_timestamp():
