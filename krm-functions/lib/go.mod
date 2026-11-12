@@ -1,6 +1,6 @@
 module github.com/nephio-project/nephio/krm-functions/lib
 
-go 1.25.6
+go 1.26.11
 
 require (
 	github.com/google/go-cmp v0.7.0

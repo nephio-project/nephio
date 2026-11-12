@@ -1,6 +1,6 @@
 module github.com/treactor/treactor-kpt-functions/argo/kpt-render
 
-go 1.25.6
+go 1.26.11
 
 require (
 	github.com/kptdev/krm-functions-sdk/go/fn v1.0.1
